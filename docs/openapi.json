@@ -2,8 +2,19 @@
   "components": {
     "schemas": {
       "Entry": {
-        "description": "One row of config/data/demo_data.csv: person, indicator, value, unit, day, time.",
+        "description": "One row of config/data/demo_data.csv: person, indicator, value, unit, day, time, context.",
         "properties": {
+          "context": {
+            "default": "rest",
+            "enum": [
+              "rest",
+              "after_exercise",
+              "on_waking",
+              "before_sleep"
+            ],
+            "title": "Context",
+            "type": "string"
+          },
           "indicator_id": {
             "maxLength": 64,
             "title": "Indicator Id",
