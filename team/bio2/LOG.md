@@ -4,6 +4,10 @@ One entry per decision. Newest first.
 
 | Time | What | Why | Source | AI used |
 | --- | --- | --- | --- | --- |
+| Sat 16:00 | `attention.csv` will hold only clinical boundaries with a source; the mild steps are dropped | F-phys-02 computes "outside your usual range" from the person's baseline, so an invented 37.5 °C step would flag a normal crew member | `docs/findings/phys-01`, `phys-02` | Yes |
+| Sat 15:55 | Reviewed `config/data/indicators.csv` without editing it | The file is Phys's; six findings written in `team/bio2/notes/indicators-review.md` | `FORMATS.md` section 1 | Yes |
+| Sat 15:40 | Drafted thresholds for six indicators in `team/bio2/notes/thresholds-draft.md` | The numbers and their sources do not depend on the indicator ids, so the work runs while Phys finishes REQ-03 | sources listed in the draft | Yes |
+| Sat 15:38 | Deleted `team/bio2/notes/format-proposal.md` | It proposed a 9-column table that `FORMATS.md` replaced with `attention.csv`; an unused format in the notes misleads the next person | `FORMATS.md` section 3 | Yes |
 | Sat 15:18 | Three attention levels: `watch` (crew), `consult` (cmo), `urgent` (flight_surgeon) | `attention.csv` stores the actor in `notify`, so a fourth level would duplicate one of the three; the names also serve as the content headings | `FORMATS.md` section 3 (#6), `team/bio2/notes/attention-levels.md` | Yes |
 | Sat 15:10 | Created `config/rules/attention.csv` and `config/rules/conditions.csv` with the header line only | The rows need an `indicator_id` from Phys (REQ-03); the files exist so the checker runs from today | `scripts/new_config.py bio2` | Yes |
 | Sat 15:00 | Merged `origin/main` twice (checkpoint `cp1` and the `notify` column) | The rules format changed after the checkpoint; writing rows against the old format would be wasted work | `FORMATS.md`, commit `c1b6d54` | Yes |
