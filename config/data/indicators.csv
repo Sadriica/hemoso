@@ -1,0 +1,10 @@
+id,name,unit,direction,measured_on_board,hazards,source
+hr_bpm,Heart rate,bpm,both,Bio-Monitor smart shirt or ECG,gravity_fields radiation,https://www.asc-csa.gc.ca/eng/sciences/bio-monitor.asp
+bp_sys_mmhg,Systolic blood pressure,mmHg,both,Bio-Monitor smart shirt or arm cuff,gravity_fields,https://www.asc-csa.gc.ca/eng/sciences/bio-monitor.asp
+bp_dia_mmhg,Diastolic blood pressure,mmHg,both,Bio-Monitor smart shirt or arm cuff,gravity_fields,https://www.asc-csa.gc.ca/eng/sciences/bio-monitor.asp
+temp_core_c,Core temperature,°C,both,T-Mini headband worn for hours,hostile_closed_environments gravity_fields,https://www.nasa.gov/missions/station/iss-research/wearable-tech-for-space-station-research/
+spo2_pct,Blood oxygen saturation,%,lower,Bio-Monitor blood oxygen sensor,hostile_closed_environments distance_from_earth,https://www.asc-csa.gc.ca/eng/sciences/bio-monitor.asp
+sleep_h,Sleep duration,h,lower,Actiwatch wrist monitor and daily questionnaire,isolation_and_confinement hostile_closed_environments,https://www.nasa.gov/humans-in-space/spaceflight-standard-measures-characterizing-how-humans-adapt-in-space/
+sleep_quality_1_5,Sleep quality,1 to 5,lower,Questionnaire after waking,isolation_and_confinement,https://www.nasa.gov/humans-in-space/spaceflight-standard-measures-characterizing-how-humans-adapt-in-space/
+mood_1_5,Mood,1 to 5,lower,Questionnaire before sleep and journaling,isolation_and_confinement distance_from_earth,https://www.nasa.gov/humans-in-space/spaceflight-standard-measures-characterizing-how-humans-adapt-in-space/
+glucose_mgdl,Blood glucose,mg/dL,both,No in-flight device in the sources read; manual entry only,gravity_fields hostile_closed_environments,Assumption

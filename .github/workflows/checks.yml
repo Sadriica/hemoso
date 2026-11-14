@@ -1,0 +1,120 @@
+# Checks on every push and pull request (card T-08, #8): AGENTS.md asks for the
+# tests before every push, and Eng 1 runs them after each merge at a checkpoint.
+# A job skips its work while the code it covers is not in the commit yet, so the
+# workflow is useful from the first push.
+name: Checks
+
+on:
+  push:
+    branches:
+      - main
+      - bio1
+      - bio2
+      - phys
+      - eng1
+      - eng2
+      - "eng1-*"
+      - "fix/**"
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  scripts:
+    name: Team scripts (${{ matrix.os }} / Python ${{ matrix.python }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python: ["3.10", "3.13"]
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7.0.1
+
+      - name: Set up Python
+        uses: actions/setup-python@v7.1.0
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Run the script tests
+        if: ${{ hashFiles('scripts/test_*.py') != '' }}
+        run: python -m unittest discover -s scripts -p "test_*.py"
+
+      - name: Check the content files
+        if: ${{ hashFiles('scripts/check_content.py') != '' }}
+        run: python scripts/check_content.py
+
+      - name: Check the SI table in SI-USE.md
+        run: python scripts/si_use.py --check
+
+  backend:
+    name: Backend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7.0.1
+
+      - name: Set up uv
+        if: ${{ hashFiles('backend/pyproject.toml') != '' }}
+        uses: astral-sh/setup-uv@v10.3.3
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+
+      - name: Install the backend environment
+        if: ${{ hashFiles('backend/pyproject.toml') != '' }}
+        run: uv sync --frozen
+
+      - name: Lint the backend
+        if: ${{ hashFiles('backend/pyproject.toml') != '' }}
+        run: uv run ruff check .
+
+      - name: Test the backend
+        if: ${{ hashFiles('backend/pyproject.toml') != '' }}
+        run: uv run pytest
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7.0.1
+
+      - name: Install pnpm 12
+        if: ${{ hashFiles('frontend/package.json') != '' }}
+        uses: pnpm/action-setup@v6.1.1
+        with:
+          version: "12"
+
+      - name: Set up Node 24
+        if: ${{ hashFiles('frontend/package.json') != '' }}
+        uses: actions/setup-node@v7.1.0
+        with:
+          node-version: "24"
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install the frontend dependencies
+        if: ${{ hashFiles('frontend/package.json') != '' }}
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint the frontend
+        if: ${{ hashFiles('frontend/package.json') != '' }}
+        run: pnpm run --if-present lint
+
+      - name: Test the frontend
+        if: ${{ hashFiles('frontend/package.json') != '' }}
+        run: pnpm run --if-present test
+
+      - name: Build the frontend
+        if: ${{ hashFiles('frontend/package.json') != '' }}
+        run: pnpm run --if-present build

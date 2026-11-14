@@ -68,7 +68,7 @@ def main() -> None:
     if a.write:
         text = DOC.read_text(encoding="utf-8") if DOC.exists() else "# Requirements\n"
         block = f"{START}\n{report}\n{END}"
-        text = re.sub(re.escape(START) + ".*?" + re.escape(END), block, text, flags=re.S) if START in text \
+        text = re.sub(re.escape(START) + ".*?" + re.escape(END), lambda _: block, text, flags=re.S) if START in text \
             else text.rstrip() + "\n\n" + block + "\n"
         DOC.write_text(text, encoding="utf-8")
         print(f"\nWrote the status into {DOC}.")

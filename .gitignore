@@ -1,7 +1,11 @@
 # Secrets: never in the repository
 .env
 .env.*
+!.env.example
 *.key
+
+# Vercel local files
+.vercel/
 
 # Python
 .venv/

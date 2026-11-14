@@ -20,8 +20,8 @@ SUN = datetime(2026, 11, 15)
 
 
 def at(day: datetime, hhmm: str) -> datetime:
-    h, m = map(int, hhmm.split(":"))
-    return day.replace(hour=h, minute=m)
+    hh, _, mm = hhmm.partition(":")
+    return day.replace(hour=int(hh), minute=int(mm) if mm else 0)
 
 
 # (block option on the board, start, end, goal)
@@ -58,8 +58,18 @@ EVENTS = [
 
 
 def parse_at(text: str) -> datetime:
-    day, hhmm = text.split()
-    return at(SAT if day.lower().startswith("sat") else SUN, hhmm)
+    parts = text.split()
+    if len(parts) != 2:
+        sys.exit(f"Bad --at '{text}': use 'Sat 15:20' or 'Sat 9'.")
+    day, hhmm = parts
+    d = day.lower()
+    if d.startswith("sat"):
+        base = SAT
+    elif d.startswith("sun"):
+        base = SUN
+    else:
+        sys.exit(f"Unknown day '{day}' in --at: use Sat or Sun.")
+    return at(base, hhmm)
 
 
 def current_block(t: datetime):
