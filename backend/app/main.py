@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+from contextlib import asynccontextmanager
 from typing import Annotated
 
 import httpx
@@ -21,7 +22,13 @@ def allowed_origins() -> list[str]:
     return origins or ["http://localhost:5173"]
 
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    storage.ensure_supabase_config()
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -43,7 +50,12 @@ def create_entry(entry: Entry, store: Store) -> Entry:
     error = validate_against_indicators(entry)
     if error is not None:
         raise HTTPException(status_code=422, detail=error)
-    return store.add(entry)
+    try:
+        return store.add(entry)
+    except httpx.HTTPError as error:
+        raise HTTPException(
+            status_code=502, detail="upstream storage error"
+        ) from error
 
 
 @app.get("/people/{person_id}/indicators/{indicator_id}/history")

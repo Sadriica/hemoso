@@ -102,6 +102,7 @@ def print_next_steps() -> None:
     print("Next: fill the rows as in FORMATS.md section 3, run")
     print("  python scripts/check_content.py")
     print("then save the files with your agent.")
+    print("Before a checkpoint run python scripts/check_content.py --strict.")
 
 
 def main(argv: list[str] | None = None) -> int:
