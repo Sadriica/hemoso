@@ -6,17 +6,27 @@ content files, which are Bio 1's.
 
 The file is usable as it stands. Six points, in order of risk.
 
-## 1. `glucose_mgdl` cannot meet REQ-03 as written
+## 1. `glucose_mgdl` can meet REQ-03: the analysis in flight exists
 
-`measured_on_board` says "No in-flight device in the sources read; manual entry
-only" and `source` is `Assumption`. REQ-03 closes when every indicator is
-"confirmed measurable on board with a source". As it stands, one of the nine
-fails that check in front of a judge.
+Correction to my first review. `measured_on_board` says "No in-flight device in
+the sources read; manual entry only", and that is not accurate: the ISS carries
+a point-of-care blood analyser.
 
-Two ways out: find a source for an in-flight glucose measurement (blood
-analyser on the ISS, or a partner agency device), or keep the indicator and say
-in `docs/DECISIONS.md` why it stays with `Assumption`. The second is honest but
-must be written down, not left implicit.
+- The ISS has used the **i-STAT Portable Clinical Blood Analyzer (PCBA)** since
+  the early 2000s: a drop of blood of about 65 µL on a cartridge, and glucose is
+  read by amperometry. The current station technology level is the Abbott
+  i-STAT.
+  https://academic.oup.com/milmed/article-pdf/169/8/631/21977888/milmed.169.8.631.pdf
+  https://ntrs.nasa.gov/api/citations/20230006919/downloads/ELA_AsMA_2023_v4.pdf
+- The flight validation study: "Assessment of a portable clinical blood analyzer
+  during space flight", Clinical Chemistry, 1997.
+  https://pubmed.ncbi.nlm.nih.gov/9191561/
+
+What this changes: the indicator is measurable on board, so REQ-03 is
+satisfiable. What it does not change: it is a **fingerstick with a cartridge,
+not continuous monitoring**, so a value arrives only when the crew takes a
+sample, and the app must say so. Phys's row needs the source above instead of
+`Assumption`.
 
 ## 2. Two blood-pressure ids cannot express the clinical rule
 
