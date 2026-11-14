@@ -31,7 +31,8 @@ paragraphs. Two sentences per paragraph at most.
 | `usuallyRelated` | Out of the content file. A possible condition and its probability live in `config/rules/conditions.csv` (Bio 2), and the app adds "your CMO or flight surgeon confirms" |
 
 No change to `FORMATS.md` is needed for this: the level block was already free
-text. What changes is the convention above, which Bio 1 keeps in all six files.
+text. What changes is the convention above, which Bio 1 keeps in all seven
+content files.
 
 ## 3. Worked example · resting heart rate
 
@@ -109,8 +110,8 @@ which threshold the row uses. They must match the rule, not be invented.
 - [ ] Level names and `notify` values: `config/rules/attention.csv` (Bio 2).
 - [ ] Body temperature thresholds set against the in-flight baseline, not 37 °C
   (Bio 2, F-bio1-02).
-- [ ] Sixth indicator `fluid_intake`: row in `config/data/indicators.csv` (Phys)
-  and its rule in `attention.csv` (Bio 2), from F-bio1-03.
+- [ ] Sixth indicator `fluid_intake`: deferred. The team keeps the six examples
+  of the statement for now; F-bio1-03 stays as the proposal if there is time.
 - [ ] Indicator ids and units: `config/data/indicators.csv` (Phys).
 - [ ] Copy each block into `config/content/<indicator_id>.md` once the ids exist.
 - [ ] Bio 2 reviews for plain language (REQ-08) and for unsourced statements
