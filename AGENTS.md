@@ -172,6 +172,7 @@ co-authors, signatures or AI mentions.
 | `scripts/now.py [--at "Sat 15:20"]` | Timekeeper, anyone | Current block, next checkpoint and event, open P0 cards of the block |
 | `scripts/board.py` | Everyone | The board (`docs/BOARD.md`); `export` makes a CSV backup |
 | `scripts/new_finding.py <bio1, bio2 or phys> "<topic>" [--board]` | Bio 1, Bio 2, Phys | Next finding file from the template, and its card |
+| `scripts/new_config.py <phys, bio2, or bio1 <indicator_id>...>` | Bio 1, Bio 2, Phys | Your empty `config/` files with the exact columns and headings of `FORMATS.md`; never overwrites |
 | `scripts/check_sources.py [--offline] [--add]` | Phys, anyone | Broken links in `config/` and `docs/findings/`, and links missing from `docs/sources.md` |
 | `scripts/check_content.py [--strict]` | Everyone, before every merge | The config files against `FORMATS.md` |
 | `scripts/requirements_report.py [--write]` | Eng 1 | Requirement status from the board (P0 done, by type) into `docs/requirements.md` |
