@@ -88,7 +88,11 @@ interface SeriesPoint { day: number; value: number | null; median: number; low: 
 - Vitest + Testing Library: every component, the mock client and the content checks of `formats-proposal.md` section 4.
 - Playwright (`@playwright/test`) + `@axe-core/playwright`: the demo script of MVP 11.2, screenshots at 1280 × 800.
 
-## Work blocks (3 iterations each: build, review and fix, review and polish)
+## Work blocks (4 iterations each, in one opencode session per block)
+1. Build. 2. Fix the review of 1. 3. Fix the review of 2. 4. Final polish and tests.
+Between iterations the session stays open and idle while the review is written;
+the next iteration continues the same session (`opencode run -s <session>`), so
+it keeps the context of the block.
 | Block | Work | Serves |
 | --- | --- | --- |
 | A | API types, `MockClient` with the day 14, 22, 41 and 42 snapshots, `HttpClient`, `strings.ts`, `LevelBadge`, app shell with role, day and environment bar | MVP-02, MVP-07, REQ-13, REQ-15 |

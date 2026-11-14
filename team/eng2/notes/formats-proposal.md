@@ -1,5 +1,8 @@
 # FORMATS.md · proposal (Eng 2)
 
+> Superseded on Sat 14 at 12:31 by Eng 1's `FORMATS.md` draft on `eng1`.
+> Kept only as a record; where the two differ, `FORMATS.md` wins.
+
 Draft for the T-06 meeting, built from the team's MVP baseline document
 (Wambi, 12 Nov: sections 3, 5, 8.2 and 9). It follows the four sections of
 `FORMATS.md`. File and key names are the MVP's, translated to English as

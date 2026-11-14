@@ -1,39 +1,56 @@
 # Eng 2 · assigned requirements and work plan
 
-Requirements assigned to @julimejia on the board, checked Sat 14 at 11:20,
-and the frontend work that serves each one. Wambi moves requirement cards;
-this file only tracks the frontend side.
+Requirements and tasks assigned to @julimejia on the board, checked Sat 14 at
+14:30 after Eng 1 split every shared requirement to one owner
+(`docs/requirements.md` on `eng1`, commit ae3761f). Wambi moves requirement
+cards; this file only tracks the frontend side.
 
 ## Assigned requirements
-| Card | Ref | Requirement | Priority | Block | Shared with | Done when |
+| Card | Ref | Requirement | Priority | Block | Done when | Depends on |
 | --- | --- | --- | --- | --- | --- | --- |
-| #20 | REQ-09 | Optional considerations chosen or left out on purpose | P1 | B1 | Eng 1 | Each optional consideration has a row in `docs/DECISIONS.md`: use or leave out, and why |
-| #11 | REQ-01 | A visual tool astronauts use to assess their own health and act on its status | P0 | B2 | Bio 1 | The astronaut sees the status of each indicator they track and what to do next, on one screen |
-| #13 | REQ-02 | Indicators entered by keyboard and clicks; camera optional | P0 | B2 | — | Every chosen indicator can be entered without special hardware; units shown at entry |
-| #23 | REQ-12 | Indicators over time against the person's own earlier values | P1 | B3 | Eng 1 | Each indicator has a history view; the comparison uses that astronaut's own earlier values |
-| #24 | REQ-13 | Works with delayed or no contact with Earth | P1 | B3 | Eng 1 | The app and its data work with no network; anything for the ground waits and is sent later |
-| #26 | REQ-15 | Readable and usable without colour alone or a mouse | P1 | B3 | — | Every state has text or an icon besides colour; the demo path works by keyboard |
-| #27 | REQ-16 | Everything submitted is in English | P0 | B4 | Bio 2 | Page, app, slides and linked materials in English |
-| #28 | REQ-17 | Demo video of 30 s or less with English subtitles, or 7 slides at most | P0 | B4 | Bio 1 | Length checked; hosted outside Space Apps; the link opens with no login |
-| #29 | REQ-18 | Public link to the final project | P0 | B4 | Eng 1 | Repository and running app open in a private window with no login |
-| #33 | REQ-22 | No images, video, audio or likeness of people under 18 | P0 | B4 | Bio 1 | Every image and clip checked before upload |
+| #11 | REQ-01 | A visual tool astronauts use to assess their own health and act on its status: the screens | P0 | B2 Sat 13:30-17 | On one screen the astronaut sees the status of each indicator they track and a clear next step; content comes from `config/` (REQ-26) | T-06 |
+| #13 | REQ-02 | Gather health indicators from user input: keyboard and clicks; camera or images optional | P0 | B2 Sat 13:30-17 | Every chosen indicator can be entered without special hardware; units shown at entry | T-06 |
+| #23 | REQ-12 | History view: each indicator against the person's own earlier values | P1 | B3 Sat 17-1 | Each indicator has a history view comparing with that astronaut's own earlier values, reading the stored history (REQ-27) | REQ-27 |
+| #26 | REQ-15 | Readable and usable without colour alone or a mouse | P1 | B3 Sat 17-1 | Every state has text or an icon besides colour; the demo path works by keyboard | REQ-01 |
+| #44 | REQ-28 | Interface works offline and shows what is waiting to be sent | P1 | B3 Sat 17-1 | The app opens and works with the network off after the first load; pending items and the last sync time are visible | REQ-13 |
+| #46 | REQ-30 | The app interface is in English | P0 | B4 Sun 9-12 | Every screen, label and message of the app in English | REQ-01 |
+| #47 | REQ-31 | Demo video recorded with English subtitles and a public link | P0 | B4 Sun 9-12 | Video of 30 s or less recorded from the app, English subtitles burned in, hosted outside Space Apps, link opens with no password, permission or registration | REQ-17 |
+| #48 | REQ-32 | Running app published at a public link | P0 | B4 Sun 9-12 | The app opens at a public link in a private window with no login, on desktop and phone | T-13 |
 
-#12 is a duplicate of #11 (REQ-01); Wambi knows.
+No longer mine after the split: REQ-09, REQ-13, REQ-16, REQ-17, REQ-18 and
+REQ-22 (each now has one owner in `docs/requirements.md`). #12, the duplicate
+REQ-01, is closed.
+
+## Assigned tasks
+| Card | Ref | Task | Priority | Block | Done when | Status |
+| --- | --- | --- | --- | --- | --- | --- |
+| #3 | T-03 | Clone, `setup.sh`, open the agent | P0 | B0 | Every branch exists and every agent answers | Done on my side: `eng2` pushed |
+| #6 | T-06 | Choose the solution and write `FORMATS.md` (whole team) | P0 | B1 | `FORMATS.md` agreed by everyone; architecture in `docs/DECISIONS.md` | Draft by Eng 1 on `eng1` (12:31); open questions remain |
+| #39 | T-13 | Public demo online and checked anonymously | P0 | B4 | Links open in a private window without login | https://hemoso.vercel.app live from `eng2` |
+| #52 | T-16 | Record the demo video, add English subtitles and publish it | P0 | B4 | Video of 30 s or less with burned-in English subtitles at a public link | Todo, after the demo path exists |
+
+## Requirements I depend on (other owners)
+| Ref | What the frontend needs from it |
+| --- | --- |
+| REQ-26 | Content read from `config/`: the files and headings of `FORMATS.md` |
+| REQ-27 | Stored history (Supabase, per `docs/DECISIONS.md`): the history view reads it |
+| REQ-29 | Synthetic demo data: `config/data/demo_data.csv` |
+| REQ-13 | Working with delayed or no contact with Earth: still "Open" in `docs/DECISIONS.md` now that the app uses a network; REQ-28 follows its answer |
 
 ## Work list
 | # | Work | Serves | Status |
 | --- | --- | --- | --- |
-| 1 | Frontend skeleton: Vite, React, TypeScript, pnpm lockfile, `base: './'`, Vitest | T-03, all | In progress |
-| 2 | Local data store in the browser, no network needed | REQ-13 | Todo |
-| 3 | Status badge: colour, icon and text together; visible keyboard focus | REQ-15, REQ-01 | Todo |
-| 4 | Entry form by keyboard and clicks, units shown (mock indicators until `FORMATS.md`) | REQ-02 | Todo |
-| 5 | One-screen overview: state of each indicator and what to do next | REQ-01 | Todo |
-| 6 | History view against the astronaut's own earlier values | REQ-12 | Todo |
-| 7 | "Synthetic data" notice and visible sources | REQ-14, REQ-10 | Todo |
-| 8 | Playwright demo path, accessibility check, screenshots at 1280 × 800 | REQ-15, REQ-17 | Todo |
-| 9 | Read the real `config/` files once `FORMATS.md` is agreed | REQ-02 | Waiting on T-06 |
-| 10 | Deploy pipeline (see below) | REQ-18, T-13 | To do, Eng 1 |
-| 11 | Vercel pipeline: tests gate every deploy (see below) | REQ-18, T-13 | Vercel project `hemoso` live (CLI deploy); git link waits for Eng 1 |
+| 1 | Frontend skeleton: Vite, React, TypeScript, pnpm lockfile, Vitest | T-03, all | Done (db00106) |
+| 2 | API client with mock mode, status badge (colour + icon + text), app shell | REQ-01, REQ-15, REQ-30 | Block A, iteration 3 of 4 |
+| 3 | One screen: status of each indicator and its next step, read from `config/` content | REQ-01 | Todo, needs the attention levels from Bio 2 |
+| 4 | Entry form by keyboard and clicks, unit shown, from `config/data/indicators.csv` | REQ-02 | Todo, needs the indicator list from Phys |
+| 5 | History view against the person's own earlier values | REQ-12 | Todo, needs REQ-27 |
+| 6 | Offline after first load: cached app, pending entries and last sync time visible | REQ-28 | Todo, waits on the REQ-13 decision |
+| 7 | Keyboard-only demo path and non-colour states, checked with axe | REQ-15 | Todo |
+| 8 | Every label and message in English; one strings file | REQ-30 | In place since block A |
+| 9 | Playwright demo path, screenshots at 1280 × 800, video with burned-in subtitles | REQ-31, T-16 | Todo |
+| 10 | Public link checked in a private window on desktop and phone | REQ-32, T-13 | Desktop done; phone to check |
+| 11 | Vercel pipeline: tests gate every deploy (see below) | REQ-32, T-13 | Project `hemoso` live (CLI deploy); git link waits for Eng 1 |
 
 ## Vercel pipeline
 Status Sat 14 11:58: project `julian-mejias-projects/hemoso`, Node 24.x,
@@ -80,6 +97,15 @@ the pipeline, for Eng 1 to set up:
 - Check the public link in a private window before the internal freeze.
 
 ## Open
-- `FORMATS.md` is still empty (T-06). The real indicators, units and states come from it.
-- `git push` fails with "Password authentication is not supported"; GitHub
-  login on this machine is pending.
+- `FORMATS.md` draft (Eng 1, `eng1`, 12:31) has the file shapes but no
+  indicators, attention levels, body regions or conditions yet. Screens 3 to 5
+  wait on Phys (indicators) and Bio 2 (attention levels).
+- `docs/DECISIONS.md` (Eng 1, 12:45) moved to a networked app: React on Vercel,
+  Supabase for stored data, FastAPI backend (host still open). The frontend
+  client already has a mock mode and an HTTP mode; the Supabase or API
+  contract is needed from Eng 1 before the HTTP mode is wired.
+- `team/eng2/notes/formats-proposal.md` and the "MVP" parts of
+  `team/eng2/notes/frontend-architecture.md` were written from the MVP
+  baseline document of 12 Nov; where they differ from the `FORMATS.md` draft,
+  the draft wins.
+- GitHub login works (Git Credential Manager); `eng2` pushes.

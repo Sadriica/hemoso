@@ -12,6 +12,15 @@
     sans-serif;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+
+  /* Level colours. Text colours are dark enough on their light backgrounds
+     to keep at least 4.5:1 contrast. */
+  --level-green-text: #0b3d1f;
+  --level-green-bg: #e6f4ea;
+  --level-yellow-text: #4a3400;
+  --level-yellow-bg: #fbf0c9;
+  --level-orange-text: #7a2200;
+  --level-orange-bg: #fce8dd;
 }
 
 *,
@@ -47,4 +56,174 @@ body {
 
 .skip-link:focus-visible {
   left: 0;
+}
+
+.app-header {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #e2e2e2;
+}
+
+.app-header h1 {
+  margin: 0 0 0.5rem;
+  font-size: 1.5rem;
+}
+
+.top-bar {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+  color: #333333;
+}
+
+.top-bar__item + .top-bar__item::before {
+  content: '·';
+  margin-right: 1rem;
+  color: #6b6b6b;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.25rem;
+  align-items: end;
+}
+
+.role-switcher {
+  display: inline-flex;
+  gap: 0.5rem;
+}
+
+.role-switcher button {
+  padding: 0.45rem 0.9rem;
+  border: 1px solid #b7b7b7;
+  border-radius: 0.4rem;
+  background: #ffffff;
+  color: #1a1a1a;
+  cursor: pointer;
+}
+
+.role-switcher button[aria-pressed='true'] {
+  background: #005fcc;
+  border-color: #005fcc;
+  color: #ffffff;
+}
+
+.day-picker,
+.crew-picker {
+  display: inline-flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.day-picker select,
+.crew-picker select {
+  padding: 0.4rem 0.5rem;
+  border: 1px solid #b7b7b7;
+  border-radius: 0.4rem;
+  background: #ffffff;
+  color: #1a1a1a;
+}
+
+.loading-indicator {
+  color: #4b4b4b;
+  align-self: center;
+}
+
+.error {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid #e2e2e2;
+  border-radius: 0.5rem;
+  background: #fdf3f3;
+}
+
+.error p {
+  margin: 0 0 0.75rem;
+}
+
+.error button {
+  padding: 0.45rem 0.9rem;
+  border: 1px solid #b7b7b7;
+  border-radius: 0.4rem;
+  background: #ffffff;
+  color: #1a1a1a;
+  cursor: pointer;
+}
+
+.app-main {
+  padding: 1.25rem;
+  max-width: 40rem;
+}
+
+.app-note {
+  color: #4b4b4b;
+}
+
+.panel {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid #e2e2e2;
+  border-radius: 0.5rem;
+}
+
+.panel h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.15rem;
+}
+
+.overall {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.overall__label {
+  font-weight: 600;
+}
+
+.systems,
+.fitness {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.systems__item,
+.fitness__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 0;
+  border-top: 1px solid #ececec;
+}
+
+.level-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.level-badge__icon {
+  flex: none;
+  color: currentColor;
+}
+
+.level-badge--green {
+  color: var(--level-green-text);
+  background: var(--level-green-bg);
+}
+
+.level-badge--yellow {
+  color: var(--level-yellow-text);
+  background: var(--level-yellow-bg);
+}
+
+.level-badge--orange {
+  color: var(--level-orange-text);
+  background: var(--level-orange-bg);
 }
