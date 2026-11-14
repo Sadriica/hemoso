@@ -1,6 +1,8 @@
-# HeMoSo · Space Apps 2026 team
+# HeMoSo · team ReTardis · Space Apps 2026
 
-NASA Space Apps Challenge 2026 · Medellín · Challenge: *Create Health Monitoring
+HeMoSo is the product; ReTardis is the team
+(https://www.spaceappschallenge.org/2026/find-a-team/tardis2/). NASA Space Apps
+Challenge 2026 · Medellín · Challenge: *Create Health Monitoring
 Software for Astronauts on Space Missions*.
 
 The solution is designed and built during the event, from Saturday 14 November
@@ -13,13 +15,13 @@ _(Eng 1 replaces this paragraph with what we built and how to run it before subm
 
 ## How we work
 
-| Role | Name | Branch | Agent | Personal folder |
+| Role | GitHub | Branch | Agent | Personal folder |
 | --- | --- | --- | --- | --- |
-| Bio 1 · Health content and pitch | _(fill in)_ | `bio1` | `bio1` | `team/bio1/` |
-| Bio 2 · Rules, thresholds and submission | _(fill in)_ | `bio2` | `bio2` | `team/bio2/` |
-| Phys · Data, NASA sources and measurement | _(fill in)_ | `phys` | `phys` | `team/phys/` |
-| Eng 1 · Integrator, backend and requirements | Wambi | `eng1` (and merges into `main`) | `eng1` | `team/eng1/` |
-| Eng 2 · Frontend and demo | Juli | `eng2` | `eng2` | `team/eng2/` |
+| Bio 1 · Health content and pitch | @sofiaruizt | `bio1` | `bio1` | `team/bio1/` |
+| Bio 2 · Rules, thresholds and submission | @pamirestrepo-code | `bio2` | `bio2` | `team/bio2/` |
+| Phys · Data, NASA sources and measurement | @IsabellaCabreraquintero | `phys` | `phys` | `team/phys/` |
+| Eng 1 · Integrator, backend and requirements | Wambi (@Sadriica) | `eng1` (and merges into `main`) | `eng1` | `team/eng1/` |
+| Eng 2 · Frontend and demo | Juli (@julimejia) | `eng2` | `eng2` | `team/eng2/` |
 
 Full rules: `AGENTS.md`. `config/` formats (from Saturday 10:00): `FORMATS.md`. Units, glossary,
 findings and status messages: `STANDARDS.md`. Skills: `SKILLS.md`.

@@ -58,8 +58,10 @@ into `team/<person>/README.md`.
 
 The team adds the solution's own terms here on Saturday, once they exist.
 
-Words we do not use in the product: diagnosis, disease (as a label for the
-astronaut), risk percentage, AI.
+Words we do not use in the product: "you have" before a condition, disease
+(as a label for the astronaut), certain or confirmed for a suggested condition, AI.
+A suggested condition always comes with its probability, what it is based on and
+"your CMO or flight surgeon confirms".
 
 ## 6. Citations
 - In content files and findings: `- <Title>: <link>` under `## Sources`.

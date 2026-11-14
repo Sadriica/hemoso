@@ -56,7 +56,7 @@ work plan and tooling exist; do not write product content or code before 9:00.
 - Owns all of `docs/` except `sources.md`, `nasa_data.md` (Phys) and the others' findings.
 
 ## Paths you may `git add`
-`backend/`, `scripts/`, `FORMATS.md`, `README.md`, `CHANGELOG.md`, `docs/`, `.github/`, `config/README.md`, `team/eng1/`. Any other modified file: stop and ask.
+`backend/`, `scripts/`, `FORMATS.md`, `README.md`, `CHANGELOG.md`, `docs/`, `.github/`, `config/README.md`, `team/eng1/`, and the shared team files (`AGENTS.md`, `CLAUDE.md`, `STANDARDS.md`, `SKILLS.md`, `opencode.json`, `.opencode/`, `.githooks/`, `.gitignore`, `LICENSE`). Any other modified file: stop and ask.
 
 ## Every day
 - Your cards: `kanban` skill (`python scripts/board.py list --person eng1`). Move them
