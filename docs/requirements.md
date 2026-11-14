@@ -27,7 +27,7 @@ consideration the statement offers, or a team quality rule) · **context**
 | REQ-11 | Never presented as a replacement for the CMO or the flight surgeon | context | P0 | Bio 1 (@sofiaruizt) | B3 Sat 17-1 | Interface, pitch and page say the tool supports the crew's own assessment and that decisions stay with the CMO and flight surgeon |
 | REQ-12 | History view: each indicator against the person's own earlier values | context | P1 | Juli (@julimejia) | B3 Sat 17-1 | Each indicator has a history view comparing with that astronaut's own earlier values, reading the stored history (REQ-27) |
 | REQ-13 | Data keeps working with delayed or no contact with Earth | context | P1 | Wambi (@Sadriica) | B3 Sat 17-1 | Entries are saved locally with no network; anything meant for the ground waits in a queue and is sent later without duplicates |
-| REQ-14 | Treat health data as private; no real personal data anywhere | context | P0 | Wambi (@Sadriica) | B3 Sat 17-1 | No real personal data in the repository or the app; the interface labels all data as synthetic |
+| REQ-14 | Treat health data as private; no real personal data anywhere | context | P0 | Wambi (@Sadriica) | B3 Sat 17-1 | No real personal data in the repository or the app; the interface labels all data as synthetic. One exception (REQ-36): a face descriptor the person chooses to register stays only in their own browser |
 | REQ-15 | Readable and usable without colour alone or a mouse | optional | P1 | Juli (@julimejia) | B3 Sat 17-1 | Every state has text or an icon besides colour; the demo path works by keyboard |
 | REQ-16 | Everything submitted is in English: page and linked materials | delivery | P0 | Bio 2 (@pamirestrepo-code) | B4 Sun 9-12 | Page, slides and linked documents in English; a video may be spoken in another language only with English subtitles |
 | REQ-17 | Demo format, script and slides within the limits | delivery | P0 | Bio 1 (@sofiaruizt) | B4 Sun 9-12 | Format chosen (video of 30 s or less, or 7 slides at most including title and intro); script or slides ready and checked against the limit |
@@ -49,6 +49,7 @@ consideration the statement offers, or a team quality rule) · **context**
 | REQ-33 | SI-assisted code and data acknowledged in the repository | delivery | P0 | Wambi (@Sadriica) | B1 Sat 10-12 | The solution idea came from the team; SI-assisted code and data are acknowledged in descriptive text and metadata (a file at the repository root built from team/eng1/notes/si-use-log.md) |
 | REQ-34 | The submission page answers the five judging criteria | delivery | P0 | Bio 2 (@pamirestrepo-code) | B4 Sun 9-12 | The page description says how HeMoSo serves Impact, Creativity, Validity, Relevance and Presentation |
 | REQ-35 | Two-minute story for the mentors rehearsed three times | operations | P0 | Bio 1 (@sofiaruizt) | Submit Sun 12-14 | The story is read aloud in two minutes or less, three times, before 14:00 on Sunday |
+| REQ-36 | Sign in with the face, on the device only (optional, off by default) | context | P2 | Juli (@julimejia) | B3 Sat 17-1 | Off unless the URL has `?face=1`; the person consents first; a face is registered once and matched in the browser with bundled models; no image or face data leaves the device; the person can delete it; the person picker works without a camera |
 
 ## By owner
 
@@ -56,7 +57,7 @@ consideration the statement offers, or a team quality rule) · **context**
 - **Bio 2 (@pamirestrepo-code)**: REQ-05, REQ-06, REQ-10, REQ-16, REQ-20, REQ-23, REQ-24, REQ-25, REQ-34
 - **Phys (@IsabellaCabreraquintero)**: REQ-03, REQ-07, REQ-19, REQ-29
 - **Wambi (@Sadriica)**: REQ-09, REQ-13, REQ-14, REQ-18, REQ-27, REQ-33
-- **Juli (@julimejia)**: REQ-01, REQ-02, REQ-12, REQ-15, REQ-28, REQ-30, REQ-31, REQ-32
+- **Juli (@julimejia)**: REQ-01, REQ-02, REQ-12, REQ-15, REQ-28, REQ-30, REQ-31, REQ-32, REQ-36
 
 ## Sources
 
@@ -97,6 +98,7 @@ consideration the statement offers, or a team quality rule) · **context**
 | REQ-33 | Submission guide · https://www.spaceappschallenge.org/resources/project-submission-guide/ (Use of Super Intelligence) |
 | REQ-34 | Judging guide · https://www.spaceappschallenge.org/resources/judging-awards-guide/ |
 | REQ-35 | Medellín event schedule · SG: Submission guide · https://www.spaceappschallenge.org/resources/project-submission-guide/ (local judging times may differ) |
+| REQ-36 | Our design · @vladmandic/face-api README (distance below 0.6 is a match) · team/eng2/notes/face-login-proposal.md |
 
 ## Judging criteria
 
