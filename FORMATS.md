@@ -291,11 +291,13 @@ region maps to a possible condition, are open questions.
 
 ## 4. How content is checked
 
-The team runs `python scripts/check_content.py` before every merge (the script
-does not exist yet; another card writes it). A merge is blocked when it reports
-any of these failures:
+The team runs `python scripts/check_content.py` before every merge. A merge is
+blocked when it reports any of these failures:
 
-- **Missing file**: a required file listed in section 1 is absent.
+- **Missing file**: while the team fills `config/`, a missing required file
+  listed in section 1 is a warning. `python scripts/check_content.py --strict`
+  is the check for the final submission; under `--strict` a missing file
+  blocks.
 - **Unknown id**: an `id` in a file is not in the section 2 table, or an
   `indicator_id` / `condition_id` / `body_region_id` does not exist in its
   owning file.

@@ -158,6 +158,22 @@ class ContentCheckTest(unittest.TestCase):
         )
         self.assert_error(files, "value must be a number")
 
+    def test_is_number_rejects_non_finite(self):
+        for bad in ("nan", "inf", "-inf", "NaN", "Infinity", "-Infinity", "1e400"):
+            with self.subTest(bad=bad):
+                self.assertFalse(check_content.is_number(bad))
+        for good in ("0", "1", "-2.5", "1e3", "1e-3"):
+            with self.subTest(good=good):
+                self.assertTrue(check_content.is_number(good))
+
+    def test_non_finite_value_is_error(self):
+        files = dict(VALID)
+        files["config/data/demo_data.csv"] = (
+            "person_id,indicator_id,value,unit,mission_day,time\n"
+            "demo_astronaut_1,example_indicator,nan,example_unit,1,13:30\n"
+        )
+        self.assert_error(files, "value must be a number")
+
     def test_bad_direction(self):
         files = dict(VALID)
         files["config/data/indicators.csv"] = (
@@ -237,6 +253,15 @@ class ContentCheckTest(unittest.TestCase):
             "config/content/example_indicator.md"
         ].replace("### example_level\n", "### wrong_level\n")
         self.assert_error(files, "not an attention_level for indicator 'example_indicator'")
+
+    def test_missing_attention_level_heading(self):
+        files = dict(VALID)
+        files["config/rules/attention.csv"] = (
+            "indicator_id,side,threshold,attention_level,source\n"
+            "example_indicator,above,100,example_level,Assumption\n"
+            "example_indicator,below,0,low_level,Assumption\n"
+        )
+        self.assert_error(files, "no '### low_level' heading")
 
     def test_unsourced_paragraph(self):
         files = dict(VALID)

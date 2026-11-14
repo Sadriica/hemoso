@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import math
 import re
 import sys
 from collections import Counter
@@ -72,8 +73,7 @@ class Reporter:
 
 def is_number(value: str) -> bool:
     try:
-        float(value)
-        return True
+        return math.isfinite(float(value))
     except ValueError:
         return False
 
@@ -419,6 +419,8 @@ def check_content_file(rep: Reporter, path: Path, rel: str, stem: str, state: di
         for h in subheads:
             if h not in levels:
                 rep.error(f"{rel}: '### {h}' is not an attention_level for indicator '{stem}'")
+        for level in sorted(levels - set(subheads)):
+            rep.error(f"{rel}: no '### {level}' heading for attention_level of indicator '{stem}'")
     else:
         rep.warn(f"{rel}: cannot check attention levels, rules/attention.csv is missing")
 
