@@ -12,7 +12,8 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 
 
 def config_dir() -> Path:
-    return Path(os.environ.get("CONFIG_DIR", REPO_ROOT / "config"))
+    value = os.environ.get("CONFIG_DIR", "")
+    return Path(value) if value else REPO_ROOT / "config"
 
 
 def load_indicators() -> dict[str, str]:
@@ -20,7 +21,7 @@ def load_indicators() -> dict[str, str]:
     path = config_dir() / "data" / "indicators.csv"
     if not path.exists():
         return {}
-    with path.open(newline="") as handle:
+    with path.open(newline="", encoding="utf-8-sig") as handle:
         return {row["id"]: row["unit"] for row in csv.DictReader(handle)}
 
 

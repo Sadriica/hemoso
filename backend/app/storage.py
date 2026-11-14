@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import sqlite3
+import threading
 from pathlib import Path
 from typing import Protocol
 
@@ -50,41 +51,45 @@ class SqliteStorage:
     def __init__(self, path: str | Path) -> None:
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        self._conn = sqlite3.connect(self.path)
-        self._conn.execute(
-            "CREATE TABLE IF NOT EXISTS entries ("
-            "person_id TEXT NOT NULL,"
-            "indicator_id TEXT NOT NULL,"
-            "value REAL NOT NULL,"
-            "unit TEXT NOT NULL,"
-            "mission_day INTEGER NOT NULL,"
-            "time TEXT NOT NULL)"
-        )
-        self._conn.commit()
+        self._lock = threading.Lock()
+        self._conn = sqlite3.connect(self.path, check_same_thread=False)
+        with self._lock:
+            self._conn.execute(
+                "CREATE TABLE IF NOT EXISTS entries ("
+                "person_id TEXT NOT NULL,"
+                "indicator_id TEXT NOT NULL,"
+                "value REAL NOT NULL,"
+                "unit TEXT NOT NULL,"
+                "mission_day INTEGER NOT NULL,"
+                "time TEXT NOT NULL)"
+            )
+            self._conn.commit()
 
     def add(self, entry: Entry) -> Entry:
-        self._conn.execute(
-            "INSERT INTO entries (person_id, indicator_id, value, unit, mission_day, time)"
-            " VALUES (?, ?, ?, ?, ?, ?)",
-            (
-                entry.person_id,
-                entry.indicator_id,
-                entry.value,
-                entry.unit,
-                entry.mission_day,
-                entry.time,
-            ),
-        )
-        self._conn.commit()
+        with self._lock:
+            self._conn.execute(
+                "INSERT INTO entries (person_id, indicator_id, value, unit, mission_day, time)"
+                " VALUES (?, ?, ?, ?, ?, ?)",
+                (
+                    entry.person_id,
+                    entry.indicator_id,
+                    entry.value,
+                    entry.unit,
+                    entry.mission_day,
+                    entry.time,
+                ),
+            )
+            self._conn.commit()
         return entry
 
     def history(self, person_id: str, indicator_id: str) -> list[Entry]:
-        rows = self._conn.execute(
-            "SELECT person_id, indicator_id, value, unit, mission_day, time"
-            " FROM entries WHERE person_id = ? AND indicator_id = ?"
-            " ORDER BY mission_day, time",
-            (person_id, indicator_id),
-        ).fetchall()
+        with self._lock:
+            rows = self._conn.execute(
+                "SELECT person_id, indicator_id, value, unit, mission_day, time"
+                " FROM entries WHERE person_id = ? AND indicator_id = ?"
+                " ORDER BY mission_day, time",
+                (person_id, indicator_id),
+            ).fetchall()
         return [Entry(**dict(zip(_COLUMNS, row))) for row in rows]
 
 
@@ -130,27 +135,39 @@ class SupabaseStorage:
 
 _storage: Storage | None = None
 _storage_kind: str | None = None
+_storage_lock = threading.Lock()
+
+
+def _env(name: str, default: str) -> str:
+    """The env var's value, or default when it is unset or empty."""
+    value = os.environ.get(name, "")
+    return value if value else default
 
 
 def _build(kind: str) -> Storage:
     if kind == "memory":
         return MemoryStorage()
     if kind == "sqlite":
-        return SqliteStorage(os.environ.get("SQLITE_PATH", BACKEND_DIR / "entries.db"))
+        return SqliteStorage(_env("SQLITE_PATH", str(BACKEND_DIR / "entries.db")))
     if kind == "supabase":
-        return SupabaseStorage(os.environ["SUPABASE_URL"], os.environ["SUPABASE_KEY"])
+        url = _env("SUPABASE_URL", "")
+        key = _env("SUPABASE_KEY", "")
+        if not url or not key:
+            raise ValueError("SUPABASE_URL and SUPABASE_KEY are required")
+        return SupabaseStorage(url, key)
     raise ValueError(f"unknown STORAGE {kind!r}")
 
 
 def get_storage() -> Storage:
     """The storage for the running app, from the STORAGE env var (sqlite default)."""
     global _storage, _storage_kind
-    kind = os.environ.get("STORAGE", "sqlite")
-    if _storage is not None and _storage_kind == kind:
+    kind = _env("STORAGE", "sqlite")
+    with _storage_lock:
+        if _storage is not None and _storage_kind == kind:
+            return _storage
+        _storage = _build(kind)
+        _storage_kind = kind
         return _storage
-    _storage = _build(kind)
-    _storage_kind = kind
-    return _storage
 
 
 def add_entry(entry: Entry) -> Entry:

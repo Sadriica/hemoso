@@ -73,3 +73,28 @@ def test_missing_indicators_file_accepts_any(client, tmp_path, monkeypatch):
     monkeypatch.setenv("CONFIG_DIR", str(tmp_path))
     response = client.post("/entries", json={**ENTRY, "indicator_id": "anything_goes"})
     assert response.status_code == 201
+
+
+def test_indicators_csv_with_bom(client, tmp_path, monkeypatch):
+    data = tmp_path / "data"
+    data.mkdir()
+    (data / "indicators.csv").write_text("\ufeff" + INDICATORS_CSV, encoding="utf-8")
+    monkeypatch.setenv("CONFIG_DIR", str(tmp_path))
+
+    response = client.post("/entries", json=ENTRY)
+    assert response.status_code == 201
+
+
+def test_cors_preflight(client):
+    response = client.options(
+        "/entries",
+        headers={
+            "Origin": "http://localhost:5173",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "content-type",
+        },
+    )
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == "http://localhost:5173"
+    assert "POST" in response.headers["access-control-allow-methods"]
+    assert "content-type" in response.headers["access-control-allow-headers"].lower()
