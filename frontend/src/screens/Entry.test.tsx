@@ -158,7 +158,7 @@ describe('Entry', () => {
     await user.keyboard('{Enter}')
 
     expect(screen.getByRole('status')).toHaveTextContent(
-      'Saved. Waiting to be sent.',
+      'Saved on this device.',
     )
     const saved = store.list()
     expect(saved).toHaveLength(seedEntries.length + 1)
@@ -175,6 +175,27 @@ describe('Entry', () => {
 
     expect((screen.getByLabelText('Value') as HTMLInputElement).value).toBe('')
     expect(screen.getByLabelText('Mission day')).toHaveValue(10)
+  })
+
+  it('promises the send only when a server is set up', async () => {
+    const store = new LocalEntryStore({ seedEntries })
+    render(
+      <Entry
+        store={store}
+        personId="demo_astronaut_1"
+        indicators={[heartRate]}
+        serverConfigured
+        entries={seedEntries}
+      />,
+    )
+
+    typeValue('57')
+    await submit()
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Saved. Waiting to be sent.',
+    )
+    expect(store.pending()).toHaveLength(1)
   })
 
   it.each([sleepQuality, mood])(
@@ -244,7 +265,7 @@ describe('Entry', () => {
     await user.keyboard('{Enter}')
 
     expect(screen.getByRole('status')).toHaveTextContent(
-      'Saved. Waiting to be sent.',
+      'Saved on this device.',
     )
     expect(store.list()[seedEntries.length]).toMatchObject({
       personId: 'demo_astronaut_1',

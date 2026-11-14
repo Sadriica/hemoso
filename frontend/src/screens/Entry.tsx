@@ -30,11 +30,15 @@ export default function Entry({
   personId,
   indicators,
   entries,
+  serverConfigured = false,
 }: {
   store: EntryStore
   personId: string
   indicators: Indicator[]
   entries: EntryRecord[]
+  // True only when a server is set up. Without one nothing is sent, so the
+  // saved message does not promise a send.
+  serverConfigured?: boolean
 }) {
   // Day and time belong to the moment the form opens for this person; the
   // screen is keyed by person in App, so they are read once.
@@ -58,6 +62,7 @@ export default function Entry({
       personId={personId}
       indicators={indicators}
       defaults={defaults}
+      serverConfigured={serverConfigured}
     />
   )
 }
@@ -67,11 +72,13 @@ function EntryForm({
   personId,
   indicators,
   defaults,
+  serverConfigured,
 }: {
   store: EntryStore
   personId: string
   indicators: Indicator[]
   defaults: MissionClock
+  serverConfigured: boolean
 }) {
   const [indicatorId, setIndicatorId] = useState(indicators[0].id)
   const [valueText, setValueText] = useState('')
@@ -150,7 +157,7 @@ function EntryForm({
       missionDay: draft.missionDay,
       time: draft.time,
     })
-    setStatus(strings.entry.saved)
+    setStatus(serverConfigured ? strings.entry.saved : strings.entry.savedOnDevice)
     // The day and the time usually repeat; only the reading changes.
     setValueText('')
   }

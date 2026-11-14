@@ -140,6 +140,8 @@ describe('LocalEntryStore', () => {
     expect(stored).toMatchObject({
       version: 2,
       pendingIds: [],
+      conflictIds: [],
+      rejectedIds: [],
       lastSent: { missionDay: 2, time: '09:20' },
     })
   })
@@ -217,7 +219,12 @@ describe('LocalEntryStore', () => {
     const store = new LocalEntryStore({ storage: new MemoryStorage() })
     const first = store.getOutboxSnapshot()
     expect(store.getOutboxSnapshot()).toBe(first)
-    expect(first).toEqual({ pendingCount: 0, lastSent: null })
+    expect(first).toEqual({
+      pendingCount: 0,
+      conflictCount: 0,
+      rejectedCount: 0,
+      lastSent: null,
+    })
 
     const added = store.add(newEntry())
     const afterAdd = store.getOutboxSnapshot()
@@ -230,6 +237,8 @@ describe('LocalEntryStore', () => {
     expect(afterSent).not.toBe(afterAdd)
     expect(afterSent).toEqual({
       pendingCount: 0,
+      conflictCount: 0,
+      rejectedCount: 0,
       lastSent: { missionDay: 2, time: '09:20' },
     })
     expect(store.getOutboxSnapshot()).toBe(afterSent)
@@ -240,5 +249,78 @@ describe('LocalEntryStore', () => {
     const before = store.getOutboxSnapshot()
     store.markSent(['unknown-id'], { missionDay: 2, time: '09:20' })
     expect(store.getOutboxSnapshot()).toBe(before)
+  })
+
+  it('takes a conflict out of the outbox and keeps the entry', () => {
+    const store = new LocalEntryStore({ storage: new MemoryStorage() })
+    const added = store.add(newEntry())
+
+    store.markConflict(added.id)
+
+    expect(store.pending()).toEqual([])
+    expect(store.list().map((item) => item.id)).toEqual([added.id])
+    expect(store.getOutboxSnapshot()).toEqual({
+      pendingCount: 0,
+      conflictCount: 1,
+      rejectedCount: 0,
+      lastSent: null,
+    })
+    expect(store.lastSent()).toBeNull()
+  })
+
+  it('takes a rejected entry out of the outbox and keeps the entry', () => {
+    const store = new LocalEntryStore({ storage: new MemoryStorage() })
+    const added = store.add(newEntry())
+
+    store.markRejected(added.id)
+
+    expect(store.pending()).toEqual([])
+    expect(store.list().map((item) => item.id)).toEqual([added.id])
+    expect(store.getOutboxSnapshot()).toEqual({
+      pendingCount: 0,
+      conflictCount: 0,
+      rejectedCount: 1,
+      lastSent: null,
+    })
+  })
+
+  it('ignores a conflict or a rejection for an id that is not waiting', () => {
+    const store = new LocalEntryStore({ storage: new MemoryStorage() })
+    const before = store.getOutboxSnapshot()
+
+    store.markConflict('unknown-id')
+    store.markRejected('unknown-id')
+
+    expect(store.getOutboxSnapshot()).toBe(before)
+  })
+
+  it('remembers conflicts and rejected ids across two instances', () => {
+    const storage = new MemoryStorage()
+    const first = new LocalEntryStore({ storage })
+    const conflict = first.add(newEntry())
+    const rejected = first.add(newEntry())
+    first.markConflict(conflict.id)
+    first.markRejected(rejected.id)
+
+    const second = new LocalEntryStore({ storage })
+    expect(second.pending()).toEqual([])
+    expect(second.getOutboxSnapshot()).toEqual({
+      pendingCount: 0,
+      conflictCount: 1,
+      rejectedCount: 1,
+      lastSent: null,
+    })
+  })
+
+  it('keeps the last sent time and an empty outbox across two instances', () => {
+    const storage = new MemoryStorage()
+    const first = new LocalEntryStore({ storage })
+    const added = first.add(newEntry())
+    first.markSent([added.id], { missionDay: 2, time: '09:20' })
+
+    const second = new LocalEntryStore({ storage })
+    expect(second.pending()).toEqual([])
+    expect(second.lastSent()).toEqual({ missionDay: 2, time: '09:20' })
+    expect(second.wasReset()).toBe(false)
   })
 })

@@ -2,9 +2,9 @@ import { isClockTime, isMissionDay } from '../domain/clock'
 import type { MissionClock } from '../domain/clock'
 import type { Entry } from '../domain/types'
 
-// The shape of the one localStorage key: the entries, the outbox and the last
-// sent time (REQ-02, REQ-28). A payload written by another version, or one
-// whose rows break the rules, is not read.
+// The shape of the one localStorage key: the entries, the outbox, the ids the
+// server did not accept and the last sent time (REQ-02, REQ-28). A payload
+// written by another version, or one whose rows break the rules, is not read.
 
 export const STORAGE_KEY = 'hemoso:v2'
 const STORAGE_VERSION = 2
@@ -13,6 +13,13 @@ export interface StoredState {
   version: number
   entries: Entry[]
   pendingIds: string[]
+  // Ids the server answered with 409: another value is already stored for the
+  // same person, indicator, day and time. They leave the outbox for good,
+  // because sending them again would answer 409 again.
+  conflictIds: string[]
+  // Ids the server answered with 422: the row itself is wrong, so a retry
+  // cannot fix it. They stay in the entries, out of the outbox.
+  rejectedIds: string[]
   lastSent: MissionClock | null
 }
 
@@ -22,6 +29,8 @@ export function seedState(entries: Entry[]): StoredState {
     version: STORAGE_VERSION,
     entries: [...entries],
     pendingIds: [],
+    conflictIds: [],
+    rejectedIds: [],
     lastSent: null,
   }
 }
@@ -40,12 +49,21 @@ export function parseStoredState(raw: string): StoredState | null {
   if (entries === null) return null
   const pendingIds = readIds(candidate.pendingIds)
   if (pendingIds === null) return null
+  // A payload written before the server answers were tracked has neither list.
+  // It is read with empty lists instead of being thrown away, so a save kept
+  // on this device survives this change.
+  const conflictIds = readIdsMissingAsEmpty(candidate.conflictIds)
+  if (conflictIds === null) return null
+  const rejectedIds = readIdsMissingAsEmpty(candidate.rejectedIds)
+  if (rejectedIds === null) return null
   const lastSent = candidate.lastSent
   if (lastSent !== null && !isMissionClock(lastSent)) return null
   return {
     version: STORAGE_VERSION,
     entries,
     pendingIds,
+    conflictIds,
+    rejectedIds,
     lastSent:
       lastSent === null
         ? null
@@ -71,6 +89,10 @@ function readIds(value: unknown): string[] | null {
     ids.push(item)
   }
   return ids
+}
+
+function readIdsMissingAsEmpty(value: unknown): string[] | null {
+  return value === undefined ? [] : readIds(value)
 }
 
 function isEntry(value: unknown): value is Entry {

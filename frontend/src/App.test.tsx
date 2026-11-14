@@ -1,7 +1,16 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
+import { STORAGE_KEY } from './data/storedState'
+
+beforeEach(() => {
+  localStorage.clear()
+})
+
+afterEach(() => {
+  vi.restoreAllMocks()
+})
 
 describe('App', () => {
   it('renders the tabs pattern with a selected Home tab and its panel', () => {
@@ -46,6 +55,38 @@ describe('App', () => {
     ).toBeInTheDocument()
   })
 
+  it('shows the sync status in the header with no server set up', () => {
+    render(<App />)
+    expect(screen.getByText('Nothing waiting to be sent')).toBeInTheDocument()
+    expect(screen.getByText('Not sent yet')).toBeInTheDocument()
+    const send = screen.getByRole('button', { name: 'Send now' })
+    expect(send).toBeDisabled()
+    expect(send).toHaveAccessibleDescription('No server set up for this demo')
+  })
+
+  it('warns when the browser does not save the entries on this device', () => {
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('storage is blocked')
+    })
+    render(<App />)
+    expect(
+      screen.getByText('Entries are not saved on this device.'),
+    ).toBeInTheDocument()
+  })
+
+  it('warns when stored entries could not be read and were replaced', () => {
+    localStorage.setItem(STORAGE_KEY, '{"version":2,"entries":[]')
+    render(<App />)
+    expect(
+      screen.getByText(
+        'Saved entries could not be read and were replaced by the demo data.',
+      ),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByText('Entries are not saved on this device.'),
+    ).toBeNull()
+  })
+
   it('saves an entry on the Entry tab and shows it on Home', async () => {
     const user = userEvent.setup()
     render(<App />)
@@ -73,7 +114,7 @@ describe('App', () => {
     save.focus()
     await user.keyboard('{Enter}')
     expect(screen.getByRole('status')).toHaveTextContent(
-      'Saved. Waiting to be sent.',
+      'Saved on this device.',
     )
 
     screen.getByRole('tab', { name: 'Home' }).focus()
