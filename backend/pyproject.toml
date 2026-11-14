@@ -1,0 +1,28 @@
+[project]
+name = "hemoso-backend"
+version = "0.1.0"
+description = "HeMoSo backend: stores each astronaut's entries and returns their history."
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi==0.162.7",
+    "pydantic==2.14.3",
+    "httpx==0.28.1",
+    "uvicorn==0.54.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest==9.2.0",
+    "ruff==0.17.5",
+]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+line-length = 88
+target-version = "py313"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
