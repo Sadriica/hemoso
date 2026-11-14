@@ -8,13 +8,16 @@
 ## Current status
 _Update before every checkpoint and at every shift change._
 
-- **Time:** 
-- **Done:** 
-- **In progress:** 
-- **Next:** 
+- **Time:** Sat 16:15
+- **Done:** F-bio1-01 with the question 2 source for the five proposed indicators (`team/bio1/notes/question-2-evidence.md`); the REQ-26 text shape and the first texts (`team/bio1/notes/status-texts.md`)
+- **In progress:** waiting for `config/data/indicators.csv` to start the content files
+- **Next:** pilot `config/content/resting_heart_rate.md` in B3, then the other four
 
 ## Blockers
-- None
+- The five ids and units are not published yet (Phys, REQ-03); the content files
+  are named after them.
+- `config/rules/attention.csv` (Bio 2, REQ-05) is needed for the `###
+  <attention_level>` headings.
 
 ## Shift
 - Sleep shift: _(A: 1:00–4:30 · B: 4:30–8:00)_
