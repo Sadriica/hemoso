@@ -9,7 +9,8 @@
 
 Each of the five indicators HeMoSo tracks has a NASA source that names the
 in-flight problem it is meant to catch, so `## Why it matters` is written with a
-link, and only the body-temperature text carries one Assumption.
+link and no Assumption. Body temperature also has a stronger reason, the space
+fever, in F-bio1-02.
 
 ## Evidence
 
@@ -28,15 +29,18 @@ link, and only the body-temperature text carries one Assumption.
 ## Confidence
 
 High, because every row is a NASA page opened on Sat 14 and quoted in its own
-words; the one sentence those pages do not support is listed in Limits and is
-marked Assumption in the content.
+words. Body temperature has a second, stronger source in F-bio1-02 (ESA and one
+peer-reviewed study), and no sentence in `## Why it matters` needs an
+Assumption.
 
 ## What it changes in the solution
 
 - `config/content/resting_heart_rate.md`, `blood_pressure.md`, `sleep_hours.md`
   and `mood.md`: `## Why it matters` written with a link, no Assumption.
-- `config/content/body_temperature.md`: the reason is sourced; the sentence "a
-  fever is often the first sign of an infection" is marked `Assumption`.
+- `config/content/body_temperature.md`: the reason is the space fever in
+  F-bio1-02 (+1 °C at rest, sourced). The sentence "a fever is often the first
+  sign of an infection" moves to the advice in `## Status and next steps`, where
+  it is marked `Assumption`.
 - The indicator list can be closed on question 2 without guessing: an indicator
   that fails this test leaves the list, with its row in `docs/DECISIONS.md`.
 
@@ -49,8 +53,8 @@ marked Assumption in the content.
   Phys's row in `config/data/indicators.csv` (REQ-03).
 - Crews sleeping 6 h per night is what the sleep page reports, not a target and
   not a threshold.
-- Body temperature: the link "a fever shows an infection" is general clinical
-  practice, not a sentence from the immune pages. One Assumption, for Bio 2 to
-  review.
+- Body temperature: the NASA immune pages support "infections happen in orbit",
+  not a temperature threshold. The 1 °C rise is ESA and one peer-reviewed study
+  (F-bio1-02), so the source for that number is not NASA.
 - Blood glucose and bone density: no page read gives reason and in-flight method
   together. Neither is in the five.
