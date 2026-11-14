@@ -8,14 +8,14 @@
 ## Current status
 _Update before every checkpoint and at every shift change._
 
-- **Time:** Sat 14, 12:15
-- **Done:** branch `phys` created and pushed; `team/phys/notes/measurement-in-flight.md`; `team/phys/notes/nasa-data-draft.md`; `docs/findings/phys-01-baseline-over-fixed-ranges.md`; `team/phys/notes/indicators-proposal.md` (three tiers, comparison bases, identifiers, body view by system)
+- **Time:** Sat 14, 15:35
+- **Done:** branch `phys` created and pushed; `team/phys/notes/measurement-in-flight.md`; `team/phys/notes/nasa-data-draft.md`; `docs/findings/phys-01-baseline-over-fixed-ranges.md`; `team/phys/notes/indicators-proposal.md`; `config/data/indicators.csv` with 9 indicators, each with instrument, hazards and source (check_content: 0 errors)
 - **In progress:** none
-- **Next:** `docs/sources.md` with the verified links; `docs/nasa_data.md` once T-06 closes; `config/data/` files once FORMATS.md names them
+- **Next:** `config/data/demo_ranges.csv` and `demo_data.csv` (REQ-29); `docs/nasa_data.md` and `docs/sources.md`; the review of the solution paragraph
 
 ## Blockers
-- `FORMATS.md` is still empty, so no `config/` file can be written yet.
-- `scripts/precheck.py` fails on a first line that starts with a space (`.strip()` in `run()`); reported to Eng 1. Workaround: `git add` before running it.
+- `config/data/indicators.csv` uses 9 ids that are not in the section 2 table of `FORMATS.md` yet. Eng 1 has to add them there, because that file is his.
+- `scripts/precheck.py` fails after any merge into a personal branch: it diffs against the upstream and counts the files that came from `main` as yours. Fix: `origin/main...HEAD` instead of `upstream..HEAD`.
 
 ## Shift
 - Sleep shift: _(A: 1:00–4:30 · B: 4:30–8:00)_

@@ -4,6 +4,7 @@ One entry per decision. Newest first.
 
 | Time | What | Why | Source | AI used |
 | --- | --- | --- | --- | --- |
+| Sat 14, 15:35 | Filled `config/data/indicators.csv` with 9 indicators | The team's idea lists six; saturation and sleep quality come free from the same instruments, and fatigue, bone and radiation are explained instead of tracked because no in-flight measurement exists | `FORMATS.md` section 3, CSA Bio-Monitor, NASA wearable tech, NASA standard measures, OCHMO-TB-030 | Yes: written with the agent, sources opened |
 | Sat 14, 12:15 | Wrote `team/phys/notes/indicators-proposal.md` | The team idea needs an indicator list that can be defended; three tiers and three comparison bases keep what is measurable separate from what is explained | `docs/findings/phys-01`, `docs/CHALLENGE.md`, FORMATS.md section 2 | Yes: drafted with the agent, sources opened |
 | Sat 14, 12:10 | Wrote `docs/findings/phys-01-baseline-over-fixed-ranges.md` | The original proposal compared every value with a fixed range; no NASA source gives in-flight cut-offs, so the comparison must be with the crew member's own baseline | NASA-STD-3001, HRP risks, cardio evidence report, WHO | Yes: drafted with the agent, WHO page opened and read |
 | Sat 14, 11:57 | Updated `team/phys/README.md` with name, status and blockers | Checkpoint 1 at 12:00; the file must show where the work stands | `AGENTS.md` | Yes: the agent wrote the file from my notes |
