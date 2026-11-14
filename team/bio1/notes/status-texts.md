@@ -91,10 +91,14 @@ which threshold the row uses. They must match the rule, not be invented.
   where `attention.csv` says `crew`.
 - The three paragraphs never repeat the number in the threshold table on screen;
   the app already shows it.
+- For body temperature, "your usual range" is the in-flight range: it is about
+  1 °C above the Earth value (F-bio1-02). Never compare it with a fixed 37 °C.
 
 ## 6. Pending
 
 - [ ] Level names and `notify` values: `config/rules/attention.csv` (Bio 2).
+- [ ] Body temperature thresholds set against the in-flight baseline, not 37 °C
+  (Bio 2, F-bio1-02).
 - [ ] Indicator ids and units: `config/data/indicators.csv` (Phys).
 - [ ] Copy each block into `config/content/<indicator_id>.md` once the ids exist.
 - [ ] Bio 2 reviews for plain language (REQ-08) and for unsourced statements
