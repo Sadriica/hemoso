@@ -38,7 +38,7 @@ new ones without updating this table and the owner named in it.
 
 | id | Name | Unit | Direction | Notes |
 | --- | --- | --- | --- | --- |
-| `<indicator_id>` | to be filled by Phys (REQ-03) | to be filled by Phys (REQ-03) | `higher` or `lower` (which direction is worse) | One row per indicator; example id `example_indicator`. The team has not chosen the indicators yet. |
+| `<indicator_id>` | to be filled by Phys (REQ-03) | to be filled by Phys (REQ-03) | `higher`, `lower` or `both` (which direction is worse; `both` when either side matters) | One row per indicator; example id `example_indicator`. The team has not chosen the indicators yet. |
 | `<condition_id>` | to be filled by Bio 2 (REQ-06) | — (a condition has a probability, not a unit) | — | One row per possible condition; example id `example_condition`. |
 | `<body_region_id>` | to be filled by the owner (open question) | — | — | One row per selectable body region; example id `example_body_region`. |
 
@@ -63,8 +63,10 @@ Columns in order: `id`, `name`, `unit`, `direction`, `measured_on_board`,
 
 - `id`: the indicator id from section 2.
 - `name`: plain name, sentence case.
-- `unit`: the SI unit symbol, from `STANDARDS.md` §3.
-- `direction`: `higher` or `lower` — which side of the range is worse.
+- `unit`: the symbol from `STANDARDS.md` §3 when one applies; otherwise the
+  unit Phys writes in the section 2 table for this `id`.
+- `direction`: `higher`, `lower` or `both` — which side of the range is worse;
+  `both` for indicators where either side matters.
 - `measured_on_board`: the instrument or method used in flight, in a few words.
 - `hazards`: the hazards from REQ-07 that affect this indicator, separated by
   spaces. Use these names: `radiation`, `isolation_and_confinement`,
@@ -75,12 +77,13 @@ Example:
 
 ```csv
 id,name,unit,direction,measured_on_board,hazards,source
-example_indicator,Example indicator,example_unit,higher,example measurement method,example_hazard,Assumption
+example_indicator,Example indicator,example_unit,higher,example measurement method,isolation_and_confinement,Assumption
 ```
 
-Valid when: one row per `id`, no duplicate `id`; `id` in section 2; `unit` a
-symbol from `STANDARDS.md` §3; `direction` is `higher` or `lower`; `source` is
-a link or `Assumption`. This file holds no thresholds or medical values.
+Valid when: one row per `id`, no duplicate `id`; `id` in section 2; `unit`
+matches the unit in the section 2 table for that `id`; `direction` is `higher`,
+`lower` or `both`; `source` is a link or `Assumption`. This file holds no
+thresholds or medical values.
 
 ### `config/data/demo_data.csv`
 
@@ -88,7 +91,8 @@ Purpose: the synthetic measurements the demo shows, one row per entry. It uses
 the same columns the app stores for a real entry (REQ-27), so the history view
 works without real data (REQ-29).
 
-Columns in order: `person_id`, `indicator_id`, `value`, `unit`, `mission_day`.
+Columns in order: `person_id`, `indicator_id`, `value`, `unit`, `mission_day`,
+`time`.
 
 - `person_id`: a lowercase `snake_case` id for a synthetic astronaut; the demo
   uses `demo_astronaut_1`.
@@ -96,19 +100,20 @@ Columns in order: `person_id`, `indicator_id`, `value`, `unit`, `mission_day`.
 - `value`: a number.
 - `unit`: the same unit as the indicator's row in `data/indicators.csv`.
 - `mission_day`: an integer; "day N" per `STANDARDS.md` §4.
+- `time`: the 24-hour clock time `HH:MM`, per `STANDARDS.md` §4.
 
 Example:
 
 ```csv
-person_id,indicator_id,value,unit,mission_day
-demo_astronaut_1,example_indicator,1,example_unit,1
+person_id,indicator_id,value,unit,mission_day,time
+demo_astronaut_1,example_indicator,1,example_unit,1,13:30
 ```
 
 Valid when: `indicator_id` exists in `data/indicators.csv`; `unit` matches that
 indicator's unit; `value` is inside the range for that indicator in
-`data/demo_ranges.csv`; `mission_day` is a positive integer. These values are
-synthetic, so no `source` column is needed here — the ranges are sourced in
-`data/demo_ranges.csv`.
+`data/demo_ranges.csv`; `mission_day` is a positive integer; `time` is 24-hour
+`HH:MM`. These values are synthetic, so no `source` column is needed here — the
+ranges are sourced in `data/demo_ranges.csv`.
 
 ### `config/data/demo_ranges.csv`
 
@@ -137,11 +142,11 @@ Valid when: `indicator_id` exists in `data/indicators.csv`; `min` is less than
 Purpose: when a result needs attention, per indicator (REQ-05). A range is two
 rows — one `below` bound and one `above` bound.
 
-Columns in order: `indicator_id`, `direction`, `threshold`,
+Columns in order: `indicator_id`, `side`, `threshold`,
 `attention_level`, `source`.
 
 - `indicator_id`: an id from `data/indicators.csv`.
-- `direction`: `below` or `above` — which side of `threshold` triggers this row.
+- `side`: `below` or `above` — which side of `threshold` triggers this row.
 - `threshold`: a number; its unit is the indicator's unit.
 - `attention_level`: the name of this state, filled by Bio 2; the same names
   are the sub-headings in `content/<indicator_id>.md`.
@@ -150,11 +155,11 @@ Columns in order: `indicator_id`, `direction`, `threshold`,
 Example:
 
 ```csv
-indicator_id,direction,threshold,attention_level,source
+indicator_id,side,threshold,attention_level,source
 example_indicator,above,100,example_level,Assumption
 ```
 
-Valid when: `indicator_id` exists in `data/indicators.csv`; `direction` is
+Valid when: `indicator_id` exists in `data/indicators.csv`; `side` is
 `below` or `above`; `threshold` is a number; `source` is a link or `Assumption`.
 The threshold here is a placeholder — the real value and its source are filled
 by Bio 2 (REQ-05).
@@ -163,27 +168,29 @@ by Bio 2 (REQ-05).
 
 Purpose: what the astronaut may have, as a probability and never a certainty
 (REQ-06). The app always adds "your CMO or flight surgeon confirms"
-(`STANDARDS.md` §5); it is not stored per row.
+(`STANDARDS.md` §5); it is not stored per row. The columns for the probability
+are added when the team answers the open question on how it is computed; the
+probability must come from the person's records, so a fixed value per row is
+not enough.
 
-Columns in order: `condition_id`, `name`, `based_on`, `probability`, `source`.
+Columns in order: `condition_id`, `name`, `based_on`, `source`.
 
 - `condition_id`: the id from section 2.
 - `name`: plain name, sentence case.
 - `based_on`: the indicator or symptom ids this rests on, separated by spaces.
-- `probability`: an integer percentage from 0 to 100. How it is computed is an
-  open question (see below); this column holds the number, not the method.
 - `source`: a link or `Assumption`.
 
 Example:
 
 ```csv
-condition_id,name,based_on,probability,source
-example_condition,Example condition,example_indicator,50 %,Assumption
+condition_id,name,based_on,source
+example_condition,Example condition,example_indicator,Assumption
 ```
 
 Valid when: `condition_id` in section 2; every id in `based_on` exists in
-`data/indicators.csv`; `probability` is an integer from 0 to 100; `source` is
-a link or `Assumption`. The `50 %` above is a placeholder, not a real figure.
+`data/indicators.csv`; `source` is a link or `Assumption`. The probability
+columns are filled in when the team answers the open question on how the
+probability is computed.
 
 ### `config/content/<indicator_id>.md`
 
@@ -196,32 +203,48 @@ short sentences and plain words. One file per indicator, named after its id
 
 ## Why it matters
 
+## How spaceflight affects it
+
 ## Measurement steps
 
 ## Status and next steps
 
 ### <attention_level>
 
+## How to prevent problems
+
 ## Sources
 ```
 
-- `Why it matters`: why this indicator is needed (REQ-04 question 2), written
-  by Bio 1, with its sources.
+The five questions of the statement map to headings and files: question 1 (what
+is measured and how) — `data/indicators.csv`; question 2 (why it is needed) —
+`## Why it matters`; question 3 (how spaceflight affects it) — `## How
+spaceflight affects it`; question 4 (when a result needs attention) — `##
+Status and next steps` with `rules/attention.csv`; question 5 (how to prevent
+problems) — `## How to prevent problems` with `rules/conditions.csv`.
+
+- `Why it matters`: why this indicator is needed (question 2), written by
+  Bio 1, with its sources (REQ-04).
+- `How spaceflight affects it`: how the five hazards affect what is measured
+  (question 3, REQ-07).
 - `Measurement steps`: numbered steps, one action per sentence (REQ-08).
 - `Status and next steps`: one `### <attention_level>` sub-section per level in
-  `rules/attention.csv`; each holds the short status text and the next step the
-  astronaut reads (REQ-26).
-- `Sources`: the links from `STANDARDS.md` §6, one per line as `- <Title>: <link>`.
+  `rules/attention.csv` (question 4, REQ-05); each holds the short status text
+  and the next step the astronaut reads (REQ-26).
+- `How to prevent problems`: what the astronaut can do (question 5, REQ-06).
+- `Sources`: the links from `STANDARDS.md` §6, one per line as
+  `- <Title>: <link>`.
 
-The `id` links this file to the other answers: `data/indicators.csv` (question
-1 and 3), `rules/attention.csv` (question 4) and `rules/conditions.csv`
-(question 5). Example:
+Example:
 
 ```markdown
 # Example indicator
 
 ## Why it matters
 Example reason, filled by Bio 1 (REQ-04). Assumption.
+
+## How spaceflight affects it
+Example hazard effect, filled by Phys (REQ-07). Assumption.
 
 ## Measurement steps
 1. Example step one.
@@ -230,6 +253,9 @@ Example reason, filled by Bio 1 (REQ-04). Assumption.
 ## Status and next steps
 ### example_level
 Example status text and example next step. Assumption.
+
+## How to prevent problems
+Example guidance, filled by Bio 2 (REQ-06). Assumption.
 
 ## Sources
 - Example title: https://example.org
@@ -275,8 +301,10 @@ any of these failures:
   threshold or a probability has no `source`, or its `source` is neither a link
   nor the word `Assumption`.
 - **Malformed row**: wrong number of columns, an empty required cell, a
-  duplicate id, an invalid unit symbol, a non-numeric `value`, `threshold`,
-  `min`, `max` or `probability`, or a `mission_day` that is not a positive
+  duplicate id, a `unit` that does not match the section 2 table for its `id`,
+  a non-numeric `value`, `threshold`, `min` or `max`, a `side` that is not
+  `below` or `above`, a `direction` that is not `higher`, `lower` or `both`, a
+  `time` that is not 24-hour `HH:MM`, or a `mission_day` that is not a positive
   integer.
 
 ## Open questions for the team
