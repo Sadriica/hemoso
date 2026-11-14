@@ -25,6 +25,24 @@ Summary: 8 requirements, 0 ready to close, average 49 %. REQ-02 is complete on
 | REQ-31 | Demo video recorded with English subtitles and a public link | delivery | P0 | Juli (@julimejia) | B4 Sun 9-12 | Video of 30 s or less recorded from the app, English subtitles burned in, hosted outside Space Apps, link opens with no password, permission or registration | 0 % | — | Recording, subtitles, public link; hide "Content problems" first | #47, T-52, T-16 |
 | REQ-32 | Running app published at a public link | delivery | P0 | Juli (@julimejia) | B4 Sun 9-12 | The app opens at a public link in a private window with no login, on desktop and phone | 40 % | https://hemoso.vercel.app opens with no login | Serves the 12:00 build until `eng2` is on `main`; no sideways scroll at 320 px (sync row overflows today, fix running) | #48, T-50 |
 
+## Proposed, waiting for Wambi
+Not counted in the summary until Wambi gives it a number in
+`docs/requirements.md`. Proposal: `team/eng2/notes/face-login-proposal.md`.
+
+| ID | Requirement | Class | Priority | Owner (GitHub) | Block | Done when | Dev | Seen now | Missing | Cards |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| REQ-36 (proposed) | Sign in with the face, on the device only | optional | P2 | Juli (@julimejia) | B3 Sat 17-1 | A person can register their face once and then sign in by looking at the camera; matching runs in the browser with bundled models; no image or face data leaves the device; the person picker still works without a camera | 0 % | Proposal and cards written (16:45), not committed | Wambi's number and a `docs/DECISIONS.md` row; the REQ-14 exception below; T-58 after the H iterations | T-58, T-59 |
+
+Points to settle before T-58 starts:
+| Point | Why it matters | Who decides |
+| --- | --- | --- |
+| REQ-14 says "no real personal data in the repository or the app" | A face descriptor of a real team member is biometric personal data, even kept only in `localStorage`. REQ-14 needs a written exception: real data allowed only for this feature, on the device, deletable, never committed or sent | Wambi (REQ-14 owner) |
+| The descriptor stays in `localStorage` only | Never in the repository, the API, logs or the demo data; "Delete my face data" removes it | Juli (T-59) |
+| The demo uses an adult team member who agrees | REQ-22: no person under 18 in any image or clip | Bio 1 (REQ-22) |
+| A convenience picker, not a security control | A photo can fool it; the consent text and the README say so, so the pitch does not claim security | Juli, Bio 1 (pitch) |
+| `@vladmandic/face-api` 1.7.15 (MIT) is the last release, from 5 Feb 2025, and unpacks to 23.6 MB with TensorFlow.js | Load only when "Sign in with face" opens; offline sign-in needs the models cached (T-48), otherwise the picker is the fallback | Wambi (`docs/DECISIONS.md` row) |
+| P2 while P0 work is open | REQ-31 (0 %) and REQ-32 (40 %) are P0 and due Sunday morning | Juli |
+
 ## Blocked by other owners
 | Our ID | Waits on | State at 16:35 |
 | --- | --- | --- |
@@ -47,4 +65,5 @@ after the variable is set and the app is deployed again.
 ## Change log
 | Time | Change |
 | --- | --- |
+| 16:50 | Added REQ-36 (proposed): sign in with the face, with the points to settle; 3a1a6e5 committed this file |
 | 16:35 | File created from `frontend/sdd/progress.md`, in the column format of `docs/requirements.md` |
