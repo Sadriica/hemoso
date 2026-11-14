@@ -18,6 +18,20 @@ describe('parseIndicators', () => {
     expect(problems).toEqual([])
   })
 
+  it('reports an unknown hazard and drops it from the indicator', () => {
+    const problems: string[] = []
+    const indicators = parseIndicators(
+      'config/data/indicators.csv',
+      header +
+        'example_indicator,Example indicator,example_unit,higher,example measurement method,gravity_fields space_weather,Assumption\n',
+      problems,
+    )
+    expect(indicators[0].hazards).toEqual(['gravity_fields'])
+    expect(problems).toEqual([
+      "Indicator 'example_indicator' has unknown hazard 'space_weather'.",
+    ])
+  })
+
   it('reports an unknown direction and keeps the indicator', () => {
     const problems: string[] = []
     const indicators = parseIndicators(

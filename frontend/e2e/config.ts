@@ -9,6 +9,10 @@ export interface IndicatorRows {
   names: string[]
   // Unit of each indicator, by index.
   units: string[]
+  // How each indicator is measured on board, by index.
+  measuredOnBoard: string[]
+  // Hazard ids as the file writes them, by index.
+  hazards: string[][]
   // Index of the indicator measured on the 1 to 5 scale, or -1 when there is none.
   scaleIndex: number
 }
@@ -26,7 +30,17 @@ export function readIndicatorRows(): IndicatorRows {
   const data = rows.slice(1)
   const names = data.map((cells) => cells[1] ?? '')
   const units = data.map((cells) => cells[2] ?? '')
-  return { names, units, scaleIndex: units.indexOf(SCALE_UNIT) }
+  const measuredOnBoard = data.map((cells) => cells[4] ?? '')
+  const hazards = data.map((cells) =>
+    (cells[5] ?? '').split(/\s+/).filter(Boolean),
+  )
+  return {
+    names,
+    units,
+    measuredOnBoard,
+    hazards,
+    scaleIndex: units.indexOf(SCALE_UNIT),
+  }
 }
 
 // The same rule as src/content/csv.ts: a quoted cell may hold a comma.

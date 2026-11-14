@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import Home from './Home'
@@ -157,14 +157,129 @@ describe('Home', () => {
     expect(screen.getByText('Tell the CMO.')).toBeInTheDocument()
   })
 
-  it('opens the sources disclosure by keyboard and shows links and Assumption', async () => {
+  it('keeps one disclosure per card and shows the sources inside it', async () => {
     const user = userEvent.setup()
     renderHome(data)
-    const toggle = screen.getByRole('button', { name: 'Sources' })
+
+    // The card has one disclosure: Details owns the sources as well.
+    expect(screen.getAllByRole('button')).toHaveLength(1)
+    expect(screen.queryByRole('button', { name: 'Sources' })).toBeNull()
+
+    const toggle = screen.getByRole('button', { name: 'Details' })
     toggle.focus()
     await user.keyboard('{Enter}')
     expect(screen.getByRole('link', { name: 'Example title' })).toBeInTheDocument()
     expect(screen.getByText('Assumption')).toBeInTheDocument()
+  })
+
+  it('opens Details by keyboard and shows the content sections', async () => {
+    const user = userEvent.setup()
+    renderHome(data)
+    const toggle = screen.getByRole('button', { name: 'Details' })
+    toggle.focus()
+    await user.keyboard('{Enter}')
+
+    expect(toggle).toHaveAttribute('aria-expanded', 'true')
+    expect(
+      screen.getByRole('heading', { level: 4, name: 'Why it matters' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', {
+        level: 4,
+        name: 'How spaceflight affects it',
+      }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { level: 4, name: 'How to prevent problems' }),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Example reason. Assumption.')).toBeInTheDocument()
+    expect(screen.getByText('Example effect. Assumption.')).toBeInTheDocument()
+    expect(
+      screen.getByText('Example guidance. Assumption.'),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('Measurement steps').tagName.toLowerCase(),
+    ).toBe('h4')
+  })
+
+  it('shows the measurement steps as a numbered list', async () => {
+    const user = userEvent.setup()
+    renderHome(data)
+    const toggle = screen.getByRole('button', { name: 'Details' })
+    toggle.focus()
+    await user.keyboard('{Enter}')
+
+    const section = screen.getByRole('heading', {
+      level: 4,
+      name: 'Measurement steps',
+    }).parentElement
+    expect(section).not.toBeNull()
+    const list = within(section as HTMLElement).getByRole('list')
+    expect(list.tagName).toBe('OL')
+    expect(
+      within(section as HTMLElement)
+        .getAllByRole('listitem')
+        .map((item) => item.textContent),
+    ).toEqual(['Example step one.', 'Example step two.'])
+  })
+
+  it('closes Details again by keyboard', async () => {
+    const user = userEvent.setup()
+    renderHome(data)
+    const toggle = screen.getByRole('button', { name: 'Details' })
+    toggle.focus()
+    await user.keyboard('{Enter}')
+    expect(toggle).toHaveAttribute('aria-expanded', 'true')
+
+    await user.keyboard('{Enter}')
+    expect(toggle).toHaveAttribute('aria-expanded', 'false')
+    expect(
+      screen.queryByRole('heading', { level: 4, name: 'Why it matters' }),
+    ).toBeNull()
+  })
+
+  it('shows the facts of indicators.csv when the content file is missing', async () => {
+    const user = userEvent.setup()
+    renderHome({ ...data, contents: {} })
+    const toggle = screen.getByRole('button', { name: 'Details' })
+    toggle.focus()
+    await user.keyboard('{Enter}')
+
+    expect(
+      screen.getByText(
+        'Details will appear when the team adds the text for this indicator.',
+      ),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('Measured on board:').parentElement,
+    ).toHaveTextContent('Measured on board: example measurement method')
+    expect(screen.getByText('Hazards:').parentElement).toHaveTextContent(
+      'Hazards: Isolation and confinement',
+    )
+    expect(screen.queryByText(/isolation_and_confinement/)).toBeNull()
+    expect(screen.getByText('Assumption')).toBeInTheDocument()
+    expect(
+      screen.queryByRole('heading', { level: 4, name: 'Why it matters' }),
+    ).toBeNull()
+  })
+
+  it('writes the hazards as plain names and never as ids', async () => {
+    const user = userEvent.setup()
+    renderHome({
+      ...data,
+      indicators: [
+        { ...indicator, hazards: ['gravity_fields', 'space_weather'] },
+      ],
+    })
+    const toggle = screen.getByRole('button', { name: 'Details' })
+    toggle.focus()
+    await user.keyboard('{Enter}')
+
+    expect(screen.getByText('Hazards:').parentElement).toHaveTextContent(
+      'Hazards: Gravity fields',
+    )
+    expect(screen.queryByText(/gravity_fields/)).toBeNull()
+    expect(screen.queryByText(/space_weather/)).toBeNull()
   })
 
   it('shows a content problems disclosure when there are problems', async () => {
