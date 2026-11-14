@@ -1,4 +1,9 @@
 // Every text shown on screen lives here, in plain English (REQ-30).
+
+// The unit Phys writes in indicators.csv for the two 1 to 5 scales (sleep
+// quality and mood). The screens read it, never a bound of their own.
+export const SCALE_UNIT = '1 to 5'
+
 export const strings = {
   appName: 'HeMoSo',
   skipToMain: 'Skip to main content',
@@ -61,4 +66,7 @@ export const strings = {
     label: 'Content problems (for the team)',
   },
   timeLabel: (day: number, time: string): string => `Day ${day} ${time}`,
+  // The unit that follows a value on a card: "58 bpm". The 1 to 5 scales hold
+  // their range in the unit, so they read "4 / 5" and not "4 1 to 5".
+  cardUnit: (unit: string): string => (unit === SCALE_UNIT ? '/ 5' : unit),
 }

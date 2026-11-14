@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import App from './App'
@@ -66,6 +66,9 @@ describe('App', () => {
     await user.clear(day)
     await user.type(day, nextDay)
     await user.type(screen.getByLabelText('Value'), '1234567')
+    // The native time input keeps HH:MM in its value on any OS setting.
+    const time = screen.getByLabelText('Time')
+    fireEvent.change(time, { target: { value: '15:44' } })
     const save = screen.getByRole('button', { name: 'Save entry' })
     save.focus()
     await user.keyboard('{Enter}')
@@ -76,8 +79,6 @@ describe('App', () => {
     screen.getByRole('tab', { name: 'Home' }).focus()
     await user.keyboard('{Enter}')
     expect(screen.getByText('1234567')).toBeInTheDocument()
-    expect(
-      screen.getByText(new RegExp(`^Day ${nextDay} \\d{2}:\\d{2}$`)),
-    ).toBeInTheDocument()
+    expect(screen.getByText(`Day ${nextDay} 15:44`)).toBeInTheDocument()
   })
 })

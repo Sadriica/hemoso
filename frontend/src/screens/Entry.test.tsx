@@ -256,6 +256,20 @@ describe('Entry', () => {
     expect(screen.getByRole('radio', { name: '3' })).not.toBeChecked()
   })
 
+  it('stores the time as 24-hour HH:MM whatever the browser shows', async () => {
+    const store = renderEntry()
+    typeValue('57')
+    const time = screen.getByLabelText('Time')
+    fireEvent.change(time, { target: { value: '15:44' } })
+    await submit()
+
+    const saved = store.list()
+    expect(saved[saved.length - 1]).toMatchObject({
+      value: 57,
+      time: '15:44',
+    })
+  })
+
   it('says when there are no indicators to enter', () => {
     renderEntry([])
     expect(screen.getByText('No indicators are set up yet.')).toBeInTheDocument()

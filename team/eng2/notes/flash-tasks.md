@@ -259,5 +259,49 @@ a crew member checking their health on a long mission.
 - Change markup only where styling needs a wrapper or a class; do not change
   behaviour. All tests must still pass.
 
+## T-57 · Move the interface to MUI with the HeMoSo theme (P0, presentation)
+Juli's decision (Sat 14 16:00): build the interface with MUI (Material UI,
+https://mui.com/) and keep the look of `frontend/sdd/style-guide.md`. Read the
+style guide in full first. Behaviour, texts, data and tests stay the same.
+- Add exactly `@mui/material@9.5.0`, `@emotion/react@11.14.0`,
+  `@emotion/styled@11.14.1` (all MIT). No `@mui/icons-material` (too large):
+  keep the inline SVG icons, wrapped in MUI `SvgIcon`. No Roboto: MUI must use
+  the style guide's font stacks; nothing from a CDN.
+- `src/theme/tokens.ts`: every colour, font stack, spacing step and radius of
+  the style guide, for dark and light. `src/theme/theme.ts`: `createTheme`
+  with `cssVariables: true` and `colorSchemes: { dark, light }`, dark as the
+  default, light from `prefers-color-scheme`; `typography` from the guide's
+  scale; `shape.borderRadius` 4; `spacing` in 4 px steps; component overrides:
+  `MuiButton` (radius 2, uppercase, no elevation), `MuiCard` and `MuiPaper`
+  (1 px border, no shadow in dark), `MuiChip` (uppercase monospace label),
+  `MuiTab` (uppercase monospace, 44 px), `MuiAlert`, `MuiTextField`,
+  `MuiSelect`, `MuiRadio`, `MuiFocusVisible` (3 px accent outline, 2 px offset).
+- `src/main.tsx`: `ThemeProvider` + `CssBaseline` (+ `InitColorSchemeScript`
+  if needed for no flash).
+- Components, one by one, behaviour unchanged:
+  - Header: `AppBar` (static, no elevation) + `Toolbar`; person picker as MUI `Select` with its label.
+  - Tabs: MUI `Tabs` / `Tab` / tab panels (MUI already follows the WAI-ARIA tabs pattern; keep the accessible names "Home" and "Entry").
+  - Indicator card: `Card` + `CardContent`; the badge always on its own row
+    under the title so every card in the grid lines up; the reading in the
+    monospace font; units never uppercased. Grid with MUI `Grid` (3, 2, 1 columns).
+  - `AttentionBadge`: `Chip` with the icon and the visible text, status
+    colours from the tokens, never colour alone.
+  - `Notice`: `Alert` (info, warning, success). "Content problems (for the
+    team)" moves out of the astronaut's Home: show it only when the URL has
+    `?team=1`, so the demo video never shows it.
+  - `Disclosure`: MUI `Button` + `Collapse`, keeping `aria-expanded` and `aria-controls`.
+  - Entry: `TextField`, `Select`, `RadioGroup` + `FormControlLabel` for the
+    1-to-5 scale, `FormHelperText` for errors linked to the field, the unit as
+    an `InputAdornment`, `Button variant="contained"` for "Save entry", native
+    time input kept (`type="time"`).
+- Delete from `styles.css` every rule MUI now covers; keep only what is left
+  (technical grid background, anything MUI has no prop for). Remove dead classes.
+- `src/theme.test.ts`: read the pairs from `tokens.ts` instead of `styles.css`;
+  every pair still passes.
+- Tests: update queries only where the DOM really changed; never weaken an
+  assertion. All tests, lint and build pass. Report the bundle size before and
+  after.
+- Note for Eng 1: three libraries need rows in `docs/DECISIONS.md` (MIT).
+
 ## T-55 · FRONT_TOBACK.md (P1) · not for Flash
 Written by Claude Code at the end, from the final code and the contract of T-54.

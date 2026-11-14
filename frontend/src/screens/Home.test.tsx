@@ -126,6 +126,38 @@ describe('Home', () => {
     expect(screen.getByText('Day 11 13:30')).toBeInTheDocument()
   })
 
+  it('shows a 1 to 5 scale reading as the value over 5', () => {
+    const scale: Indicator = {
+      id: 'sleep_quality_1_5',
+      name: 'Sleep quality',
+      unit: '1 to 5',
+      direction: 'lower',
+      measuredOnBoard: 'Questionnaire after waking',
+      hazards: ['isolation_and_confinement'],
+      sources: ['Assumption'],
+    }
+    const scaleData: LoadedContent = {
+      ...data,
+      indicators: [scale],
+      rules: [],
+      contents: {},
+      demoEntries: [
+        {
+          id: 'scale-entry',
+          personId: 'demo_astronaut_1',
+          indicatorId: 'sleep_quality_1_5',
+          value: 4,
+          unit: '1 to 5',
+          missionDay: 10,
+          time: '08:00',
+        },
+      ],
+    }
+    renderHome(scaleData)
+    expect(screen.getByText('4')).toHaveTextContent('4 / 5')
+    expect(screen.queryByText('4 1 to 5')).toBeNull()
+  })
+
   it('never says in range when the indicator has no attention rule', () => {
     const noRules: LoadedContent = { ...data, rules: [] }
     renderHome(noRules)

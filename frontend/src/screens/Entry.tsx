@@ -267,6 +267,10 @@ function EntryForm({
           <label className="field__label" htmlFor={timeId}>
             {strings.entry.time}
           </label>
+          {/* The native time input follows the OS clock on screen (12-hour on
+              an en-US system) but its value is always 24-hour HH:MM, which is
+              what is stored and shown (STANDARDS.md section 4). Kept native for
+              its keyboard control and time semantics. */}
           <input
             ref={timeRef}
             className="field__input"

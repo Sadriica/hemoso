@@ -98,7 +98,10 @@ function IndicatorRow({
         <p className="indicator-card__reading">
           <span className="indicator-card__value">
             {latest.value}
-            <span className="indicator-card__unit"> {indicator.unit}</span>
+            <span className="indicator-card__unit">
+              {' '}
+              {strings.cardUnit(indicator.unit)}
+            </span>
           </span>
           <span className="indicator-card__time">
             {strings.timeLabel(latest.missionDay, latest.time)}
