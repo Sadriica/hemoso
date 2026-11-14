@@ -58,4 +58,5 @@ with `python scripts/si_use.py`. The table grows with each finished card.
 | Sat 17:30–18:00 | REQ-09, REQ-14 (#20, #25) | docs/DECISIONS.md (rows marked Open), docs/PRIVACY.md | Assistant recorded the facts for each optional consideration and described the data kept in the browser; the team decides each row | Wambi |
 | Sat 17:30–18:05 | REQ-27, REQ-12 support (#43) | backend/app/state.py and route, backend/tests/test_state.py, docs/API.md, docs/openapi.json | Assistant implemented the baseline state rule of phys-02, tested against the shared vectors | Wambi |
 | Sat 17:30–18:05 | REQ-18, T-14 (#29, #40) | README.md | Assistant rewrote the README from the team paragraph and the code, and ran every command in it | Wambi |
+| Sat 17:30–18:10 | REQ-32 support, T-13 (#48, #39) | backend/railway.json, scripts/smoke.py, scripts/test_smoke.py, docs/DEPLOY.md | Assistant prepared the backend host config, a smoke test for the public URLs and the Sunday deploy checklist | Wambi |
 <!-- SI-USE-TABLE:END -->
