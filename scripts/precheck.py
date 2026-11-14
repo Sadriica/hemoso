@@ -38,7 +38,8 @@ OWNED = {
 }
 FORBIDDEN = re.compile(
     r"co-authored-by|generated (with|by)|assisted-by|asistido-por|claude(?!\.md)|chatgpt|openai|copilot|"
-    r"gemini|anthropic|\bllm\b|\bAI[- ]generated|🤖|signed-off-by", re.I)
+    r"gemini|anthropic|deepseek|\bgpt\b|\bllm\b|(?-i:\bAI\b)|artificial intelligence|🤖|signed-off-by",
+    re.I)  # "AI" only in capitals, so words such as "said" or "detail" never match
 
 
 def run(*cmd: str) -> str:
