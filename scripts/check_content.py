@@ -25,6 +25,10 @@ import sys
 from collections import Counter
 from pathlib import Path
 
+# The source and attention rules live in one place, so the checker and the
+# frontend cannot drift apart (see scripts/fixtures/format_rules/).
+from format_rules import LINK_RE, NOTIFY_ORDER, parse_sources
+
 HAZARDS = {
     "radiation",
     "isolation_and_confinement",
@@ -33,7 +37,6 @@ HAZARDS = {
     "hostile_closed_environments",
 }
 ID_RE = re.compile(r"^[a-z][a-z0-9_]*$")
-LINK_RE = re.compile(r"^https?://\S+$")
 TIME_RE = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
 
 # The fixed ``##`` headings of a content file, in order (FORMATS.md section 3).
@@ -80,9 +83,6 @@ DEMO_RANGES_HEADER = ["indicator_id", "min", "max", "source", "generation_note"]
 DEMO_DATA_HEADER = ["person_id", "indicator_id", "value", "unit", "mission_day", "time", "context"]
 ATTENTION_HEADER = ["indicator_id", "side", "threshold", "attention_level", "notify", "source"]
 
-# Who acts on an attention row (REQ-05), from least to most severe. When several
-# rows of one indicator match a value, the row with the most severe notify wins.
-NOTIFY_ORDER = ["crew", "cmo", "flight_surgeon"]
 CONDITIONS_HEADER = ["condition_id", "name", "based_on", "source"]
 
 
@@ -115,10 +115,7 @@ def decimal_comma_hint(value: str) -> str:
 
 def valid_source(value: str) -> bool:
     """A source cell is the word ``Assumption`` or one or more http(s) links."""
-    if value == "Assumption":
-        return True
-    tokens = value.split()
-    return bool(tokens) and all(LINK_RE.match(t) for t in tokens)
+    return parse_sources(value) is not None
 
 
 def read_table(root: Path, rel: str, header: list[str], rep: Reporter):
