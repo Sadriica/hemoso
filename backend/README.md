@@ -11,7 +11,10 @@ Test: `uv run ruff check . && uv run pytest`.
 
 The `supabase` storage talks to the Supabase REST API with the service role key.
 The key comes from the host settings (`SUPABASE_URL`, `SUPABASE_KEY`), never from
-the frontend and never committed. Create the `entries` table by running
+the frontend and never committed. The service role key bypasses row level
+security, so the `entries` table has RLS on with no policies and only the
+backend can reach it. The API itself has no login; that is acceptable only
+because every value is synthetic (REQ-14). Create the `entries` table by running
 `supabase/schema.sql` in the Supabase SQL editor (Dashboard → SQL editor).
 
 ## Environment
