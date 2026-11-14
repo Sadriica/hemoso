@@ -80,5 +80,4 @@ and risks · environments: spacecraft, station, rover, base on a planet or moon.
 ## Open questions for the Medellín lead (Bio 2, Saturday 9:00)
 1. Is there a local deadline earlier than Sunday 23:59, or a cut for the 14:00 presentation?
 2. How long is the presentation to the mentors, and in which language?
-3. May we reuse planning material we wrote before the event (ideas and notes, no code)?
-4. The five members are on the team page (ReTardis); is there an on-site check-in as well?
+3. The five members are on the team page (ReTardis); is there an on-site check-in as well?
