@@ -48,7 +48,7 @@ chat, but every file you write is in English.
 4. Open a link before citing it and confirm it says what you claim.
 5. Language for the astronaut: short sentences, plain words, no jargon.
 6. After a change in `config/` or the code, run the tests that exist (the
-   engineers add the commands to `README.md` on Saturday).
+   commands are in `README.md`, "Run and test").
 7. Record every decision in `team/<person>/LOG.md`: time, what, why, source.
 8. Nothing we write may sound like AI or mention it (rule 9 and the
    `human-writing` skill). AI use is recorded only in each person's log,
@@ -166,12 +166,14 @@ co-authors, signatures or AI mentions.
 ## Team scripts (run from the repository root)
 | Script | Who | What it does |
 | --- | --- | --- |
-| `scripts/precheck.py` | Everyone, before every push | Branch, owned paths, clean commit messages |
+| `scripts/precheck.py` | Everyone, before every push | Branch, owned paths, clean commit messages, secrets |
+| `scripts/si_use.py [--check]` | Eng 1 | SI-USE.md from the SI log; `--check` verifies it is up to date |
 | `scripts/status.py [--write]` | Everyone, before every checkpoint | Status line for the chat from the board; `--write` puts it in `team/<you>/README.md` |
 | `scripts/now.py [--at "Sat 15:20"]` | Timekeeper, anyone | Current block, next checkpoint and event, open P0 cards of the block |
 | `scripts/board.py` | Everyone | The board (`docs/BOARD.md`); `export` makes a CSV backup |
 | `scripts/new_finding.py <bio1, bio2 or phys> "<topic>" [--board]` | Bio 1, Bio 2, Phys | Next finding file from the template, and its card |
 | `scripts/check_sources.py [--offline] [--add]` | Phys, anyone | Broken links in `config/` and `docs/findings/`, and links missing from `docs/sources.md` |
+| `scripts/check_content.py [--strict]` | Everyone, before every merge | The config files against `FORMATS.md` |
 | `scripts/requirements_report.py [--write]` | Eng 1 | Requirement status from the board (P0 done, by type) into `docs/requirements.md` |
 
 ## Reference sources for everyone
