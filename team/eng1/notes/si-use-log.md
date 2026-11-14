@@ -10,3 +10,5 @@ metadata. One row per finished card; the supervisor agent appends, Wambi checks.
 | Sat 10:20–11:20 | T-05 (#5) | docs/requirements.md, docs/board/requirements.csv | Assistant drafted the general requirements from the statement and the guides; the team set owners | Wambi |
 | Sat 10:40–11:20 | T-01, T-08 (#1, #8) | scripts/board.py, scripts/precheck.py | Assistant wrote fixes (retries, no duplicate cards, owner sync, path checks) | Wambi |
 | Sat 11:00 | T-08 (#8) | team/eng1/notes/orca-supervisor-prompt.md | Assistant drafted the supervisor prompt for the work agents | Wambi |
+| Sat 12:31–12:40 | T-06 (#6) | FORMATS.md (draft) | Assistant drafted the config file formats from the team's solution paragraph; Wambi's supervisor agent reviewed it twice and sent back seven fixes | Wambi |
+| Sat 12:30–12:40 | REQ-33 (#49) | SI-USE.md, scripts/si_use.py, scripts/precheck.py | Assistant wrote the acknowledgement file and the script that copies this log into it; quote checked against the submission guide | Wambi |
