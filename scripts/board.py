@@ -26,6 +26,7 @@ import json
 import re
 import shutil
 import subprocess
+import time
 import sys
 from pathlib import Path
 
@@ -149,8 +150,16 @@ NUMBER_FIELDS = ["Estimate h"]
 
 # ---------- gh helpers ----------
 
+TRANSIENT = ("error connecting", "timeout", "timed out", "unknown owner type", "502", "503",
+             "EOF", "connection reset", "something went wrong")
+
+
 def gh(*args: str, as_json: bool = False, check: bool = True):
-    proc = subprocess.run(["gh", *args], capture_output=True, text=True)
+    for attempt in range(3):
+        proc = subprocess.run(["gh", *args], capture_output=True, text=True)
+        if proc.returncode == 0 or not any(t in proc.stderr.lower() for t in TRANSIENT):
+            break
+        time.sleep(3 * (attempt + 1))  # network or GitHub hiccup: wait and retry
     if proc.returncode != 0:
         if not check:
             return None
@@ -427,7 +436,19 @@ def body_for(row: dict, people: list[str], kind: str) -> str:
     return "\n\n".join(parts)
 
 
-def create_item(conf: dict, flds: dict, row: dict) -> str:
+def existing_issues(repo: str) -> dict:
+    """Map card ref ("T-05", "REQ-12") to its issue numbers and URLs, oldest first."""
+    found: dict = {}
+    data = gh("issue", "list", "-R", repo, "--state", "all", "-L", "1000",
+              "--json", "number,title,url", as_json=True) or []
+    for it in sorted(data, key=lambda x: x["number"]):
+        m = re.match(r"\[([^\]]+)\]", it["title"])
+        if m:
+            found.setdefault(m.group(1), []).append(it)
+    return found
+
+
+def create_item(conf: dict, flds: dict, row: dict, url: str | None = None) -> str:
     people = [p.strip() for p in row["person"].split("+") if p.strip()]
     for p in people:
         if p not in PEOPLE:
@@ -443,7 +464,8 @@ def create_item(conf: dict, flds: dict, row: dict) -> str:
         login = conf.get("logins", {}).get(p)
         if login:
             args += ["--assignee", login]
-    url = gh(*args).splitlines()[-1]
+    if not url:
+        url = gh(*args).splitlines()[-1]
     item = gh("project", "item-add", str(conf["number"]), "--owner", conf["owner"], "--url", url,
               "--format", "json", as_json=True)
     work = work_of(row)
@@ -487,9 +509,24 @@ def cmd_import(a) -> None:
     flds = fields(conf)
     with open(a.file, encoding="utf-8", newline="") as fh:
         rows = list(csv.DictReader(fh))
+    # Safe to run again after a failure: a card whose issue already exists is not
+    # created twice; it is only added to the board and its fields are set again.
+    have = existing_issues(conf["repo"])
+    created = updated = 0
     for row in rows:
-        print(create_item(conf, flds, row))
-    print(f"{len(rows)} items created.")
+        same = have.get(row.get("id", ""), [])
+        if same:
+            print(f"{same[0]['url']}  (exists; board fields set again)")
+            create_item(conf, flds, row, url=same[0]["url"])
+            updated += 1
+            if len(same) > 1:
+                extra = ", ".join(f"#{x['number']}" for x in same[1:])
+                print(f"   duplicate issues for {row['id']}: {extra}; close them with "
+                      f"gh issue close <N> -R {conf['repo']} --reason 'not planned'")
+        else:
+            print(create_item(conf, flds, row))
+            created += 1
+    print(f"{created} items created, {updated} already existed.")
 
 
 def cmd_new(a) -> None:
