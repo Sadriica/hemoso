@@ -8,8 +8,12 @@ slides at most). How the solution is published is recorded in
 ## 1. Public project and demo
 - The repository is public from Saturday 9:00 (it is the "final project" link).
 - The frontend is published on Vercel from `frontend/` (Eng 2 owns it). Vercel
-  connects to the repository, builds and serves the frontend under the team's
-  domain (the architecture is in `docs/DECISIONS.md`).
+  connects to the repository, builds `frontend/` and serves it under the team's
+  domain (the architecture is in `docs/DECISIONS.md`). The build reads `config/`
+  from the repository root (`frontend/src/content/load.ts` globs
+  `../../../config/**`), so the Vercel project setting "Include files outside
+  the root directory in the Build Step" must stay on. The frontend reads
+  `VITE_API_BASE_URL` (the backend URL) from the Vercel environment variables.
 - The backend runs on its own host; Railway is the candidate, not yet decided
   (`docs/DECISIONS.md`). The host builds `backend/Dockerfile` from the
   repository root with

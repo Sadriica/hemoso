@@ -4,21 +4,30 @@ from __future__ import annotations
 
 import os
 import sqlite3
+import sys
 import threading
 from pathlib import Path
 from typing import Protocol
 
 import httpx
 
-from .models import Entry
+from .models import Entry, entry_key
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 
 _COLUMNS = ("person_id", "indicator_id", "value", "unit", "mission_day", "time")
 
 
+class EntryConflict(Exception):
+    """The natural key already holds an entry with a different value or unit."""
+
+
+def _same_value(left: Entry, right: Entry) -> bool:
+    return left.value == right.value and left.unit == right.unit
+
+
 class Storage(Protocol):
-    def add(self, entry: Entry) -> Entry: ...
+    def add(self, entry: Entry) -> tuple[Entry, bool]: ...
 
     def history(self, person_id: str, indicator_id: str) -> list[Entry]: ...
 
@@ -33,9 +42,15 @@ class MemoryStorage:
     def __init__(self) -> None:
         self._entries: list[Entry] = []
 
-    def add(self, entry: Entry) -> Entry:
+    def add(self, entry: Entry) -> tuple[Entry, bool]:
+        key = entry_key(entry)
+        for existing in self._entries:
+            if entry_key(existing) == key:
+                if _same_value(existing, entry):
+                    return existing, False
+                raise EntryConflict
         self._entries.append(entry)
-        return entry
+        return entry, True
 
     def history(self, person_id: str, indicator_id: str) -> list[Entry]:
         return _ordered(
@@ -63,24 +78,63 @@ class SqliteStorage:
                 "mission_day INTEGER NOT NULL,"
                 "time TEXT NOT NULL)"
             )
-            self._conn.commit()
-
-    def add(self, entry: Entry) -> Entry:
-        with self._lock:
+            # A database written before REQ-13 can hold two rows for the same
+            # natural key. Drop the duplicates (keep the oldest) before the
+            # unique index is created, so startup does not crash.
+            removed = self._conn.execute(
+                "DELETE FROM entries WHERE rowid NOT IN ("
+                "SELECT MIN(rowid) FROM entries"
+                " GROUP BY person_id, indicator_id, mission_day, time)"
+            ).rowcount
+            if removed:
+                print(
+                    f"removed {removed} duplicate entries for the same person,"
+                    " indicator, day and time",
+                    file=sys.stderr,
+                )
+            # One row per natural key (REQ-13). IF NOT EXISTS also adds the
+            # index to a database created before this constraint existed.
             self._conn.execute(
-                "INSERT INTO entries (person_id, indicator_id, value, unit, mission_day, time)"
-                " VALUES (?, ?, ?, ?, ?, ?)",
-                (
-                    entry.person_id,
-                    entry.indicator_id,
-                    entry.value,
-                    entry.unit,
-                    entry.mission_day,
-                    entry.time,
-                ),
+                "CREATE UNIQUE INDEX IF NOT EXISTS entries_natural_key_idx"
+                " ON entries (person_id, indicator_id, mission_day, time)"
             )
             self._conn.commit()
-        return entry
+
+    def add(self, entry: Entry) -> tuple[Entry, bool]:
+        with self._lock:
+            try:
+                self._conn.execute(
+                    "INSERT INTO entries (person_id, indicator_id, value, unit,"
+                    " mission_day, time) VALUES (?, ?, ?, ?, ?, ?)",
+                    (
+                        entry.person_id,
+                        entry.indicator_id,
+                        entry.value,
+                        entry.unit,
+                        entry.mission_day,
+                        entry.time,
+                    ),
+                )
+                self._conn.commit()
+            except sqlite3.IntegrityError:
+                self._conn.rollback()
+                existing = self._find(entry_key(entry))
+                if existing is None:
+                    raise
+                if _same_value(existing, entry):
+                    return existing, False
+                raise EntryConflict from None
+        return entry, True
+
+    def _find(self, key: tuple[str, str, int, str]) -> Entry | None:
+        """The stored entry for `key`, or None. Call under the lock."""
+        rows = self._conn.execute(
+            "SELECT person_id, indicator_id, value, unit, mission_day, time"
+            " FROM entries WHERE person_id = ? AND indicator_id = ?"
+            " AND mission_day = ? AND time = ?",
+            key,
+        ).fetchall()
+        return Entry(**dict(zip(_COLUMNS, rows[0]))) if rows else None
 
     def history(self, person_id: str, indicator_id: str) -> list[Entry]:
         with self._lock:
@@ -115,14 +169,45 @@ class SupabaseStorage:
             headers["Authorization"] = f"Bearer {self.key}"
         return headers
 
-    def add(self, entry: Entry) -> Entry:
+    def add(self, entry: Entry) -> tuple[Entry, bool]:
+        # Read before write: the unique constraint in supabase/schema.sql is
+        # the backstop, but a read first returns the exact stored value so the
+        # API can answer 200 or 409, which PostgREST's ignore-duplicates does not.
+        existing = self._find(entry)
+        if existing is not None:
+            if _same_value(existing, entry):
+                return existing, False
+            raise EntryConflict
         response = self._client.post(
             f"{self.url}/rest/v1/entries",
             json=entry.model_dump(),
             headers=self._headers(),
         )
+        if response.status_code == 409:
+            # A concurrent request inserted this key between our read and write.
+            existing = self._find(entry)
+            if existing is not None:
+                if _same_value(existing, entry):
+                    return existing, False
+                raise EntryConflict
         response.raise_for_status()
-        return entry
+        return entry, True
+
+    def _find(self, entry: Entry) -> Entry | None:
+        """The stored entry with the same natural key, or None."""
+        response = self._client.get(
+            f"{self.url}/rest/v1/entries",
+            params={
+                "person_id": f"eq.{entry.person_id}",
+                "indicator_id": f"eq.{entry.indicator_id}",
+                "mission_day": f"eq.{entry.mission_day}",
+                "time": f"eq.{entry.time}",
+            },
+            headers=self._headers(),
+        )
+        response.raise_for_status()
+        rows = response.json()
+        return Entry(**rows[0]) if rows else None
 
     def history(self, person_id: str, indicator_id: str) -> list[Entry]:
         response = self._client.get(
@@ -188,7 +273,7 @@ def get_storage() -> Storage:
         return _storage
 
 
-def add_entry(entry: Entry) -> Entry:
+def add_entry(entry: Entry) -> tuple[Entry, bool]:
     return get_storage().add(entry)
 
 

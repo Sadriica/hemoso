@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 from typing import Annotated
 
 import httpx
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 from . import storage
@@ -45,17 +45,38 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-@app.post("/entries", status_code=201)
-def create_entry(entry: Entry, store: Store) -> Entry:
+@app.post(
+    "/entries",
+    status_code=201,
+    responses={
+        200: {"description": "An entry with this key and value already existed."},
+        409: {
+            "description": "An entry with this key already exists with a "
+            "different value or unit."
+        },
+    },
+)
+def create_entry(entry: Entry, store: Store, response: Response) -> Entry:
     error = validate_against_indicators(entry)
     if error is not None:
         raise HTTPException(status_code=422, detail=error)
     try:
-        return store.add(entry)
+        stored, created = store.add(entry)
+    except storage.EntryConflict as error:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "an entry for this person, indicator, day and time already"
+                " exists with a different value"
+            ),
+        ) from error
     except httpx.HTTPError as error:
         raise HTTPException(
             status_code=502, detail="upstream storage error"
         ) from error
+    if not created:
+        response.status_code = 200
+    return stored
 
 
 @app.get("/people/{person_id}/indicators/{indicator_id}/history")

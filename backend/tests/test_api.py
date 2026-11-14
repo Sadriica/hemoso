@@ -42,6 +42,38 @@ def test_store_and_read_back(client):
     assert history.json() == [ENTRY]
 
 
+def test_resend_same_entry_returns_200_and_one_row(client):
+    first = client.post("/entries", json=ENTRY)
+    assert first.status_code == 201
+
+    second = client.post("/entries", json=ENTRY)
+    assert second.status_code == 200
+    assert second.json() == ENTRY
+
+    history = client.get(
+        "/people/demo_astronaut_1/indicators/example_indicator/history"
+    )
+    assert len(history.json()) == 1
+
+
+def test_resend_different_value_returns_409(client):
+    client.post("/entries", json=ENTRY)
+
+    conflict = client.post("/entries", json={**ENTRY, "value": 2.0})
+    assert conflict.status_code == 409
+    assert conflict.json()["detail"] == (
+        "an entry for this person, indicator, day and time already exists"
+        " with a different value"
+    )
+
+
+def test_resend_different_unit_returns_409(client):
+    client.post("/entries", json=ENTRY)
+
+    conflict = client.post("/entries", json={**ENTRY, "unit": "other_unit"})
+    assert conflict.status_code == 409
+
+
 def test_ordering(client):
     client.post("/entries", json={**ENTRY, "mission_day": 2, "time": "08:00"})
     client.post("/entries", json={**ENTRY, "mission_day": 1, "time": "20:00"})

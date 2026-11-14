@@ -13,4 +13,16 @@ create table entries (
 
 create index entries_person_indicator_idx on entries (person_id, indicator_id);
 
+-- Natural key (REQ-13): one entry per person, indicator, day and time.
+-- Delete duplicates first (keep the lowest id per key): required only on a
+-- project that already ran the create table above, a no-op on a fresh one.
+delete from entries
+where id not in (
+    select min(id) from entries
+    group by person_id, indicator_id, mission_day, time
+);
+
+alter table entries add constraint entries_natural_key_unique
+    unique (person_id, indicator_id, mission_day, time);
+
 alter table entries enable row level security;

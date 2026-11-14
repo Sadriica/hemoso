@@ -7,8 +7,8 @@ it with `uv run python scripts/export_openapi.py` from `backend/`). The field
 meanings come from `../FORMATS.md`. All data is synthetic (REQ-14); nothing here
 holds real personal data.
 
-The frontend reads the base URL from an `API_URL` placeholder, never a hard-coded
-host. The examples below use `$API_URL` (shell) and `API_URL` (JavaScript).
+The frontend reads the base URL from a `VITE_API_BASE_URL` placeholder, never a hard-coded
+host. The examples below use `$VITE_API_BASE_URL` (shell) and `VITE_API_BASE_URL` (JavaScript).
 
 ## Routes
 
@@ -19,18 +19,21 @@ Health check. No request body.
 Responses: `200`.
 
 ```bash
-curl "$API_URL/health"
+curl "$VITE_API_BASE_URL/health"
 # {"status":"ok"}
 ```
 
 ```js
-const response = await fetch(`${API_URL}/health`);
+const response = await fetch(`${VITE_API_BASE_URL}/health`);
 const body = await response.json(); // { status: "ok" }
 ```
 
 ### POST /entries
 
-Stores one measurement (REQ-27) and returns the stored entry.
+Stores one measurement (REQ-27) and returns the stored entry. The same entry can
+be re-sent (the frontend re-sends what waits in its outbox, REQ-13) without
+creating a duplicate: one entry is kept per `person_id`, `indicator_id`,
+`mission_day` and `time`.
 
 Request body: one `Entry`. Every field is required.
 
@@ -51,17 +54,25 @@ an unknown `indicator_id` returns `unknown indicator`, and a `unit` that differs
 from the file's unit returns `unit mismatch`. Until Phys writes that file, the
 check is skipped and any id and unit are accepted.
 
-Responses: `201` (the stored entry), `422` (validation).
+Responses:
+
+| Code | Meaning |
+| --- | --- |
+| `201` | A new entry was stored; the stored entry is returned. |
+| `200` | An entry with the same `person_id`, `indicator_id`, `mission_day` and `time` already exists with the same `value` and `unit`; that stored entry is returned and nothing is added. |
+| `409` | An entry with the same key already exists with a different `value` or `unit`; `detail` is a short plain message. |
+| `422` | Validation (field rule, or indicator check). |
 
 ```bash
-curl -X POST "$API_URL/entries" \
+curl -X POST "$VITE_API_BASE_URL/entries" \
   -H "Content-Type: application/json" \
   -d '{"person_id":"demo_astronaut_1","indicator_id":"example_indicator","value":1.5,"unit":"example_unit","mission_day":1,"time":"13:30"}'
 # 201 {"person_id":"demo_astronaut_1","indicator_id":"example_indicator","value":1.5,"unit":"example_unit","mission_day":1,"time":"13:30"}
+# re-sending the same body returns 200 with the same stored entry
 ```
 
 ```js
-const response = await fetch(`${API_URL}/entries`, {
+const response = await fetch(`${VITE_API_BASE_URL}/entries`, {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({
@@ -73,7 +84,7 @@ const response = await fetch(`${API_URL}/entries`, {
     time: "13:30",
   }),
 });
-const entry = await response.json(); // status 201; the entry echoes the request
+const entry = await response.json(); // status 201 (new) or 200 (already stored); the entry echoes the request
 ```
 
 ### GET /people/{person_id}/indicators/{indicator_id}/history
@@ -89,13 +100,13 @@ entries; `422` when a path id breaks the `snake_case` rule; `502` when the
 upstream store (Supabase) is unreachable or returns an error.
 
 ```bash
-curl "$API_URL/people/demo_astronaut_1/indicators/example_indicator/history"
+curl "$VITE_API_BASE_URL/people/demo_astronaut_1/indicators/example_indicator/history"
 # 200 [{"person_id":"demo_astronaut_1","indicator_id":"example_indicator","value":1.5,"unit":"example_unit","mission_day":1,"time":"13:30"}]
 ```
 
 ```js
 const response = await fetch(
-  `${API_URL}/people/demo_astronaut_1/indicators/example_indicator/history`
+  `${VITE_API_BASE_URL}/people/demo_astronaut_1/indicators/example_indicator/history`
 );
 const history = await response.json(); // array, oldest entry first
 ```
@@ -124,6 +135,11 @@ Indicator check: `detail` is a plain string.
 | --- | --- |
 | `indicator_id` not in `config/data/indicators.csv` | `unknown indicator` |
 | `unit` differs from the file's unit | `unit mismatch` |
+
+`POST /entries` returns `409` when an entry with the same `person_id`,
+`indicator_id`, `mission_day` and `time` already exists with a different
+`value` or `unit`. The `detail` is the plain string `an entry for this person,
+indicator, day and time already exists with a different value`.
 
 `GET /people/{person_id}/indicators/{indicator_id}/history` returns `422` with a
 plain-string `detail` when `person_id` or `indicator_id` breaks the `snake_case`
