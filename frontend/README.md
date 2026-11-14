@@ -32,7 +32,7 @@ pnpm test      # Vitest, runs once
 | `src/data/` | The browser store: `entryStore.ts` (entries and outbox), `storedState.ts` (the stored shape), `entryId.ts` (ids for new entries). |
 | `src/hooks/` | React bindings for the store: `useEntries`, `useOutbox`. |
 | `src/components/` | Presentational pieces: `AttentionBadge`, `Disclosure`, `SyntheticNotice`. |
-| `src/screens/` | Full screens: `Home` (status of each indicator and its next step). |
+| `src/screens/` | Full screens: `Home` (status of each indicator and its next step), `Entry` (one measurement, with `entryDraft.ts` holding the rules the form checks). |
 | `src/App.tsx` | Tabs, person picker, layout and skip link. |
 | `src/strings.ts` | Every English label and message in one place. |
 

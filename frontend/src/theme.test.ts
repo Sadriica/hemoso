@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
@@ -45,11 +46,15 @@ const TEXT_PAIRS: ColorPair[] = [
   { name: 'signal red on a card', front: 'color-signal', back: 'color-surface' },
 ]
 
-// The focus outline is not text: 3:1 against the surface it sits on is enough.
-const FOCUS_PAIRS: ColorPair[] = [
-  { name: 'page', front: 'color-accent', back: 'color-bg' },
-  { name: 'card', front: 'color-accent', back: 'color-surface' },
-  { name: 'header band', front: 'color-accent', back: 'color-bg-raised' },
+// Non-text contrast (WCAG 1.4.11): the focus outline and the edge of a control
+// need 3:1 against what they sit on.
+const UI_PAIRS: ColorPair[] = [
+  { name: 'focus outline on the page', front: 'color-accent', back: 'color-bg' },
+  { name: 'focus outline on a card', front: 'color-accent', back: 'color-surface' },
+  { name: 'focus outline on the header band', front: 'color-accent', back: 'color-bg-raised' },
+  { name: 'control border on the page', front: 'color-border-control', back: 'color-bg' },
+  { name: 'control border on a card', front: 'color-border-control', back: 'color-surface' },
+  { name: 'control border on the header band', front: 'color-border-control', back: 'color-bg-raised' },
 ]
 
 function themeSections(css: string): Record<Theme, string> {
@@ -111,7 +116,7 @@ describe('theme colours', () => {
   for (const theme of themes) {
     describe(`${theme} theme`, () => {
       it('defines every colour the screens use', () => {
-        const used = [...TEXT_PAIRS, ...FOCUS_PAIRS].flatMap((pair) => [
+        const used = [...TEXT_PAIRS, ...UI_PAIRS].flatMap((pair) => [
           pair.front,
           pair.back,
         ])
@@ -126,8 +131,8 @@ describe('theme colours', () => {
         })
       }
 
-      for (const pair of FOCUS_PAIRS) {
-        it(`keeps the focus outline at 3:1 on the ${pair.name}`, () => {
+      for (const pair of UI_PAIRS) {
+        it(`keeps 3:1 for ${pair.name}`, () => {
           expect(ratio(theme, pair)).toBeGreaterThanOrEqual(3)
         })
       }

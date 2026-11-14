@@ -14,8 +14,11 @@ export const strings = {
   entry: {
     heading: 'Entry',
     indicator: 'Indicator',
-    // The unit belongs in the label and next to the field (REQ-02).
-    value: (unit: string): string => `Value (${unit})`,
+    // The unit is the visible suffix inside the field (style guide 7.6). For a
+    // 1 to 5 scale it is part of the group name instead, because the choices
+    // are numbers already.
+    value: 'Value',
+    valueWithUnit: (unit: string): string => `Value (${unit})`,
     missionDay: 'Mission day',
     time: 'Time',
     save: 'Save entry',
@@ -24,6 +27,7 @@ export const strings = {
     errors: {
       valueRequired: 'Enter a value.',
       valueNumber: 'Enter a number.',
+      valueScale: 'Choose a value from 1 to 5.',
       missionDay: 'Enter a whole mission day, 1 or more.',
       time: 'Enter a time as HH:MM.',
     },

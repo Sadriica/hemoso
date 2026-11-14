@@ -56,12 +56,17 @@ describe('App', () => {
       screen.getByRole('tab', { name: 'Entry', selected: true }),
     ).toBeInTheDocument()
 
-    // Day 11 is later than every demo row, so the new entry is the latest one
-    // on Home whatever the clock says.
-    const day = screen.getByLabelText('Mission day')
+    // One Tab: the panel is not a stop of its own.
+    await user.tab()
+    expect(screen.getByLabelText('Indicator')).toHaveFocus()
+
+    // The day after the latest one in the store, so the new entry is the latest
+    // one on Home whatever the clock says.
+    const day = screen.getByLabelText('Mission day') as HTMLInputElement
+    const nextDay = String(Number(day.value) + 1)
     await user.clear(day)
-    await user.type(day, '11')
-    await user.type(screen.getByLabelText('Value (example_unit)'), '1234567')
+    await user.type(day, nextDay)
+    await user.type(screen.getByLabelText('Value'), '1234567')
     const save = screen.getByRole('button', { name: 'Save entry' })
     save.focus()
     await user.keyboard('{Enter}')
@@ -72,6 +77,8 @@ describe('App', () => {
     screen.getByRole('tab', { name: 'Home' }).focus()
     await user.keyboard('{Enter}')
     expect(screen.getByText('1234567')).toBeInTheDocument()
-    expect(screen.getByText(/^Day 11 \d{2}:\d{2}$/)).toBeInTheDocument()
+    expect(
+      screen.getByText(new RegExp(`^Day ${nextDay} \\d{2}:\\d{2}$`)),
+    ).toBeInTheDocument()
   })
 })
