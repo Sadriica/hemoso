@@ -15,6 +15,7 @@ ENTRY = {
     "unit": "example_unit",
     "mission_day": 1,
     "time": "13:30",
+    "context": "rest",
 }
 
 INDICATORS_CSV = (
@@ -40,6 +41,50 @@ def test_store_and_read_back(client):
     )
     assert history.status_code == 200
     assert history.json() == [ENTRY]
+
+
+def test_resend_same_entry_returns_200_and_one_row(client):
+    first = client.post("/entries", json=ENTRY)
+    assert first.status_code == 201
+
+    second = client.post("/entries", json=ENTRY)
+    assert second.status_code == 200
+    assert second.json() == ENTRY
+
+    history = client.get(
+        "/people/demo_astronaut_1/indicators/example_indicator/history"
+    )
+    assert len(history.json()) == 1
+
+
+def test_resend_different_value_returns_409(client):
+    client.post("/entries", json=ENTRY)
+
+    conflict = client.post("/entries", json={**ENTRY, "value": 2.0})
+    assert conflict.status_code == 409
+    assert conflict.json()["detail"] == (
+        "an entry for this person, indicator, day and time already exists"
+        " with a different value"
+    )
+
+
+def test_resend_different_unit_returns_409(client):
+    client.post("/entries", json=ENTRY)
+
+    conflict = client.post("/entries", json={**ENTRY, "unit": "other_unit"})
+    assert conflict.status_code == 409
+
+
+def test_resend_different_context_returns_409(client):
+    client.post("/entries", json=ENTRY)
+
+    conflict = client.post("/entries", json={**ENTRY, "context": "after_exercise"})
+    assert conflict.status_code == 409
+
+
+def test_invalid_context_rejected(client):
+    response = client.post("/entries", json={**ENTRY, "context": "running"})
+    assert response.status_code == 422
 
 
 def test_ordering(client):

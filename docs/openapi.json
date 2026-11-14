@@ -2,8 +2,19 @@
   "components": {
     "schemas": {
       "Entry": {
-        "description": "One row of config/data/demo_data.csv: person, indicator, value, unit, day, time.",
+        "description": "One row of config/data/demo_data.csv: person, indicator, value, unit, day, time, context.",
         "properties": {
+          "context": {
+            "default": "rest",
+            "enum": [
+              "rest",
+              "after_exercise",
+              "on_waking",
+              "before_sleep"
+            ],
+            "title": "Context",
+            "type": "string"
+          },
           "indicator_id": {
             "maxLength": 64,
             "title": "Indicator Id",
@@ -120,6 +131,9 @@
           "required": true
         },
         "responses": {
+          "200": {
+            "description": "An entry with this key and value already existed."
+          },
           "201": {
             "content": {
               "application/json": {
@@ -129,6 +143,9 @@
               }
             },
             "description": "Successful Response"
+          },
+          "409": {
+            "description": "An entry with this key already exists with a different value or unit."
           },
           "422": {
             "content": {

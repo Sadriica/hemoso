@@ -59,9 +59,25 @@ REQUIRED_FILES = [
 
 # The exact CSV header (column order) of each table. scripts/new_config.py
 # imports these to write empty files, so the two can never drift.
-INDICATORS_HEADER = ["id", "name", "unit", "direction", "measured_on_board", "hazards", "source"]
+INDICATORS_HEADER = ["id", "name", "unit", "direction", "measured_on_board", "hazards",
+                     "min_spread", "tier", "system", "source"]
+
+# Tiers (FORMATS.md): A measured by an instrument that flies, B self-reported,
+# C explained only (no in-flight measurement; never an input).
+TIERS = {"A", "B", "C"}
+# Body systems the 3D body opens (FORMATS.md section 2).
+SYSTEMS = {
+    "cardiovascular",
+    "respiratory",
+    "thermoregulation",
+    "sleep",
+    "neuro_behavioural",
+    "metabolic",
+    "musculoskeletal",
+    "radiation",
+}
 DEMO_RANGES_HEADER = ["indicator_id", "min", "max", "source", "generation_note"]
-DEMO_DATA_HEADER = ["person_id", "indicator_id", "value", "unit", "mission_day", "time"]
+DEMO_DATA_HEADER = ["person_id", "indicator_id", "value", "unit", "mission_day", "time", "context"]
 ATTENTION_HEADER = ["indicator_id", "side", "threshold", "attention_level", "notify", "source"]
 
 # Who acts on an attention row (REQ-05), from least to most severe. When several
@@ -185,6 +201,19 @@ def check_indicators(rep: Reporter, root: Path, state: dict) -> None:
         for h in hazards.split():
             if h not in HAZARDS:
                 rep.error(f"{rel}:{line_no} unknown hazard '{h}', must be one of the five names")
+        spread = cells["min_spread"].strip()
+        if spread:
+            try:
+                if float(spread) <= 0:
+                    rep.error(f"{rel}:{line_no} min_spread must be greater than 0")
+            except ValueError:
+                rep.error(f"{rel}:{line_no} min_spread must be a number, got '{spread}'")
+        tier = cells["tier"].strip()
+        if tier and tier not in TIERS:
+            rep.error(f"{rel}:{line_no} tier must be A, B or C, got '{tier}'")
+        system = cells["system"].strip()
+        if system and system not in SYSTEMS:
+            rep.error(f"{rel}:{line_no} unknown system '{system}', must be one of FORMATS.md section 2")
         source = cells["source"].strip()
         if source and not valid_source(source):
             rep.error(f"{rel}:{line_no} source must be an http(s) link or 'Assumption'")
@@ -380,6 +409,9 @@ def check_demo_data(rep: Reporter, root: Path, state: dict) -> None:
         clock = cells["time"].strip()
         if clock and not TIME_RE.match(clock):
             rep.error(f"{rel}:{line_no} time must be 24-hour HH:MM, got '{clock}'")
+        ctx = cells["context"].strip()
+        if ctx and ctx not in ("rest", "after_exercise", "on_waking", "before_sleep"):
+            rep.error(f"{rel}:{line_no} context must be rest, after_exercise, on_waking or before_sleep, got '{ctx}'")
         if value and is_number(value) and iid and ranges is not None:
             if iid not in ranges:
                 rep.error(f"{rel}:{line_no} no range in demo_ranges.csv for indicator '{iid}'")

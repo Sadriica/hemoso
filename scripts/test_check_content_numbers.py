@@ -19,13 +19,13 @@ import check_content  # noqa: E402
 
 VALID = {
     "config/data/indicators.csv": (
-        "id,name,unit,direction,measured_on_board,hazards,source\n"
+        "id,name,unit,direction,measured_on_board,hazards,min_spread,tier,system,source\n"
         "example_indicator,Example indicator,example_unit,higher,"
-        "example measurement method,isolation_and_confinement,Assumption\n"
+        "example measurement method,isolation_and_confinement,1,A,neuro_behavioural,Assumption\n"
     ),
     "config/data/demo_data.csv": (
-        "person_id,indicator_id,value,unit,mission_day,time\n"
-        "demo_astronaut_1,example_indicator,1,example_unit,1,13:30\n"
+        "person_id,indicator_id,value,unit,mission_day,time,context\n"
+        "demo_astronaut_1,example_indicator,1,example_unit,1,13:30,rest\n"
     ),
     "config/data/demo_ranges.csv": (
         "indicator_id,min,max,source,generation_note\n"
@@ -83,24 +83,24 @@ class CheckContentNumbersTest(unittest.TestCase):
     def test_value_with_underscore_is_error(self):
         files = dict(VALID)
         files["config/data/demo_data.csv"] = (
-            "person_id,indicator_id,value,unit,mission_day,time\n"
-            "demo_astronaut_1,example_indicator,1_000,example_unit,1,13:30\n"
+            "person_id,indicator_id,value,unit,mission_day,time,context\n"
+            "demo_astronaut_1,example_indicator,1_000,example_unit,1,13:30,rest\n"
         )
         self.assert_error(files, "value must be a number")
 
     def test_mission_day_superscript_rejected(self):
         files = dict(VALID)
         files["config/data/demo_data.csv"] = (
-            "person_id,indicator_id,value,unit,mission_day,time\n"
-            "demo_astronaut_1,example_indicator,1,example_unit,²,13:30\n"
+            "person_id,indicator_id,value,unit,mission_day,time,context\n"
+            "demo_astronaut_1,example_indicator,1,example_unit,²,13:30,rest\n"
         )
         self.assert_error(files, "mission_day must be a positive integer")
 
     def test_mission_day_underscore_rejected(self):
         files = dict(VALID)
         files["config/data/demo_data.csv"] = (
-            "person_id,indicator_id,value,unit,mission_day,time\n"
-            "demo_astronaut_1,example_indicator,1,example_unit,1_0,13:30\n"
+            "person_id,indicator_id,value,unit,mission_day,time,context\n"
+            "demo_astronaut_1,example_indicator,1,example_unit,1_0,13:30,rest\n"
         )
         self.assert_error(files, "mission_day must be a positive integer")
 

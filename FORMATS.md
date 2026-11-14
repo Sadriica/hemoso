@@ -1,6 +1,6 @@
 # Content formats
 
-**Draft for the team to confirm** · Sat 14 Nov 12:31 · attention `notify` column added 15:15 (Bio 2)
+**Draft for the team to confirm** · Sat 14 Nov 12:31 · attention `notify` column added 15:15 (Bio 2) · indicators, tier and system 15:40 · min_spread and mood scale 16:10 (Phys) · demo_data context 16:30 (Phys)
 
 The agreement between biologists and engineers: which files the solution reads,
 their exact format, and who owns each one. Built from the team's solution
@@ -38,12 +38,27 @@ new ones without updating this table and the owner named in it.
 
 | id | Name | Unit | Direction | Notes |
 | --- | --- | --- | --- | --- |
-| `<indicator_id>` | to be filled by Phys (REQ-03) | to be filled by Phys (REQ-03) | `higher`, `lower` or `both` (which direction is worse; `both` when either side matters) | One row per indicator; example id `example_indicator`. The team has not chosen the indicators yet. |
+| `hr_bpm` | Heart rate | bpm | `both` | Tier A · system `cardiovascular` |
+| `bp_sys_mmhg` | Systolic blood pressure | mmHg | `both` | Tier A · system `cardiovascular` |
+| `bp_dia_mmhg` | Diastolic blood pressure | mmHg | `both` | Tier A · system `cardiovascular` |
+| `temp_core_c` | Core temperature | °C | `both` | Tier A · system `thermoregulation` |
+| `sleep_h` | Sleep duration | h | `lower` | Tier A · system `sleep` |
+| `mood_1_5` | Mood | 1 to 5 | `lower` | Tier B · system `neuro_behavioural`; 1 = very low, 2 = low, 3 = neutral, 4 = good, 5 = very good, about the whole day, answered before sleep (our scale, Assumption: NASA asks about mood before sleep and publishes no fixed scale) |
+| `glucose_mgdl` | Blood glucose | mg/dL | `both` | Tier C · system `metabolic`; explained only, never an input |
 | `<condition_id>` | to be filled by Bio 2 (REQ-06) | — (a condition has a probability, not a unit) | — | One row per possible condition; example id `example_condition`. |
 | `<body_region_id>` | to be filled by the owner (open question) | — | — | One row per selectable body region; example id `example_body_region`. |
 
-The unit and direction live with each indicator in `data/indicators.csv`; the
-table above is the summary every other file reads against.
+The demo indicators are the six the challenge statement names (team decision,
+Sat 14 Nov 15:37; blood pressure is two ids). Phys fills unit, direction and the
+rest in `data/indicators.csv`; the table above is the summary every other file
+reads against.
+
+Tiers: `A` measured by an instrument that flies, `B` self-reported, `C` explained
+only (no in-flight measurement; never an input).
+
+Systems (what the 3D body opens): `cardiovascular`, `respiratory`,
+`thermoregulation`, `sleep`, `neuro_behavioural`, `metabolic`,
+`musculoskeletal`, `radiation`.
 
 ## 3. One section per file
 
@@ -59,7 +74,7 @@ Purpose: the master list of indicators. One row per indicator; it answers
 "what is measured" (REQ-03) and "which hazards affect it" (REQ-07).
 
 Columns in order: `id`, `name`, `unit`, `direction`, `measured_on_board`,
-`hazards`, `source`.
+`hazards`, `min_spread`, `tier`, `system`, `source`.
 
 - `id`: the indicator id from section 2.
 - `name`: plain name, sentence case.
@@ -71,19 +86,46 @@ Columns in order: `id`, `name`, `unit`, `direction`, `measured_on_board`,
 - `hazards`: the hazards from REQ-07 that affect this indicator, separated by
   spaces. Use these names: `radiation`, `isolation_and_confinement`,
   `distance_from_earth`, `gravity_fields`, `hostile_closed_environments`.
-- `source`: a link or the word `Assumption`.
+- `min_spread`: a number greater than 0, in the row's unit. The noise floor of
+  the instrument: the smallest spread the baseline uses, so a flat history does
+  not flag every small change. An engineering default, marked `Assumption` in
+  `docs/findings/phys-02-baseline-state-rule.md`, not a clinical value.
+- `tier`: `A`, `B` or `C` (section 2).
+- `system`: one system from section 2; the 3D body uses it to group indicators.
+- `source`: a link or the word `Assumption`. It must support every claim in the
+  row, the hazards included; if the hazards need another source, add it
+  separated by a space.
 
 Example:
 
 ```csv
-id,name,unit,direction,measured_on_board,hazards,source
-example_indicator,Example indicator,example_unit,higher,example measurement method,isolation_and_confinement,Assumption
+id,name,unit,direction,measured_on_board,hazards,min_spread,tier,system,source
+example_indicator,Example indicator,example_unit,higher,example measurement method,isolation_and_confinement,1,A,neuro_behavioural,Assumption
 ```
 
 Valid when: one row per `id`, no duplicate `id`; `id` in section 2; `unit`
 matches the unit in the section 2 table for that `id`; `direction` is `higher`,
-`lower` or `both`; `source` is a link or `Assumption`. This file holds no
-thresholds or medical values.
+`lower` or `both`; `min_spread` is a number greater than 0; `tier` is `A`, `B` or `C`; `system` is one of section 2;
+`source` is a link or `Assumption`. This file holds no thresholds or medical
+values.
+
+### How each value is compared (team decision, Sat 14 Nov 15:37)
+
+1. **Own baseline:** the median and spread of that person's entries for the
+   indicator over the last 14 days (rolling window). The spread is
+   `max(1.4826 × median absolute deviation, min_spread)`; with fewer than 3
+   entries the state is "no data yet", and a value more than 3 spreads from the
+   median is "outside your usual range" (`docs/findings/phys-02-baseline-state-rule.md`).
+   The app computes it from the stored history (REQ-27); no file holds it.
+2. **Clinical or assumed limits:** the rows of `rules/attention.csv`, each with
+   its source or `Assumption` and who is notified.
+3. **Possible conditions:** `rules/conditions.csv`, shown as probabilities with
+   what they are based on, never as a certainty; the CMO or flight surgeon
+   confirms.
+
+States the astronaut reads: no data yet · in your usual range · outside your
+usual range · needs review (an attention row is crossed). Bio 2 writes the
+final wording.
 
 ### `config/data/demo_data.csv`
 
@@ -92,7 +134,7 @@ the same columns the app stores for a real entry (REQ-27), so the history view
 works without real data (REQ-29).
 
 Columns in order: `person_id`, `indicator_id`, `value`, `unit`, `mission_day`,
-`time`.
+`time`, `context`.
 
 - `person_id`: a lowercase `snake_case` id for a synthetic astronaut; the demo
   uses `demo_astronaut_1`.
@@ -101,18 +143,23 @@ Columns in order: `person_id`, `indicator_id`, `value`, `unit`, `mission_day`,
 - `unit`: the same unit as the indicator's row in `data/indicators.csv`.
 - `mission_day`: an integer; "day N" per `STANDARDS.md` §4.
 - `time`: the 24-hour clock time `HH:MM`, per `STANDARDS.md` §4.
+- `context`: `rest`, `after_exercise`, `on_waking` or `before_sleep`. A reading
+  without its context is not comparable with another: heart rate and core
+  temperature after exercise are a different population from the same values at
+  rest.
 
 Example:
 
 ```csv
-person_id,indicator_id,value,unit,mission_day,time
-demo_astronaut_1,example_indicator,1,example_unit,1,13:30
+person_id,indicator_id,value,unit,mission_day,time,context
+demo_astronaut_1,example_indicator,1,example_unit,1,13:30,rest
 ```
 
 Valid when: `indicator_id` exists in `data/indicators.csv`; `unit` matches that
 indicator's unit; `value` is inside the range for that indicator in
 `data/demo_ranges.csv`; `mission_day` is a positive integer; `time` is 24-hour
-`HH:MM`. These values are synthetic, so no `source` column is needed here — the
+`HH:MM`; `context` is `rest`, `after_exercise`, `on_waking` or `before_sleep`.
+These values are synthetic, so no `source` column is needed here — the
 ranges are sourced in `data/demo_ranges.csv`.
 
 ### `config/data/demo_ranges.csv`

@@ -92,9 +92,7 @@ rule.
 - `FORMATS.md` section 2: one more column, `min_spread`, with the table above.
 - `config/rules/attention.csv`: the only place a `needs_review` can come from.
 
-## Limits and open questions
-
-- The window length is a choice. Fourteen readings covers two weeks of daily entries,
+## Limits and open questions- The window length is a choice. Fourteen readings covers two weeks of daily entries,
   so a short demo needs three readings before anything is shown, which is honest but
   must be explained in the pitch.
 - A real change may be a slow drift, not a jump. A moving window follows the drift
@@ -103,3 +101,9 @@ rule.
   a new level, the window eventually calls it usual. That is intended, and it is why
   the history view keeps the whole series.
 - No trend, no probability and no diagnosis comes out of this rule, by design.
+
+## Sources
+
+- WHO, Hypertension (140/90 mmHg on two days; 180/120 with symptoms needs care): https://www.who.int/news-room/fact-sheets/detail/hypertension
+- NASA-STD-3001 Vol 1 Rev C, limits relative to pre-mission values: https://www.nasa.gov/wp-content/uploads/2023/11/nasa-std-3001-vol-1-rev-c-with-signature.pdf
+

@@ -8,9 +8,26 @@ create table entries (
     unit text not null,
     mission_day integer not null,
     time text not null,
+    context text not null default 'rest',
     created_at timestamptz not null default now()
 );
 
 create index entries_person_indicator_idx on entries (person_id, indicator_id);
+
+-- Natural key (REQ-13): one entry per person, indicator, day and time.
+-- Delete duplicates first (keep the lowest id per key): required only on a
+-- project that already ran the create table above, a no-op on a fresh one.
+delete from entries
+where id not in (
+    select min(id) from entries
+    group by person_id, indicator_id, mission_day, time
+);
+
+-- A project that already ran the create table above needs the context column;
+-- this is a no-op on a fresh one where the column is part of the create table.
+alter table entries add column if not exists context text not null default 'rest';
+
+alter table entries add constraint entries_natural_key_unique
+    unique (person_id, indicator_id, mission_day, time);
 
 alter table entries enable row level security;

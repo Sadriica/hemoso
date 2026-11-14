@@ -231,6 +231,25 @@ class MainTests(unittest.TestCase):
         self.assertEqual(code, 0, out)
         self.assertIn("OK to push", out)
 
+    def test_merge_of_other_person_branch_does_not_block_own_push(self):
+        self.seed_root_commit()
+        self.git("branch", "origin/main")
+        self.git("checkout", "-qb", "eng1")
+        self.write("scripts/now.py", "eng1 work\n")
+        self.git("add", ".")
+        self.git("commit", "-qm", "feat(checks): eng1 work (#6)")
+        self.git("branch", "origin/eng1")
+        self.git("checkout", "-q", "main")
+        self.git("checkout", "-qb", "phys")
+        self.write("config/data/o.csv", "own\n")
+        self.git("add", ".")
+        self.git("commit", "-qm", "data(indicators): own file (#14)")
+        self.git("merge", "--no-edit", "-q", "origin/eng1")
+        code, out = self.run_main()
+        self.assertEqual(code, 0, out)
+        self.assertIn("OK to push", out)
+        self.assertIn("Files changed or not pushed: 1", out)
+
     def test_foreign_file_in_own_commit_fails(self):
         self.seed_root_commit()
         self.git("branch", "origin/main")

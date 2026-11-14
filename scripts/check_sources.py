@@ -20,7 +20,7 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-URL = re.compile(r"https?://[^\s<>\"'|\]]+")
+URL = re.compile(r"https?://[^\s<>\"'|,)\]]+")
 FILES = ["config/**/*.md", "config/**/*.csv", "config/**/*.json", "docs/findings/*.md"]
 SOURCES = Path("docs/sources.md")
 
@@ -32,7 +32,7 @@ def collect() -> dict[str, set[str]]:
             if f.name == "TEMPLATE.md":
                 continue
             for u in URL.findall(f.read_text(encoding="utf-8", errors="ignore")):
-                used.setdefault(u.rstrip("."), set()).add(f.as_posix())
+                used.setdefault(u.rstrip(".;:"), set()).add(f.as_posix())
     return used
 
 
