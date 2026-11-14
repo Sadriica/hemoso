@@ -26,6 +26,13 @@ services live only in two places:
 fill in; it must carry no keys. `.gitignore` keeps every `.env` file out except
 that example.
 
+## Supabase access
+
+The backend holds the Supabase service role key, which bypasses row level
+security, so the `entries` table has RLS on with no policies and only the
+backend can reach it. The API itself has no login; that is acceptable only
+because every value is synthetic (REQ-14).
+
 ## If a key is committed
 
 A key that reaches the repository is exposed, and removing the commit does not
