@@ -25,7 +25,7 @@ design or code: that starts at 9:00 on Saturday (Space Apps rules).
 | `scripts/new_finding.py`, `check_sources.py`, `requirements_report.py` | Biologists' helpers (see the table in `AGENTS.md`) |
 | `docs/findings/` | One file per finding, from `TEMPLATE.md` |
 | `team/<person>/` | README (status and blockers), LOG and notes for each person |
-| `docs/BOARD.md`, `scripts/board.py`, `docs/board/seed-tasks.csv`, `docs/board/requirements.csv` | The board: design, tool, 15 plan-level cards and the requirements (empty until T-05) |
+| `docs/BOARD.md`, `scripts/board.py`, `docs/board/seed-tasks.csv`, `docs/board/requirements.csv` | The board: design, tool, 15 plan-level cards and the general requirements |
 | `team/eng1/notes/board-browser-setup.md` | Prompt that builds the board views and workflows in the browser |
 | `docs/board/issue-templates/` | Task, requirement, bug, finding and question templates (`board.py init` copies them to `.github/ISSUE_TEMPLATE/`) |
 | `CHANGELOG.md` | Written by Eng 1 at every merge into `main` |

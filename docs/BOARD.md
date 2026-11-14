@@ -82,11 +82,12 @@ Wambi fills it on Saturday so every card is assigned to its owner.
 | Non-functional | How well the solution must do it: usability, plain language, sources, reliability | Every medical statement has a source |
 | Submission rule | Not about the product: what the submission or the event requires | Everything submitted in English; the deadline |
 
-`docs/board/requirements.csv` starts empty. Wambi fills it on Saturday from the
-official challenge page and the guides (task T-05); the `class` column says
-whether each row is a challenge obligation, an optional consideration, a
-delivery rule or an event operation. The solution's own requirements come after
-the team chooses it.
+`docs/board/requirements.csv` holds 25 general requirements, written by Wambi on
+Saturday from the official challenge page, the guides and NASA-STD-3001 (T-05).
+The `class` column says whether each row is a challenge obligation, an optional
+consideration, NASA context, a delivery rule or an event operation; the
+`criterion` column sets the judging criterion on the card. The solution's own
+requirements come after the team chooses it.
 
 ## Labels
 | Label | Meaning |
@@ -127,7 +128,7 @@ gh auth refresh -s project                     # once, adds the project scope
 python scripts/board.py init --owner <github-login> --repo <github-login>/hemoso
 git add scripts/board.json .github/ISSUE_TEMPLATE && git commit -m "chore(board): add board config and issue templates" && git push
 python scripts/board.py import docs/board/seed-tasks.csv     # 15 plan-level cards; solution cards come from T-07
-python scripts/board.py import docs/board/requirements.csv   # after Wambi writes them (T-05)
+python scripts/board.py import docs/board/requirements.csv   # 25 general requirements (T-05)
 ```
 Then fill `"logins"` in `scripts/board.json` and commit it.
 

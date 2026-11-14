@@ -43,7 +43,7 @@ FORBIDDEN = re.compile(
 
 def run(*cmd: str) -> str:
     p = subprocess.run(cmd, capture_output=True, text=True)
-    return p.stdout.strip() if p.returncode == 0 else ""
+    return p.stdout.rstrip() if p.returncode == 0 else ""
 
 
 def owns(person: str, path: str) -> bool:
