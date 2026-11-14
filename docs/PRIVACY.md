@@ -1,7 +1,8 @@
 # Privacy · what HeMoSo stores and where
 
 HeMoSo is a demo and a prototype. Every person and value in the repository, the
-demo and Supabase is synthetic; the interface labels the data as such. This is
+demo and Supabase is synthetic; the interface must label the data as synthetic
+(REQ-14). This is
 [REQ-14](requirements.md): health data is private, and no real personal data
 belongs in the repository or the app.
 
@@ -14,15 +15,15 @@ No measurement belongs to a real person.
 
 ## Where keys live
 
-The app stores data in Supabase and runs on Vercel and a backend host
+The app must store data in Supabase and run on Vercel and a backend host
 ([DECISIONS.md](DECISIONS.md), [DEPLOY.md](DEPLOY.md)). The keys for those
 services live only in two places:
 
 - a local `.env` file on each engineer's machine, never in the repository;
 - the hosts' own settings (Vercel environment variables and the backend host).
 
-`.env.example` lists the names with empty values so a new machine knows what to
-fill in; it carries no keys. `.gitignore` keeps every `.env` file out except
+`.env.example` must list the names with empty values so a new machine knows what to
+fill in; it must carry no keys. `.gitignore` keeps every `.env` file out except
 that example.
 
 ## If a key is committed
