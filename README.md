@@ -13,6 +13,30 @@ _(Eng 1 replaces this paragraph with what we built and how to run it before subm
 
 ---
 
+## Run and test
+
+Run these from the repository root before every push (`AGENTS.md` rule 6).
+GitHub runs the same checks on every push and pull request
+(`.github/workflows/checks.yml`).
+
+```bash
+python -m unittest discover -s scripts -p "test_*.py"   # team script tests
+python scripts/check_content.py                         # config/ against FORMATS.md (--strict: every file required)
+python scripts/si_use.py --check                        # SI-USE.md matches the SI log
+python scripts/precheck.py                              # branch, paths, messages, secrets
+```
+
+Backend (Python 3.13, uv; details and environment variables in `backend/README.md`):
+
+```bash
+cd backend
+uv sync --frozen                     # install from the lockfile
+uv run ruff check . && uv run pytest # lint and tests
+uv run uvicorn app.main:app          # serve the API on http://127.0.0.1:8000
+```
+
+---
+
 ## How we work
 
 | Role | GitHub | Branch | Agent | Personal folder |
@@ -28,6 +52,7 @@ findings and status messages: `STANDARDS.md`. Skills: `SKILLS.md`.
 Saturday setup: `docs/SETUP.md`. Board: `docs/BOARD.md`.
 Tools and versions: `docs/STACK.md`. Public links and video: `docs/DEPLOY.md`.
 Decisions and rejected options: `docs/DECISIONS.md`.
+Privacy: `docs/PRIVACY.md`. SI use: `SI-USE.md`.
 
 ### The usual way: ask your agent
 - "save my progress" → checks the branch, proposes `git add` of your paths, commit and push.
