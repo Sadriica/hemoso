@@ -26,7 +26,7 @@ Review the latest change you are pointed to. Do not edit anything.
 Check:
 1. Every medical statement has a source, and the source says what is claimed
    (open the link). If there is no source, it is marked "Assumption".
-2. The text gives no diagnoses or percentages and is easy to understand.
+2. A suggested condition is a probability with its basis, never a certainty ("you have X"), and the text is easy to understand.
 3. It makes biological sense: units, ranges, direction of each measurement.
 4. It follows `FORMATS.md` (once agreed) and writes only inside its owner's paths.
 5. For new code or config: the tests were run and pass; any number reported in
