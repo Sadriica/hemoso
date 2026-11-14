@@ -53,4 +53,5 @@ with `python scripts/si_use.py`. The table grows with each finished card.
 | Sat 16:05–16:15 | T-08, REQ-32 support (#8, #48) | scripts/check_sources.py, scripts/test_check_sources.py, docs/API.md, docs/DEPLOY.md | Assistant fixed link parsing and documented the Vercel build and its variable | Wambi |
 | Sat 16:15–16:30 | T-06, REQ-29 (#6, #45) | FORMATS.md, scripts/check_content.py and tests, backend/app/*, backend/tests/*, schema.sql, docs/API.md, docs/openapi.json | Assistant added the demo_data context column from Phys's format v2 to the check and the backend | Wambi |
 | Sat 16:25–16:35 | REQ-10 support (#8) | scripts/precheck.py, scripts/test_precheck.py | Assistant made precheck ignore commits that come from merging another person's branch, with a test | Wambi |
+| Sat 16:45–17:20 | REQ-32 (#48), T-08 (#8) | CHANGELOG.md; Railway, Supabase and Vercel settings (no repository code) | Assistant linked the deployed backend, database and frontend, tested them, and drafted the cp2 changelog entry | Wambi |
 <!-- SI-USE-TABLE:END -->
