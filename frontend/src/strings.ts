@@ -1,52 +1,31 @@
-import type { Environment, Fitness, Level, SystemId } from './api/types'
-
-const phaseText: Record<string, string> = {
-  long_duration: 'Long duration',
-  early_flight: 'First weeks',
-}
-
-// Every text shown on screen lives here, in plain English.
+// Every text shown on screen lives here, in plain English (REQ-30).
 export const strings = {
   appName: 'HeMoSo',
   skipToMain: 'Skip to main content',
   syntheticNotice: 'Demo with synthetic data only.',
-  loading: 'Loading…',
-  error: 'Something went wrong.',
-  retry: 'Retry',
-  overall: 'Overall',
-  role: {
-    label: 'Role',
-    astronaut: 'Astronaut',
-    missionControl: 'Mission control',
+  placeholderNotice: 'Showing example content until the team adds config files.',
+  personPickerLabel: 'Person',
+  personHeading: (personId: string): string => `Status for ${personId}`,
+  tabs: {
+    label: 'Screens',
+    home: 'Home',
   },
-  crewPickerLabel: 'Crew member',
-  missionDayLabel: 'Mission day',
-  dayLabel: (day: number): string => `Day ${day}`,
-  environment: {
-    ship: 'Ship',
-    station: 'Station',
-    rover: 'Rover',
-    base: 'Base',
-  } satisfies Record<Environment, string>,
-  level: {
-    green: 'Green · OK',
-    yellow: 'Yellow · Watch',
-    orange: 'Orange · Needs attention',
-  } satisfies Record<Level, string>,
-  system: {
-    heart: 'Heart and circulation',
-    immune: 'Immune system',
-    mood_sleep: 'Mood and sleep',
-    metabolism: 'Metabolism and nutrition',
-    bone_muscle: 'Bone and muscle',
-  } satisfies Record<SystemId, string>,
-  fitness: {
-    fit: 'Fit',
-    fit_with_restrictions: 'Fit with restrictions',
-    not_fit: 'Not fit',
-  } satisfies Record<Fitness, string>,
-}
-
-export function phaseLabel(phase: string): string {
-  return phaseText[phase] ?? phase
+  badge: {
+    inRange: 'In range',
+    noData: 'No data',
+  },
+  nextStep: {
+    inRange: 'No action needed.',
+    noData: 'No data yet.',
+    missing: 'No guidance for this state yet.',
+  },
+  sources: {
+    label: 'Sources',
+    assumption: 'Assumption',
+    empty: 'No sources listed.',
+  },
+  problems: {
+    label: 'Content problems (for the team)',
+  },
+  timeLabel: (day: number, time: string): string => `Day ${day} ${time}`,
 }

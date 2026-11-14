@@ -1,29 +1,36 @@
-import { useState } from 'react'
-import { createClient } from './api/client'
-import type { ApiClient } from './api/client'
+import { useMemo, useRef, useState, type KeyboardEvent } from 'react'
+import { loadContent } from './content/load'
 import SyntheticNotice from './components/SyntheticNotice'
-import { useAppData } from './hooks/useAppData'
-import type { Role } from './hooks/useAppData'
-import AstronautHome from './screens/AstronautHome'
-import MissionControl from './screens/MissionControl'
-import { phaseLabel, strings } from './strings'
+import Home from './screens/Home'
+import { strings } from './strings'
 
-interface AppProps {
-  client?: ApiClient
-}
+const TABS = [{ id: 'home', label: strings.tabs.home }] as const
 
-export default function App({ client: clientProp }: AppProps) {
-  const [client] = useState<ApiClient>(() => clientProp ?? createClient())
-  const [role, setRole] = useState<Role>('astronaut')
-  const [crewId, setCrewId] = useState('')
-  const [day, setDay] = useState(0)
+export default function App() {
+  const [data] = useState(() => loadContent())
+  const personIds = useMemo(() => {
+    const ids = new Set(data.demoEntries.map((entry) => entry.personId))
+    return [...ids]
+  }, [data])
+  const [personId, setPersonId] = useState('')
+  const selectedPerson = personId || personIds[0] || ''
+  const [activeTab, setActiveTab] = useState(TABS[0].id)
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([])
 
-  const { mission, crew, days, status, mcStatus, loading, error, retry } =
-    useAppData(client, role, crewId, day)
+  function onTabKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
+    const index = TABS.findIndex((tab) => tab.id === activeTab)
+    let next = index
+    if (event.key === 'ArrowRight') next = (index + 1) % TABS.length
+    else if (event.key === 'ArrowLeft') next = (index - 1 + TABS.length) % TABS.length
+    else if (event.key === 'Home') next = 0
+    else if (event.key === 'End') next = TABS.length - 1
+    else return
 
-  const selectedCrewId = crewId || crew[0]?.id || ''
-  const selectedDay = day || days[0] || 0
-  const hasContent = role === 'astronaut' ? status !== null : mcStatus.length > 0
+    event.preventDefault()
+    const target = TABS[next]
+    setActiveTab(target.id)
+    tabRefs.current[next]?.focus()
+  }
 
   return (
     <>
@@ -32,97 +39,52 @@ export default function App({ client: clientProp }: AppProps) {
       </a>
       <header className="app-header">
         <h1>{strings.appName}</h1>
-        <div className="top-bar">
-          {mission && (
-            <span className="top-bar__item">
-              {strings.environment[mission.environment]}
-            </span>
-          )}
-          {selectedDay > 0 && (
-            <span className="top-bar__item">{strings.dayLabel(selectedDay)}</span>
-          )}
-          {mission && (
-            <span className="top-bar__item">{phaseLabel(mission.phase)}</span>
-          )}
-        </div>
-        <div className="controls">
-          <div className="role-switcher" role="group" aria-label={strings.role.label}>
-            <button
-              type="button"
-              aria-pressed={role === 'astronaut'}
-              onClick={() => setRole('astronaut')}
-            >
-              {strings.role.astronaut}
-            </button>
-            <button
-              type="button"
-              aria-pressed={role === 'mission_control'}
-              onClick={() => setRole('mission_control')}
-            >
-              {strings.role.missionControl}
-            </button>
-          </div>
-          {role === 'astronaut' && (
-            <div className="crew-picker">
-              <label htmlFor="crew-picker">{strings.crewPickerLabel}</label>
-              <select
-                id="crew-picker"
-                value={selectedCrewId}
-                onChange={(event) => setCrewId(event.target.value)}
-              >
-                {crew.map((entry) => (
-                  <option key={entry.id} value={entry.id}>
-                    {entry.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-          <div className="day-picker">
-            <label htmlFor="mission-day">{strings.missionDayLabel}</label>
-            <select
-              id="mission-day"
-              value={selectedDay}
-              disabled={days.length === 0}
-              onChange={(event) => setDay(Number(event.target.value))}
-            >
-              {days.map((d) => (
-                <option key={d} value={d}>
-                  {strings.dayLabel(d)}
-                </option>
-              ))}
-            </select>
-          </div>
-          {loading && hasContent && (
-            <span role="status" className="loading-indicator">
-              {strings.loading}
-            </span>
-          )}
+        <SyntheticNotice />
+        <div className="person-picker">
+          <label htmlFor="person-picker">{strings.personPickerLabel}</label>
+          <select
+            id="person-picker"
+            value={selectedPerson}
+            onChange={(event) => setPersonId(event.target.value)}
+          >
+            {personIds.map((id) => (
+              <option key={id} value={id}>
+                {id}
+              </option>
+            ))}
+          </select>
         </div>
       </header>
       <main id="main-content" className="app-main" tabIndex={-1}>
-        <SyntheticNotice />
-        {error && (
-          <div className="error" role="alert">
-            <p>{strings.error}</p>
-            <button type="button" onClick={retry}>
-              {strings.retry}
+        <div role="tablist" aria-label={strings.tabs.label} className="tabs">
+          {TABS.map((tab, index) => (
+            <button
+              key={tab.id}
+              id={`tab-${tab.id}`}
+              ref={(element) => {
+                tabRefs.current[index] = element
+              }}
+              role="tab"
+              aria-selected={activeTab === tab.id}
+              aria-controls={`panel-${tab.id}`}
+              tabIndex={activeTab === tab.id ? 0 : -1}
+              onClick={() => setActiveTab(tab.id)}
+              onKeyDown={onTabKeyDown}
+            >
+              {tab.label}
             </button>
-          </div>
-        )}
-        {!error && !hasContent && <p role="status">{strings.loading}</p>}
-        {!error && role === 'astronaut' && status && (
-          <AstronautHome
-            label={
-              crew.find((entry) => entry.id === status.crewId)?.label ??
-              status.crewId
-            }
-            status={status}
-          />
-        )}
-        {!error && role === 'mission_control' && mcStatus.length > 0 && (
-          <MissionControl entries={mcStatus} />
-        )}
+          ))}
+        </div>
+        <div
+          role="tabpanel"
+          id={`panel-${activeTab}`}
+          aria-labelledby={`tab-${activeTab}`}
+          tabIndex={0}
+        >
+          {activeTab === 'home' && (
+            <Home personId={selectedPerson} data={data} />
+          )}
+        </div>
       </main>
     </>
   )

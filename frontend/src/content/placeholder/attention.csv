@@ -1,0 +1,3 @@
+# Placeholder data. Not medical content. Replaced by config/rules/attention.csv.
+indicator_id,side,threshold,attention_level,source
+example_indicator,above,100,example_level,Assumption

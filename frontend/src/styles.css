@@ -13,14 +13,14 @@
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 
-  /* Level colours. Text colours are dark enough on their light backgrounds
-     to keep at least 4.5:1 contrast. */
-  --level-green-text: #0b3d1f;
-  --level-green-bg: #e6f4ea;
-  --level-yellow-text: #4a3400;
-  --level-yellow-bg: #fbf0c9;
-  --level-orange-text: #7a2200;
-  --level-orange-bg: #fce8dd;
+  /* Attention badge colours. Text colours are dark enough on their light
+     backgrounds to keep at least 4.5:1 contrast. */
+  --attention-in-range-text: #0b3d1f;
+  --attention-in-range-bg: #e6f4ea;
+  --attention-attention-text: #7a2200;
+  --attention-attention-bg: #fce8dd;
+  --attention-no-data-text: #404040;
+  --attention-no-data-bg: #e8e8e8;
 }
 
 *,
@@ -68,86 +68,20 @@ body {
   font-size: 1.5rem;
 }
 
-.top-bar {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 0.75rem;
-  color: #333333;
-}
-
-.top-bar__item + .top-bar__item::before {
-  content: '·';
-  margin-right: 1rem;
-  color: #6b6b6b;
-}
-
-.controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1.25rem;
-  align-items: end;
-}
-
-.role-switcher {
-  display: inline-flex;
-  gap: 0.5rem;
-}
-
-.role-switcher button {
-  padding: 0.45rem 0.9rem;
-  border: 1px solid #b7b7b7;
-  border-radius: 0.4rem;
-  background: #ffffff;
-  color: #1a1a1a;
-  cursor: pointer;
-}
-
-.role-switcher button[aria-pressed='true'] {
-  background: #005fcc;
-  border-color: #005fcc;
-  color: #ffffff;
-}
-
-.day-picker,
-.crew-picker {
+.person-picker {
   display: inline-flex;
   gap: 0.5rem;
   align-items: center;
+  margin-top: 0.5rem;
 }
 
-.day-picker select,
-.crew-picker select {
+.person-picker select {
+  min-height: 44px;
   padding: 0.4rem 0.5rem;
   border: 1px solid #b7b7b7;
   border-radius: 0.4rem;
   background: #ffffff;
   color: #1a1a1a;
-}
-
-.loading-indicator {
-  color: #4b4b4b;
-  align-self: center;
-}
-
-.error {
-  margin-top: 1rem;
-  padding: 1rem;
-  border: 1px solid #e2e2e2;
-  border-radius: 0.5rem;
-  background: #fdf3f3;
-}
-
-.error p {
-  margin: 0 0 0.75rem;
-}
-
-.error button {
-  padding: 0.45rem 0.9rem;
-  border: 1px solid #b7b7b7;
-  border-radius: 0.4rem;
-  background: #ffffff;
-  color: #1a1a1a;
-  cursor: pointer;
 }
 
 .app-main {
@@ -159,46 +93,81 @@ body {
   color: #4b4b4b;
 }
 
-.panel {
-  margin-top: 1rem;
-  padding: 1rem;
-  border: 1px solid #e2e2e2;
-  border-radius: 0.5rem;
+/* Tabs (WAI-ARIA tabs pattern). */
+.tabs {
+  display: flex;
+  gap: 0.25rem;
+  border-bottom: 1px solid #e2e2e2;
+  margin-bottom: 1rem;
 }
 
-.panel h2 {
+.tabs [role='tab'] {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: 0.4rem 0.4rem 0 0;
+  background: #f2f2f2;
+  color: #1a1a1a;
+  cursor: pointer;
+}
+
+.tabs [role='tab'][aria-selected='true'] {
+  background: #ffffff;
+  border-color: #e2e2e2;
+  font-weight: 600;
+}
+
+.home-heading {
   margin: 0 0 0.75rem;
   font-size: 1.15rem;
 }
 
-.overall {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
-}
-
-.overall__label {
-  font-weight: 600;
-}
-
-.systems,
-.fitness {
+.indicator-list {
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-.systems__item,
-.fitness__item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.6rem 0;
+.indicator-row {
+  padding: 0.85rem 0;
   border-top: 1px solid #ececec;
 }
 
-.level-badge {
+.indicator-row__header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.indicator-row__name {
+  font-weight: 600;
+}
+
+.indicator-row__reading {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  margin-left: auto;
+}
+
+.indicator-row__value {
+  font-variant-numeric: tabular-nums;
+}
+
+.indicator-row__time {
+  color: #4b4b4b;
+  font-size: 0.9rem;
+}
+
+.indicator-row__next-step {
+  margin: 0.5rem 0 0.25rem;
+}
+
+.attention-badge {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
@@ -208,22 +177,72 @@ body {
   white-space: nowrap;
 }
 
-.level-badge__icon {
+.attention-badge__icon {
   flex: none;
   color: currentColor;
 }
 
-.level-badge--green {
-  color: var(--level-green-text);
-  background: var(--level-green-bg);
+.attention-badge--in_range {
+  color: var(--attention-in-range-text);
+  background: var(--attention-in-range-bg);
 }
 
-.level-badge--yellow {
-  color: var(--level-yellow-text);
-  background: var(--level-yellow-bg);
+.attention-badge--attention {
+  color: var(--attention-attention-text);
+  background: var(--attention-attention-bg);
 }
 
-.level-badge--orange {
-  color: var(--level-orange-text);
-  background: var(--level-orange-bg);
+.attention-badge--no_data {
+  color: var(--attention-no-data-text);
+  background: var(--attention-no-data-bg);
+}
+
+.disclosure {
+  margin: 0.4rem 0;
+}
+
+.disclosure__toggle {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid #b7b7b7;
+  border-radius: 0.4rem;
+  background: #ffffff;
+  color: #1a1a1a;
+  cursor: pointer;
+}
+
+.disclosure__chevron {
+  display: inline-flex;
+  transition: transform 0.15s ease;
+}
+
+.disclosure__toggle[aria-expanded='true'] .disclosure__chevron {
+  transform: rotate(90deg);
+}
+
+.sources__list,
+.problems__list {
+  margin: 0.4rem 0 0;
+  padding-left: 1.25rem;
+}
+
+.sources__empty {
+  margin: 0.4rem 0 0;
+  color: #4b4b4b;
+}
+
+/* Phone: stack the indicator row so it reads top to bottom. */
+@media (max-width: 599px) {
+  .indicator-row__header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.4rem;
+  }
+
+  .indicator-row__reading {
+    margin-left: 0;
+  }
 }
