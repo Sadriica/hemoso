@@ -15,7 +15,7 @@ class Entry(BaseModel):
 
     person_id: str
     indicator_id: str
-    value: float
+    value: float = Field(allow_inf_nan=False)
     unit: str
     mission_day: int = Field(gt=0)
     time: str
