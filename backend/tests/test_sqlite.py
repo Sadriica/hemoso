@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sqlite3
 import threading
 
 import pytest
@@ -103,3 +104,32 @@ def test_sqlite_concurrent_resend_leaves_one_row(tmp_path):
 
     assert len(store.history("demo_astronaut_1", "example_indicator")) == 1
     assert sum(1 for _, created in results if created) == 1
+
+
+def test_sqlite_dedup_existing_duplicates(tmp_path, capsys):
+    path = tmp_path / "entries.db"
+    # A database written before REQ-13 has no unique index and can hold two
+    # identical rows for the same natural key.
+    conn = sqlite3.connect(path)
+    conn.execute(
+        "CREATE TABLE entries ("
+        "person_id TEXT NOT NULL, indicator_id TEXT NOT NULL,"
+        "value REAL NOT NULL, unit TEXT NOT NULL,"
+        "mission_day INTEGER NOT NULL, time TEXT NOT NULL)"
+    )
+    conn.executemany(
+        "INSERT INTO entries VALUES (?, ?, ?, ?, ?, ?)",
+        [
+            ("demo_astronaut_1", "example_indicator", 1.0, "example_unit", 1, "09:00"),
+            ("demo_astronaut_1", "example_indicator", 1.0, "example_unit", 1, "09:00"),
+        ],
+    )
+    conn.commit()
+    conn.close()
+
+    store = storage.SqliteStorage(path)
+
+    assert "removed 1" in capsys.readouterr().err
+    assert store.history("demo_astronaut_1", "example_indicator") == [
+        make_entry(1, "09:00")
+    ]

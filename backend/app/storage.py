@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import sqlite3
+import sys
 import threading
 from pathlib import Path
 from typing import Protocol
@@ -77,6 +78,20 @@ class SqliteStorage:
                 "mission_day INTEGER NOT NULL,"
                 "time TEXT NOT NULL)"
             )
+            # A database written before REQ-13 can hold two rows for the same
+            # natural key. Drop the duplicates (keep the oldest) before the
+            # unique index is created, so startup does not crash.
+            removed = self._conn.execute(
+                "DELETE FROM entries WHERE rowid NOT IN ("
+                "SELECT MIN(rowid) FROM entries"
+                " GROUP BY person_id, indicator_id, mission_day, time)"
+            ).rowcount
+            if removed:
+                print(
+                    f"removed {removed} duplicate entries for the same person,"
+                    " indicator, day and time",
+                    file=sys.stderr,
+                )
             # One row per natural key (REQ-13). IF NOT EXISTS also adds the
             # index to a database created before this constraint existed.
             self._conn.execute(
