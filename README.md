@@ -5,13 +5,42 @@ HeMoSo is the product; ReTardis is the team
 Challenge 2026 · Medellín · Challenge: *Create Health Monitoring
 Software for Astronauts on Space Missions*.
 
-The solution is designed and built during the event, from Saturday 14 November
-at 9:00. Until then this repository holds the team's work plan and tooling
-only. What the challenge asks: `docs/CHALLENGE.md`.
+What the challenge asks: `docs/CHALLENGE.md`.
 
-_(Eng 1 replaces this paragraph with what we built and how to run it before submission.)_
+## What HeMoSo is
 
----
+_Draft, the team confirms the wording._
+
+HeMoSo is a health monitoring application for astronauts on a mission, meant
+for continuous use. Each astronaut records their health data and symptoms and
+can consult their own history and trends at any time. The app compares each
+reading with the person's earlier readings and with attention thresholds, and
+tells them the next step in plain words. Its thresholds are set to astronaut
+ranges, from a source or marked as Assumption.
+
+How it presents health content, now and as it grows: a possible condition is a
+probability with what it is based on, never a certainty, and the crew medical
+officer or the flight surgeon confirms it. HeMoSo does not replace them.
+
+**Works now**
+- Home: the status of each indicator, from the latest reading and
+  `config/rules/attention.csv`, and the next step for that level.
+- Entry: one measurement, with the fields and checks of `FORMATS.md`.
+- History: the latest reading against the median of the person's earlier ones,
+  and every reading newest first.
+- Storage in the browser (`localStorage`), plus an outbox that sends entries to
+  the API when `VITE_API_BASE_URL` is set.
+- Synthetic demo data from `config/data/demo_data.csv`, written on the first
+  run, and loadable into the API with the seed command below.
+
+**Planned** (decided in `docs/DECISIONS.md`, not in the app yet)
+- Possible conditions as probabilities with their basis (`config/rules/conditions.csv`).
+- A 3D body built by layers: body zones, muscles, bones, ligaments, organs.
+- Face and eye analysis from the camera for fatigue, stress, mental state and sleep.
+- A rolling 14-day baseline per person, and learning from each person's records.
+
+Every value in the app, in the database and in the deployments is synthetic
+(REQ-14). There are no real personal health data anywhere.
 
 ## Run and test
 
@@ -34,6 +63,28 @@ uv sync --frozen                     # install from the lockfile
 uv run ruff check . && uv run pytest # lint and tests
 uv run uvicorn app.main:app          # serve the API on http://127.0.0.1:8000
 ```
+
+## Project map
+
+| Path | Holds |
+| --- | --- |
+| `backend/` | FastAPI API: health, entries, history per person and indicator; SQLite by default, Supabase by `STORAGE` |
+| `frontend/` | Vite, React and TypeScript app, with the Home, Entry and History screens |
+| `config/` | The health content and data the app reads: indicators, demo data, attention rules, conditions, per-indicator text (`FORMATS.md`) |
+| `docs/` | Requirements, decisions, API contract, tools and versions, deploy, privacy, sources, NASA data, findings |
+| `scripts/` | Team scripts: precheck, board, content and source checks |
+| `submission/` | Pitch script, slides, video and the submission text |
+| `team/` | One folder per person: role, status, log and notes |
+| `.github/` | The checks that run on every push and pull request |
+
+Key documents: `docs/API.md` (the API contract), `docs/DEPLOY.md` (public links
+and the video), `docs/PRIVACY.md` (what is stored and where the keys live),
+`FORMATS.md` (the files in `config/`), `SI-USE.md` (how SI tools helped).
+Requirements: `docs/requirements.md`. Decisions: `docs/DECISIONS.md`.
+
+## Live demo
+
+Public link: to be added (REQ-32)
 
 ---
 
