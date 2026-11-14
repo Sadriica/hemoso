@@ -25,8 +25,17 @@ END = "<!-- SI-USE-TABLE:END -->"
 
 def log_table() -> str:
     """Return the log's SI table: header, separator and data rows."""
-    lines = LOG.read_text(encoding="utf-8").splitlines()
-    table = [line for line in lines if line.strip().startswith("|")]
+    if not LOG.exists():
+        sys.exit(f"error: {LOG.relative_to(ROOT)} not found")
+    table = []
+    for line in LOG.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("|"):
+            continue
+        cells = [cell.strip() for cell in stripped.strip("|").split("|")]
+        if all(cell == "" for cell in cells):
+            continue  # skip a placeholder row such as "| | | | | |"
+        table.append(stripped)
     if not table:
         sys.exit(f"error: no table rows found in {LOG}")
     return "\n".join(table)
@@ -42,6 +51,9 @@ def render(text: str) -> str:
 
 def main(argv: list[str]) -> int:
     check = "--check" in argv
+    if not TARGET.exists():
+        print("error: SI-USE.md not found; create it with the two marker comments")
+        return 1
     try:
         current = TARGET.read_text(encoding="utf-8")
         wanted = render(current)
