@@ -9,14 +9,15 @@ import type { LoadedContent } from '../content/load'
 import type { EntryStore } from '../data/entryStore'
 import { useEntries } from '../hooks/useEntries'
 import { attentionText } from '../components/attentionText'
+import IndicatorChart from '../components/IndicatorChart'
 import Notice from '../components/Notice'
 import { strings } from '../strings'
 
 // One indicator against the person's own earlier readings (REQ-12): a sentence
-// with the latest value, the median of the earlier ones and the difference, and
-// a table with every reading newest first. The status of each reading comes
-// from the same attention rules as Home, and is written in words, never a
-// colour on its own (REQ-15).
+// with the latest value, the median of the earlier ones and the difference, a
+// chart of the same numbers and a table with every reading newest first. The
+// status of each reading comes from the same attention rules as Home, and is
+// written in words, never a colour on its own (REQ-15).
 export default function History({
   store,
   personId,
@@ -84,9 +85,16 @@ export default function History({
         <Notice tone="info">{strings.history.noEntries}</Notice>
       ) : (
         <>
-          {/* The chart of T-46 takes this sentence as its accessible name, so
-              the id lives here and is handed down. */}
+          {/* The chart takes this sentence as its accessible name, so the id
+              lives here and is handed down. */}
           <SummarySentence id={summaryId} comparison={comparison} />
+          <IndicatorChart
+            entries={rows}
+            unit={indicator.unit}
+            rules={rules}
+            comparison={comparison}
+            labelledBy={summaryId}
+          />
           <div className="history__table-wrap">
             <table className="history__table">
               <caption className="history__caption">
@@ -123,10 +131,10 @@ export default function History({
   )
 }
 
-// The short version of the table, with the id the chart of T-46 points its
+// The short version of the table, with the id the chart points its
 // `aria-labelledby` at. The id comes from the screen, so the sentence and the
-// chart cannot drift apart; it is repeated as a data attribute so the chart can
-// find it in the DOM wherever it is rendered.
+// chart cannot drift apart; it is repeated as a data attribute for tests and
+// for anything that looks the sentence up in the DOM.
 function SummarySentence({
   id,
   comparison,

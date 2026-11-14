@@ -134,6 +134,7 @@ body {
 h1,
 h2,
 h3,
+h4,
 p,
 ul,
 ol {
@@ -593,11 +594,13 @@ legend {
   border-left-color: var(--status-attention-text);
 }
 
+/* Title and badge: the badge always takes its own row under the name, so every
+   card in the grid puts the reading on the same line whatever the length of
+   the name. */
 .indicator-card__top {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   align-items: flex-start;
-  justify-content: space-between;
   gap: var(--space-2);
 }
 
@@ -762,6 +765,55 @@ legend {
   color: var(--color-text-muted);
 }
 
+/* Details panel (7.7, REQ-01): the rows of indicators.csv first, then the
+   sections of the content file. The panel sits inside a card, so its text
+   keeps the card surface behind it and the contrast pairs in theme.test.ts
+   already cover it: body text and muted text on --color-surface. */
+.indicator-details {
+  display: grid;
+  gap: var(--space-3);
+}
+
+/* The prefix of a fact ("Measured on board"), in the technical label style and
+   on the same line as its value. */
+.indicator-details__label {
+  display: inline;
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+/* A section name is read as a sentence, so it is never uppercased: display
+   family, one size up from the body text of the panel. */
+.indicator-details__heading {
+  margin: 0 0 var(--space-1);
+  font-family: var(--font-display);
+  font-size: var(--text-body-l);
+  line-height: var(--leading-body-l);
+  font-weight: 600;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+/* Measurement steps: a numbered list, spaced like the source lists. */
+.indicator-details__steps {
+  padding-left: var(--space-4);
+}
+
+.indicator-details__steps li {
+  margin-block: var(--space-1);
+}
+
+/* No content file yet: quiet information, not a warning. */
+.indicator-details__missing {
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+  color: var(--color-text-muted);
+}
+
 /* Tablet: eight columns, two cards per row, 32 px side margin (4.1). */
 @media (max-width: 1023px) {
   .app-header__inner {
@@ -895,4 +947,98 @@ legend {
   .history__table tbody td:last-child {
     white-space: normal;
   }
+}
+
+/* Chart (7.8): inline SVG, 1 px lines. The readings are the accent colour, the
+   person's earlier median a dashed muted line, each attention threshold a
+   dotted line with its level name in the technical label style. The table next
+   to it is the full text alternative, so the chart never carries a number on
+   its own.
+
+   The figure fits its box instead of scrolling: a scroll container would need
+   a keyboard stop and would hide the newest readings on a phone (REQ-15,
+   REQ-32). The component draws one SVG unit per CSS pixel and keeps the axis
+   text at --text-label at every width, thinning the day labels when the box is
+   narrow. */
+.history__chart {
+  max-width: 720px;
+  margin-bottom: var(--space-3);
+  padding: var(--space-2);
+  border: var(--border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.history__chart svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.chart {
+  font-family: var(--font-mono);
+}
+
+.chart__grid {
+  stroke: var(--color-border);
+  stroke-width: 1;
+}
+
+.chart__axis {
+  stroke: var(--color-border-control);
+  stroke-width: 1;
+}
+
+.chart__tick {
+  fill: var(--color-text-muted);
+  font-size: var(--text-label);
+  font-variant-numeric: tabular-nums;
+}
+
+.chart__axis-name,
+.chart__threshold-label {
+  font-size: var(--text-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+.chart__axis-name {
+  fill: var(--color-text-muted);
+}
+
+/* A threshold is the point from which a reading needs attention, so it carries
+   the attention colour as well as the dotted line and its level name: still
+   never colour alone. */
+.chart__threshold-label {
+  fill: var(--status-attention-text);
+}
+
+.chart__unit {
+  fill: var(--color-text-muted);
+  font-size: var(--text-label);
+  /* A unit is never transformed: SI symbols are case-sensitive. */
+  text-transform: none;
+}
+
+.chart__line {
+  fill: none;
+  stroke: var(--color-accent);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+.chart__point {
+  fill: var(--color-accent);
+}
+
+/* The dash patterns of the median and the thresholds are presentation
+   attributes on the lines, so a unit test can read them without a browser. */
+.chart__median {
+  stroke: var(--color-text-muted);
+  stroke-width: 1;
+}
+
+.chart__threshold {
+  stroke: var(--status-attention-text);
+  stroke-width: 1;
 }
