@@ -6,7 +6,8 @@ It checks that:
   1. you are on your own branch (bio1, bio2, phys, eng1, eng2, or fix/<you>-<topic>), not main;
   2. every changed, staged or unpushed file is inside the paths you own;
   3. unpushed commit messages have no co-authors, signatures or AI mentions,
-     a first line of 72 characters at most, and a card number (#N);
+     a first line of 72 characters at most; a missing card number (#N) is
+     reported as a note, not a block;
   4. if anything in config/ changed and the team's content check exists, it passes;
   5. none of the changed or unpushed files is a .env file (other than
      .env.example) or holds a secret: a private key header, a GitHub token, a
