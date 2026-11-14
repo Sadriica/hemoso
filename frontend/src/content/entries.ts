@@ -1,3 +1,4 @@
+import { isClockTime, isMissionDay } from '../domain/clock'
 import type { Entry, Indicator } from '../domain/types'
 import { parseCsvFile, parseNumber } from './csv'
 
@@ -33,14 +34,14 @@ export function parseEntries(
       )
       continue
     }
-    if (!Number.isInteger(missionDay) || missionDay <= 0) {
+    if (!isMissionDay(missionDay)) {
       problems.push(
         `Entry for '${indicatorId}' has a mission day that is not a positive integer.`,
       )
       continue
     }
     const time = row.time?.trim() ?? ''
-    if (!isValidTime(time)) {
+    if (!isClockTime(time)) {
       problems.push(`Entry for '${indicatorId}' has an invalid time '${time}'.`)
       continue
     }
@@ -61,8 +62,4 @@ export function parseEntries(
     })
   }
   return entries
-}
-
-function isValidTime(time: string): boolean {
-  return /^([01]\d|2[0-3]):[0-5]\d$/.test(time)
 }

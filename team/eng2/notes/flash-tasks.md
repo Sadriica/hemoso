@@ -235,5 +235,29 @@ for storing and reading entries (REQ-27).
 - Juli sets `VITE_API_BASE_URL` in the Vercel project; the public demo keeps
   working without it.
 
+## T-56 · Visual design (P0, presentation)
+Load the `frontend-design` skill first. Today the app is plain black text on
+white: it works but does not look designed. Give it a calm, clinical look for
+a crew member checking their health on a long mission.
+- Design tokens as CSS custom properties on `:root`: colours, a type scale
+  (system font stack only, no web fonts, nothing from a CDN), spacing, radius,
+  shadow. No hard-coded colours outside the tokens.
+- Light and dark themes: light by default, dark under
+  `@media (prefers-color-scheme: dark)`. Every text and badge keeps at least
+  4.5:1 contrast in both; check each pair and list the ratios in the report.
+- Layout: a header band with "HeMoSo", the synthetic data note and the person
+  picker; content centred with a max width around 960 px and comfortable side
+  padding; works from 320 px.
+- Each indicator on Home as a card: name and reading on top, the attention
+  badge clearly visible, the next step as the main sentence, Sources and
+  Details as quiet buttons at the bottom. Content problems and the placeholder
+  notice as distinct notice boxes, not plain paragraphs.
+- Tabs that look like tabs, with a clear selected state that is not colour
+  alone (weight or underline too).
+- Keep every accessibility rule: visible focus, 44 px targets, never colour
+  alone. No NASA logos or Space Apps marks, no images of people.
+- Change markup only where styling needs a wrapper or a class; do not change
+  behaviour. All tests must still pass.
+
 ## T-55 · FRONT_TOBACK.md (P1) · not for Flash
 Written by Claude Code at the end, from the final code and the contract of T-54.

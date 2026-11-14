@@ -28,7 +28,9 @@ pnpm test      # Vitest, runs once
 | Folder | Holds |
 | --- | --- |
 | `src/content/` | Reading and validating the `config/` files: `csv.ts` (CSV parser and cell helpers), `markdown.ts` (indicator `.md`), `indicators.ts`, `rules.ts`, `entries.ts` (row validation), `load.ts` (reads `config/` at build time and orchestrates), `placeholder/` (fallback files). |
-| `src/domain/` | Types from `FORMATS.md` and pure functions with no React: `attention.ts`, `entries.ts`, `source.ts`. |
+| `src/domain/` | Types from `FORMATS.md` and pure functions with no React: `attention.ts`, `entries.ts`, `clock.ts` (mission day and `HH:MM`), `source.ts`. |
+| `src/data/` | The browser store: `entryStore.ts` (entries and outbox), `storedState.ts` (the stored shape), `entryId.ts` (ids for new entries). |
+| `src/hooks/` | React bindings for the store: `useEntries`, `useOutbox`. |
 | `src/components/` | Presentational pieces: `AttentionBadge`, `Disclosure`, `SyntheticNotice`. |
 | `src/screens/` | Full screens: `Home` (status of each indicator and its next step). |
 | `src/App.tsx` | Tabs, person picker, layout and skip link. |
@@ -47,3 +49,23 @@ placeholder examples in `src/content/placeholder/`, and shows
 problems (unknown ids, unit mismatches, missing sources, malformed rows and
 the like) do not crash the app; they appear under
 "Content problems (for the team)" on the Home screen.
+
+## Data in the browser
+Entries live in one `localStorage` key, `hemoso:v2`, holding
+`{ version: 2, entries, pendingIds, lastSent }`:
+- `entries` is every measurement, with the same columns as `demo_data.csv`.
+- `pendingIds` is the outbox: ids of entries the server has not accepted yet.
+  New entries go in when they are saved and leave it when they are sent;
+  `lastSent` keeps the mission day and time of the last accepted send.
+- The demo rows from `demo_data.csv` are written once, on the first run, when
+  the key is absent. Seeded rows are not waiting to be sent.
+- Stored data that cannot be read (another version, broken JSON, a row that
+  breaks the rules) is replaced by the seed rows. `wasReset()` returns true in
+  that case, so a screen can tell the astronaut that the stored entries were
+  lost; a first run is not a reset.
+- If the browser blocks storage, the app keeps working in memory for that tab
+  and `isPersistent()` returns false.
+
+`useEntries(store)` and `useOutbox(store)` read the store with
+`useSyncExternalStore`, so a saved entry shows on Home at once and the waiting
+count follows every change.
