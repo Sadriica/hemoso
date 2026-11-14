@@ -8,16 +8,17 @@ the body uses energy.
 
 ## How spaceflight affects it
 
-Sleep loss and circadian misalignment are documented in flight: crews sleep less
-and their body clock shifts. Work overload and scheduling add to it. Light is
-the main signal for your body clock, and you can use it on purpose.
+Crews sleep less in flight, and their body clock shifts. Work overload and the
+schedule add to it. Light is the main signal for your body clock. You can use it
+on purpose.
 
 ## Measurement steps
 
 1. Note the time you went to bed.
 2. Note the time you woke up.
 3. Count the hours you slept, not the hours in bed. Assumption.
-4. Write the number every morning, before you start work.
+4. Write the number every morning.
+5. Do it before you start work.
 
 ## Status and next steps
 

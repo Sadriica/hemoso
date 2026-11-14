@@ -18,8 +18,10 @@ reading.
 1. Sit still for 5 minutes.
 2. Put the cuff on your arm as your CMO showed you. Assumption.
 3. Keep your arm at the level of your heart.
-4. Measure twice, one minute apart. Assumption.
-5. Write the first number.
+4. Measure once. Assumption.
+5. Wait one minute.
+6. Measure again. Assumption.
+7. Write the top number.
 
 ## Status and next steps
 
@@ -51,8 +53,8 @@ Your CMO tells the flight surgeon at the next link with Earth.
 
 ## How to prevent problems
 
-Exercise every day and eat well. Drink fluids before landing and wear the
-lower-body compression garment when your CMO asks. Assumption.
+Exercise every day. Eat well. Drink fluids before landing. Wear the lower-body
+compression garment when your CMO asks. Assumption.
 
 ## Sources
 

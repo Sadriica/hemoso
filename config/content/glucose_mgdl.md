@@ -8,17 +8,18 @@ sugar. The challenge statement names blood sugar as an indicator to monitor.
 
 ## How spaceflight affects it
 
-The nutrition evidence report describes changes in glucose metabolism in flight
-and states that carbohydrate needs are thought to be similar to those on Earth.
-Studies are few and do not agree, and how blood sugar is measured on board is
-still open in this project. Assumption.
+The NASA nutrition report says the body handles sugar differently in flight, and
+that crews are thought to need about the same carbohydrates as on Earth. Studies
+are few and do not agree. How blood sugar is measured on board is still open in
+this project. Assumption.
 
 ## Measurement steps
 
-1. Wash your hands and let them dry.
-2. Use the meter as your CMO showed you. Assumption.
-3. Measure before a meal. Assumption.
-4. Write the number with the time.
+1. Wash your hands.
+2. Let them dry.
+3. Use the meter as your CMO showed you. Assumption.
+4. Measure before a meal. Assumption.
+5. Write the number with the time.
 
 ## Status and next steps
 
@@ -48,8 +49,8 @@ Your CMO tells the flight surgeon at the next link with Earth.
 
 ## How to prevent problems
 
-Eat regular meals and drink fluids. Tell your CMO if you feel very tired, dizzy
-or thirsty. Assumption.
+Eat meals at regular times. Drink fluids. Tell your CMO if you feel very tired,
+dizzy or thirsty. Assumption.
 
 ## Sources
 

@@ -8,11 +8,11 @@ more energy, so it matters for how you eat, sleep and perform.
 
 ## How spaceflight affects it
 
-There is no moving air in weightlessness to carry heat away, so heat builds up,
-and crews report feeling hot during exercise. Your in-flight baseline is about
-1 °C above your Earth baseline, and it comes back down slowly after landing. A
-temperature far above your own baseline can also be the first sign of an
-infection. Assumption.
+In space there is no moving air to carry heat away, so heat builds up. Crews
+report feeling hot during exercise. Your in-flight baseline is about 1 °C above
+your Earth baseline, and it comes back down slowly after landing. A temperature
+far above your own baseline can also be the first sign of an infection.
+Assumption.
 
 ## Measurement steps
 
@@ -51,7 +51,7 @@ Your CMO tells the flight surgeon at the next link with Earth.
 
 ## How to prevent problems
 
-Keep your sleep schedule and drink fluids. Exercise when your CMO schedules it.
+Keep your sleep schedule. Drink fluids. Exercise when your CMO schedules it.
 Assumption.
 
 ## Sources

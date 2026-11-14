@@ -48,8 +48,8 @@ Your CMO tells the flight surgeon at the next link with Earth.
 
 ## How to prevent problems
 
-Exercise every day and eat well. Drink fluids before landing and wear the
-compression garment when your CMO asks. Assumption.
+Exercise every day. Eat well. Drink fluids before landing. Wear the compression
+garment when your CMO asks. Assumption.
 
 ## Sources
 

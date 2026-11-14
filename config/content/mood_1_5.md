@@ -6,9 +6,10 @@ The scale: 1 very low, 2 low, 3 neutral, 4 good, 5 very good.
 
 ## Why it matters
 
-Mood is an early sign of a behavioural health problem. Isolation, confinement and
-distance from Earth wear it down over weeks, and NASA uses questionnaires and
-journaling to catch the change early, while it is still easy to treat.
+A change in mood is an early sign of a mental health problem. Isolation,
+confinement and distance from Earth wear it down over weeks, and NASA uses
+questionnaires and journaling to catch the change early, while it is still easy
+to treat.
 
 ## How spaceflight affects it
 
@@ -53,8 +54,8 @@ Your CMO tells the flight surgeon at the next link with Earth.
 
 ## How to prevent problems
 
-Keep your sleep schedule. Write in your journal. Keep contact with your family
-and the crew. Use the window and the plants in your module. Assumption.
+Keep your sleep schedule. Write in your journal. Keep contact with your family.
+Talk to the crew. Use the window and the plants in your module. Assumption.
 
 ## Sources
 
