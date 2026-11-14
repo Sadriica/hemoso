@@ -4,6 +4,7 @@ One entry per decision. Newest first.
 
 | Time | What | Why | Source | AI used |
 | --- | --- | --- | --- | --- |
+| Sat 14, 16:55 | Applied format v2 to `config/data/indicators.csv` and filled `docs/sources.md` | Eng 1 landed the checker with the new header; sources were added with `check_sources.py --add` and then completed by hand | `FORMATS.md` section 3, `check_sources.py` | Yes: the agent merged, copied and filled the TODO cells |
 | Sat 14, 16:20 | Adopted the team's seven indicators and rebuilt the demo files | Eng 1's list drops `spo2_pct` and `sleep_quality_1_5`; keeping them in the demo would break the cross-file check | `FORMATS.md` section 3, check_content output | Yes: written with the agent, checked with `check_content.py` |
 | Sat 14, 16:00 | Wrote `docs/findings/phys-02-baseline-state-rule.md` | The state function needs a rule that can be recomputed by hand and explained in 30 seconds; median and scaled MAD need 3 readings and no training | `docs/findings/phys-01`, `FORMATS.md` section 3 | Yes: written with the agent |
 | Sat 14, 15:50 | Generated `demo_ranges.csv` and `demo_data.csv` (270 rows, seed 20261114) | The demo has no history without them, and REQ-29 asks for synthetic data with its assumptions stated | `FORMATS.md` section 3, WHO hypertension fact sheet | Yes: the agent generated the rows with a seeded script |
