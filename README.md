@@ -37,7 +37,11 @@ officer or the flight surgeon confirms it. HeMoSo does not replace them.
 - Possible conditions as probabilities with their basis (`config/rules/conditions.csv`).
 - A 3D body built by layers: body zones, muscles, bones, ligaments, organs.
 - Face and eye analysis from the camera for fatigue, stress, mental state and sleep.
-- A rolling 14-day baseline per person, and learning from each person's records.
+- The state against each person's baseline (median and spread of the last 14
+  readings, `docs/findings/phys-02-baseline-state-rule.md`) exists in the API
+  (`GET /people/{person_id}/indicators/{indicator_id}/state`, `docs/API.md`);
+  the screens do not use it yet.
+- Learning from each person's records.
 
 Every value in the app, in the database and in the deployments is synthetic
 (REQ-14). There are no real personal health data anywhere.
