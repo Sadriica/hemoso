@@ -60,3 +60,6 @@ and tell me in 5 lines what I have to do until 12:00."
   `.githooks/commit-msg` hook and `.claude/settings.json`. Check with
   `git log -1 --format=%B` before every push.
 - Model API keys go in environment variables or `.env`, never in the repository.
+- Pushing files under `.github/workflows/` needs the `workflow` scope
+  (`gh auth refresh -h github.com -s workflow`). The board needs the `project`
+  scope (`docs/BOARD.md`).
