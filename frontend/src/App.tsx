@@ -1,4 +1,11 @@
-import { useMemo, useRef, useState, type KeyboardEvent } from 'react'
+import {
+  lazy,
+  Suspense,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+} from 'react'
 import { loadContent } from './content/load'
 import { LocalEntryStore } from './data/entryStore'
 import { createSyncClient } from './data/sync'
@@ -18,6 +25,11 @@ const TABS = [
 ] as const
 
 type TabId = (typeof TABS)[number]['id']
+
+// The face panel is a chunk of its own, loaded the first time it opens. A page
+// without ?face=1 never asks for it, so the public demo keeps the same bundle
+// and the same data as before (REQ-14).
+const FaceSignIn = lazy(() => import('./screens/FaceSignIn'))
 
 export default function App() {
   const [data] = useState(() => loadContent())
@@ -47,6 +59,15 @@ export default function App() {
   const selectedPerson = personId || personIds[0] || ''
   const [activeTab, setActiveTab] = useState<TabId>(TABS[0].id)
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([])
+  // Face sign-in is off unless the page is opened with ?face=1. REQ-14 forbids
+  // real personal data in the app until Eng 1 records the exception, so the
+  // button, the panel and the whole face module wait for that flag.
+  const [faceEnabled] = useState(
+    () => new URLSearchParams(window.location.search).get('face') === '1',
+  )
+  const [faceOpen, setFaceOpen] = useState(false)
+  const faceButtonRef = useRef<HTMLButtonElement>(null)
+  const pickerRef = useRef<HTMLSelectElement>(null)
 
   function onTabKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
     const index = TABS.findIndex((tab) => tab.id === activeTab)
@@ -72,21 +93,36 @@ export default function App() {
         <div className="app-header__inner">
           <div className="app-header__bar">
             <h1 className="app-header__brand">{strings.appName}</h1>
-            <div className="person-picker">
-              <label htmlFor="person-picker">
-                {strings.personPickerLabel}
-              </label>
-              <select
-                id="person-picker"
-                value={selectedPerson}
-                onChange={(event) => setPersonId(event.target.value)}
-              >
-                {personIds.map((id) => (
-                  <option key={id} value={id}>
-                    {id}
-                  </option>
-                ))}
-              </select>
+            <div className="app-header__account">
+              <div className="person-picker">
+                <label htmlFor="person-picker">
+                  {strings.personPickerLabel}
+                </label>
+                <select
+                  ref={pickerRef}
+                  id="person-picker"
+                  value={selectedPerson}
+                  onChange={(event) => setPersonId(event.target.value)}
+                >
+                  {personIds.map((id) => (
+                    <option key={id} value={id}>
+                      {id}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {faceEnabled && (
+                <button
+                  ref={faceButtonRef}
+                  className="button button--secondary app-header__face"
+                  type="button"
+                  aria-expanded={faceOpen}
+                  aria-controls={faceOpen ? 'face-panel' : undefined}
+                  onClick={() => setFaceOpen((open) => !open)}
+                >
+                  {strings.face.buttonLabel}
+                </button>
+              )}
             </div>
           </div>
           <SyntheticNotice />
@@ -94,6 +130,27 @@ export default function App() {
         </div>
       </header>
       <main id="main-content" className="app-main" tabIndex={-1}>
+        {faceEnabled && faceOpen && (
+          <Suspense
+            fallback={
+              <p className="face-panel__status" role="status">
+                {strings.face.opening}
+              </p>
+            }
+          >
+            <FaceSignIn
+              personId={selectedPerson}
+              personIds={personIds}
+              onPersonSelected={setPersonId}
+              onFocusPicker={() => pickerRef.current?.focus()}
+              onClose={() => {
+                setFaceOpen(false)
+                // Back to the control that opened the panel, as a dialog does.
+                faceButtonRef.current?.focus()
+              }}
+            />
+          </Suspense>
+        )}
         {storageWarnings.length > 0 && (
           <Notice tone="warning">{storageWarnings.join(' ')}</Notice>
         )}

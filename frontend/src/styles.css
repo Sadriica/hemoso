@@ -1042,3 +1042,123 @@ legend {
   stroke: var(--status-attention-text);
   stroke-width: 1;
 }
+
+/* Face sign-in (REQ-36, T-58, T-59). A quiet panel under the header, opened
+   from its own button on a page with ?face=1. Structured like a card (4.3):
+   surface, 1 px border, 4 px radius, no shadow. The camera picture is the only
+   image the app ever shows, and only while the camera is on. */
+.app-header__account {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+
+.face-panel {
+  display: grid;
+  gap: var(--space-3);
+  max-width: 640px;
+  margin-bottom: var(--space-4);
+  padding: var(--space-4);
+  border: var(--border-subtle);
+  border-left: 2px solid var(--color-accent);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.face-panel__heading {
+  font-family: var(--font-display);
+  font-size: var(--text-h2);
+  line-height: var(--leading-h2);
+  font-weight: 600;
+}
+
+/* Sentences stay body font and sentence case (3.3); 70 characters is the
+   reading width of the history summary too. */
+.face-panel__text {
+  max-width: 70ch;
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+}
+
+.face-panel__note {
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+  color: var(--color-text-muted);
+}
+
+.face-panel__person {
+  max-width: 320px;
+}
+
+.face-panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.face-panel__delete {
+  display: grid;
+  gap: var(--space-2);
+  padding-top: var(--space-3);
+  border-top: var(--border-subtle);
+}
+
+/* The preview: a wide box the model can read, hidden until the camera is on.
+   --color-bg behind the picture, so a camera that is still starting is a dark
+   frame and not a white flash. */
+.face-panel__camera {
+  display: grid;
+  gap: var(--space-1);
+  justify-items: start;
+}
+
+.face-panel__camera[hidden] {
+  display: none;
+}
+
+.face-panel__video {
+  width: 100%;
+  max-width: 320px;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-card);
+  background: var(--color-bg);
+}
+
+.face-panel__camera-label {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+/* One line kept for the message, so the panel does not jump when a sentence
+   appears. */
+.face-panel__status {
+  min-height: var(--leading-body);
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+}
+
+/* The style guide's danger button (7.5): red border and text, transparent. The
+   only destructive action in the app is deleting a face. */
+.button--danger {
+  border-color: var(--color-signal);
+  color: var(--color-signal);
+}
+
+.button--danger:hover {
+  border-color: var(--color-signal);
+  color: var(--color-signal);
+  filter: brightness(1.15);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button--danger {
+    transition: none;
+  }
+}

@@ -1,11 +1,15 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 import { STORAGE_KEY } from './data/storedState'
+import { strings } from './strings'
 
 beforeEach(() => {
   localStorage.clear()
+  // Every test starts on the plain page: the face panel only exists with
+  // ?face=1, and one test opens it.
+  window.history.replaceState({}, '', '/')
 })
 
 afterEach(() => {
@@ -148,5 +152,81 @@ describe('App', () => {
     await user.keyboard('{Enter}')
     expect(screen.getByText('1234567')).toBeInTheDocument()
     expect(screen.getByText(`Day ${nextDay} 15:44`)).toBeInTheDocument()
+  })
+})
+
+describe('face sign-in behind ?face=1', () => {
+  it('renders no face control on the plain page', () => {
+    render(<App />)
+    expect(
+      screen.queryByRole('button', { name: strings.face.buttonLabel }),
+    ).toBeNull()
+    expect(screen.queryByRole('dialog')).toBeNull()
+  })
+
+  it('shows the button next to the person picker with the flag', () => {
+    window.history.replaceState({}, '', '/?face=1')
+    render(<App />)
+    expect(screen.getByLabelText('Person')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: strings.face.buttonLabel }),
+    ).toHaveAttribute('aria-expanded', 'false')
+  })
+
+  it('opens the panel with the consent text and closes it on Escape', async () => {
+    window.history.replaceState({}, '', '/?face=1')
+    const user = userEvent.setup()
+    render(<App />)
+    const button = screen.getByRole('button', {
+      name: strings.face.buttonLabel,
+    })
+
+    await user.click(button)
+    const panel = await screen.findByRole('dialog')
+    expect(panel).toHaveAttribute('aria-labelledby')
+    expect(screen.getByText(strings.face.consent)).toBeInTheDocument()
+    expect(button).toHaveAttribute('aria-expanded', 'true')
+
+    await user.keyboard('{Escape}')
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    expect(button).toHaveFocus()
+    expect(button).toHaveAttribute('aria-expanded', 'false')
+  })
+
+  it('puts the focus on the person picker when the camera is blocked', async () => {
+    window.history.replaceState({}, '', '/?face=1')
+    const original = navigator.mediaDevices
+    const blocked = new Error('blocked')
+    blocked.name = 'NotAllowedError'
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: { getUserMedia: vi.fn().mockRejectedValue(blocked) },
+    })
+    try {
+      const user = userEvent.setup()
+      render(<App />)
+      await user.click(
+        screen.getByRole('button', { name: strings.face.buttonLabel }),
+      )
+      await user.click(
+        await screen.findByRole('button', {
+          name: strings.face.continueLabel,
+        }),
+      )
+      await user.click(
+        screen.getByRole('button', { name: strings.face.signIn }),
+      )
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        strings.face.camera.denied,
+      )
+      // The way out that always works has the focus, not the panel button.
+      expect(screen.getByLabelText('Person')).toHaveFocus()
+    } finally {
+      Object.defineProperty(navigator, 'mediaDevices', {
+        configurable: true,
+        value: original,
+      })
+    }
   })
 })
