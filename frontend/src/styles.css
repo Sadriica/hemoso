@@ -1,0 +1,50 @@
+/* Base styles for the HeMoSo app shell. System fonts only, no CDN assets. */
+
+:root {
+  color-scheme: light;
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: #ffffff;
+  color: #1a1a1a;
+}
+
+/* Visible keyboard focus. The outline is never removed. */
+:focus-visible {
+  outline: 3px solid #005fcc;
+  outline-offset: 2px;
+}
+
+/* Skip link: off-screen until focused, then clearly visible. */
+.skip-link {
+  position: absolute;
+  top: 0;
+  left: -9999px;
+  padding: 0.75rem 1rem;
+  background: #005fcc;
+  color: #ffffff;
+  text-decoration: none;
+}
+
+.skip-link:focus-visible {
+  left: 0;
+}

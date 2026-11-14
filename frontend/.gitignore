@@ -1,0 +1,20 @@
+# Dependencies
+node_modules
+
+# Build output
+dist
+
+# Python tooling
+.venv
+
+# Playwright output
+test-results
+playwright-report
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Local environment
+*.local
+.env
+.env.*
