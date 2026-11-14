@@ -52,6 +52,7 @@ findings and status messages: `STANDARDS.md`. Skills: `SKILLS.md`.
 Saturday setup: `docs/SETUP.md`. Board: `docs/BOARD.md`.
 Tools and versions: `docs/STACK.md`. Public links and video: `docs/DEPLOY.md`.
 Decisions and rejected options: `docs/DECISIONS.md`.
+Privacy: `docs/PRIVACY.md`. SI use: `SI-USE.md`.
 
 ### The usual way: ask your agent
 - "save my progress" → checks the branch, proposes `git add` of your paths, commit and push.
