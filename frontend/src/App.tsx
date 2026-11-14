@@ -1,15 +1,20 @@
 import { useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { loadContent } from './content/load'
 import { LocalEntryStore } from './data/entryStore'
+import { createSyncClient } from './data/sync'
 import { useEntries } from './hooks/useEntries'
+import Notice from './components/Notice'
+import SyncStatus from './components/SyncStatus'
 import SyntheticNotice from './components/SyntheticNotice'
 import Entry from './screens/Entry'
+import History from './screens/History'
 import Home from './screens/Home'
 import { strings } from './strings'
 
 const TABS = [
   { id: 'home', label: strings.tabs.home },
   { id: 'entry', label: strings.tabs.entry },
+  { id: 'history', label: strings.tabs.history },
 ] as const
 
 type TabId = (typeof TABS)[number]['id']
@@ -22,6 +27,15 @@ export default function App() {
     () => new LocalEntryStore({ seedEntries: data.demoEntries }),
   )
   const entries = useEntries(store)
+  // The sync client is built once, from VITE_API_BASE_URL. An empty value is
+  // the public demo: nothing is sent and the header says so.
+  const [client] = useState(() => createSyncClient())
+  // Storage problems the astronaut has to know about: entries that live only in
+  // this tab, or entries the app had to replace because it could not read them.
+  const storageWarnings = [
+    ...(store.isPersistent() ? [] : [strings.sync.notSaved]),
+    ...(store.wasReset() ? [strings.sync.reset] : []),
+  ]
   const personIds = useMemo(() => {
     // The demo rows keep their person in the picker even when the browser holds
     // entries of an earlier session for other people.
@@ -76,9 +90,13 @@ export default function App() {
             </div>
           </div>
           <SyntheticNotice />
+          <SyncStatus store={store} client={client} />
         </div>
       </header>
       <main id="main-content" className="app-main" tabIndex={-1}>
+        {storageWarnings.length > 0 && (
+          <Notice tone="warning">{storageWarnings.join(' ')}</Notice>
+        )}
         <div role="tablist" aria-label={strings.tabs.label} className="tabs">
           {TABS.map((tab, index) => (
             <button
@@ -115,10 +133,14 @@ export default function App() {
               store={store}
               personId={selectedPerson}
               indicators={data.indicators}
+              serverConfigured={client.isConfigured()}
               entries={entries.filter(
                 (entry) => entry.personId === selectedPerson,
               )}
             />
+          )}
+          {activeTab === 'history' && (
+            <History store={store} personId={selectedPerson} data={data} />
           )}
         </div>
       </main>

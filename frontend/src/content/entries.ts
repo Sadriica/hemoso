@@ -2,22 +2,42 @@ import { isClockTime, isMissionDay } from '../domain/clock'
 import type { Entry, Indicator } from '../domain/types'
 import { parseCsvFile, parseNumber } from './csv'
 
+const REQUIRED_COLUMNS = [
+  'person_id',
+  'indicator_id',
+  'value',
+  'unit',
+  'mission_day',
+  'time',
+]
+
+// A placeholder demo_data.csv may name indicators that the real
+// indicators.csv does not have. With real indicators around, those rows are
+// dropped without a problem.
+export interface EntryParseOptions {
+  skipUnknownIndicators?: boolean
+}
+
 // Validates and reads one demo_data.csv. Problems are appended in place.
 export function parseEntries(
   fileName: string,
   text: string,
   indicators: Indicator[],
   problems: string[],
+  options: EntryParseOptions = {},
 ): Entry[] {
   const byId = new Map(indicators.map((indicator) => [indicator.id, indicator]))
   const entries: Entry[] = []
   const seen = new Set<string>()
-  for (const row of parseCsvFile(fileName, text, problems)) {
+  const rows = parseCsvFile(fileName, text, problems, REQUIRED_COLUMNS)
+  for (const row of rows) {
     const personId = row.person_id?.trim() ?? ''
     const indicatorId = row.indicator_id?.trim() ?? ''
     const indicator = byId.get(indicatorId)
     if (indicator === undefined) {
-      problems.push(`Unknown indicator id '${indicatorId}' in demo data.`)
+      if (options.skipUnknownIndicators !== true) {
+        problems.push(`Unknown indicator id '${indicatorId}' in demo data.`)
+      }
       continue
     }
     const unit = row.unit?.trim() ?? ''

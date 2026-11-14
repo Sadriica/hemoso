@@ -321,6 +321,61 @@ legend {
   gap: var(--space-2);
 }
 
+/* Sync status (section 10, row "Sync status"): the outbox facts as one
+   metadata row in the header. Each fact is its own item, so on a narrow screen
+   the row wraps onto more lines instead of pushing the page sideways (REQ-32);
+   the text is never set to nowrap for that reason. */
+.sync-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+  min-width: 0;
+}
+
+.sync-status__item {
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+/* Connection state as a small badge (7.4): icon and word, in the status
+   colours, so the state is never colour alone. */
+.sync-status__state {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid currentColor;
+  border-radius: var(--radius-small);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.sync-status__state--online {
+  color: var(--status-in-range-text);
+  background: var(--status-in-range-bg);
+}
+
+.sync-status__state--offline {
+  color: var(--status-attention-text);
+  background: var(--status-attention-bg);
+}
+
+.sync-status__icon {
+  flex: none;
+  display: inline-flex;
+}
+
 /* Content column (4.1). */
 .app-main {
   max-width: var(--container-width);
@@ -596,6 +651,15 @@ legend {
   line-height: var(--leading-body-l);
 }
 
+/* Who acts ("Tell the CMO."): a plain sentence under the next step, body font
+   at small size, main text colour so it keeps 4.5:1 in both themes. */
+.indicator-card__who-acts {
+  font-family: var(--font-body);
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+  color: var(--color-text);
+}
+
 .indicator-card__actions {
   display: flex;
   flex-wrap: wrap;
@@ -740,5 +804,95 @@ legend {
   .disclosure__toggle,
   .disclosure__chevron {
     transition: none;
+  }
+}
+
+/* History (REQ-12): the sentence is the short version of the numbers and the
+   table is the full one, so the table stays a real <table> with a header row.
+   On a phone it scrolls inside its own box instead of pushing the page
+   sideways (REQ-32). */
+.history__heading {
+  margin-bottom: var(--space-3);
+  font-family: var(--font-display);
+  font-size: var(--text-h1);
+  line-height: var(--leading-h1);
+  font-weight: 700;
+}
+
+.history__indicator {
+  max-width: 360px;
+  margin-bottom: var(--space-4);
+}
+
+.history__summary {
+  max-width: 70ch;
+  margin-bottom: var(--space-3);
+  font-size: var(--text-body-l);
+  line-height: var(--leading-body-l);
+}
+
+.history__table-wrap {
+  overflow-x: auto;
+  border: var(--border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.history__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.history__caption {
+  padding: var(--space-2) var(--space-3);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  text-align: left;
+  color: var(--color-text-muted);
+}
+
+.history__table th,
+.history__table td {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: var(--border-subtle);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.history__table th {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.history__table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.history__value {
+  font-variant-numeric: tabular-nums;
+}
+
+.history__unit {
+  color: var(--color-text-muted);
+}
+
+/* Phone: tighter cells and a status that wraps, so the four columns fit at
+   320 px without scrolling the table sideways (REQ-32). The number and its
+   unit stay on one line. */
+@media (max-width: 599px) {
+  .history__table th,
+  .history__table td {
+    padding: var(--space-1) var(--space-2);
+  }
+
+  .history__table tbody td:last-child {
+    white-space: normal;
   }
 }

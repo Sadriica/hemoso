@@ -15,8 +15,8 @@ opencode run -m deepseek/deepseek-flash --agent eng2 --auto --title "T-41" \
   "Do task T-41 in team/eng2/notes/flash-tasks.md. Read the Common rules first." < /dev/null
 ```
 - `< /dev/null` matters: without it opencode waits for input and never starts.
-- Same review loop as the blocks: run 1 builds; the review goes back to the same
-  session with `opencode run -s <session-id> ...` for runs 2 to 4.
+- Two iterations per card (Juli, Sat 14 17:05): run 1 builds; the review goes
+  back to the same session with `opencode run -s <session-id> ...` for run 2.
 - Card moves (Todo → In progress → Review) are done by Juli or her agent, not
   by the run.
 
@@ -258,6 +258,85 @@ a crew member checking their health on a long mission.
   alone. No NASA logos or Space Apps marks, no images of people.
 - Change markup only where styling needs a wrapper or a class; do not change
   behaviour. All tests must still pass.
+
+## T-57 · Move the interface to MUI with the HeMoSo theme (P0, presentation)
+Juli's decision (Sat 14 16:00): build the interface with MUI (Material UI,
+https://mui.com/) and keep the look of `frontend/sdd/style-guide.md`. Read the
+style guide in full first. Behaviour, texts, data and tests stay the same.
+- Add exactly `@mui/material@9.5.0`, `@emotion/react@11.14.0`,
+  `@emotion/styled@11.14.1` (all MIT). No `@mui/icons-material` (too large):
+  keep the inline SVG icons, wrapped in MUI `SvgIcon`. No Roboto: MUI must use
+  the style guide's font stacks; nothing from a CDN.
+- `src/theme/tokens.ts`: every colour, font stack, spacing step and radius of
+  the style guide, for dark and light. `src/theme/theme.ts`: `createTheme`
+  with `cssVariables: true` and `colorSchemes: { dark, light }`, dark as the
+  default, light from `prefers-color-scheme`; `typography` from the guide's
+  scale; `shape.borderRadius` 4; `spacing` in 4 px steps; component overrides:
+  `MuiButton` (radius 2, uppercase, no elevation), `MuiCard` and `MuiPaper`
+  (1 px border, no shadow in dark), `MuiChip` (uppercase monospace label),
+  `MuiTab` (uppercase monospace, 44 px), `MuiAlert`, `MuiTextField`,
+  `MuiSelect`, `MuiRadio`, `MuiFocusVisible` (3 px accent outline, 2 px offset).
+- `src/main.tsx`: `ThemeProvider` + `CssBaseline` (+ `InitColorSchemeScript`
+  if needed for no flash).
+- Components, one by one, behaviour unchanged:
+  - Header: `AppBar` (static, no elevation) + `Toolbar`; person picker as MUI `Select` with its label.
+  - Tabs: MUI `Tabs` / `Tab` / tab panels (MUI already follows the WAI-ARIA tabs pattern; keep the accessible names "Home" and "Entry").
+  - Indicator card: `Card` + `CardContent`; the badge always on its own row
+    under the title so every card in the grid lines up; the reading in the
+    monospace font; units never uppercased. Grid with MUI `Grid` (3, 2, 1 columns).
+  - `AttentionBadge`: `Chip` with the icon and the visible text, status
+    colours from the tokens, never colour alone.
+  - `Notice`: `Alert` (info, warning, success). "Content problems (for the
+    team)" moves out of the astronaut's Home: show it only when the URL has
+    `?team=1`, so the demo video never shows it.
+  - `Disclosure`: MUI `Button` + `Collapse`, keeping `aria-expanded` and `aria-controls`.
+  - Entry: `TextField`, `Select`, `RadioGroup` + `FormControlLabel` for the
+    1-to-5 scale, `FormHelperText` for errors linked to the field, the unit as
+    an `InputAdornment`, `Button variant="contained"` for "Save entry", native
+    time input kept (`type="time"`).
+- Delete from `styles.css` every rule MUI now covers; keep only what is left
+  (technical grid background, anything MUI has no prop for). Remove dead classes.
+- `src/theme.test.ts`: read the pairs from `tokens.ts` instead of `styles.css`;
+  every pair still passes.
+- Tests: update queries only where the DOM really changed; never weaken an
+  assertion. All tests, lint and build pass. Report the bundle size before and
+  after.
+- Note for Eng 1: three libraries need rows in `docs/DECISIONS.md` (MIT).
+
+## T-58 · Sign in with the face, on the device (P2)
+Read `team/eng2/notes/face-login-proposal.md` first. Frontend only: no
+backend call, no cloud service, nothing from a CDN.
+- Add exactly `@vladmandic/face-api@1.7.15` (MIT). Copy only the model files
+  you need (tiny face detector, 68-point landmarks, face recognition) from the
+  package's `model/` folder into `frontend/public/models/`, with its licence
+  file next to them. Load them with `faceapi.nets.*.loadFromUri('./models')`.
+- `src/face/` module, imported with a dynamic `import()` only when the user
+  opens "Sign in with face", so the main bundle does not grow.
+- `src/face/descriptors.ts` (pure, tested without a camera): average several
+  descriptors, euclidean distance, best match under a threshold of 0.5 (a
+  constant with a comment naming the face-api documentation as its source),
+  read and write `{ personId, descriptor: number[] }[]` under the
+  `localStorage` key `hemoso:face:v1` with try/catch like the entry store.
+- `src/screens/FaceSignIn.tsx`: Register (pick the person, take 5 frames over
+  about 2 s, store the average) and Sign in (one look, best match selects the
+  person in App, else "Face not recognised. Pick your name instead.").
+  The `<video>` is shown only while the camera is on; every track is stopped
+  when the screen closes. No frame or image is stored or sent.
+- A "Sign in with face" button in the header next to the person picker; the
+  picker stays and keeps working.
+- Tests: descriptors.ts fully; the screen with `getUserMedia` and the face
+  module mocked (registered, recognised, not recognised, camera denied).
+- Note for Eng 1: a `docs/DECISIONS.md` row for the library and its models.
+
+## T-59 · Face sign-in consent, delete and fallback (P2)
+- Before the camera opens: a consent notice "Your face is turned into numbers
+  stored only in this browser. No picture is kept and nothing is sent. This is
+  a quick way to pick your name, not a security lock." with "Continue" and
+  "Cancel".
+- "Delete my face data" for the selected person, with a confirmation.
+- Camera denied, missing or busy: a clear message and focus back on the person
+  picker. Everything works by keyboard; the video has a text label.
+- Tests for each path.
 
 ## T-55 · FRONT_TOBACK.md (P1) · not for Flash
 Written by Claude Code at the end, from the final code and the contract of T-54.

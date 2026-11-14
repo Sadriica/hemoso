@@ -30,14 +30,24 @@ export interface EntryStore {
 export interface Outbox {
   pending(): Entry[]
   markSent(ids: string[], at: MissionClock): void
+  // The server keeps a different value for the same person, indicator, day and
+  // time (409 in docs/API.md). The entry leaves the outbox and is never sent
+  // again; it stays in the entries, so the screens still show it.
+  markConflict(id: string): void
+  // The server rejected the row itself (422 in docs/API.md). Same handling as
+  // a conflict: out of the outbox, kept in the entries.
+  markRejected(id: string): void
   lastSent(): MissionClock | null
-  // The waiting count and the last sent time as one object that keeps its
-  // identity until add or markSent changes it (useSyncExternalStore).
+  // The waiting count, the refused count and the last sent time as one object
+  // that keeps its identity until add or one of the marks changes it
+  // (useSyncExternalStore).
   getOutboxSnapshot(): OutboxSnapshot
 }
 
 export interface OutboxSnapshot {
   pendingCount: number
+  conflictCount: number
+  rejectedCount: number
   lastSent: MissionClock | null
 }
 
@@ -133,6 +143,14 @@ export class LocalEntryStore implements EntryStore, Outbox {
     return this.state.lastSent === null ? null : { ...this.state.lastSent }
   }
 
+  markConflict(id: string): void {
+    this.refuse(id, 'conflict')
+  }
+
+  markRejected(id: string): void {
+    this.refuse(id, 'rejected')
+  }
+
   getOutboxSnapshot(): OutboxSnapshot {
     return this.outboxSnapshot
   }
@@ -145,6 +163,25 @@ export class LocalEntryStore implements EntryStore, Outbox {
     const seeded = seedState(this.seedEntries)
     this.write(seeded)
     return seeded
+  }
+
+  // The server has an answer for this row that a retry cannot change, so the
+  // id moves from the outbox to the refused list. An id that does not wait
+  // any more is left alone.
+  private refuse(id: string, kind: 'conflict' | 'rejected'): void {
+    if (!this.state.pendingIds.includes(id)) return
+    this.commit({
+      ...this.state,
+      pendingIds: this.state.pendingIds.filter((item) => item !== id),
+      conflictIds:
+        kind === 'conflict'
+          ? [...this.state.conflictIds, id]
+          : this.state.conflictIds,
+      rejectedIds:
+        kind === 'rejected'
+          ? [...this.state.rejectedIds, id]
+          : this.state.rejectedIds,
+    })
   }
 
   private read(): string | null {
@@ -192,6 +229,8 @@ function browserStorage(): StorageLike | null {
 function outboxSnapshotOf(state: StoredState): OutboxSnapshot {
   return {
     pendingCount: state.pendingIds.length,
+    conflictCount: state.conflictIds.length,
+    rejectedCount: state.rejectedIds.length,
     lastSent: state.lastSent === null ? null : { ...state.lastSent },
   }
 }

@@ -35,6 +35,8 @@ const TEXT_PAIRS: ColorPair[] = [
   { name: 'muted text on the page', front: 'color-text-muted', back: 'color-bg' },
   { name: 'muted text on a card', front: 'color-text-muted', back: 'color-surface' },
   { name: 'muted text on the header band', front: 'color-text-muted', back: 'color-bg-raised' },
+  // The "who acts" line under a card's next step.
+  { name: 'who acts line on a card', front: 'color-text', back: 'color-surface' },
   { name: 'link on the page', front: 'color-accent', back: 'color-bg' },
   { name: 'link on a card', front: 'color-accent', back: 'color-surface' },
   { name: 'link on the header band', front: 'color-accent', back: 'color-bg-raised' },

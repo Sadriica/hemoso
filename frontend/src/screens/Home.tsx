@@ -98,7 +98,10 @@ function IndicatorRow({
         <p className="indicator-card__reading">
           <span className="indicator-card__value">
             {latest.value}
-            <span className="indicator-card__unit"> {indicator.unit}</span>
+            <span className="indicator-card__unit">
+              {' '}
+              {strings.cardUnit(indicator.unit)}
+            </span>
           </span>
           <span className="indicator-card__time">
             {strings.timeLabel(latest.missionDay, latest.time)}
@@ -108,6 +111,11 @@ function IndicatorRow({
       <p className="indicator-card__next-step">
         {nextStepFor(attention, content)}
       </p>
+      {attention.kind === 'attention' && (
+        <p className="indicator-card__who-acts">
+          {strings.whoActs[attention.rule.notify]}
+        </p>
+      )}
       <div className="indicator-card__actions">
         <Disclosure label={strings.sources.label}>
           {sources.length === 0 ? (

@@ -1,5 +1,5 @@
 import type { Attention } from '../domain/types'
-import { strings } from '../strings'
+import { attentionText } from './attentionText'
 
 // Status badge: icon plus always-visible text. Colour only reinforces the
 // text, it never carries the meaning alone (REQ-15).
@@ -8,16 +8,7 @@ export default function AttentionBadge({
 }: {
   attention: Attention
 }) {
-  if (attention.kind === 'no_data') {
-    return <Badge kind="no_data" text={strings.badge.noData} />
-  }
-  if (attention.kind === 'no_rules') {
-    return <Badge kind="no_rules" text={strings.badge.noRules} />
-  }
-  if (attention.kind === 'in_range') {
-    return <Badge kind="in_range" text={strings.badge.inRange} />
-  }
-  return <Badge kind="attention" text={attention.level} />
+  return <Badge kind={attention.kind} text={attentionText(attention)} />
 }
 
 type BadgeKind = 'in_range' | 'attention' | 'no_rules' | 'no_data'

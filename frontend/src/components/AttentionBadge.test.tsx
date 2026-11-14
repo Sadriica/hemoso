@@ -8,6 +8,7 @@ const rule: AttentionRule = {
   side: 'above',
   threshold: 100,
   attentionLevel: 'example_level',
+  notify: 'crew',
   sources: ['Assumption'],
 }
 

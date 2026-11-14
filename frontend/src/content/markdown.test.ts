@@ -57,6 +57,20 @@ describe('parseIndicatorMarkdown', () => {
     ])
   })
 
+  it('keeps a bare link under Sources, with the link as its title', () => {
+    const text = [
+      '# Example indicator',
+      '## Why it matters',
+      'Reason text.',
+      '## Sources',
+      '- https://example.org/bare',
+    ].join('\n')
+    const { content } = parseIndicatorMarkdown('example_indicator', text)
+    expect(content.sources).toEqual([
+      { title: 'https://example.org/bare', url: 'https://example.org/bare' },
+    ])
+  })
+
   it('marks Assumption when a section says Assumption and there is no link', () => {
     const text = [
       '# Example indicator',

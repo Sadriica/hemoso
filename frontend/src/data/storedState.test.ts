@@ -20,6 +20,8 @@ function stored(overrides: Record<string, unknown> = {}): string {
     version: 2,
     entries: [entry()],
     pendingIds: ['a'],
+    conflictIds: [],
+    rejectedIds: [],
     lastSent: { missionDay: 1, time: '08:00' },
     ...overrides,
   })
@@ -31,8 +33,36 @@ describe('parseStoredState', () => {
       version: 2,
       entries: [entry()],
       pendingIds: ['a'],
+      conflictIds: [],
+      rejectedIds: [],
       lastSent: { missionDay: 1, time: '08:00' },
     })
+  })
+
+  it('reads the refused ids', () => {
+    const state = parseStoredState(
+      stored({ conflictIds: ['b'], rejectedIds: ['c', 'd'] }),
+    )
+    expect(state?.conflictIds).toEqual(['b'])
+    expect(state?.rejectedIds).toEqual(['c', 'd'])
+  })
+
+  it('reads a payload without the refused lists as empty', () => {
+    const state = parseStoredState(
+      JSON.stringify({
+        version: 2,
+        entries: [entry()],
+        pendingIds: ['a'],
+        lastSent: null,
+      }),
+    )
+    expect(state?.conflictIds).toEqual([])
+    expect(state?.rejectedIds).toEqual([])
+  })
+
+  it('rejects a refused list that is not a list of ids', () => {
+    expect(parseStoredState(stored({ conflictIds: [1] }))).toBeNull()
+    expect(parseStoredState(stored({ rejectedIds: 'c' }))).toBeNull()
   })
 
   it('rejects broken JSON', () => {
@@ -78,6 +108,8 @@ describe('seedState', () => {
       version: 2,
       entries: rows,
       pendingIds: [],
+      conflictIds: [],
+      rejectedIds: [],
       lastSent: null,
     })
     expect(state.entries).not.toBe(rows)

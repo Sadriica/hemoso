@@ -1,5 +1,5 @@
 import { isClockTime, isMissionDay } from '../domain/clock'
-import { strings } from '../strings'
+import { SCALE_UNIT, strings } from '../strings'
 
 // What the Entry screen accepts, as one pure function: the same rules and the
 // same sentences wherever the form is checked (REQ-02).
@@ -7,7 +7,6 @@ import { strings } from '../strings'
 // Sleep quality and mood are answers on a 1 to 5 scale, and Phys writes that
 // scale as the unit in config/data/indicators.csv. No other indicator gets a
 // range here.
-export const SCALE_UNIT = '1 to 5'
 export const SCALE_VALUES = [1, 2, 3, 4, 5] as const
 
 export function isScaleUnit(unit: string): boolean {

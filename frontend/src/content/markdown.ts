@@ -151,7 +151,7 @@ export function parseIndicatorMarkdown(
       measurementSteps: steps,
       statusAndNextSteps,
       howToPrevent: joinLines(prevent),
-      sources: parseSources(sourceBodies, allText),
+      sources: collectSources(sourceBodies, allText),
     },
     problems,
   }
@@ -170,7 +170,7 @@ function append(existing: string, next: string): string {
   return existing === '' ? next : `${existing} ${next}`
 }
 
-function parseSources(sourceBodies: string[], allText: string): Source[] {
+function collectSources(sourceBodies: string[], allText: string): Source[] {
   const sources: Source[] = []
   for (const body of sourceBodies) {
     const source = parseSourceLine(body)
@@ -188,6 +188,8 @@ function parseSources(sourceBodies: string[], allText: string): Source[] {
 function parseSourceLine(body: string): Source | null {
   const link = body.match(/^(.*?):\s+(https?:\/\/\S+)\s*$/)
   if (link) return { title: link[1].trim(), url: link[2] }
+  // STANDARDS.md section 6 also allows the link alone; the link is its title.
+  if (/^https?:\/\/\S+$/.test(body)) return { title: body, url: body }
   if (body === 'Assumption') return 'Assumption'
   return null
 }

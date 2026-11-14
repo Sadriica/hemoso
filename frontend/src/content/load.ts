@@ -51,11 +51,33 @@ export function loadContent(
   const indicatorIds = new Set(indicators.map((indicator) => indicator.id))
 
   const attentionFile = readConfigFile(files, ATTENTION_FILE, attentionPlaceholder)
-  const rules = parseRules(ATTENTION_FILE, attentionFile.text, indicatorIds, problems)
+  const rules = parseRules(
+    ATTENTION_FILE,
+    attentionFile.text,
+    indicatorIds,
+    problems,
+    {
+      // A placeholder attention file names `example_indicator`; with the real
+      // indicators.csv that row is dropped, not reported as a content problem.
+      skipUnknownIndicators:
+        !indicatorsFile.usedPlaceholder && attentionFile.usedPlaceholder,
+    },
+  )
   if (attentionFile.usedPlaceholder) usingPlaceholders = true
 
   const demoFile = readConfigFile(files, DEMO_DATA_FILE, demoDataPlaceholder)
-  const demoEntries = parseEntries(DEMO_DATA_FILE, demoFile.text, indicators, problems)
+  const demoEntries = parseEntries(
+    DEMO_DATA_FILE,
+    demoFile.text,
+    indicators,
+    problems,
+    {
+      // The placeholder demo rows are for `example_indicator`; with the real
+      // indicators.csv they are dropped instead of reported as problems.
+      skipUnknownIndicators:
+        !indicatorsFile.usedPlaceholder && demoFile.usedPlaceholder,
+    },
+  )
   if (demoFile.usedPlaceholder) usingPlaceholders = true
 
   for (const id of contentFileIds(files)) {

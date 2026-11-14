@@ -25,6 +25,7 @@ const rule: AttentionRule = {
   side: 'above',
   threshold: 100,
   attentionLevel: 'example_level',
+  notify: 'crew',
   sources: ['Assumption'],
 }
 
@@ -92,6 +93,70 @@ describe('Home', () => {
     expect(screen.getByText('Example next step. Assumption.')).toBeInTheDocument()
   })
 
+  it('says who acts when a level matches, from the notify column', () => {
+    const crossing: LoadedContent = {
+      ...data,
+      demoEntries: [entry(10, 101)],
+    }
+    renderHome(crossing)
+    expect(screen.getByText('Tell the crew.')).toBeInTheDocument()
+  })
+
+  it('names the CMO when the matching rule notifies the CMO', () => {
+    renderHome({
+      ...data,
+      rules: [{ ...rule, notify: 'cmo' }],
+      demoEntries: [entry(10, 101)],
+    })
+    expect(screen.getByText('Tell the CMO.')).toBeInTheDocument()
+    expect(screen.queryByText('Tell the crew.')).toBeNull()
+  })
+
+  it('names the flight surgeon when the matching rule notifies them', () => {
+    renderHome({
+      ...data,
+      rules: [{ ...rule, notify: 'flight_surgeon' }],
+      demoEntries: [entry(10, 101)],
+    })
+    expect(screen.getByText('Tell the flight surgeon.')).toBeInTheDocument()
+  })
+
+  it('does not say who acts when no level matches', () => {
+    renderHome(data)
+    expect(screen.queryByText(/^Tell the /)).toBeNull()
+  })
+
+  it('shows the most severe step of a stepped indicator', () => {
+    // The worked example of FORMATS.md section 3, value 35 crossing both rows.
+    const stepped: LoadedContent = {
+      ...data,
+      rules: [
+        { ...rule, side: 'below', threshold: 37.5, attentionLevel: 'watch' },
+        {
+          ...rule,
+          side: 'below',
+          threshold: 36,
+          attentionLevel: 'needs_review',
+          notify: 'cmo',
+        },
+      ],
+      contents: {
+        example_indicator: {
+          ...content,
+          statusAndNextSteps: {
+            watch: 'Rest and measure again.',
+            needs_review: 'Contact the CMO.',
+          },
+        },
+      },
+      demoEntries: [entry(10, 35)],
+    }
+    renderHome(stepped)
+    expect(screen.getByText('needs_review')).toBeInTheDocument()
+    expect(screen.getByText('Contact the CMO.')).toBeInTheDocument()
+    expect(screen.getByText('Tell the CMO.')).toBeInTheDocument()
+  })
+
   it('opens the sources disclosure by keyboard and shows links and Assumption', async () => {
     const user = userEvent.setup()
     renderHome(data)
@@ -124,6 +189,38 @@ describe('Home', () => {
     render(<Home personId="demo_astronaut_1" data={data} entries={[saved]} />)
     expect(screen.getByText('42')).toHaveTextContent('42 example_unit')
     expect(screen.getByText('Day 11 13:30')).toBeInTheDocument()
+  })
+
+  it('shows a 1 to 5 scale reading as the value over 5', () => {
+    const scale: Indicator = {
+      id: 'sleep_quality_1_5',
+      name: 'Sleep quality',
+      unit: '1 to 5',
+      direction: 'lower',
+      measuredOnBoard: 'Questionnaire after waking',
+      hazards: ['isolation_and_confinement'],
+      sources: ['Assumption'],
+    }
+    const scaleData: LoadedContent = {
+      ...data,
+      indicators: [scale],
+      rules: [],
+      contents: {},
+      demoEntries: [
+        {
+          id: 'scale-entry',
+          personId: 'demo_astronaut_1',
+          indicatorId: 'sleep_quality_1_5',
+          value: 4,
+          unit: '1 to 5',
+          missionDay: 10,
+          time: '08:00',
+        },
+      ],
+    }
+    renderHome(scaleData)
+    expect(screen.getByText('4')).toHaveTextContent('4 / 5')
+    expect(screen.queryByText('4 1 to 5')).toBeNull()
   })
 
   it('never says in range when the indicator has no attention rule', () => {
