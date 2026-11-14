@@ -118,3 +118,11 @@ that do not say.
 2. Phys commits the two CSVs with the new columns in the next commit.
 3. Until step 1 lands, the CSVs stay at seven and six columns, which is what is in
    the repository now.
+
+## The ready-to-apply package
+
+`team/phys/notes/format-v2/` holds the final `indicators.csv` (7 rows, 10 columns) and
+`demo_data.csv` (218 rows, 7 columns), the exact patch for `FORMATS.md` and for
+`check_content.py`, and the proof: a throwaway copy of the repository with the patched
+checker returns `0 error(s)` on both files. Nothing in `config/` changes until the
+checker is patched, so the branch stays green.
