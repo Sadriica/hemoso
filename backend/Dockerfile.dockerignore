@@ -1,0 +1,14 @@
+# Only backend/ and config/ are part of the image.
+*
+!backend
+!config
+
+# Local state, secrets and tests never reach the image.
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/.ruff_cache
+**/*.db
+**/.env
+**/.env.example
+backend/tests
