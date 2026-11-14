@@ -88,6 +88,23 @@ def test_sqlite_conflicting_value_raises(tmp_path):
         store.add(conflicting)
 
 
+def test_sqlite_conflicting_context_raises(tmp_path):
+    store = storage.SqliteStorage(tmp_path / "entries.db")
+    store.add(make_entry(1, "09:00"))
+
+    conflicting = Entry(
+        person_id="demo_astronaut_1",
+        indicator_id="example_indicator",
+        value=1.0,
+        unit="example_unit",
+        mission_day=1,
+        time="09:00",
+        context="after_exercise",
+    )
+    with pytest.raises(storage.EntryConflict):
+        store.add(conflicting)
+
+
 def test_sqlite_concurrent_resend_leaves_one_row(tmp_path):
     store = storage.SqliteStorage(tmp_path / "entries.db")
     entry = make_entry(1, "09:00")
