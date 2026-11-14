@@ -35,33 +35,33 @@ text. What changes is the convention above, which Bio 1 keeps in all five files.
 
 ## 3. Worked example · resting heart rate
 
-Level names below are placeholders (`within_range`, `outside_range`,
+Level names below are placeholders (`at_baseline`, `outside_baseline`,
 `needs_flight_surgeon`); the names in `attention.csv` replace them. The
 thresholds are Bio 2's.
 
 ```markdown
 ## Status and next steps
 
-### within_range
+### at_baseline
 
-Your resting heart rate is inside your usual range today.
+Your resting heart rate is at your baseline today.
 
 No action today. Measure again at the same hour tomorrow.
 
-No one is notified.
+No one is notified for now.
 
-### outside_range
+### outside_baseline
 
-Your resting heart rate has been above your usual range for 3 days.
+Your resting heart rate has been above your baseline for 3 days.
 
 Rest 10 minutes and measure again. Check your temperature, how you slept last
-night and how much water you drank. Assumption.
+night and your fluid intake. Assumption.
 
 Your CMO is notified on board.
 
 ### needs_flight_surgeon
 
-Your resting heart rate is far above your usual range and it stays high.
+Your resting heart rate is far above your baseline and today it is still high.
 
 Tell your CMO today. Rest, drink water and measure again in 2 hours. Assumption.
 
@@ -70,12 +70,12 @@ Your CMO tells the flight surgeon at the next link with Earth.
 
 ## 4. The other four, paragraph 1 only (the rest waits for the thresholds)
 
-| Indicator | `within_range` | `outside_range` | `needs_flight_surgeon` |
+| Indicator | `at_baseline` | `outside_baseline` | `needs_flight_surgeon` |
 | --- | --- | --- | --- |
-| Blood pressure | Your blood pressure is inside your usual range today. | Your blood pressure has been below your usual range for 3 days. | Your blood pressure is far below your usual range. |
-| Body temperature | Your temperature is inside your usual range today. | Your temperature has been above your usual range for 2 days. | Your temperature is high and it has stayed high. |
-| Sleep hours | You slept inside your usual range last night. | You slept less than your usual range for 3 nights. | You have slept much less than usual for several nights. |
-| Mood | Your mood check is inside your usual range this week. | Your mood check has been below your usual range for a week. | Your mood check has stayed low and you reported it twice. |
+| Blood pressure | Your blood pressure is at your baseline today. | Your blood pressure has been below your baseline for 3 days. | Your blood pressure is far below your baseline. |
+| Body temperature | Your temperature is at your baseline today. | Your temperature has been above your baseline for 2 days. | Your temperature is high and it has stayed high. |
+| Sleep hours | You slept at your baseline last night. | You slept less than your baseline for 3 nights. | You have slept much less than your baseline for several nights. |
+| Mood | Your mood is at your baseline this week. | Your mood has been below your baseline for a week. | Your mood has stayed below your baseline for several days. |
 
 The numbers ("3 days", "2 nights") are placeholders until `attention.csv` says
 which threshold the row uses. They must match the rule, not be invented.
@@ -83,6 +83,11 @@ which threshold the row uses. They must match the rule, not be invented.
 ## 5. Rules for every text in this section
 
 - Short sentences. One action per sentence. No jargon, no abbreviations.
+- Use **baseline**, NASA's word, for what is normal for this astronaut. Never
+  "usual range" or "normal range": a baseline is one value, compared with a
+  tolerance set by `attention.csv`.
+- "Heart rhythm problems", not "rhythm problems". "Fluid intake", not "how much
+  water you drank". Bio 1 chose these on Sat 17:40.
 - No condition named and no "you have". A possible condition is Bio 2's row in
   `conditions.csv`, with its probability and its basis.
 - Advice that comes from a source carries the link in `## Sources`. Advice that
@@ -91,7 +96,7 @@ which threshold the row uses. They must match the rule, not be invented.
   where `attention.csv` says `crew`.
 - The three paragraphs never repeat the number in the threshold table on screen;
   the app already shows it.
-- For body temperature, "your usual range" is the in-flight range: it is about
+- For body temperature, "your baseline" is the in-flight baseline: it is about
   1 °C above the Earth value (F-bio1-02). Never compare it with a fixed 37 °C.
 
 ## 6. Pending
