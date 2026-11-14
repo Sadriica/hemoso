@@ -1,5 +1,8 @@
-# backend/ · engineers
+# backend/ · HeMoSo API
 
-Empty until Saturday 9:00. Whether the solution needs a backend, and its
-structure, is decided in task T-06 and recorded in `docs/DECISIONS.md`.
-Tools and versions: `docs/STACK.md`. The first commit includes `uv.lock`.
+Stores each astronaut's entries (REQ-27) and returns history. FastAPI; SQLite by
+default or Supabase, chosen by `STORAGE`.
+
+Install: `uv sync --frozen` (Python 3.13).
+Run: `uv run uvicorn app.main:app`.
+Test: `uv run ruff check . && uv run pytest`.
