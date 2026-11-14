@@ -15,7 +15,7 @@ from .models import Entry, entry_key
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 
-_COLUMNS = ("person_id", "indicator_id", "value", "unit", "mission_day", "time")
+_COLUMNS = ("person_id", "indicator_id", "value", "unit", "mission_day", "time", "context")
 
 
 class EntryConflict(Exception):
@@ -23,7 +23,11 @@ class EntryConflict(Exception):
 
 
 def _same_value(left: Entry, right: Entry) -> bool:
-    return left.value == right.value and left.unit == right.unit
+    return (
+        left.value == right.value
+        and left.unit == right.unit
+        and left.context == right.context
+    )
 
 
 class Storage(Protocol):
@@ -76,8 +80,16 @@ class SqliteStorage:
                 "value REAL NOT NULL,"
                 "unit TEXT NOT NULL,"
                 "mission_day INTEGER NOT NULL,"
-                "time TEXT NOT NULL)"
+                "time TEXT NOT NULL,"
+                "context TEXT NOT NULL DEFAULT 'rest')"
             )
+            # A database written before the context column existed gets it added
+            # with the default, so its rows read as measured at rest.
+            columns = [row[1] for row in self._conn.execute("PRAGMA table_info(entries)")]
+            if "context" not in columns:
+                self._conn.execute(
+                    "ALTER TABLE entries ADD COLUMN context TEXT NOT NULL DEFAULT 'rest'"
+                )
             # A database written before REQ-13 can hold two rows for the same
             # natural key. Drop the duplicates (keep the oldest) before the
             # unique index is created, so startup does not crash.
@@ -105,7 +117,7 @@ class SqliteStorage:
             try:
                 self._conn.execute(
                     "INSERT INTO entries (person_id, indicator_id, value, unit,"
-                    " mission_day, time) VALUES (?, ?, ?, ?, ?, ?)",
+                    " mission_day, time, context) VALUES (?, ?, ?, ?, ?, ?, ?)",
                     (
                         entry.person_id,
                         entry.indicator_id,
@@ -113,6 +125,7 @@ class SqliteStorage:
                         entry.unit,
                         entry.mission_day,
                         entry.time,
+                        entry.context,
                     ),
                 )
                 self._conn.commit()
@@ -129,7 +142,7 @@ class SqliteStorage:
     def _find(self, key: tuple[str, str, int, str]) -> Entry | None:
         """The stored entry for `key`, or None. Call under the lock."""
         rows = self._conn.execute(
-            "SELECT person_id, indicator_id, value, unit, mission_day, time"
+            "SELECT person_id, indicator_id, value, unit, mission_day, time, context"
             " FROM entries WHERE person_id = ? AND indicator_id = ?"
             " AND mission_day = ? AND time = ?",
             key,
@@ -139,7 +152,7 @@ class SqliteStorage:
     def history(self, person_id: str, indicator_id: str) -> list[Entry]:
         with self._lock:
             rows = self._conn.execute(
-                "SELECT person_id, indicator_id, value, unit, mission_day, time"
+                "SELECT person_id, indicator_id, value, unit, mission_day, time, context"
                 " FROM entries WHERE person_id = ? AND indicator_id = ?"
                 " ORDER BY mission_day, time",
                 (person_id, indicator_id),

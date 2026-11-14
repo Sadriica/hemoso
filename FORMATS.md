@@ -1,6 +1,6 @@
 # Content formats
 
-**Draft for the team to confirm** · Sat 14 Nov 12:31 · attention `notify` column added 15:15 (Bio 2) · indicators, tier and system 15:40 · min_spread and mood scale 16:10 (Phys)
+**Draft for the team to confirm** · Sat 14 Nov 12:31 · attention `notify` column added 15:15 (Bio 2) · indicators, tier and system 15:40 · min_spread and mood scale 16:10 (Phys) · demo_data context 16:30 (Phys)
 
 The agreement between biologists and engineers: which files the solution reads,
 their exact format, and who owns each one. Built from the team's solution
@@ -134,7 +134,7 @@ the same columns the app stores for a real entry (REQ-27), so the history view
 works without real data (REQ-29).
 
 Columns in order: `person_id`, `indicator_id`, `value`, `unit`, `mission_day`,
-`time`.
+`time`, `context`.
 
 - `person_id`: a lowercase `snake_case` id for a synthetic astronaut; the demo
   uses `demo_astronaut_1`.
@@ -143,18 +143,23 @@ Columns in order: `person_id`, `indicator_id`, `value`, `unit`, `mission_day`,
 - `unit`: the same unit as the indicator's row in `data/indicators.csv`.
 - `mission_day`: an integer; "day N" per `STANDARDS.md` §4.
 - `time`: the 24-hour clock time `HH:MM`, per `STANDARDS.md` §4.
+- `context`: `rest`, `after_exercise`, `on_waking` or `before_sleep`. A reading
+  without its context is not comparable with another: heart rate and core
+  temperature after exercise are a different population from the same values at
+  rest.
 
 Example:
 
 ```csv
-person_id,indicator_id,value,unit,mission_day,time
-demo_astronaut_1,example_indicator,1,example_unit,1,13:30
+person_id,indicator_id,value,unit,mission_day,time,context
+demo_astronaut_1,example_indicator,1,example_unit,1,13:30,rest
 ```
 
 Valid when: `indicator_id` exists in `data/indicators.csv`; `unit` matches that
 indicator's unit; `value` is inside the range for that indicator in
 `data/demo_ranges.csv`; `mission_day` is a positive integer; `time` is 24-hour
-`HH:MM`. These values are synthetic, so no `source` column is needed here — the
+`HH:MM`; `context` is `rest`, `after_exercise`, `on_waking` or `before_sleep`.
+These values are synthetic, so no `source` column is needed here — the
 ranges are sourced in `data/demo_ranges.csv`.
 
 ### `config/data/demo_ranges.csv`

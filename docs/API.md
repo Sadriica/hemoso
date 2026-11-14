@@ -35,7 +35,8 @@ be re-sent (the frontend re-sends what waits in its outbox, REQ-13) without
 creating a duplicate: one entry is kept per `person_id`, `indicator_id`,
 `mission_day` and `time`.
 
-Request body: one `Entry`. Every field is required.
+Request body: one `Entry`. Every field is required except `context`, which
+defaults to `rest` when omitted.
 
 | Field | Type | Rule |
 | --- | --- | --- |
@@ -45,6 +46,7 @@ Request body: one `Entry`. Every field is required.
 | `unit` | string | at most 64 characters, the indicator's unit from `config/data/indicators.csv` (see below) |
 | `mission_day` | integer | greater than 0, at most 100000, "day N"; booleans and strings are rejected |
 | `time` | string | `HH:MM`, 24-hour clock |
+| `context` | string | `rest`, `after_exercise`, `on_waking` or `before_sleep`; any other value is rejected |
 
 The id rule is `../FORMATS.md` section 2. The example ids here are placeholders
 (`demo_astronaut_1`, `example_indicator`).
@@ -59,15 +61,15 @@ Responses:
 | Code | Meaning |
 | --- | --- |
 | `201` | A new entry was stored; the stored entry is returned. |
-| `200` | An entry with the same `person_id`, `indicator_id`, `mission_day` and `time` already exists with the same `value` and `unit`; that stored entry is returned and nothing is added. |
-| `409` | An entry with the same key already exists with a different `value` or `unit`; `detail` is a short plain message. |
+| `200` | An entry with the same `person_id`, `indicator_id`, `mission_day` and `time` already exists with the same `value`, `unit` and `context`; that stored entry is returned and nothing is added. |
+| `409` | An entry with the same key already exists with a different `value`, `unit` or `context`; `detail` is a short plain message. |
 | `422` | Validation (field rule, or indicator check). |
 
 ```bash
 curl -X POST "$VITE_API_BASE_URL/entries" \
   -H "Content-Type: application/json" \
-  -d '{"person_id":"demo_astronaut_1","indicator_id":"example_indicator","value":1.5,"unit":"example_unit","mission_day":1,"time":"13:30"}'
-# 201 {"person_id":"demo_astronaut_1","indicator_id":"example_indicator","value":1.5,"unit":"example_unit","mission_day":1,"time":"13:30"}
+  -d '{"person_id":"demo_astronaut_1","indicator_id":"example_indicator","value":1.5,"unit":"example_unit","mission_day":1,"time":"13:30","context":"rest"}'
+# 201 {"person_id":"demo_astronaut_1","indicator_id":"example_indicator","value":1.5,"unit":"example_unit","mission_day":1,"time":"13:30","context":"rest"}
 # re-sending the same body returns 200 with the same stored entry
 ```
 
@@ -82,6 +84,7 @@ const response = await fetch(`${VITE_API_BASE_URL}/entries`, {
     unit: "example_unit",
     mission_day: 1,
     time: "13:30",
+    context: "rest",
   }),
 });
 const entry = await response.json(); // status 201 (new) or 200 (already stored); the entry echoes the request
@@ -101,7 +104,7 @@ upstream store (Supabase) is unreachable or returns an error.
 
 ```bash
 curl "$VITE_API_BASE_URL/people/demo_astronaut_1/indicators/example_indicator/history"
-# 200 [{"person_id":"demo_astronaut_1","indicator_id":"example_indicator","value":1.5,"unit":"example_unit","mission_day":1,"time":"13:30"}]
+# 200 [{"person_id":"demo_astronaut_1","indicator_id":"example_indicator","value":1.5,"unit":"example_unit","mission_day":1,"time":"13:30","context":"rest"}]
 ```
 
 ```js
@@ -138,8 +141,8 @@ Indicator check: `detail` is a plain string.
 
 `POST /entries` returns `409` when an entry with the same `person_id`,
 `indicator_id`, `mission_day` and `time` already exists with a different
-`value` or `unit`. The `detail` is the plain string `an entry for this person,
-indicator, day and time already exists with a different value`.
+`value`, `unit` or `context`. The `detail` is the plain string `an entry for
+this person, indicator, day and time already exists with a different value`.
 
 `GET /people/{person_id}/indicators/{indicator_id}/history` returns `422` with a
 plain-string `detail` when `person_id` or `indicator_id` breaks the `snake_case`

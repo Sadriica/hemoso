@@ -26,8 +26,13 @@ _EXPECTED_COLUMNS = (
     "unit",
     "mission_day",
     "time",
+    "context",
 )
+# The header Phys wrote before the context column existed is still accepted;
+# its rows load with context "rest".
+_LEGACY_COLUMNS = _EXPECTED_COLUMNS[:-1]
 _HEADER = ",".join(_EXPECTED_COLUMNS)
+_LEGACY_HEADER = ",".join(_LEGACY_COLUMNS)
 
 
 def _validation_reason(error: ValidationError) -> str:
@@ -43,8 +48,9 @@ def _validation_reason(error: ValidationError) -> str:
 def load_demo_data(store: storage.Storage, path: Path) -> tuple[int, int, list[str]]:
     """Add the valid rows of `path` to `store`; return (added, skipped, reasons).
 
-    The header must be exactly the six expected columns. Each row must have the
-    same number of cells, pass the Entry model and match its indicator in
+    The header is the seven expected columns, or the older six-column header
+    without `context` (its rows load with context "rest"). Each row must have
+    the same number of cells, pass the Entry model and match its indicator in
     data/indicators.csv. A row whose (person_id, indicator_id, mission_day,
     time) is already in the store's history is skipped, so the same file never
     adds a measurement twice.
@@ -58,18 +64,24 @@ def load_demo_data(store: storage.Storage, path: Path) -> tuple[int, int, list[s
             header = next(reader)
         except StopIteration:
             header = []
-        if header != list(_EXPECTED_COLUMNS):
-            raise ValueError(f"demo data header must be: {_HEADER}")
+        if header == list(_EXPECTED_COLUMNS):
+            columns = _EXPECTED_COLUMNS
+        elif header == list(_LEGACY_COLUMNS):
+            columns = _LEGACY_COLUMNS
+        else:
+            raise ValueError(
+                f"demo data header must be: {_HEADER} (or the older {_LEGACY_HEADER})"
+            )
         for row in reader:
             line_no = reader.line_num
             stripped = [cell.strip() for cell in row]
             if not any(stripped):
                 continue  # blank row: skip silently
-            if len(stripped) != len(_EXPECTED_COLUMNS):
+            if len(stripped) != len(columns):
                 skipped += 1
                 reasons.append(f"line {line_no}: wrong number of columns")
                 continue
-            record = dict(zip(_EXPECTED_COLUMNS, stripped))
+            record = dict(zip(columns, stripped))
             try:
                 value = float(record["value"])
             except ValueError:
@@ -90,6 +102,7 @@ def load_demo_data(store: storage.Storage, path: Path) -> tuple[int, int, list[s
                     unit=record["unit"],
                     mission_day=mission_day,
                     time=record["time"],
+                    context=record.get("context", "rest"),
                 )
             except ValidationError as error:
                 skipped += 1

@@ -153,6 +153,11 @@ def main() -> int:
     own_range = [f"{base}..HEAD"] if base else ["-5"]
     if origin_main:
         own_range.append("^origin/main")
+    # Commits that came in by merging another person's branch (for example
+    # origin/eng1 before it reaches main) are theirs, not yours.
+    for other in ("bio1", "bio2", "phys", "eng1", "eng2"):
+        if other != person and run("git", "rev-parse", "--verify", "--quiet", f"origin/{other}"):
+            own_range.append(f"^origin/{other}")
     if base:
         if origin_main:
             files |= {f for f in run("git", "log", "--no-merges", "--format=", "--name-only", *own_range).splitlines() if f}
