@@ -80,4 +80,4 @@ planning, wording, and code. Not the base idea. Kept in `team/eng1/notes/si-use-
 | Use | uvicorn 0.54.0, BSD-3-Clause | The server that runs the FastAPI app | REQ-27 |
 | Use | pytest 9.2.0, MIT | The backend tests | REQ-27 |
 | Use | ruff 0.17.5, MIT | The backend lint | REQ-27 |
-| Open | Licence rows for each client library added (Supabase clients and others) | `docs/STACK.md` rule 2: every library gets a row with its licence when it is added | |
+| Use | No Supabase client library: the backend calls the Supabase REST API with httpx | One dependency less; its licence row is httpx's | REQ-27 |
