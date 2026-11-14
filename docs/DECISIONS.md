@@ -74,4 +74,10 @@ planning, wording, and code. Not the base idea. Kept in `team/eng1/notes/si-use-
 | Open | Where the FastAPI backend runs; Railway is the candidate | Vercel serves the frontend; the backend needs its own host | REQ-27 |
 | Open | REQ-13 and REQ-28 (working with delayed or no contact with Earth) now that the app needs a network: entries kept in the browser and sent later, or left out on purpose | `docs/STACK.md` rule 5 asked for offline-friendly; the network decision changes it | REQ-13, REQ-28 |
 | Use | Only synthetic data in Supabase and in every public deployment | The deployed app and its database are public infrastructure; no real personal data anywhere | REQ-14, REQ-29 |
+| Use | fastapi 0.162.7, MIT | The web framework for the entries and history routes | REQ-27 |
+| Use | pydantic 2.14.3, MIT | The `Entry` model and its validation | REQ-27 |
+| Use | httpx 0.28.1, BSD-3-Clause | The HTTP client the Supabase storage talks through | REQ-27 |
+| Use | uvicorn 0.54.0, BSD-3-Clause | The server that runs the FastAPI app | REQ-27 |
+| Use | pytest 9.2.0, MIT | The backend tests | REQ-27 |
+| Use | ruff 0.17.5, MIT | The backend lint | REQ-27 |
 | Open | Licence rows for each client library added (Supabase clients and others) | `docs/STACK.md` rule 2: every library gets a row with its licence when it is added | |
