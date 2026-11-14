@@ -8,7 +8,7 @@ Fri 13 Nov 2026.
 | Part | Tool | Version | Why it is here |
 | --- | --- | --- | --- |
 | Backend | Python | 3.13 | Installed and tested on our machines; current wheels for common packages |
-| | uv | 0.13 | Environments and lockfiles (`uv lock`, `uv sync --frozen`) |
+| | uv | 0.13 on our machines; the backend container pins its own tag in `backend/Dockerfile` | Environments and lockfiles (`uv lock`, `uv sync --frozen`) |
 | | FastAPI, Pydantic | 0.162, 2.14 | The engineers' usual API stack, if the solution needs a backend |
 | | uvicorn | 0.54 | Serves the FastAPI app; the backend host runs it |
 | | pytest, ruff, httpx | 9.2, 0.17, 0.28 | Tests and lint before every merge |
