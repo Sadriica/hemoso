@@ -1,20 +1,37 @@
 import { useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { loadContent } from './content/load'
+import { LocalEntryStore } from './data/entryStore'
+import { useEntries } from './hooks/useEntries'
 import SyntheticNotice from './components/SyntheticNotice'
+import Entry from './screens/Entry'
 import Home from './screens/Home'
 import { strings } from './strings'
 
-const TABS = [{ id: 'home', label: strings.tabs.home }] as const
+const TABS = [
+  { id: 'home', label: strings.tabs.home },
+  { id: 'entry', label: strings.tabs.entry },
+] as const
+
+type TabId = (typeof TABS)[number]['id']
 
 export default function App() {
   const [data] = useState(() => loadContent())
+  // One store for the tab: it seeds itself from the demo rows on the first run
+  // and then holds every entry the person saves (REQ-02, REQ-28).
+  const [store] = useState(
+    () => new LocalEntryStore({ seedEntries: data.demoEntries }),
+  )
+  const entries = useEntries(store)
   const personIds = useMemo(() => {
+    // The demo rows keep their person in the picker even when the browser holds
+    // entries of an earlier session for other people.
     const ids = new Set(data.demoEntries.map((entry) => entry.personId))
+    for (const entry of entries) ids.add(entry.personId)
     return [...ids]
-  }, [data])
+  }, [data, entries])
   const [personId, setPersonId] = useState('')
   const selectedPerson = personId || personIds[0] || ''
-  const [activeTab, setActiveTab] = useState(TABS[0].id)
+  const [activeTab, setActiveTab] = useState<TabId>(TABS[0].id)
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([])
 
   function onTabKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
@@ -88,7 +105,19 @@ export default function App() {
           tabIndex={0}
         >
           {activeTab === 'home' && (
-            <Home personId={selectedPerson} data={data} />
+            <Home personId={selectedPerson} data={data} entries={entries} />
+          )}
+          {activeTab === 'entry' && (
+            // A new person means a new form, with that person's day and time.
+            <Entry
+              key={selectedPerson}
+              store={store}
+              personId={selectedPerson}
+              indicators={data.indicators}
+              entries={entries.filter(
+                (entry) => entry.personId === selectedPerson,
+              )}
+            />
           )}
         </div>
       </main>

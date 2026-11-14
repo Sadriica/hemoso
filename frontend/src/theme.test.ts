@@ -10,12 +10,14 @@ import { describe, expect, it } from 'vitest'
 
 const stylesheet = readFileSync('src/styles.css', 'utf8')
 
-const DARK_THEME_AT = '@media (prefers-color-scheme: dark)'
+const LIGHT_THEME_AT = '@media (prefers-color-scheme: light)'
 
 const ROOT_BLOCK = /:root\s*\{([^}]*)\}/
 const COLOR_DECLARATION = /--([a-z0-9-]+):\s*#([0-9a-f]{6})\s*;/gi
 
-type Theme = 'light' | 'dark'
+// Dark is the default theme, so its tokens sit in the first :root block and the
+// light theme overrides them further down the file.
+type Theme = 'dark' | 'light'
 
 interface ColorPair {
   /** What the pair is, in the words of the screen. */
@@ -26,34 +28,34 @@ interface ColorPair {
 
 // Text and badge colours: at least 4.5:1 (WCAG 2.1 AA for normal text).
 const TEXT_PAIRS: ColorPair[] = [
-  { name: 'body text on the page', front: 'color-ink', back: 'color-page' },
-  { name: 'body text on a card', front: 'color-ink', back: 'color-surface' },
-  { name: 'body text on the header band', front: 'color-ink', back: 'color-band' },
-  { name: 'muted text on the page', front: 'color-ink-muted', back: 'color-page' },
-  { name: 'muted text on a card', front: 'color-ink-muted', back: 'color-surface' },
-  { name: 'muted text on the header band', front: 'color-ink-muted', back: 'color-band' },
-  { name: 'tab text while hovered', front: 'color-ink', back: 'color-sunken' },
-  { name: 'link on the page', front: 'color-accent', back: 'color-page' },
+  { name: 'body text on the page', front: 'color-text', back: 'color-bg' },
+  { name: 'body text on a card', front: 'color-text', back: 'color-surface' },
+  { name: 'body text on the header band', front: 'color-text', back: 'color-bg-raised' },
+  { name: 'muted text on the page', front: 'color-text-muted', back: 'color-bg' },
+  { name: 'muted text on a card', front: 'color-text-muted', back: 'color-surface' },
+  { name: 'muted text on the header band', front: 'color-text-muted', back: 'color-bg-raised' },
+  { name: 'link on the page', front: 'color-accent', back: 'color-bg' },
   { name: 'link on a card', front: 'color-accent', back: 'color-surface' },
-  { name: 'visited link', front: 'color-accent-strong', back: 'color-surface' },
-  { name: 'skip link text', front: 'color-on-accent', back: 'color-accent' },
+  { name: 'link on the header band', front: 'color-accent', back: 'color-bg-raised' },
+  { name: 'field error on the page', front: 'status-attention-text', back: 'color-bg' },
+  { name: 'primary button text', front: 'color-on-interactive', back: 'color-interactive' },
   { name: 'in range badge', front: 'status-in-range-text', back: 'status-in-range-bg' },
   { name: 'attention badge', front: 'status-attention-text', back: 'status-attention-bg' },
   { name: 'no data badge', front: 'status-no-data-text', back: 'status-no-data-bg' },
+  { name: 'signal red on a card', front: 'color-signal', back: 'color-surface' },
 ]
 
 // The focus outline is not text: 3:1 against the surface it sits on is enough.
 const FOCUS_PAIRS: ColorPair[] = [
-  { name: 'page', front: 'color-focus', back: 'color-page' },
-  { name: 'card', front: 'color-focus', back: 'color-surface' },
-  { name: 'header band', front: 'color-focus', back: 'color-band' },
-  { name: 'hovered tab', front: 'color-focus', back: 'color-sunken' },
+  { name: 'page', front: 'color-accent', back: 'color-bg' },
+  { name: 'card', front: 'color-accent', back: 'color-surface' },
+  { name: 'header band', front: 'color-accent', back: 'color-bg-raised' },
 ]
 
 function themeSections(css: string): Record<Theme, string> {
-  const darkAt = css.indexOf(DARK_THEME_AT)
-  if (darkAt < 0) throw new Error('styles.css has no dark theme block')
-  return { light: css.slice(0, darkAt), dark: css.slice(darkAt) }
+  const lightAt = css.indexOf(LIGHT_THEME_AT)
+  if (lightAt < 0) throw new Error('styles.css has no light theme block')
+  return { dark: css.slice(0, lightAt), light: css.slice(lightAt) }
 }
 
 function readColors(section: string): Map<string, string> {
@@ -90,10 +92,10 @@ function contrastRatio(first: string, second: string): number {
 
 const sections = themeSections(stylesheet)
 const colors: Record<Theme, Map<string, string>> = {
-  light: readColors(sections.light),
   dark: readColors(sections.dark),
+  light: readColors(sections.light),
 }
-const themes: Theme[] = ['light', 'dark']
+const themes: Theme[] = ['dark', 'light']
 
 function token(theme: Theme, name: string): string {
   const value = colors[theme].get(name)

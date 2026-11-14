@@ -9,6 +9,24 @@ export const strings = {
   tabs: {
     label: 'Screens',
     home: 'Home',
+    entry: 'Entry',
+  },
+  entry: {
+    heading: 'Entry',
+    indicator: 'Indicator',
+    // The unit belongs in the label and next to the field (REQ-02).
+    value: (unit: string): string => `Value (${unit})`,
+    missionDay: 'Mission day',
+    time: 'Time',
+    save: 'Save entry',
+    saved: 'Saved. Waiting to be sent.',
+    noIndicators: 'No indicators are set up yet.',
+    errors: {
+      valueRequired: 'Enter a value.',
+      valueNumber: 'Enter a number.',
+      missionDay: 'Enter a whole mission day, 1 or more.',
+      time: 'Enter a time as HH:MM.',
+    },
   },
   badge: {
     inRange: 'In range',

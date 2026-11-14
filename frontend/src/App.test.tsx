@@ -16,14 +16,14 @@ describe('App', () => {
     )
   })
 
-  it('keeps the tab selected when arrow keys are pressed', async () => {
+  it('moves between the tabs with the arrow keys', async () => {
     const user = userEvent.setup()
     render(<App />)
     const tab = screen.getByRole('tab', { name: 'Home' })
     tab.focus()
     await user.keyboard('{ArrowRight}')
     expect(
-      screen.getByRole('tab', { name: 'Home', selected: true }),
+      screen.getByRole('tab', { name: 'Entry', selected: true }),
     ).toBeInTheDocument()
     await user.keyboard('{ArrowLeft}')
     expect(
@@ -45,5 +45,33 @@ describe('App', () => {
     expect(
       screen.getByRole('option', { name: 'demo_astronaut_1' }),
     ).toBeInTheDocument()
+  })
+
+  it('saves an entry on the Entry tab and shows it on Home', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    screen.getByRole('tab', { name: 'Home' }).focus()
+    await user.keyboard('{ArrowRight}')
+    expect(
+      screen.getByRole('tab', { name: 'Entry', selected: true }),
+    ).toBeInTheDocument()
+
+    // Day 11 is later than every demo row, so the new entry is the latest one
+    // on Home whatever the clock says.
+    const day = screen.getByLabelText('Mission day')
+    await user.clear(day)
+    await user.type(day, '11')
+    await user.type(screen.getByLabelText('Value (example_unit)'), '1234567')
+    const save = screen.getByRole('button', { name: 'Save entry' })
+    save.focus()
+    await user.keyboard('{Enter}')
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Saved. Waiting to be sent.',
+    )
+
+    screen.getByRole('tab', { name: 'Home' }).focus()
+    await user.keyboard('{Enter}')
+    expect(screen.getByText('1234567')).toBeInTheDocument()
+    expect(screen.getByText(/^Day 11 \d{2}:\d{2}$/)).toBeInTheDocument()
   })
 })

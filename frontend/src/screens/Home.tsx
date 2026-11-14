@@ -18,11 +18,15 @@ import { strings } from '../strings'
 export default function Home({
   personId,
   data,
+  entries,
 }: {
   personId: string
   data: LoadedContent
+  // The entries from the store, so a reading saved on the Entry screen shows
+  // here at once (REQ-02).
+  entries: Entry[]
 }) {
-  const entries = data.demoEntries.filter((entry) => entry.personId === personId)
+  const personEntries = entries.filter((entry) => entry.personId === personId)
 
   return (
     <section aria-labelledby="home-heading">
@@ -48,7 +52,7 @@ export default function Home({
           <IndicatorRow
             key={indicator.id}
             indicator={indicator}
-            entries={entries.filter(
+            entries={personEntries.filter(
               (entry) => entry.indicatorId === indicator.id,
             )}
             rules={data.rules.filter(

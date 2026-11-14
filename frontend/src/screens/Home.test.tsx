@@ -60,9 +60,19 @@ const data: LoadedContent = {
   problems: [],
 }
 
+function renderHome(content: LoadedContent) {
+  render(
+    <Home
+      personId="demo_astronaut_1"
+      data={content}
+      entries={content.demoEntries}
+    />,
+  )
+}
+
 describe('Home', () => {
   it('shows name, latest value with unit, day/time, badge and next step', () => {
-    render(<Home personId="demo_astronaut_1" data={data} />)
+    renderHome(data)
     expect(
       screen.getByRole('heading', { name: 'Example indicator' }),
     ).toBeInTheDocument()
@@ -77,14 +87,14 @@ describe('Home', () => {
       ...data,
       demoEntries: [entry(1, 1), entry(10, 101)],
     }
-    render(<Home personId="demo_astronaut_1" data={attentionData} />)
+    renderHome(attentionData)
     expect(screen.getByText('example_level')).toBeInTheDocument()
     expect(screen.getByText('Example next step. Assumption.')).toBeInTheDocument()
   })
 
   it('opens the sources disclosure by keyboard and shows links and Assumption', async () => {
     const user = userEvent.setup()
-    render(<Home personId="demo_astronaut_1" data={data} />)
+    renderHome(data)
     const toggle = screen.getByRole('button', { name: 'Sources' })
     toggle.focus()
     await user.keyboard('{Enter}')
@@ -98,7 +108,7 @@ describe('Home', () => {
       ...data,
       problems: ['Indicator example_indicator has no source or Assumption.'],
     }
-    render(<Home personId="demo_astronaut_1" data={withProblems} />)
+    renderHome(withProblems)
     const toggle = screen.getByRole('button', {
       name: 'Content problems (for the team)',
     })
@@ -107,5 +117,12 @@ describe('Home', () => {
     expect(
       screen.getByText('Indicator example_indicator has no source or Assumption.'),
     ).toBeInTheDocument()
+  })
+
+  it('shows the entries it is given instead of the demo rows', () => {
+    const saved: Entry = { ...entry(11, 42), id: 'saved-entry' }
+    render(<Home personId="demo_astronaut_1" data={data} entries={[saved]} />)
+    expect(screen.getByText('42')).toHaveTextContent('42 example_unit')
+    expect(screen.getByText('Day 11 13:30')).toBeInTheDocument()
   })
 })
