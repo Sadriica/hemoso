@@ -52,8 +52,20 @@ def service_role_key() -> str:
     return "SUPABASE_SERVICE_ROLE" + "_KEY="
 
 
+def sb_secret_token() -> str:
+    return "sb" + "_secret_" + "A" * 10
+
+
 def forbidden_word() -> str:
     return "A" + "I"
+
+
+def claude_path() -> str:
+    return ".cl" + "aude/settings.json"
+
+
+def claude_mention() -> str:
+    return "use cl" + "aude to draft"
 
 
 class SecretRuleTests(unittest.TestCase):
@@ -114,6 +126,22 @@ class SecretRuleTests(unittest.TestCase):
         path = self._write("settings.py", supabase_key() + "\n" + service_role_key() + "\n")
         self.assertIsNone(precheck.secret_rule(path))
 
+    def test_sb_secret_key_is_blocked(self):
+        path = self._write("settings.py", "const key = '" + sb_secret_token() + "'\n")
+        self.assertEqual(precheck.secret_rule(path), "Supabase secret key (sb_secret_)")
+
+    def test_export_supabase_key_assignment_is_blocked(self):
+        path = self._write("env.sh", "export " + supabase_key() + '"some-key-value"\n')
+        self.assertEqual(precheck.secret_rule(path), "Supabase key set to a non-empty value")
+
+    def test_quoted_supabase_key_assignment_is_blocked(self):
+        path = self._write("settings.py", supabase_key() + " 'some-key-value'\n")
+        self.assertEqual(precheck.secret_rule(path), "Supabase key set to a non-empty value")
+
+    def test_export_empty_supabase_key_passes(self):
+        path = self._write("env.sh", "export " + supabase_key() + "\n")
+        self.assertIsNone(precheck.secret_rule(path))
+
     def test_binary_file_is_skipped(self):
         content = (private_key_header() + "\n").encode() + b"\x00" + b"tail"
         path = self._write("app.bin", content)
@@ -131,6 +159,25 @@ class SecretRuleTests(unittest.TestCase):
     def test_clean_file_passes(self):
         path = self._write("README.md", "# HeMoSo\nPlain text, no secrets.\n")
         self.assertIsNone(precheck.secret_rule(path))
+
+
+class ForbiddenTests(unittest.TestCase):
+    def test_claude_path_is_not_blocked(self):
+        self.assertIsNone(precheck.FORBIDDEN.search("chore(config): add " + claude_path() + " (#3)"))
+
+    def test_claude_mention_is_blocked(self):
+        self.assertIsNotNone(precheck.FORBIDDEN.search(claude_mention() + " (#3)"))
+
+    def test_claude_md_file_is_not_blocked(self):
+        self.assertIsNone(precheck.FORBIDDEN.search("chore(docs): add CLAUDE.md (#3)"))
+
+
+class OwnershipTests(unittest.TestCase):
+    def test_eng1_owns_claude_settings(self):
+        self.assertTrue(precheck.owns("eng1", ".claude/settings.json"))
+
+    def test_eng1_owns_findings_template(self):
+        self.assertTrue(precheck.owns("eng1", "docs/findings/TEMPLATE.md"))
 
 
 class MainTests(unittest.TestCase):
@@ -154,8 +201,8 @@ class MainTests(unittest.TestCase):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(content, encoding="utf-8")
 
-    def run_main(self) -> tuple[int, str]:
-        os.chdir(str(self.repo))
+    def run_main(self, cwd: Path | None = None) -> tuple[int, str]:
+        os.chdir(str(cwd or self.repo))
         buf = io.StringIO()
         with contextlib.redirect_stdout(buf):
             code = precheck.main()
@@ -195,6 +242,46 @@ class MainTests(unittest.TestCase):
         self.assertEqual(code, 1, out)
         self.assertIn("files outside your paths", out)
         self.assertIn("scripts/now.py", out)
+
+    def test_secret_in_own_commit_found_after_cleanup(self):
+        self.seed_root_commit()
+        self.git("branch", "origin/main")
+        self.git("checkout", "-qb", "bio1")
+        self.write("config/content/o.md", ghp_token() + "\n")
+        self.git("add", ".")
+        self.git("commit", "-qm", "feat(config): own file (#8)")
+        self.write("config/content/o.md", "clean\n")
+        code, out = self.run_main()
+        self.assertEqual(code, 1, out)
+        self.assertIn("secret in 'config/content/o.md': GitHub token", out)
+
+    def test_running_from_subdirectory_finds_staged_secret(self):
+        self.seed_root_commit()
+        self.git("branch", "origin/main")
+        self.git("checkout", "-qb", "bio1")
+        self.write("config/content/o.md", ghp_token() + "\n")
+        self.git("add", ".")
+        (self.repo / "backend").mkdir()
+        code, out = self.run_main(self.repo / "backend")
+        self.assertEqual(code, 1, out)
+        self.assertIn("secret in 'config/content/o.md': GitHub token", out)
+
+    def test_merge_commit_card_note_is_case_insensitive(self):
+        self.seed_root_commit()
+        self.git("checkout", "-qb", "bio1")
+        self.write("config/content/o.md", "own\n")
+        self.git("add", ".")
+        self.git("commit", "-qm", "feat(config): own file (#8)")
+        self.git("checkout", "-q", "main")
+        self.write("docs/x.md", "main\n")
+        self.git("add", ".")
+        self.git("commit", "-qm", "docs(x): main file (#9)")
+        self.git("checkout", "-q", "bio1")
+        self.git("merge", "--no-edit", "-q", "main")
+        code, out = self.run_main()
+        self.assertEqual(code, 0, out)
+        self.assertNotIn("does not mention its card", out)
+        self.assertIn("OK to push", out)
 
 
 if __name__ == "__main__":
