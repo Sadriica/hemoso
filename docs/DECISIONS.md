@@ -70,4 +70,8 @@ planning, wording, and code. Not the base idea. Kept in `team/eng1/notes/si-use-
 ## Solution decisions (from Saturday 9:00)
 | Decision | What | Why | Serves |
 | --- | --- | --- | --- |
-| Open | The solution, its architecture and where it runs | Being decided by the team in T-06 (draft above) | |
+| Use | The app works with a network connection: React frontend on Vercel under the team's domain, Supabase for stored data, FastAPI backend (Wambi, Sat 14 12:45) | A public link with no login (REQ-32) and a history that survives a reload (REQ-27); the team already has the domain | REQ-27, REQ-32 |
+| Open | Where the FastAPI backend runs; Railway is the candidate | Vercel serves the frontend; the backend needs its own host | REQ-27 |
+| Open | REQ-13 and REQ-28 (working with delayed or no contact with Earth) now that the app needs a network: entries kept in the browser and sent later, or left out on purpose | `docs/STACK.md` rule 5 asked for offline-friendly; the network decision changes it | REQ-13, REQ-28 |
+| Use | Only synthetic data in Supabase and in every public deployment | The deployed app and its database are public infrastructure; no real personal data anywhere | REQ-14, REQ-29 |
+| Open | Licence rows for each client library added (Supabase clients and others) | `docs/STACK.md` rule 2: every library gets a row with its licence when it is added | |
