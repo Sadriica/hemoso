@@ -6,9 +6,10 @@
 | `requirements.md` | Eng 1 | 35 general requirements, one owner each (T-05); the solution's own are added after T-06 |
 | `SETUP.md` | Eng 1 | Saturday 9:00: how the repository is created |
 | `BOARD.md` | Everyone | Ready: board, statuses, fields, views (`board/` has the plan cards and requirements) |
-| `STACK.md` | Eng 1, Eng 2 | Ready: tools and versions; rules for adding libraries |
-| `DEPLOY.md` | Eng 1, Eng 2 | Ready: public links and the subtitled video (`deploy/pages.yml`) |
+| `STACK.md` | Eng 1, Eng 2 | Ready: tools, versions and delivery services; rules for adding libraries |
+| `DEPLOY.md` | Eng 1, Eng 2 | Ready: how the app is published (Vercel, Supabase, backend host) and the subtitled video |
 | `DECISIONS.md` | Everyone | Every decision and rejected option with the reason |
+| `PRIVACY.md` | Eng 1 | Ready: what the app stores and where the keys live |
 | `CONTRACTS.md`, `API.md` | Eng 1 | Saturday, after `FORMATS.md` |
 | `sources.md` | Phys | Throughout the event |
 | `nasa_data.md` | Phys | From Saturday 9:00 |
