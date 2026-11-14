@@ -108,4 +108,31 @@ describe('parseIndicators', () => {
       },
     ])
   })
+
+  it('reports a header without source once and reads no rows', () => {
+    const problems: string[] = []
+    const indicators = parseIndicators(
+      'config/data/indicators.csv',
+      'id,name,unit,direction,measured_on_board,hazards\n' +
+        'example_indicator,Example indicator,example_unit,higher,example measurement method,isolation_and_confinement\n',
+      problems,
+    )
+    expect(indicators).toEqual([])
+    expect(problems).toEqual([
+      "Missing column 'source' in config/data/indicators.csv.",
+    ])
+  })
+
+  it('accepts the ten columns of FORMATS.md, which the app does not all read', () => {
+    const problems: string[] = []
+    const indicators = parseIndicators(
+      'config/data/indicators.csv',
+      'id,name,unit,direction,measured_on_board,hazards,min_spread,tier,system,source\n' +
+        'example_indicator,Example indicator,example_unit,higher,example measurement method,isolation_and_confinement,1,A,neuro_behavioural,Assumption\n',
+      problems,
+    )
+    expect(problems).toEqual([])
+    expect(indicators).toHaveLength(1)
+    expect(indicators[0].id).toBe('example_indicator')
+  })
 })

@@ -2,6 +2,19 @@ import type { Direction, Indicator } from '../domain/types'
 import { parseSources } from '../domain/source'
 import { parseCsvFile } from './csv'
 
+// The columns this reader uses. FORMATS.md also lists min_spread, tier and
+// system, which the frontend does not read yet: requiring them would reject
+// the real config/data/indicators.csv on the day Phys adds them.
+const REQUIRED_COLUMNS = [
+  'id',
+  'name',
+  'unit',
+  'direction',
+  'measured_on_board',
+  'hazards',
+  'source',
+]
+
 // Validates and reads one indicators.csv. Problems are appended in place so a
 // single file with several bad rows reports them all instead of throwing.
 export function parseIndicators(
@@ -11,7 +24,7 @@ export function parseIndicators(
 ): Indicator[] {
   const indicators: Indicator[] = []
   const seen = new Set<string>()
-  for (const row of parseCsvFile(fileName, text, problems)) {
+  for (const row of parseCsvFile(fileName, text, problems, REQUIRED_COLUMNS)) {
     const id = row.id?.trim() ?? ''
     if (id === '') {
       problems.push(`Indicator in ${fileName} has an empty id.`)

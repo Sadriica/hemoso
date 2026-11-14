@@ -18,12 +18,22 @@ interface Row {
   content: string
 }
 
+interface CsvTable {
+  headers: string[]
+  records: Record<string, string>[]
+}
+
 export function parseCsv(text: string): Record<string, string>[] {
+  return parseCsvTable(text).records
+}
+
+export function parseCsvTable(text: string): CsvTable {
   // Strip a UTF-8 BOM so a file saved from a spreadsheet still parses.
   const cleaned = text.replace(/^\uFEFF/, '')
-  if (cleaned.trim() === '') return []
+  if (cleaned.trim() === '') return { headers: [], records: [] }
 
   const rows = splitRows(cleaned)
+  if (rows.length === 0) return { headers: [], records: [] }
   const headers = parseRow(rows[0].content).map((header) => header.trim())
   const records: Record<string, string>[] = []
 
@@ -42,18 +52,30 @@ export function parseCsv(text: string): Record<string, string>[] {
     records.push(record)
   }
 
-  return records
+  return { headers, records }
 }
 
 // Runs parseCsv and turns a malformed-row error into a problem instead of
-// letting one bad line blank the whole app.
+// letting one bad line blank the whole app. The `required` columns are checked
+// against the header first, so a file with an older column shape reports each
+// missing column once by name and yields no rows, instead of one malformed row
+// per line.
 export function parseCsvFile(
   fileName: string,
   text: string,
   problems: string[],
+  required: readonly string[] = [],
 ): Record<string, string>[] {
   try {
-    return parseCsv(text)
+    const table = parseCsvTable(text)
+    const missing = required.filter(
+      (column) => !table.headers.includes(column),
+    )
+    for (const column of missing) {
+      problems.push(`Missing column '${column}' in ${fileName}.`)
+    }
+    if (missing.length > 0) return []
+    return table.records
   } catch (error) {
     if (error instanceof CsvError) {
       problems.push(`Malformed row in ${fileName}: ${error.message}`)

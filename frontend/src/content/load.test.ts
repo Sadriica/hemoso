@@ -134,6 +134,7 @@ describe('loadContent', () => {
     }
     const result = loadContent(files)
     expect(result.rules).toEqual([])
+    expect(result.demoEntries).toEqual([])
     expect(
       result.problems.some((problem) =>
         problem.includes(
@@ -141,6 +142,29 @@ describe('loadContent', () => {
         ),
       ),
     ).toBe(false)
+    expect(
+      result.problems.some((problem) =>
+        problem.includes("Unknown indicator id 'example_indicator' in demo data."),
+      ),
+    ).toBe(false)
+  })
+
+  it('reports a real attention file with the old five columns once', () => {
+    const files = {
+      'config/data/indicators.csv': indicatorsCsv,
+      'config/rules/attention.csv':
+        'indicator_id,side,threshold,attention_level,source\n' +
+        'example_indicator,above,100,example_level,Assumption\n',
+      'config/data/demo_data.csv':
+        'person_id,indicator_id,value,unit,mission_day,time\n' +
+        'demo_astronaut_1,example_indicator,1,example_unit,1,13:30\n',
+      'config/content/example_indicator.md': contentFile('Example indicator', ''),
+    }
+    const result = loadContent(files)
+    expect(result.rules).toEqual([])
+    expect(result.problems).toEqual([
+      "Missing column 'notify' in config/rules/attention.csv.",
+    ])
   })
 
   it('still reports an unknown indicator in a real attention file', () => {

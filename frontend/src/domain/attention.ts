@@ -7,6 +7,10 @@ const NOTIFY_RANK: Record<Notify, number> = {
   flight_surgeon: 2,
 }
 
+export function notifyRank(notify: Notify): number {
+  return NOTIFY_RANK[notify]
+}
+
 // A rule with side `above` matches when value > threshold, `below` when
 // value < threshold. Every matching rule is collected and the most severe
 // `notify` wins, because one value can cross several steps of the same
@@ -33,8 +37,8 @@ function matches(rule: AttentionRule, value: number): boolean {
 }
 
 function isMoreSevere(candidate: AttentionRule, winner: AttentionRule): boolean {
-  const candidateRank = NOTIFY_RANK[candidate.notify]
-  const winnerRank = NOTIFY_RANK[winner.notify]
+  const candidateRank = notifyRank(candidate.notify)
+  const winnerRank = notifyRank(winner.notify)
   if (candidateRank !== winnerRank) return candidateRank > winnerRank
   return isMoreExtreme(candidate, winner)
 }

@@ -200,4 +200,99 @@ describe('parseRules', () => {
     expect(rules).toHaveLength(1)
     expect(problems).toEqual([])
   })
+
+  it('reports a five-column file once, naming the missing notify column', () => {
+    const problems: string[] = []
+    const rules = parseRules(
+      'config/rules/attention.csv',
+      'indicator_id,side,threshold,attention_level,source\n' +
+        'example_indicator,below,36,watch,Assumption\n' +
+        'example_indicator,below,35,needs_review,Assumption\n',
+      validIds,
+      problems,
+    )
+    expect(rules).toEqual([])
+    expect(problems).toEqual([
+      "Missing column 'notify' in config/rules/attention.csv.",
+    ])
+  })
+})
+
+// FORMATS.md section 3: the steps of one indicator and side must escalate, so
+// that the most severe notify is also the most extreme threshold.
+describe('parseRules escalation', () => {
+  it('accepts the FORMATS.md example: below 37.5 crew, below 36.0 cmo', () => {
+    const problems: string[] = []
+    parseRules(
+      'config/rules/attention.csv',
+      header +
+        'example_indicator,below,37.5,watch,crew,Assumption\n' +
+        'example_indicator,below,36,needs_review,cmo,Assumption\n',
+      validIds,
+      problems,
+    )
+    expect(problems).toEqual([])
+  })
+
+  it('accepts two steps that notify the same person', () => {
+    const problems: string[] = []
+    parseRules(
+      'config/rules/attention.csv',
+      header +
+        'example_indicator,above,100,watch,crew,Assumption\n' +
+        'example_indicator,above,105,high,crew,Assumption\n',
+      validIds,
+      problems,
+    )
+    expect(problems).toEqual([])
+  })
+
+  it('reports a below step out of order and names the indicator', () => {
+    const problems: string[] = []
+    parseRules(
+      'config/rules/attention.csv',
+      header +
+        'example_indicator,below,37.5,watch,cmo,Assumption\n' +
+        'example_indicator,below,36,needs_review,crew,Assumption\n',
+      validIds,
+      problems,
+    )
+    expect(
+      problems.some(
+        (problem) =>
+          problem.includes('Attention steps out of order') &&
+          problem.includes("'example_indicator'"),
+      ),
+    ).toBe(true)
+  })
+
+  it('reports an above step out of order', () => {
+    const problems: string[] = []
+    parseRules(
+      'config/rules/attention.csv',
+      header +
+        'example_indicator,above,100,high,flight_surgeon,Assumption\n' +
+        'example_indicator,above,105,higher,crew,Assumption\n',
+      validIds,
+      problems,
+    )
+    expect(
+      problems.some((problem) =>
+        problem.includes('Attention steps out of order'),
+      ),
+    ).toBe(true)
+  })
+
+  it('checks each side on its own', () => {
+    const problems: string[] = []
+    parseRules(
+      'config/rules/attention.csv',
+      header +
+        'example_indicator,below,36,low,cmo,Assumption\n' +
+        'example_indicator,above,105,high,crew,Assumption\n',
+      validIds,
+      problems,
+    )
+    expect(problems).toEqual([])
+  })
 })

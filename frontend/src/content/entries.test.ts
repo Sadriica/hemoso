@@ -124,4 +124,34 @@ describe('parseEntries', () => {
       ),
     ).toBe(true)
   })
+
+  it('reports a header without time once and reads no rows', () => {
+    const problems: string[] = []
+    const entries = parseEntries(
+      'config/data/demo_data.csv',
+      'person_id,indicator_id,value,unit,mission_day\n' +
+        'demo_astronaut_1,example_indicator,1,example_unit,1\n',
+      [indicator],
+      problems,
+    )
+    expect(entries).toEqual([])
+    expect(problems).toEqual([
+      "Missing column 'time' in config/data/demo_data.csv.",
+    ])
+  })
+
+  it('drops an unknown indicator without a problem when asked to skip it', () => {
+    const problems: string[] = []
+    const entries = parseEntries(
+      'config/data/demo_data.csv',
+      header +
+        'demo_astronaut_1,example_indicator,1,example_unit,1,13:30\n' +
+        'demo_astronaut_1,other_indicator,2,other_unit,1,14:00\n',
+      [indicator],
+      problems,
+      { skipUnknownIndicators: true },
+    )
+    expect(entries).toHaveLength(1)
+    expect(problems).toEqual([])
+  })
 })

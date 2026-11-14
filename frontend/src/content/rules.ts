@@ -1,6 +1,18 @@
 import type { AttentionRule, Notify } from '../domain/types'
+import { notifyRank } from '../domain/attention'
 import { parseSources } from '../domain/source'
 import { parseCsvFile, parseNumber } from './csv'
+
+// The six columns of FORMATS.md section 3, in order. A file from before the
+// `notify` column reports that column by name and is not read at all.
+const REQUIRED_COLUMNS = [
+  'indicator_id',
+  'side',
+  'threshold',
+  'attention_level',
+  'notify',
+  'source',
+]
 
 // A placeholder attention file may name an indicator that the real
 // indicators.csv does not have (FORMATS.md examples `example_indicator`).
@@ -19,7 +31,8 @@ export function parseRules(
 ): AttentionRule[] {
   const rules: AttentionRule[] = []
   const seen = new Set<string>()
-  for (const row of parseCsvFile(fileName, text, problems)) {
+  const rows = parseCsvFile(fileName, text, problems, REQUIRED_COLUMNS)
+  for (const row of rows) {
     const indicatorId = row.indicator_id?.trim() ?? ''
     if (!validIds.has(indicatorId)) {
       if (options.skipUnknownIndicators !== true) {
@@ -74,7 +87,39 @@ export function parseRules(
       sources: sources ?? [],
     })
   }
+  checkEscalation(rules, problems)
   return rules
+}
+
+// FORMATS.md section 3: on one indicator and side, a more extreme threshold
+// must notify the same person or someone more severe, otherwise "the most
+// severe notify wins" can hide the step that should have fired.
+function checkEscalation(rules: AttentionRule[], problems: string[]): void {
+  const groups = new Map<string, AttentionRule[]>()
+  for (const rule of rules) {
+    const key = `${rule.indicatorId}|${rule.side}`
+    const group = groups.get(key)
+    if (group === undefined) groups.set(key, [rule])
+    else group.push(rule)
+  }
+
+  for (const group of groups.values()) {
+    if (group.length < 2) continue
+    const byThreshold = [...group].sort((a, b) => a.threshold - b.threshold)
+    for (let i = 0; i + 1 < byThreshold.length; i++) {
+      // The lower threshold is the more extreme one on `below`, the higher one
+      // on `above`.
+      const [first, second] = [byThreshold[i], byThreshold[i + 1]]
+      const [extreme, milder] =
+        group[0].side === 'below' ? [first, second] : [second, first]
+      if (notifyRank(extreme.notify) < notifyRank(milder.notify)) {
+        problems.push(
+          `Attention steps out of order for '${extreme.indicatorId}' ${extreme.side}: ` +
+            `${extreme.threshold} notifies ${extreme.notify} but ${milder.threshold} notifies ${milder.notify}.`,
+        )
+      }
+    }
+  }
 }
 
 function parseSide(

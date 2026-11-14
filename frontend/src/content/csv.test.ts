@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { CsvError, parseCsv } from './csv'
+import { CsvError, parseCsv, parseCsvFile } from './csv'
 
 describe('parseCsv', () => {
   it('parses a simple table keyed by header', () => {
@@ -50,5 +50,59 @@ describe('parseCsv', () => {
       expect(csvError.line).toBe(2)
       expect(csvError.message).toContain('Line 2')
     }
+  })
+})
+
+describe('parseCsvFile', () => {
+  const required = ['indicator_id', 'side', 'notify']
+
+  it('reads the rows when every required column is in the header', () => {
+    const problems: string[] = []
+    const records = parseCsvFile(
+      'file.csv',
+      'indicator_id,side,threshold,notify\na,above,1,crew\n',
+      problems,
+      required,
+    )
+    expect(records).toHaveLength(1)
+    expect(problems).toEqual([])
+  })
+
+  it('reports each missing column by name and reads no rows', () => {
+    const problems: string[] = []
+    const records = parseCsvFile(
+      'file.csv',
+      'indicator_id,side,threshold,attention_level\na,above,1,watch\n' +
+        'b,below,2,watch\n',
+      problems,
+      ['indicator_id', 'side', 'threshold', 'attention_level', 'notify'],
+    )
+    expect(records).toEqual([])
+    expect(problems).toEqual(["Missing column 'notify' in file.csv."])
+  })
+
+  it('turns a malformed row into one problem', () => {
+    const problems: string[] = []
+    const records = parseCsvFile(
+      'file.csv',
+      'indicator_id,side,threshold,notify\na,above\n',
+      problems,
+      required,
+    )
+    expect(records).toEqual([])
+    expect(problems.some((problem) => problem.includes('Malformed row in file.csv'))).toBe(
+      true,
+    )
+  })
+
+  it('reports the required columns of a file with no header at all', () => {
+    const problems: string[] = []
+    const records = parseCsvFile('file.csv', '# only a comment\n', problems, required)
+    expect(records).toEqual([])
+    expect(problems).toEqual([
+      "Missing column 'indicator_id' in file.csv.",
+      "Missing column 'side' in file.csv.",
+      "Missing column 'notify' in file.csv.",
+    ])
   })
 })
