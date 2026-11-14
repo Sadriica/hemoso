@@ -60,4 +60,6 @@ with `python scripts/si_use.py`. The table grows with each finished card.
 | Sat 17:30–18:05 | REQ-18, T-14 (#29, #40) | README.md | Assistant rewrote the README from the team paragraph and the code, and ran every command in it | Wambi |
 | Sat 17:30–18:10 | REQ-32 support, T-13 (#48, #39) | backend/railway.json, scripts/smoke.py, scripts/test_smoke.py, docs/DEPLOY.md | Assistant prepared the backend host config, a smoke test for the public URLs and the Sunday deploy checklist | Wambi |
 | Sat 18:20–18:30 | REQ-36, REQ-14 (#25) | docs/requirements.md, docs/board/requirements.csv, docs/DECISIONS.md | Assistant reviewed Juli's face sign-in branch and wrote the REQ-36 row, the REQ-14 exception and the library row Wambi decided | Wambi |
+| Sat 18:42–18:50 | REQ-13 (#24), REQ-18 (#29), REQ-27 (#43) | docs/DECISIONS.md, README.md | Assistant recorded the backend host and the offline outbox as decided, listed the third-party code with licences, and added the live links | Wambi |
+| Sat 18:45–18:55 | REQ-09 (#20), T-06 (#6) | docs/DECISIONS.md, FORMATS.md | Assistant wrote the team's REQ-09 choices and the 14-reading window into the decisions and formats; Wambi made each choice | Wambi |
 <!-- SI-USE-TABLE:END -->
