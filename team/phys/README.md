@@ -8,10 +8,10 @@
 ## Current status
 _Update before every checkpoint and at every shift change._
 
-- **Time:** Sat 14, 15:35
-- **Done:** branch `phys` created and pushed; `team/phys/notes/measurement-in-flight.md`; `team/phys/notes/nasa-data-draft.md`; `docs/findings/phys-01-baseline-over-fixed-ranges.md`; `team/phys/notes/indicators-proposal.md`; `config/data/indicators.csv` with 9 indicators, each with instrument, hazards and source (check_content: 0 errors)
+- **Time:** Sat 14, 16:00
+- **Done:** `config/data/indicators.csv` (9 indicators), `demo_ranges.csv` (9 ranges with source) and `demo_data.csv` (30 days, 270 rows, seed 20261114); `docs/findings/phys-01` and `phys-02`; 3 notes; check_content: 0 errors
 - **In progress:** none
-- **Next:** `config/data/demo_ranges.csv` and `demo_data.csv` (REQ-29); `docs/nasa_data.md` and `docs/sources.md`; the review of the solution paragraph
+- **Next:** `docs/nasa_data.md` and `docs/sources.md` (both still empty and both mine)
 
 ## Blockers
 - `config/data/indicators.csv` uses 9 ids that are not in the section 2 table of `FORMATS.md` yet. Eng 1 has to add them there, because that file is his.
