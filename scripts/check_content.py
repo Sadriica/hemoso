@@ -80,6 +80,8 @@ class Reporter:
 
 
 def is_number(value: str) -> bool:
+    if "_" in value:
+        return False
     try:
         return math.isfinite(float(value))
     except ValueError:
@@ -331,7 +333,7 @@ def check_demo_data(rep: Reporter, root: Path, state: dict) -> None:
         if value and not is_number(value):
             rep.error(f"{rel}:{line_no} value must be a number, got '{value}'{decimal_comma_hint(value)}")
         day = cells["mission_day"].strip()
-        if day and (not day.isdigit() or int(day) <= 0):
+        if day and (not day.isdecimal() or int(day) <= 0):
             rep.error(f"{rel}:{line_no} mission_day must be a positive integer, got '{day}'")
         clock = cells["time"].strip()
         if clock and not TIME_RE.match(clock):
