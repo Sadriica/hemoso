@@ -302,6 +302,17 @@ style guide in full first. Behaviour, texts, data and tests stay the same.
   assertion. All tests, lint and build pass. Report the bundle size before and
   after.
 - Note for Eng 1: three libraries need rows in `docs/DECISIONS.md` (MIT).
+- Also from the style guide, still missing (Sat 18:00): tab labels with their
+  section number (`01 / STATUS`, `02 / ENTRY`, `03 / HISTORY`) as visible text
+  while the accessible names stay "Home", "Entry", "History" (the e2e reads
+  them); the header metadata line `HEMOSO / CREW HEALTH · DAY N · HH:MM ·
+  SYNTHETIC DATA` (section 5) and one thin decorative orbital line in the
+  header band (aria-hidden, no animation under reduced motion); `DAY 30 · 07:00`
+  with the middle dot.
+- Every screen moves: Home cards and details, Entry, History with the chart and
+  table, the sync status row, notices, and the face sign-in panel (T-58) when
+  it is in the tree. Behaviour unchanged; all unit and e2e tests pass on both
+  projects; the face gate (`?face=1`) unchanged.
 
 ## T-58 · Sign in with the face, on the device (P2)
 Read `team/eng2/notes/face-login-proposal.md` first. Frontend only: no
