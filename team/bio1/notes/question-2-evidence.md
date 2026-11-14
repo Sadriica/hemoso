@@ -14,6 +14,7 @@ REQ-03) uses another name. The reason does not change with the name.
 | Body temperature (`body_temperature`) | Body temperature at rest goes up about 1 °C in space and stays higher after 2 to 3 months. This mild, constant fever costs about 20% more energy. | Stahn et al. 2017: https://www.nature.com/articles/s41598-017-15560-w · ESA, Space fever: https://www.esa.int/Science_Exploration/Human_and_Robotic_Exploration/Research/Space_fever | Sourced (F-bio1-02) |
 | Sleep hours (`sleep_hours`) | Crews sleep about 6 hours a night in flight. Short sleep over weeks lowers attention, mood and how the body uses energy. | Human Research Roadmap, sleep risk: https://humanresearchroadmap.nasa.gov/Risks/risk.aspx?i=100 | Clear |
 | Mood (`mood`) | Isolation and confinement wear down mood. Changes in mood are an early sign of a behavioural health problem, and NASA uses questionnaires and journaling to catch them early. | Hazard: Isolation and Confinement: https://www.nasa.gov/hrp/hazard-isolation-and-confinement/ · Risks of Human Spaceflight: https://www.nasa.gov/hrp/risks/ | Clear |
+| Fluid intake (`fluid_intake`) | In flight, crews often drink less than the NASA recommendation. Drinking less than 2000 ml a day raises the risk of dehydration and kidney stones. | NASA, Human Adaptation to Spaceflight: The Role of Nutrition (2020), p11 and p33: https://humanresearchroadmap.nasa.gov/Evidence/other/Nutrition%20ER_human_adaptation_2020_final.pdf | Clear (F-bio1-03) |
 
 ## The temperature question, settled
 

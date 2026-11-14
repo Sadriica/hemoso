@@ -11,7 +11,7 @@ _Update before every checkpoint and at every shift change._
 [bio1] ready · done: F-bio1-01, status text shape · next: REQ-04 pilot in B3 · blocked: indicator ids (Phys), attention.csv (Bio 2)
 
 - **Time:** Sat 17:05
-- **Done:** F-bio1-01 with the question 2 source for the five proposed indicators (`team/bio1/notes/question-2-evidence.md`); F-bio1-02 on space fever; the REQ-26 text shape and the first texts (`team/bio1/notes/status-texts.md`)
+- **Done:** F-bio1-01 with the question 2 source for the proposed indicators (`team/bio1/notes/question-2-evidence.md`); F-bio1-02 on space fever; F-bio1-03 proposing fluid intake as the sixth indicator; the REQ-26 text shape and the first texts (`team/bio1/notes/status-texts.md`)
 - **In progress:** waiting for `config/data/indicators.csv` to start the content files
 - **Next:** pilot `config/content/resting_heart_rate.md` in B3, then the other four
 

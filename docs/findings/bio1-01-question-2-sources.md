@@ -57,4 +57,4 @@ Assumption.
   not a temperature threshold. The 1 °C rise is ESA and one peer-reviewed study
   (F-bio1-02), so the source for that number is not NASA.
 - Blood glucose and bone density: no page read gives reason and in-flight method
-  together. Neither is in the five.
+  together. Neither is in the six.
