@@ -448,6 +448,26 @@ def existing_issues(repo: str) -> dict:
     return found
 
 
+def sync_issue(conf: dict, url: str, title: str, body: str, labels: list[str], logins: list) -> None:
+    num = url.rsplit("/", 1)[1]
+    cur = gh("issue", "view", num, "-R", conf["repo"], "--json", "title,labels,assignees", as_json=True)
+    args = ["issue", "edit", num, "-R", conf["repo"], "--title", title, "--body", body]
+    have_labels = {l["name"] for l in cur.get("labels", [])}
+    for lab in labels:
+        if lab not in have_labels:
+            args += ["--add-label", lab]
+    for lab in have_labels - set(labels):
+        if lab in PEOPLE:  # only owner labels are managed here; others stay
+            args += ["--remove-label", lab]
+    want = {x for x in logins if x}
+    have = {a["login"] for a in cur.get("assignees", [])}
+    for login in sorted(want - have):
+        args += ["--add-assignee", login]
+    for login in sorted(have - want):
+        args += ["--remove-assignee", login]
+    gh(*args)
+
+
 def create_item(conf: dict, flds: dict, row: dict, url: str | None = None) -> str:
     people = [p.strip() for p in row["person"].split("+") if p.strip()]
     for p in people:
@@ -466,6 +486,9 @@ def create_item(conf: dict, flds: dict, row: dict, url: str | None = None) -> st
             args += ["--assignee", login]
     if not url:
         url = gh(*args).splitlines()[-1]
+    else:  # existing issue: bring title, text, labels and owners in line with the CSV
+        sync_issue(conf, url, title, body_for(row, people, kind), labels_for(people, kind, row),
+                   [conf.get("logins", {}).get(p) for p in people])
     item = gh("project", "item-add", str(conf["number"]), "--owner", conf["owner"], "--url", url,
               "--format", "json", as_json=True)
     work = work_of(row)
@@ -516,7 +539,7 @@ def cmd_import(a) -> None:
     for row in rows:
         same = have.get(row.get("id", ""), [])
         if same:
-            print(f"{same[0]['url']}  (exists; board fields set again)")
+            print(f"{same[0]['url']}  (exists; updated from the CSV)")
             create_item(conf, flds, row, url=same[0]["url"])
             updated += 1
             if len(same) > 1:

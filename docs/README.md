@@ -3,7 +3,7 @@
 | File | Owner | When |
 | --- | --- | --- |
 | `CHALLENGE.md` | Eng 1 | Ready: what the challenge and the guides ask; checked against the page Saturday 9:00 |
-| `requirements.md` | Eng 1 | 25 general requirements (T-05); the solution's own are added after T-06 |
+| `requirements.md` | Eng 1 | 35 general requirements, one owner each (T-05); the solution's own are added after T-06 |
 | `SETUP.md` | Eng 1 | Saturday 9:00: how the repository is created |
 | `BOARD.md` | Everyone | Ready: board, statuses, fields, views (`board/` has the plan cards and requirements) |
 | `STACK.md` | Eng 1, Eng 2 | Ready: tools and versions; rules for adding libraries |
