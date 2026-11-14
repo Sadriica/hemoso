@@ -176,3 +176,18 @@ def test_history_upstream_error_becomes_502(client):
     )
     assert response.status_code == 502
     assert response.json()["detail"] == "upstream storage error"
+
+
+def test_create_entry_upstream_error_becomes_502(client):
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(500)
+
+    failing = storage.SupabaseStorage(
+        "https://example.supabase.co",
+        "sb_secret_x",
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+    app.dependency_overrides[storage.get_storage] = lambda: failing
+    response = client.post("/entries", json=ENTRY)
+    assert response.status_code == 502
+    assert response.json()["detail"] == "upstream storage error"
