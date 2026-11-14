@@ -29,11 +29,35 @@ def chdir(path):
 
 
 class CheckSourcesTest(unittest.TestCase):
-    def test_url_regex_keeps_comma_and_paren(self):
+    def test_url_regex_stops_at_comma(self):
         self.assertEqual(
-            check_sources.URL.findall("https://en.wikipedia.org/wiki/Percent-encoding_(percent,_comma)"),
-            ["https://en.wikipedia.org/wiki/Percent-encoding_(percent,_comma)"],
+            check_sources.URL.findall(
+                "https://www.who.int/news-room/fact-sheets/detail/hypertension,Synthetic"),
+            ["https://www.who.int/news-room/fact-sheets/detail/hypertension"],
         )
+
+    def test_url_regex_stops_at_close_paren(self):
+        self.assertEqual(
+            check_sources.URL.findall("[t](https://x)"),
+            ["https://x"],
+        )
+
+    def test_url_regex_keeps_comma_free_query_string(self):
+        self.assertEqual(
+            check_sources.URL.findall("https://example.org/search?q=hypertension&lang=en"),
+            ["https://example.org/search?q=hypertension&lang=en"],
+        )
+
+    def test_collect_strips_trailing_punctuation(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / "config" / "data").mkdir(parents=True)
+            (root / "config" / "data" / "indicators.csv").write_text(
+                "id,name,unit,source\nx,X,u,https://example.org/a/b.\n", encoding="utf-8")
+            with chdir(root):
+                used = check_sources.collect()
+            self.assertIn("https://example.org/a/b", used)
+            self.assertNotIn("https://example.org/a/b.", used)
 
     def test_phys_finding_covered_and_add_forward_slash(self):
         with tempfile.TemporaryDirectory() as tmp:

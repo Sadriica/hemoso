@@ -7,8 +7,8 @@ it with `uv run python scripts/export_openapi.py` from `backend/`). The field
 meanings come from `../FORMATS.md`. All data is synthetic (REQ-14); nothing here
 holds real personal data.
 
-The frontend reads the base URL from an `API_URL` placeholder, never a hard-coded
-host. The examples below use `$API_URL` (shell) and `API_URL` (JavaScript).
+The frontend reads the base URL from a `VITE_API_BASE_URL` placeholder, never a hard-coded
+host. The examples below use `$VITE_API_BASE_URL` (shell) and `VITE_API_BASE_URL` (JavaScript).
 
 ## Routes
 
@@ -19,12 +19,12 @@ Health check. No request body.
 Responses: `200`.
 
 ```bash
-curl "$API_URL/health"
+curl "$VITE_API_BASE_URL/health"
 # {"status":"ok"}
 ```
 
 ```js
-const response = await fetch(`${API_URL}/health`);
+const response = await fetch(`${VITE_API_BASE_URL}/health`);
 const body = await response.json(); // { status: "ok" }
 ```
 
@@ -64,7 +64,7 @@ Responses:
 | `422` | Validation (field rule, or indicator check). |
 
 ```bash
-curl -X POST "$API_URL/entries" \
+curl -X POST "$VITE_API_BASE_URL/entries" \
   -H "Content-Type: application/json" \
   -d '{"person_id":"demo_astronaut_1","indicator_id":"example_indicator","value":1.5,"unit":"example_unit","mission_day":1,"time":"13:30"}'
 # 201 {"person_id":"demo_astronaut_1","indicator_id":"example_indicator","value":1.5,"unit":"example_unit","mission_day":1,"time":"13:30"}
@@ -72,7 +72,7 @@ curl -X POST "$API_URL/entries" \
 ```
 
 ```js
-const response = await fetch(`${API_URL}/entries`, {
+const response = await fetch(`${VITE_API_BASE_URL}/entries`, {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({
@@ -100,13 +100,13 @@ entries; `422` when a path id breaks the `snake_case` rule; `502` when the
 upstream store (Supabase) is unreachable or returns an error.
 
 ```bash
-curl "$API_URL/people/demo_astronaut_1/indicators/example_indicator/history"
+curl "$VITE_API_BASE_URL/people/demo_astronaut_1/indicators/example_indicator/history"
 # 200 [{"person_id":"demo_astronaut_1","indicator_id":"example_indicator","value":1.5,"unit":"example_unit","mission_day":1,"time":"13:30"}]
 ```
 
 ```js
 const response = await fetch(
-  `${API_URL}/people/demo_astronaut_1/indicators/example_indicator/history`
+  `${VITE_API_BASE_URL}/people/demo_astronaut_1/indicators/example_indicator/history`
 );
 const history = await response.json(); // array, oldest entry first
 ```
