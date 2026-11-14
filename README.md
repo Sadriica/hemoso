@@ -127,7 +127,9 @@ Requirements: `docs/requirements.md`. Decisions: `docs/DECISIONS.md`.
 
 ## Live demo
 
-Public link: to be added (REQ-32)
+- App: https://www.hemoso.space (synthetic data only; open in a private window, no login)
+- API: https://hemoso-production.up.railway.app (`/health`, interactive docs at `/docs`)
+- Face sign-in, off by default: https://www.hemoso.space/?face=1
 
 ---
 
