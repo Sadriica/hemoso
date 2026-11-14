@@ -38,19 +38,38 @@ REQ-01, is closed.
 | REQ-13 | Working with delayed or no contact with Earth: still "Open" in `docs/DECISIONS.md` now that the app uses a network; REQ-28 follows its answer |
 
 ## Work list
-| # | Work | Serves | Status |
-| --- | --- | --- | --- |
-| 1 | Frontend skeleton: Vite, React, TypeScript, pnpm lockfile, Vitest | T-03, all | Done (db00106) |
-| 2 | API client with mock mode, status badge (colour + icon + text), app shell | REQ-01, REQ-15, REQ-30 | Block A, iteration 3 of 4 |
-| 3 | One screen: status of each indicator and its next step, read from `config/` content | REQ-01 | Todo, needs the attention levels from Bio 2 |
-| 4 | Entry form by keyboard and clicks, unit shown, from `config/data/indicators.csv` | REQ-02 | Todo, needs the indicator list from Phys |
-| 5 | History view against the person's own earlier values | REQ-12 | Todo, needs REQ-27 |
-| 6 | Offline after first load: cached app, pending entries and last sync time visible | REQ-28 | Todo, waits on the REQ-13 decision |
-| 7 | Keyboard-only demo path and non-colour states, checked with axe | REQ-15 | Todo |
-| 8 | Every label and message in English; one strings file | REQ-30 | In place since block A |
-| 9 | Playwright demo path, screenshots at 1280 × 800, video with burned-in subtitles | REQ-31, T-16 | Todo |
-| 10 | Public link checked in a private window on desktop and phone | REQ-32, T-13 | Desktop done; phone to check |
-| 11 | Vercel pipeline: tests gate every deploy (see below) | REQ-32, T-13 | Project `hemoso` live (CLI deploy); git link waits for Eng 1 |
+Done or in progress:
+
+| Work | Serves | Status |
+| --- | --- | --- |
+| Frontend skeleton: Vite, React, TypeScript, pnpm lockfile, Vitest | T-03 | Done (db00106) |
+| Block A: first shell, status badge, client (MVP design) | REQ-01, REQ-15 | Done (d847581), replaced by block B |
+| Block B: CSV and Markdown readers, content loader, attention, Home screen | REQ-01, REQ-15, REQ-30 | Iteration 3 of 4 |
+| Vercel pipeline: tests gate every deploy; git link to `Sadriica/hemoso` | REQ-32, T-13 | Live; pushes deploy on their own |
+
+Pending, one card each (`team/eng2/notes/frontend-tasks.csv`, briefs in
+`team/eng2/notes/flash-tasks.md`, for opencode with DeepSeek Flash):
+
+| Card | Work | Serves | Priority | Block | Depends on |
+| --- | --- | --- | --- | --- | --- |
+| T-41 | Entry store in the browser with an outbox | REQ-02, REQ-28 | P0 | B2 | T-06 |
+| T-42 | Entry screen by keyboard and clicks, unit shown | REQ-02 | P0 | B2 | T-41 |
+| T-43 | Sync client that sends waiting entries | REQ-28 | P1 | B3 | T-41 |
+| T-44 | Sync status: waiting count and last sent time | REQ-28 | P1 | B3 | T-43 |
+| T-45 | History against the person's own earlier values | REQ-12 | P1 | B3 | T-42 |
+| T-46 | History chart in SVG with a text alternative | REQ-12, REQ-15 | P1 | B3 | T-45 |
+| T-47 | Indicator details from the content file | REQ-01 | P1 | B3 | T-06 |
+| T-48 | Offline after the first load (service worker) | REQ-28 | P1 | B3 | T-41 |
+| T-49 | Playwright demo path with axe on every screen | REQ-15 | P0 | B3 | T-42 |
+| T-50 | Phone layout and public link check | REQ-32 | P0 | B4 | T-49 |
+| T-51 | English and wording check over every text | REQ-30 | P0 | B3 | T-42 |
+| T-52 | Demo recording with subtitles ready to burn in | REQ-31, T-16 | P0 | B4 | T-49, T-16 |
+| T-53 | Read the team's real config files | REQ-01, REQ-02 | P0 | B3 | content from Phys, Bio 1, Bio 2 |
+| T-54 | Connect to the backend API | REQ-12, REQ-28 | P1 | Night | contract for REQ-27 from Eng 1 |
+| T-55 | `frontend/FRONT_TOBACK.md` | all | P1 | B4 | T-54 |
+
+To put them on the board (needs `gh`, so Eng 1 runs it):
+`python scripts/board.py import team/eng2/notes/frontend-tasks.csv`
 
 ## Vercel pipeline
 Status Sat 14 11:58: project `julian-mejias-projects/hemoso`, Node 24.x,
