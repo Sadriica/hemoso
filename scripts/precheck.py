@@ -27,7 +27,7 @@ OWNED = {
     "bio2": ["config/rules/*", "submission/submission.md", "submission/README.md", "team/bio2/*",
              "docs/findings/bio2-*.md"],
     "phys": ["config/data/*", "docs/sources.md", "docs/nasa_data.md", "team/phys/*", "docs/findings/phys-*.md"],
-    "eng1": ["docs/CHALLENGE.md", "docs/requirements.md", "docs/board/requirements.csv", "backend/*", "scripts/*", "FORMATS.md", "README.md", "CHANGELOG.md", "config/README.md",
+    "eng1": ["docs/CHALLENGE.md", "docs/requirements.md", "docs/board/requirements.csv", "backend/*", "scripts/*", "FORMATS.md", "README.md", "CHANGELOG.md", "config/README.md", "SI-USE.md",
              ".github/*", "team/eng1/*", "docs/BOARD.md", "docs/SETUP.md", "docs/STACK.md", "docs/DEPLOY.md",
              "docs/DECISIONS.md", "docs/README.md", "docs/CONTRACTS.md", "docs/API.md", "docs/deploy/*",
              "docs/board/seed-tasks.csv", "docs/board/issue-templates/*",
