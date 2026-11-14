@@ -36,4 +36,5 @@ with `python scripts/si_use.py`. The table grows with each finished card.
 | Sat 14:15–14:45 | T-06, T-08 (#6, #8) | audit of every change since 12:00, read only | A second assistant audited the afternoon's changes independently; each finding was confirmed before it was fixed | Wambi |
 | Sat 14:20–14:50 | T-06, T-08, REQ-14, REQ-27 (#6, #8, #25, #43) | FORMATS.md, scripts/check_content.py, scripts/test_check_content.py, docs/DECISIONS.md, scripts/precheck.py, backend/README.md, docs/PRIVACY.md | Assistant fixed the confirmed audit findings | Wambi |
 | Sat 14:10–14:55 | REQ-32 support (#48) | backend/Dockerfile, backend/Dockerfile.dockerignore, docs/DEPLOY.md | Assistant wrote the backend container and checked the image tags; review moved the build to the repository root so config/ is included. Not built here: the Docker daemon is off | Wambi |
+| Sat 14:35–15:00 | REQ-27 (#43) | backend/app/models.py, backend/tests/conftest.py, backend/tests/test_api.py, docs/API.md | An end-to-end run found two bugs (tests reading the real config/, NaN giving a 500); assistant fixed both with tests | Wambi |
 <!-- SI-USE-TABLE:END -->
