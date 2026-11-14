@@ -66,13 +66,35 @@ def load_demo_data(store: storage.Storage, path: Path) -> tuple[int, int, list[s
             raise ValueError(f"demo data header must be: {_HEADER}")
         for row in reader:
             line_no = reader.line_num
-            if len(row) != len(_EXPECTED_COLUMNS):
+            stripped = [cell.strip() for cell in row]
+            if not any(stripped):
+                continue  # blank row: skip silently
+            if len(stripped) != len(_EXPECTED_COLUMNS):
                 skipped += 1
                 reasons.append(f"line {line_no}: wrong number of columns")
                 continue
-            record = dict(zip(_EXPECTED_COLUMNS, row))
+            record = dict(zip(_EXPECTED_COLUMNS, stripped))
             try:
-                entry = Entry(**record)
+                value = float(record["value"])
+            except ValueError:
+                skipped += 1
+                reasons.append(f"line {line_no}: invalid value")
+                continue
+            try:
+                mission_day = int(record["mission_day"])
+            except ValueError:
+                skipped += 1
+                reasons.append(f"line {line_no}: invalid mission_day")
+                continue
+            try:
+                entry = Entry(
+                    person_id=record["person_id"],
+                    indicator_id=record["indicator_id"],
+                    value=value,
+                    unit=record["unit"],
+                    mission_day=mission_day,
+                    time=record["time"],
+                )
             except ValidationError as error:
                 skipped += 1
                 reasons.append(f"line {line_no}: {_validation_reason(error)}")

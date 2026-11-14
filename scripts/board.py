@@ -151,12 +151,16 @@ NUMBER_FIELDS = ["Estimate h"]
 # ---------- gh helpers ----------
 
 TRANSIENT = ("error connecting", "timeout", "timed out", "unknown owner type", "502", "503",
-             "EOF", "connection reset", "something went wrong")
+             "eof", "connection reset", "something went wrong")
 
 
 def gh(*args: str, as_json: bool = False, check: bool = True):
     for attempt in range(3):
-        proc = subprocess.run(["gh", *args], capture_output=True, text=True)
+        try:
+            proc = subprocess.run(["gh", *args], capture_output=True, text=True,
+                                  encoding="utf-8", errors="replace")
+        except FileNotFoundError:
+            sys.exit("gh is not installed. Install the GitHub CLI and log in (`gh auth login`).")
         if proc.returncode == 0 or not any(t in proc.stderr.lower() for t in TRANSIENT):
             break
         time.sleep(3 * (attempt + 1))  # network or GitHub hiccup: wait and retry
@@ -171,11 +175,11 @@ def gh(*args: str, as_json: bool = False, check: bool = True):
 def load_conf() -> dict:
     if not CONF.exists():
         sys.exit("scripts/board.json not found: Wambi runs `python scripts/board.py init` first.")
-    return json.loads(CONF.read_text())
+    return json.loads(CONF.read_text(encoding="utf-8"))
 
 
 def save_conf(conf: dict) -> None:
-    CONF.write_text(json.dumps(conf, indent=2, ensure_ascii=False) + "\n")
+    CONF.write_text(json.dumps(conf, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
 def fields(conf: dict) -> dict:
@@ -530,7 +534,7 @@ def cmd_init(a) -> None:
 def cmd_import(a) -> None:
     conf = load_conf()
     flds = fields(conf)
-    with open(a.file, encoding="utf-8", newline="") as fh:
+    with open(a.file, encoding="utf-8-sig", newline="") as fh:
         rows = list(csv.DictReader(fh))
     # Safe to run again after a failure: a card whose issue already exists is not
     # created twice; it is only added to the board and its fields are set again.

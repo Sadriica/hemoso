@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
+import httpx
 import pytest
+
+from app import storage
+from app.main import app
 
 ENTRY = {
     "person_id": "demo_astronaut_1",
@@ -106,3 +110,69 @@ def test_cors_preflight(client):
     assert response.headers["access-control-allow-origin"] == "http://localhost:5173"
     assert "POST" in response.headers["access-control-allow-methods"]
     assert "content-type" in response.headers["access-control-allow-headers"].lower()
+
+
+@pytest.mark.parametrize(
+    "field, bad",
+    [
+        ("person_id", "a" * 65),
+        ("indicator_id", "a" * 65),
+        ("unit", "a" * 65),
+    ],
+)
+def test_string_fields_max_length(client, field, bad):
+    response = client.post("/entries", json={**ENTRY, field: bad})
+    assert response.status_code == 422
+
+
+def test_mission_day_upper_bound(client):
+    response = client.post("/entries", json={**ENTRY, "mission_day": 100001})
+    assert response.status_code == 422
+
+
+def test_mission_day_at_bound(client):
+    response = client.post("/entries", json={**ENTRY, "mission_day": 100000})
+    assert response.status_code == 201
+
+
+@pytest.mark.parametrize(
+    "field, bad",
+    [
+        ("value", True),
+        ("value", "1_000"),
+        ("mission_day", True),
+        ("mission_day", "3"),
+    ],
+)
+def test_strict_value_and_mission_day(client, field, bad):
+    response = client.post("/entries", json={**ENTRY, field: bad})
+    assert response.status_code == 422
+
+
+@pytest.mark.parametrize(
+    "person_id, indicator_id",
+    [
+        ("Bad-id", "example_indicator"),
+        ("demo_astronaut_1", "9bad"),
+    ],
+)
+def test_history_invalid_path_id(client, person_id, indicator_id):
+    response = client.get(f"/people/{person_id}/indicators/{indicator_id}/history")
+    assert response.status_code == 422
+
+
+def test_history_upstream_error_becomes_502(client):
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(500)
+
+    failing = storage.SupabaseStorage(
+        "https://example.supabase.co",
+        "sb_secret_x",
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+    app.dependency_overrides[storage.get_storage] = lambda: failing
+    response = client.get(
+        "/people/demo_astronaut_1/indicators/example_indicator/history"
+    )
+    assert response.status_code == 502
+    assert response.json()["detail"] == "upstream storage error"

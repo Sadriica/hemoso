@@ -104,11 +104,16 @@ class SupabaseStorage:
         self._client = client or httpx.Client()
 
     def _headers(self) -> dict[str, str]:
-        return {
+        # Supabase: "Send publishable and secret keys on the `apikey` header,
+        # not on `Authorization: Bearer`." Legacy JWT keys still need the Bearer
+        # header, so send it only when the key is a JWT.
+        headers = {
             "apikey": self.key,
-            "Authorization": f"Bearer {self.key}",
             "Content-Type": "application/json",
         }
+        if self.key.startswith("eyJ"):
+            headers["Authorization"] = f"Bearer {self.key}"
+        return headers
 
     def add(self, entry: Entry) -> Entry:
         response = self._client.post(
