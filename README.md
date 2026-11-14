@@ -42,26 +42,65 @@ officer or the flight surgeon confirms it. HeMoSo does not replace them.
 Every value in the app, in the database and in the deployments is synthetic
 (REQ-14). There are no real personal health data anywhere.
 
-## Run and test
+## Run it
 
-Run these from the repository root before every push (`AGENTS.md` rule 6).
-GitHub runs the same checks on every push and pull request
-(`.github/workflows/checks.yml`).
+Prerequisites, from `docs/STACK.md`:
+
+| Tool | Version |
+| --- | --- |
+| Python | 3.13 |
+| uv | 0.13 |
+| Node | 24 LTS (22.12 minimum) |
+| pnpm | 12, through `npx -y pnpm@12.20.0`; no global install needed |
+
+### Backend (API)
+
+From `backend/`:
+
+```bash
+uv sync --frozen                            # install from uv.lock
+cp .env.example .env                        # empty values: SQLite store, repository config/
+uv run --env-file .env python -m app.seed   # load config/data/demo_data.csv; prints added and skipped
+uv run --env-file .env uvicorn app.main:app --port 8000
+```
+
+The API answers on http://127.0.0.1:8000; `GET /health` returns
+`{"status":"ok"}`. Uvicorn does not read `.env` on its own, so pass
+`--env-file .env`. Tests and lint: `uv run ruff check . && uv run pytest`.
+The contract is in `docs/API.md`.
+
+### Frontend (app)
+
+From `frontend/`:
+
+```bash
+npx -y pnpm@12.20.0 install --frozen-lockfile
+VITE_API_BASE_URL=http://127.0.0.1:8000 npx -y pnpm@12.20.0 run dev
+npx -y pnpm@12.20.0 run build               # type-check and build to dist/
+```
+
+The dev server prints its address (http://localhost:5173). Without
+`VITE_API_BASE_URL`, entries stay in the browser and the app works the same.
+
+### How they connect
+
+The app reads the API URL from `VITE_API_BASE_URL`, never a hard-coded host.
+The API accepts the Vite dev server origin when `ALLOWED_ORIGINS` is unset or
+empty: `backend/app/main.py` then allows http://localhost:5173. For any other
+origin, list it in `ALLOWED_ORIGINS` in `backend/.env`, comma-separated. The app
+reads `config/` from the repository root at build time, so both folders stay
+where they are.
+
+### Checks before a push
+
+From the repository root (`AGENTS.md` rule 6); GitHub runs the same checks on
+every push and pull request (`.github/workflows/checks.yml`).
 
 ```bash
 python -m unittest discover -s scripts -p "test_*.py"   # team script tests
 python scripts/check_content.py                         # config/ against FORMATS.md (--strict: every file required)
 python scripts/si_use.py --check                        # SI-USE.md matches the SI log
 python scripts/precheck.py                              # branch, paths, messages, secrets
-```
-
-Backend (Python 3.13, uv; details and environment variables in `backend/README.md`):
-
-```bash
-cd backend
-uv sync --frozen                     # install from the lockfile
-uv run ruff check . && uv run pytest # lint and tests
-uv run uvicorn app.main:app          # serve the API on http://127.0.0.1:8000
 ```
 
 ## Project map
