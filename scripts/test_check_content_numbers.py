@@ -19,9 +19,9 @@ import check_content  # noqa: E402
 
 VALID = {
     "config/data/indicators.csv": (
-        "id,name,unit,direction,measured_on_board,hazards,source\n"
+        "id,name,unit,direction,measured_on_board,hazards,min_spread,tier,system,source\n"
         "example_indicator,Example indicator,example_unit,higher,"
-        "example measurement method,isolation_and_confinement,Assumption\n"
+        "example measurement method,isolation_and_confinement,1,A,neuro_behavioural,Assumption\n"
     ),
     "config/data/demo_data.csv": (
         "person_id,indicator_id,value,unit,mission_day,time\n"

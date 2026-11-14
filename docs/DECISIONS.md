@@ -56,7 +56,11 @@ tool for astronauts for this challenge that reuses open-source code from existin
 repositories and apps (face recognition, anatomy, health and gym apps) where their
 licences allow it, and shows the body in 3D, including muscles, ligaments and bones.
 
-**Indicators we chose, and why:**
+**Indicators we chose, and why** (Sat 14 Nov 15:37): the six the challenge
+statement names: heart rate, blood pressure (systolic and diastolic), body
+temperature, sleep hours, mood and blood sugar. Each has a source for how it is
+measured on board, except blood sugar, which no in-flight source covers: it is
+explained (tier C), never an input. Ids in `FORMATS.md` section 2.
 
 **Demo format:** video of 30 s or less, or 7 slides (the other one is plan B).
 
@@ -71,6 +75,11 @@ planning, wording, and code. Not the base idea. Kept in `team/eng1/notes/si-use-
 | Decision | What | Why | Serves |
 | --- | --- | --- | --- |
 | Use | The app works with a network connection: React frontend on Vercel under the team's domain, Supabase for stored data, FastAPI backend (Wambi, Sat 14 12:45) | A public link with no login (REQ-32) and a history that survives a reload (REQ-27); the team already has the domain | REQ-27, REQ-32 |
+| Use | Each indicator compared with the person's own baseline over a rolling 14-day window; clinical or assumed limits from `rules/attention.csv`; possible conditions as probabilities with their basis | Team decision Sat 15:37, combining Phys's finding F-phys-01 with the team's probabilities decision | REQ-05, REQ-06, REQ-12, REQ-27 |
+| Use | The 3D body is built by layers in this order: body zones, then muscles, then bones, then ligaments, then organs, until the full body | Team decision Sat 15:37: the full body stays the goal; each layer ships on its own | REQ-01, REQ-09 |
+| Use | Indicators grouped by tier (A measured, B self-reported, C explained) and by body system, as columns of `data/indicators.csv` | From Phys's proposal (`team/phys/notes/indicators-proposal.md`) | REQ-03, REQ-07 |
+| Use | `min_spread` column in `data/indicators.csv`: the smallest spread the baseline uses per indicator (Assumption values from F-phys-02); mood scale 1 = very low to 5 = very good, answered before sleep | Phys's format v2 proposal, accepted Sat 16:10; without a floor a flat history flags every small change | REQ-05, REQ-27 |
+| Rejected | Separate `reference-bands.csv`, `baseline.csv` and `demo-astronaut.csv` | Limits already live in `rules/attention.csv` (Bio 2), the baseline is computed from history, and demo data is `data/demo_data.csv` | REQ-05, REQ-27, REQ-29 |
 | Open | Where the FastAPI backend runs; Railway is the candidate | Vercel serves the frontend; the backend needs its own host | REQ-27 |
 | Open | REQ-13 and REQ-28 (working with delayed or no contact with Earth) now that the app needs a network: entries kept in the browser and sent later, or left out on purpose | `docs/STACK.md` rule 5 asked for offline-friendly; the network decision changes it | REQ-13, REQ-28 |
 | Use | Only synthetic data in Supabase and in every public deployment | The deployed app and its database are public infrastructure; no real personal data anywhere | REQ-14, REQ-29 |

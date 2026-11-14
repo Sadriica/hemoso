@@ -24,9 +24,9 @@ import check_content  # noqa: E402
 # A complete placeholder config that passes under --strict.
 COMPLETE = {
     "config/data/indicators.csv": (
-        "id,name,unit,direction,measured_on_board,hazards,source\n"
+        "id,name,unit,direction,measured_on_board,hazards,min_spread,tier,system,source\n"
         "example_indicator,Example indicator,example_unit,higher,"
-        "example measurement method,isolation_and_confinement,Assumption\n"
+        "example measurement method,isolation_and_confinement,1,A,neuro_behavioural,Assumption\n"
     ),
     "config/data/demo_ranges.csv": (
         "indicator_id,min,max,source,generation_note\n"
@@ -58,7 +58,7 @@ COMPLETE = {
 
 # The header-only files scripts/new_config.py writes before anyone fills rows.
 HEADER_ONLY = {
-    "config/data/indicators.csv": "id,name,unit,direction,measured_on_board,hazards,source\n",
+    "config/data/indicators.csv": "id,name,unit,direction,measured_on_board,hazards,min_spread,tier,system,source\n",
     "config/data/demo_ranges.csv": "indicator_id,min,max,source,generation_note\n",
     "config/data/demo_data.csv": "person_id,indicator_id,value,unit,mission_day,time\n",
     "config/rules/attention.csv": "indicator_id,side,threshold,attention_level,notify,source\n",
