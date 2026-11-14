@@ -4,6 +4,13 @@ export const strings = {
   skipToMain: 'Skip to main content',
   syntheticNotice: 'Demo with synthetic data only.',
   placeholderNotice: 'Showing example content until the team adds config files.',
+  // The generic sentence above only fits a first run. Otherwise the notice
+  // names what the screens still lack.
+  waitingFor: (items: string[]): string => `Waiting for: ${items.join(', ')}.`,
+  waitingForItem: {
+    attentionRules: 'attention rules',
+    indicatorTexts: 'indicator texts',
+  },
   personPickerLabel: 'Person',
   personHeading: (personId: string): string => `Status for ${personId}`,
   tabs: {
@@ -34,10 +41,14 @@ export const strings = {
   },
   badge: {
     inRange: 'In range',
+    // No attention rule for this indicator, so no "in range" claim.
+    noRules: 'No threshold yet',
     noData: 'No data',
   },
   nextStep: {
     inRange: 'No action needed.',
+    noRules:
+      'No attention rule for this indicator yet. Check with your CMO if you are unsure.',
     noData: 'No data yet.',
     missing: 'No guidance for this state yet.',
   },

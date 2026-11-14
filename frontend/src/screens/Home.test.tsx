@@ -125,4 +125,50 @@ describe('Home', () => {
     expect(screen.getByText('42')).toHaveTextContent('42 example_unit')
     expect(screen.getByText('Day 11 13:30')).toBeInTheDocument()
   })
+
+  it('never says in range when the indicator has no attention rule', () => {
+    const noRules: LoadedContent = { ...data, rules: [] }
+    renderHome(noRules)
+
+    expect(screen.getByText('No threshold yet')).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        'No attention rule for this indicator yet. Check with your CMO if you are unsure.',
+      ),
+    ).toBeInTheDocument()
+    expect(screen.queryByText('In range')).toBeNull()
+    expect(screen.queryByText('No action needed.')).toBeNull()
+  })
+
+  it('names the content still missing instead of the generic notice', () => {
+    const waiting: LoadedContent = {
+      ...data,
+      rules: [],
+      contents: {},
+      usingPlaceholders: true,
+    }
+    renderHome(waiting)
+    expect(
+      screen.getByText('Waiting for: attention rules, indicator texts.'),
+    ).toBeInTheDocument()
+  })
+
+  it('names only the texts when the attention rules are there', () => {
+    const textsMissing: LoadedContent = {
+      ...data,
+      contents: {},
+      usingPlaceholders: true,
+    }
+    renderHome(textsMissing)
+    expect(screen.getByText('Waiting for: indicator texts.')).toBeInTheDocument()
+  })
+
+  it('keeps the generic notice while every file is still an example', () => {
+    renderHome({ ...data, usingPlaceholders: true })
+    expect(
+      screen.getByText(
+        'Showing example content until the team adds config files.',
+      ),
+    ).toBeInTheDocument()
+  })
 })

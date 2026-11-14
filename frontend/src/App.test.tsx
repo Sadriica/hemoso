@@ -31,12 +31,11 @@ describe('App', () => {
     ).toBeInTheDocument()
   })
 
-  it('shows the synthetic notice and the placeholder notice', () => {
+  // The waiting-for text depends on which config files exist, so Home tests
+  // cover it with fixed data. Here only the note that is always on screen.
+  it('shows the synthetic data notice', () => {
     render(<App />)
     expect(screen.getByText('Demo with synthetic data only.')).toBeInTheDocument()
-    expect(
-      screen.getByText('Showing example content until the team adds config files.'),
-    ).toBeInTheDocument()
   })
 
   it('shows a person picker built from the demo person ids', () => {

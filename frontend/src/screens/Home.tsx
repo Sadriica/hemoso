@@ -27,6 +27,7 @@ export default function Home({
   entries: Entry[]
 }) {
   const personEntries = entries.filter((entry) => entry.personId === personId)
+  const waitingFor = waitingForFrom(data)
 
   return (
     <section aria-labelledby="home-heading">
@@ -34,7 +35,11 @@ export default function Home({
         {strings.personHeading(personId)}
       </h2>
       {data.usingPlaceholders && (
-        <Notice tone="info">{strings.placeholderNotice}</Notice>
+        <Notice tone="info">
+          {waitingFor.length === 0
+            ? strings.placeholderNotice
+            : strings.waitingFor(waitingFor)}
+        </Notice>
       )}
       {data.problems.length > 0 && (
         <Notice tone="warning">
@@ -133,8 +138,30 @@ function nextStepFor(
   content: IndicatorContent | undefined,
 ): string {
   if (attention.kind === 'in_range') return strings.nextStep.inRange
+  if (attention.kind === 'no_rules') return strings.nextStep.noRules
   if (attention.kind === 'no_data') return strings.nextStep.noData
   return content?.statusAndNextSteps[attention.level] ?? strings.nextStep.missing
+}
+
+// What the screens still lack, named instead of a generic "example content"
+// sentence: an attention rule for an indicator, or its text file. The generic
+// sentence stays for a first run, when config/ has no file at all.
+function waitingForFrom(data: LoadedContent): string[] {
+  const waiting: string[] = []
+  const hasRule = (indicatorId: string) =>
+    data.rules.some((rule) => rule.indicatorId === indicatorId)
+
+  if (data.indicators.some((indicator) => !hasRule(indicator.id))) {
+    waiting.push(strings.waitingForItem.attentionRules)
+  }
+  if (
+    data.indicators.some(
+      (indicator) => data.contents[indicator.id] === undefined,
+    )
+  ) {
+    waiting.push(strings.waitingForItem.indicatorTexts)
+  }
+  return waiting
 }
 
 function sourcesFor(

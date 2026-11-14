@@ -26,6 +26,12 @@ describe('AttentionBadge', () => {
     expect(screen.getByText('example_level')).toBeInTheDocument()
   })
 
+  it('shows "No threshold yet" for no_rules', () => {
+    render(<AttentionBadge attention={{ kind: 'no_rules' }} />)
+    expect(screen.getByText('No threshold yet')).toBeInTheDocument()
+    expect(screen.queryByText('In range')).toBeNull()
+  })
+
   it('shows "No data" for no_data', () => {
     render(<AttentionBadge attention={{ kind: 'no_data' }} />)
     expect(screen.getByText('No data')).toBeInTheDocument()
