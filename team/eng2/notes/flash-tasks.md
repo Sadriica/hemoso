@@ -15,8 +15,8 @@ opencode run -m deepseek/deepseek-flash --agent eng2 --auto --title "T-41" \
   "Do task T-41 in team/eng2/notes/flash-tasks.md. Read the Common rules first." < /dev/null
 ```
 - `< /dev/null` matters: without it opencode waits for input and never starts.
-- Same review loop as the blocks: run 1 builds; the review goes back to the same
-  session with `opencode run -s <session-id> ...` for runs 2 to 4.
+- Two iterations per card (Juli, Sat 14 17:05): run 1 builds; the review goes
+  back to the same session with `opencode run -s <session-id> ...` for run 2.
 - Card moves (Todo → In progress → Review) are done by Juli or her agent, not
   by the run.
 
