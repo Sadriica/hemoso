@@ -1,1 +1,8 @@
 condition_id,name,based_on,source
+orthostatic_intolerance,Orthostatic intolerance,hr_bpm bp_sys_mmhg bp_dia_mmhg,http://humanresearchroadmap.nasa.gov/Evidence/reports/ORTHO.pdf
+fever,Fever,temp_core_c hr_bpm,https://ntrs.nasa.gov/api/citations/20230012738/downloads/JSC%2022538%20Health%20Stabilization%20Program%20Rev%20F%20Clean.pdf
+sleep_debt,Sleep debt,sleep_h mood_1_5,https://academic.oup.com/sleep/article/45/3/zsac006/6505235
+hyperglycaemia,Hyperglycaemia,glucose_mgdl,https://diabetes.org/about-diabetes/diagnosis
+hypoglycaemia,Hypoglycaemia,glucose_mgdl,Assumption
+dehydration,Dehydration,hr_bpm bp_sys_mmhg bp_dia_mmhg,Assumption
+low_mood,Low mood,mood_1_5 sleep_h,Assumption

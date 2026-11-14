@@ -32,7 +32,6 @@ limit.
 | bp_sys_mmhg | above | 180 | urgent | flight_surgeon | WHO |
 | bp_dia_mmhg | above | 90 | consult | cmo | WHO |
 | bp_dia_mmhg | above | 120 | urgent | flight_surgeon | WHO |
-| spo2_pct | below | 90 | urgent | flight_surgeon | Assumption |
 | glucose_mgdl | above | 126 | consult | cmo | ADA |
 | glucose_mgdl | below | 70 | consult | cmo | Assumption |
 
@@ -56,8 +55,7 @@ Links (the `source` cell holds the link, not the label):
 | indicator_id | Why no row |
 | --- | --- |
 | `sleep_h` | NASA defines sleep disturbance as under 8 h, but it is a description of the finding, not a limit that triggers a review. The baseline covers the change; a source-stated review limit does not exist |
-| `sleep_quality_1_5` | The 1–5 scale is not defined yet |
-| `mood_1_5` | Same: no scale, no source, and a self-report does not trigger a medical review by itself |
+| `mood_1_5` | The 1–5 scale is not defined yet, and a self-report does not trigger a medical review by itself |
 
 ## Before this goes into the file
 
@@ -68,9 +66,7 @@ Links (the `source` cell holds the link, not the label):
 2. **Fever in microgravity**: 38.0 °C comes from a pre-launch programme. The
    interface must show the source and that a clinician confirms, never "you have
    a fever".
-3. **`spo2_pct` at 90 %** is still an Assumption. It is the row most likely to
-   be challenged, and the one to source first.
-4. **`hr_bpm` below 50**: fit crew members rest near 40, so this row can fire on
+3. **`hr_bpm` below 50**: fit crew members rest near 40, so this row can fire on
    a healthy person. Either raise it or accept it and say why in the LOG.
-5. **Every row notifies a person, never a diagnosis.** The probability of a
+4. **Every row notifies a person, never a diagnosis.** The probability of a
    condition lives in `config/rules/conditions.csv`, not here.
