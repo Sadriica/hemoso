@@ -8,9 +8,9 @@
 ## Claim
 
 The four states of an indicator can be computed from a median and a scaled median
-absolute deviation over the crew member's first 14 days: three readings are enough,
-there are no parameters to train, and a reading more than 3 spreads from the median
-is "outside your usual range", not a diagnosis.
+absolute deviation over a moving window of the crew member's last 14 readings: three
+readings are enough, there are no parameters to train, and a reading more than 3
+spreads from the median is "outside your usual range", not a diagnosis.
 
 ## Why this and not something else
 
@@ -24,10 +24,11 @@ is "outside your usual range", not a diagnosis.
 ## The rule
 
 ```
-baseline(readings[0..13]):
-    if count < 3:                 return no_baseline
-    median = median(values)
-    mad    = median(abs(value - median) for value in values)
+baseline(previous[]):                       # previous = the readings before this one
+    window = last 14 of previous
+    if count(window) < 3:         return no_baseline
+    median = median(values of window)
+    mad    = median(abs(value - median) for value in window)
     spread = max(1.4826 * mad, min_spread[indicator])
     return (median, spread)
 
@@ -39,9 +40,11 @@ state(value, baseline, attention):
 ```
 
 `1.4826` makes the scaled MAD comparable to a standard deviation for normally
-distributed data. `min_spread` is the noise floor of the instrument, per indicator,
-and it is marked Assumption because it is an engineering default, not a clinical
-value.
+distributed data. The window moves with every reading: the newest 14 values before
+the current one, recomputed each time, so the rule follows a crew member who adapts
+during the mission instead of freezing their first two weeks. `min_spread` is the
+noise floor of the instrument, per indicator, and it is marked Assumption because it
+is an engineering default, not a clinical value.
 
 | Indicator | `min_spread` | Basis |
 | --- | --- | --- |
@@ -91,8 +94,12 @@ rule.
 
 ## Limits and open questions
 
-- Fourteen days is a choice. On a short demo it means the first two weeks look
-  undecided, which is honest but must be explained in the pitch.
-- A real change may be a slow drift, not a jump. This rule catches a jump; it does
-  not forecast, and the app must not pretend to.
+- The window length is a choice. Fourteen readings covers two weeks of daily entries,
+  so a short demo needs three readings before anything is shown, which is honest but
+  must be explained in the pitch.
+- A real change may be a slow drift, not a jump. A moving window follows the drift
+  after a few readings; it does not forecast, and the app must not pretend to.
+- The window hides a change that lasts longer than 14 readings: if a value settles at
+  a new level, the window eventually calls it usual. That is intended, and it is why
+  the history view keeps the whole series.
 - No trend, no probability and no diagnosis comes out of this rule, by design.

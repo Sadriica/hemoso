@@ -1,8 +1,8 @@
 id,name,unit,direction,measured_on_board,hazards,source
-hr_bpm,Heart rate,bpm,both,Bio-Monitor smart shirt or ECG,gravity_fields radiation,https://www.asc-csa.gc.ca/eng/sciences/bio-monitor.asp
-bp_sys_mmhg,Systolic blood pressure,mmHg,both,Bio-Monitor smart shirt or arm cuff,gravity_fields,https://www.asc-csa.gc.ca/eng/sciences/bio-monitor.asp
-bp_dia_mmhg,Diastolic blood pressure,mmHg,both,Bio-Monitor smart shirt or arm cuff,gravity_fields,https://www.asc-csa.gc.ca/eng/sciences/bio-monitor.asp
-temp_core_c,Core temperature,°C,both,T-Mini headband worn for hours,hostile_closed_environments gravity_fields,https://www.nasa.gov/missions/station/iss-research/wearable-tech-for-space-station-research/
-sleep_h,Sleep duration,h,lower,Actiwatch wrist monitor and daily questionnaire,isolation_and_confinement hostile_closed_environments,https://www.nasa.gov/humans-in-space/spaceflight-standard-measures-characterizing-how-humans-adapt-in-space/
-mood_1_5,Mood,1 to 5,lower,Questionnaire before sleep and journaling,isolation_and_confinement distance_from_earth,https://www.nasa.gov/humans-in-space/spaceflight-standard-measures-characterizing-how-humans-adapt-in-space/
+hr_bpm,Heart rate,bpm,both,Bio-Monitor smart shirt or ECG,gravity_fields,https://www.asc-csa.gc.ca/eng/sciences/bio-monitor.asp https://www.nasa.gov/hrp/hazard-gravity-fields/
+bp_sys_mmhg,Systolic blood pressure,mmHg,both,Bio-Monitor smart shirt or arm cuff,gravity_fields,https://www.asc-csa.gc.ca/eng/sciences/bio-monitor.asp https://www.nasa.gov/hrp/hazard-gravity-fields/
+bp_dia_mmhg,Diastolic blood pressure,mmHg,both,Bio-Monitor smart shirt or arm cuff,gravity_fields,https://www.asc-csa.gc.ca/eng/sciences/bio-monitor.asp https://www.nasa.gov/hrp/hazard-gravity-fields/
+temp_core_c,Core temperature,°C,both,T-Mini headband worn for hours,hostile_closed_environments gravity_fields,https://www.nasa.gov/missions/station/iss-research/wearable-tech-for-space-station-research/ https://www.nasa.gov/hrp/hazard-hostile-closed-environments/ https://www.nasa.gov/hrp/hazard-gravity-fields/
+sleep_h,Sleep duration,h,lower,Actiwatch wrist monitor and daily questionnaire,isolation_and_confinement hostile_closed_environments,https://www.nasa.gov/humans-in-space/spaceflight-standard-measures-characterizing-how-humans-adapt-in-space/ https://www.nasa.gov/hrp/hazard-isolation-and-confinement/ https://www.nasa.gov/hrp/hazard-hostile-closed-environments/
+mood_1_5,Mood,1 to 5,lower,Questionnaire before sleep and journaling,isolation_and_confinement,https://www.nasa.gov/humans-in-space/spaceflight-standard-measures-characterizing-how-humans-adapt-in-space/ https://www.nasa.gov/hrp/hazard-isolation-and-confinement/
 glucose_mgdl,Blood glucose,mg/dL,both,No in-flight device in the sources read; manual entry only,gravity_fields hostile_closed_environments,Assumption
