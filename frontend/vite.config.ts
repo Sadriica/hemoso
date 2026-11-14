@@ -15,5 +15,7 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
+    // Unit tests only: e2e/ is Playwright's, and Vercel runs `pnpm test`.
+    include: ['src/**/*.test.{ts,tsx}'],
   },
 })
