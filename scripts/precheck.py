@@ -30,7 +30,10 @@ OWNED = {
     "eng1": ["docs/CHALLENGE.md", "docs/requirements.md", "docs/board/requirements.csv", "backend/*", "scripts/*", "FORMATS.md", "README.md", "CHANGELOG.md", "config/README.md",
              ".github/*", "team/eng1/*", "docs/BOARD.md", "docs/SETUP.md", "docs/STACK.md", "docs/DEPLOY.md",
              "docs/DECISIONS.md", "docs/README.md", "docs/CONTRACTS.md", "docs/API.md", "docs/deploy/*",
-             "docs/board/seed-tasks.csv", "docs/board/issue-templates/*"],
+             "docs/board/seed-tasks.csv", "docs/board/issue-templates/*",
+             # Shared team files: only the integrator edits them.
+             "AGENTS.md", "CLAUDE.md", "STANDARDS.md", "SKILLS.md", "opencode.json", ".opencode/*",
+             ".githooks/*", ".gitignore", "LICENSE"],
     "eng2": ["frontend/*", "team/eng2/*"],
 }
 FORBIDDEN = re.compile(

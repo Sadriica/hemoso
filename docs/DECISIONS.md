@@ -21,6 +21,13 @@ Decisions: **Use** · **Plan B** · **Rejected** · **Out of scope** · **Open**
 | Use | Internal freeze Sunday 13:30; official close Sunday 23:59 local | Margin before the mentors at 14:00; the official close is the hard limit |
 | Rejected | A general "no NASA logos" rule | Not in the guides as such. What applies: AI-generated content may not use or modify NASA branding, and the Space Apps brand guide for its marks |
 
+| Use | Team name ReTardis, product name HeMoSo | ReTardis is the team registered on the Space Apps page; the submission uses it |
+| Use | Five people: Bio 1 (content and pitch), Bio 2 (rules, thresholds and submission), Phys (data, NASA sources, measurement), Eng 1 (backend, merges, requirements), Eng 2 (frontend and demo) | The team changed from six to five on Saturday morning; Bio 3 and Bio 4 duties were redistributed |
+| Use | Initial commit without requirements; Eng 1 writes them after checking the official page (T-05) | The first commit holds only the plan and tooling |
+| Use | A separate development repository (hemoso-dev) for board, script, deploy and heavy tests only | Product work stays in this repository so its history shows who did what and when |
+| Use | git credentials through  | HTTPS push with a password is refused by GitHub; this reuses the gh login |
+| Use | Challenge resources read two levels deep, plus four evidence reports and NASA-STD-3001 Vol 1 Rev C () | Question 4 (when a result needs attention) has almost no in-flight thresholds in NASA sources; it must be sourced elsewhere or marked Assumption |
+
 ## Solution (from Saturday 9:00)
 | Decision | What | Why | Serves |
 | --- | --- | --- | --- |

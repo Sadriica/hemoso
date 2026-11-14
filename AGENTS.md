@@ -1,8 +1,8 @@
 # HeMoSo · shared rules for every agent
 
-HeMoSo is our team for NASA Space Apps 2026 (Medellín, November 14-15). We
-chose the challenge "Create Health Monitoring Software for Astronauts on Space
-Missions" (`docs/CHALLENGE.md`). **The solution does not exist yet:** it is
+HeMoSo is the product of team ReTardis for NASA Space Apps 2026 (Medellín,
+November 14-15). We chose the challenge "Create Health Monitoring Software for
+Astronauts on Space Missions" (`docs/CHALLENGE.md`). **The solution does not exist yet:** it is
 designed and built from 9:00 on Saturday. Before that, this repository holds
 only the team's work plan and tooling (Space Apps rules: teams may study the
 challenges and prepare, but may not start working on them before the event).

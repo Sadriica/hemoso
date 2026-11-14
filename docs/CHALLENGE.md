@@ -6,10 +6,19 @@ every line against the official page at 9:00 on Saturday and marks what changed.
 
 Challenge: **Create Health Monitoring Software for Astronauts on Space Missions**
 (https://www.spaceappschallenge.org/2026/challenges/health-monitoring-software/).
+Team: ReTardis (5 members, Medellín). Product: HeMoSo. Difficulty: intermediate;
+subjects: Human Exploration, Software, Space Exploration.
+Checked against the official page on Sat 14 Nov at 10:00; changes are marked "(page)".
 
-## What the statement asks (paraphrased; check against the page)
+## What the statement asks (paraphrased; checked against the page)
 - A tool astronauts use to assess their own health, visually.
-- Data entry by keyboard and clicks; camera images are mentioned as another way.
+- Data entry by any input: keyboard, mouse clicks or camera images are examples. Any data
+  works if it represents a health indicator, such as blood sugar in mg/dL or ultrasound
+  images (page).
+- Context (page): the five HRP hazards are space radiation, isolation and confinement,
+  distance from Earth, gravity fields and hostile closed environments; they contribute to
+  immune changes, bone density loss, cardiovascular events, inadequate nutrition and
+  behavioural health conditions. Astronauts must be able to assess their own health.
 - For each health indicator, answer five questions:
   1. Can it be measured in space, and how?
   2. Why is it needed?
@@ -18,12 +27,16 @@ Challenge: **Create Health Monitoring Software for Astronauts on Space Missions*
   5. What actions prevent a critical condition?
 - Useful indicators it gives as examples: blood pressure, heart rate, glucose,
   body temperature, sleep hours, mood. Examples, not a closed or mandatory list.
-- Guidance toward treatment and improvement, never a diagnosis.
+- Guidance on treatments and health improvements. The page says the interface should present
+  "metrics and diagnosis" clearly (page); not diagnosing is our own safety choice, so we
+  present status and guidance, and the CMO and flight surgeon decide.
 
 ## What the statement offers as considerations (optional, not obligations)
-Interactive human figure · colours for state · dynamic charts · measurements
-as part of a routine · gamification without rankings · simple instructions for
-non-experts · different mission environments.
+Interactive human figure (each part clickable, showing its function and health status) ·
+animations and interactivity · colour coding · dynamic charts over time · measurements or
+actions prompted as part of the mission routine · gamification (the page sets no limits;
+"without rankings" would be our choice) · simple instructions on measurements, indicators
+and risks · environments: spacecraft, station, rover, base on a planet or moon.
 
 ## What the guides require (delivery)
 | Rule | Source |
@@ -42,10 +55,16 @@ non-experts · different mission environments.
 - NASA Human Research Program, human spaceflight risks: https://www.nasa.gov/hrp/risks
 - Human Research Roadmap: https://humanresearchroadmap.nasa.gov/
 - NASA Open Science Data Repository: https://osdr.nasa.gov/
-- The resource list on the challenge page (still to read in a browser).
+- Resources on the challenge page (page): 5 Hazards of Human Spaceflight
+  (https://www.nasa.gov/hrp/hazards/), Risks of Human Spaceflight
+  (https://www.nasa.gov/hrp/risks/), Ongoing HRP Research in Space
+  (https://www.nasa.gov/hrp/ongoing-hrp-research/), CSA Monitoring Radiation for
+  Astronaut Health, CSA Why Do We Conduct Science Experiments in Space? Public resources
+  from other space agencies may be used; more may be added. Read two levels deep in
+  `team/eng1/notes/challenge-resources.md`.
 
 ## Open questions for the Medellín lead (Bio 2, Saturday 9:00)
 1. Is there a local deadline earlier than Sunday 23:59, or a cut for the 14:00 presentation?
 2. How long is the presentation to the mentors, and in which language?
 3. May we reuse planning material we wrote before the event (ideas and notes, no code)?
-4. Is there a time or format for registering all five members on site?
+4. The five members are on the team page (ReTardis); is there an on-site check-in as well?
