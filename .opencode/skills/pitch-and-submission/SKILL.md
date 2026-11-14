@@ -9,7 +9,7 @@ AI-use disclosure. Both rehearse the story.
 
 ## Script (2 minutes, `submission/script.md`)
 Problem (with a NASA fact) → who uses the solution and when → one concrete
-story through the demo → what it does not do (no diagnosis) → evidence and its
+story through the demo → what it does not do (suggests conditions as probabilities, never a certainty) → evidence and its
 limits (only numbers the team can rerun) → maturity stated honestly → next step.
 
 ## Slides (7 at most, `submission/slides.md`)
