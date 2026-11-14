@@ -8,7 +8,7 @@ in FORMATS.md: exact header and column order, empty required cells, duplicate
 ids, unknown ids across files, a source that is an http(s) link or the word
 Assumption, numbers where numbers are expected, the allowed values for
 direction and side, 24-hour times, positive integer mission days, min below
-max, demo values inside their demo ranges, hazards from the five names, and the
+max, notify values and their order against thresholds, demo values inside their demo ranges, hazards from the five names, and the
 headings, attention levels and sources of the content files.
 
 Prints one line per problem (ERROR or WARN), then a one-line summary.
@@ -62,7 +62,11 @@ REQUIRED_FILES = [
 INDICATORS_HEADER = ["id", "name", "unit", "direction", "measured_on_board", "hazards", "source"]
 DEMO_RANGES_HEADER = ["indicator_id", "min", "max", "source", "generation_note"]
 DEMO_DATA_HEADER = ["person_id", "indicator_id", "value", "unit", "mission_day", "time"]
-ATTENTION_HEADER = ["indicator_id", "side", "threshold", "attention_level", "source"]
+ATTENTION_HEADER = ["indicator_id", "side", "threshold", "attention_level", "notify", "source"]
+
+# Who acts on an attention row (REQ-05), from least to most severe. When several
+# rows of one indicator match a value, the row with the most severe notify wins.
+NOTIFY_ORDER = ["crew", "cmo", "flight_surgeon"]
 CONDITIONS_HEADER = ["condition_id", "name", "based_on", "source"]
 
 
@@ -249,9 +253,41 @@ def check_attention(rep: Reporter, root: Path, state: dict) -> None:
         level = cells["attention_level"].strip()
         if iid and level:
             levels.setdefault(iid, set()).add(level)
+        notify = cells["notify"].strip()
+        if notify and notify not in NOTIFY_ORDER:
+            rep.error(f"{rel}:{line_no} notify must be crew, cmo or flight_surgeon, got '{notify}'")
+        if iid and side in ("below", "above") and is_number(threshold) and notify in NOTIFY_ORDER:
+            bounds.setdefault((iid, side), []).append(
+                (float(threshold), NOTIFY_ORDER.index(notify), line_no))
 
+    bounds: dict[tuple[str, str], list[tuple[float, int, int]]] = {}
     validate_rows(rep, "config/rules/attention.csv", rows, header, required, row)
+    check_attention_order(rep, bounds)
     state["attention"] = levels
+
+
+def check_attention_order(rep: Reporter, bounds: dict) -> None:
+    """Rows that can match the same value must escalate in one direction.
+
+    below: a lower threshold is reached by more extreme values, so its notify
+    must be the same or more severe. above: the same for a higher threshold.
+    Two rows with the same indicator, side and threshold are ambiguous.
+    """
+    rel = "config/rules/attention.csv"
+    for (iid, side), items in bounds.items():
+        seen: dict[float, int] = {}
+        for value, _, line_no in items:
+            if value in seen:
+                rep.error(f"{rel}:{line_no} duplicate {side} threshold {value:g} for '{iid}' "
+                          f"(also line {seen[value]})")
+            seen.setdefault(value, line_no)
+        # From the mildest bound to the most extreme one.
+        ordered = sorted(items, key=lambda t: t[0], reverse=(side == "below"))
+        for (v1, s1, _), (v2, s2, l2) in zip(ordered, ordered[1:]):
+            if v1 != v2 and s2 < s1:
+                rep.error(f"{rel}:{l2} '{iid}' {side} {v2:g} notifies {NOTIFY_ORDER[s2]}, less "
+                          f"severe than {NOTIFY_ORDER[s1]} at {v1:g}; a more extreme value must "
+                          f"notify the same or more")
 
 
 def check_conditions(rep: Reporter, root: Path, state: dict) -> None:

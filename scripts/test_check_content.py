@@ -33,8 +33,8 @@ VALID = {
         "example_indicator,0,100,Assumption,uniform random integers across the range\n"
     ),
     "config/rules/attention.csv": (
-        "indicator_id,side,threshold,attention_level,source\n"
-        "example_indicator,above,100,example_level,Assumption\n"
+        "indicator_id,side,threshold,attention_level,notify,source\n"
+        "example_indicator,above,100,example_level,crew,Assumption\n"
     ),
     "config/rules/conditions.csv": (
         "condition_id,name,based_on,source\n"
@@ -186,10 +186,57 @@ class ContentCheckTest(unittest.TestCase):
     def test_bad_side(self):
         files = dict(VALID)
         files["config/rules/attention.csv"] = (
-            "indicator_id,side,threshold,attention_level,source\n"
-            "example_indicator,middle,100,example_level,Assumption\n"
+            "indicator_id,side,threshold,attention_level,notify,source\n"
+            "example_indicator,middle,100,example_level,crew,Assumption\n"
         )
         self.assert_error(files, "side must be below or above")
+
+    def test_bad_notify(self):
+        files = dict(VALID)
+        files["config/rules/attention.csv"] = (
+            "indicator_id,side,threshold,attention_level,notify,source\n"
+            "example_indicator,above,100,example_level,doctor,Assumption\n"
+        )
+        self.assert_error(files, "notify must be crew, cmo or flight_surgeon")
+
+    def test_attention_order_valid(self):
+        # Bio 2's example: 35 matches both rows; the cmo row is more severe and wins.
+        files = dict(VALID)
+        files["config/rules/attention.csv"] = (
+            "indicator_id,side,threshold,attention_level,notify,source\n"
+            "example_indicator,below,37.5,example_level,crew,Assumption\n"
+            "example_indicator,below,36.0,example_level,cmo,Assumption\n"
+            "example_indicator,above,38.0,example_level,crew,Assumption\n"
+            "example_indicator,above,39.5,example_level,flight_surgeon,Assumption\n"
+        )
+        self.assertEqual(self.errors(files), [])
+
+    def test_attention_order_reversed_below(self):
+        files = dict(VALID)
+        files["config/rules/attention.csv"] = (
+            "indicator_id,side,threshold,attention_level,notify,source\n"
+            "example_indicator,below,37.5,example_level,cmo,Assumption\n"
+            "example_indicator,below,36.0,example_level,crew,Assumption\n"
+        )
+        self.assert_error(files, "less severe than cmo")
+
+    def test_attention_order_reversed_above(self):
+        files = dict(VALID)
+        files["config/rules/attention.csv"] = (
+            "indicator_id,side,threshold,attention_level,notify,source\n"
+            "example_indicator,above,38.0,example_level,flight_surgeon,Assumption\n"
+            "example_indicator,above,39.5,example_level,crew,Assumption\n"
+        )
+        self.assert_error(files, "less severe than flight_surgeon")
+
+    def test_attention_duplicate_threshold(self):
+        files = dict(VALID)
+        files["config/rules/attention.csv"] = (
+            "indicator_id,side,threshold,attention_level,notify,source\n"
+            "example_indicator,above,100,example_level,crew,Assumption\n"
+            "example_indicator,above,100,example_level,cmo,Assumption\n"
+        )
+        self.assert_error(files, "duplicate above threshold 100")
 
     def test_bad_time(self):
         files = dict(VALID)
@@ -257,9 +304,9 @@ class ContentCheckTest(unittest.TestCase):
     def test_missing_attention_level_heading(self):
         files = dict(VALID)
         files["config/rules/attention.csv"] = (
-            "indicator_id,side,threshold,attention_level,source\n"
-            "example_indicator,above,100,example_level,Assumption\n"
-            "example_indicator,below,0,low_level,Assumption\n"
+            "indicator_id,side,threshold,attention_level,notify,source\n"
+            "example_indicator,above,100,example_level,crew,Assumption\n"
+            "example_indicator,below,0,low_level,crew,Assumption\n"
         )
         self.assert_error(files, "no '### low_level' heading")
 
