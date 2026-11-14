@@ -5,11 +5,12 @@ Sat 14 Nov 17:30. The rows below are in the file. Ids come from
 
 ## What this file holds
 
-Only clinical boundaries that a source states, plus two low-end rows marked
+Only clinical boundaries that a source states, plus the rows marked
 `Assumption` where the team has no source yet. The everyday states ("in your
 usual range", "outside your usual range") come from the person's own baseline
 (F-phys-02), not from this file. A row here means: this value is beyond a
-published limit, so a person reviews it.
+published limit, so a person reviews it. Sleep and mood keep a `watch` row
+marked `Assumption` so every indicator has at least one state.
 
 ## Rows
 

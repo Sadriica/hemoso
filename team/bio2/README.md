@@ -8,28 +8,26 @@
 ## Current status
 _Update before every checkpoint and at every shift change._
 
-- **Time:** Sat 17:40
+- **Time:** Sat 18:00
 - **Done:** setup and branch (T-03). `main` merged twice, up to the checkpoint
   `cp1` and the `notify` column commit. Attention levels decided: `watch`,
   `consult`, `urgent` (`team/bio2/notes/attention-levels.md`). `attention.csv`
-  with 10 rows: heart rate, both pressures, core temperature and glucose, each
-  with a source or `Assumption` (REQ-05); sleep and mood have no sourced limit.
-  `conditions.csv` has the seven conditions (REQ-06). The pressure rule is in
-  `docs/findings/bio2-01` and the evidence score in `docs/findings/bio2-02`.
-  The glucose review now has the in-flight analyser source (REQ-03).
-- **In progress:** the two rules are decided; Eng 1 has to record them in
-  `docs/DECISIONS.md`.
+  with 12 rows, at least one per indicator: heart rate, both pressures, core
+  temperature, glucose, sleep and mood, each with a source or `Assumption`
+  (REQ-05). `conditions.csv` has the seven conditions (REQ-06). The pressure
+  rule is in `docs/findings/bio2-01` and the evidence score in
+  `docs/findings/bio2-02`; the percentage note is marked superseded. The
+  glucose review now has the in-flight analyser source (REQ-03).
+- **In progress:** Eng 1 has to record the two rules in `docs/DECISIONS.md`;
+  Bio 1 needs `### watch` headings for sleep and mood.
 - **Next:** review Bio 1's status texts (REQ-10); ask the four questions of T-04
   to the organiser; start the submission page.
 - **Board:** open cards #4, #16, #17, #21, #27, #31, #34, #35, #36, #38, #41, #50.
 
 ## Blockers
-- `team/bio2/notes/condition-probability-proposal.md` proposes a percentage with
-  a 95 % cap; `docs/findings/bio2-02` shows an evidence score with no
-  percentage. The team picked the second; the first has to be marked superseded
-  or deleted.
-- T-04 is still open: the local deadline and the pitch length and language are
-  not confirmed.
+- `conditions.csv` cannot separate hyperglycaemia from hypoglycaemia, or the
+  two pairs that share every input, without a direction or an extra symptom
+  (REQ-06).
 - `config/data/indicators.csv` still says glucose has no in-flight device and
   `docs/DECISIONS.md` still lists it as tier C. Phys and Eng 1 own those files;
   the source is in `team/bio2/notes/indicators-review.md`.
