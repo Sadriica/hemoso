@@ -78,6 +78,11 @@ def is_number(value: str) -> bool:
         return False
 
 
+def decimal_comma_hint(value: str) -> str:
+    """Hint when a non-number looks like it uses a decimal comma (60,5)."""
+    return " (use a decimal point, STANDARDS.md section 3)" if re.search(r"\d,\d", value) else ""
+
+
 def valid_source(value: str) -> bool:
     """A source cell is the word ``Assumption`` or one or more http(s) links."""
     if value == "Assumption":
@@ -101,6 +106,9 @@ def read_table(root: Path, rel: str, header: list[str], rep: Reporter):
             first = next(reader, None)
             if first is None:
                 rep.error(f"{rel}:1 empty file, missing header")
+                return []
+            if len(first) == 1 and ";" in first[0]:
+                rep.error(f"{rel}:1 the file uses semicolons; save it as CSV with commas")
                 return []
             if first != header:
                 rep.error(f"{rel}:1 wrong header or column order, expected {header!r} got {first!r}")
@@ -192,9 +200,9 @@ def check_demo_ranges(rep: Reporter, root: Path, state: dict) -> None:
             seen.add(iid)
         mn, mx = cells["min"].strip(), cells["max"].strip()
         if mn and not is_number(mn):
-            rep.error(f"{rel}:{line_no} min must be a number, got '{mn}'")
+            rep.error(f"{rel}:{line_no} min must be a number, got '{mn}'{decimal_comma_hint(mn)}")
         if mx and not is_number(mx):
-            rep.error(f"{rel}:{line_no} max must be a number, got '{mx}'")
+            rep.error(f"{rel}:{line_no} max must be a number, got '{mx}'{decimal_comma_hint(mx)}")
         if mn and mx and is_number(mn) and is_number(mx):
             if float(mn) >= float(mx):
                 rep.error(f"{rel}:{line_no} min must be less than max, got {mn} and {mx}")
@@ -226,7 +234,7 @@ def check_attention(rep: Reporter, root: Path, state: dict) -> None:
             rep.error(f"{rel}:{line_no} side must be below or above, got '{side}'")
         threshold = cells["threshold"].strip()
         if threshold and not is_number(threshold):
-            rep.error(f"{rel}:{line_no} threshold must be a number, got '{threshold}'")
+            rep.error(f"{rel}:{line_no} threshold must be a number, got '{threshold}'{decimal_comma_hint(threshold)}")
         source = cells["source"].strip()
         if source and not valid_source(source):
             rep.error(f"{rel}:{line_no} source must be an http(s) link or 'Assumption'")
@@ -313,7 +321,7 @@ def check_demo_data(rep: Reporter, root: Path, state: dict) -> None:
                           f"'{iid}' unit '{indicators[iid]['unit']}'")
         value = cells["value"].strip()
         if value and not is_number(value):
-            rep.error(f"{rel}:{line_no} value must be a number, got '{value}'")
+            rep.error(f"{rel}:{line_no} value must be a number, got '{value}'{decimal_comma_hint(value)}")
         day = cells["mission_day"].strip()
         if day and (not day.isdigit() or int(day) <= 0):
             rep.error(f"{rel}:{line_no} mission_day must be a positive integer, got '{day}'")
@@ -368,7 +376,7 @@ def paragraph_ends_with_link(paragraph: str) -> bool:
 
 def check_content_file(rep: Reporter, path: Path, rel: str, stem: str, state: dict) -> None:
     try:
-        text = path.read_text(encoding="utf-8")
+        text = path.read_text(encoding="utf-8-sig")
     except (OSError, UnicodeDecodeError) as exc:
         rep.error(f"{rel}: cannot read file ({exc})")
         return

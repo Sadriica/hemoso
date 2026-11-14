@@ -251,6 +251,30 @@ class ContentCheckTest(unittest.TestCase):
         )
         self.assert_error(files, "unsourced paragraph under '## Why it matters'")
 
+    def test_content_file_with_bom(self):
+        files = dict(VALID)
+        files["config/content/example_indicator.md"] = (
+            "\ufeff" + VALID["config/content/example_indicator.md"]
+        )
+        self.assertEqual(self.errors(files), [])
+
+    def test_semicolon_csv(self):
+        files = dict(VALID)
+        files["config/data/indicators.csv"] = (
+            "id;name;unit;direction;measured_on_board;hazards;source\n"
+            "example_indicator;Example indicator;example_unit;higher;"
+            "example measurement method;isolation_and_confinement;Assumption\n"
+        )
+        self.assert_error(files, "the file uses semicolons; save it as CSV with commas")
+
+    def test_decimal_comma(self):
+        files = dict(VALID)
+        files["config/data/demo_data.csv"] = (
+            "person_id,indicator_id,value,unit,mission_day,time\n"
+            'demo_astronaut_1,example_indicator,"60,5",example_unit,1,13:30\n'
+        )
+        self.assert_error(files, "use a decimal point")
+
 
 if __name__ == "__main__":
     unittest.main()
