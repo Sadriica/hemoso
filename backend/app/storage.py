@@ -104,11 +104,16 @@ class SupabaseStorage:
         self._client = client or httpx.Client()
 
     def _headers(self) -> dict[str, str]:
-        return {
+        # Supabase: "Send publishable and secret keys on the `apikey` header,
+        # not on `Authorization: Bearer`." Legacy JWT keys still need the Bearer
+        # header, so send it only when the key is a JWT.
+        headers = {
             "apikey": self.key,
-            "Authorization": f"Bearer {self.key}",
             "Content-Type": "application/json",
         }
+        if self.key.startswith("eyJ"):
+            headers["Authorization"] = f"Bearer {self.key}"
+        return headers
 
     def add(self, entry: Entry) -> Entry:
         response = self._client.post(
@@ -142,6 +147,19 @@ def _env(name: str, default: str) -> str:
     """The env var's value, or default when it is unset or empty."""
     value = os.environ.get(name, "")
     return value if value else default
+
+
+def ensure_supabase_config() -> None:
+    """Fail fast at startup when Supabase is selected but URL or key is empty.
+
+    Without this the first request would raise ValueError inside get_storage().
+    """
+    if _env("STORAGE", "sqlite") != "supabase":
+        return
+    if not _env("SUPABASE_URL", "") or not _env("SUPABASE_KEY", ""):
+        raise RuntimeError(
+            "STORAGE=supabase requires SUPABASE_URL and SUPABASE_KEY to be set"
+        )
 
 
 def _build(kind: str) -> Storage:

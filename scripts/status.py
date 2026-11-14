@@ -40,7 +40,8 @@ def main() -> None:
     a = p.parse_args()
     person = a.person
     if not person:
-        branch = subprocess.run(["git", "branch", "--show-current"], capture_output=True, text=True).stdout.strip()
+        branch = subprocess.run(["git", "branch", "--show-current"], capture_output=True, text=True,
+                                encoding="utf-8", errors="replace").stdout.strip()
         m = re.match(r"^(?:fix/)?(bio[12]|phys|eng[12])", branch)
         if not m:
             sys.exit("Say who: python scripts/status.py bio1")
@@ -77,10 +78,14 @@ def main() -> None:
                   f"- **Next:** {lst(groups.get('Todo', [])[:3])}\n- **Chat line:** `{line}`\n\n")
         blockers = "## Blockers\n" + ("".join(f"- #{n} {short(t)}: see the card comment\n" for _, n, t in blocked)
                                       or "- None\n") + "\n"
-        text = re.sub(r"## Current status\n.*?(?=## Blockers)", status, text, flags=re.S)
-        text = re.sub(r"## Blockers\n.*?(?=## |\Z)", blockers, text, flags=re.S)
-        readme.write_text(text, encoding="utf-8")
-        print(f"Updated {readme}. Commit it with: git add {readme} && git commit -m \"docs({person}): update status\"")
+        if "## Current status" not in text:
+            print(f"{readme} has no '## Current status' heading; not updated.")
+        else:
+            text = re.sub(r"## Current status\n.*?(?=## Blockers)", lambda _: status, text, flags=re.S)
+            text = re.sub(r"## Blockers\n.*?(?=## |\Z)", lambda _: blockers, text, flags=re.S)
+            readme.write_text(text, encoding="utf-8")
+            print(f"Updated {readme}. Commit it with: git add {readme} && "
+                  f"git commit -m \"docs({person}): update status (#N)\"")
 
 
 if __name__ == "__main__":

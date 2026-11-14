@@ -36,11 +36,11 @@ Request body: one `Entry`. Every field is required.
 
 | Field | Type | Rule |
 | --- | --- | --- |
-| `person_id` | string | lowercase `snake_case`: letters, digits and underscores, starts with a letter, no spaces |
-| `indicator_id` | string | same rule as `person_id` |
-| `value` | number | a finite number |
-| `unit` | string | the indicator's unit from `config/data/indicators.csv` (see below) |
-| `mission_day` | integer | greater than 0, "day N" |
+| `person_id` | string | at most 64 characters, lowercase `snake_case`: letters, digits and underscores, starts with a letter, no spaces |
+| `indicator_id` | string | at most 64 characters, same rule as `person_id` |
+| `value` | number | a finite number; booleans and strings are rejected |
+| `unit` | string | at most 64 characters, the indicator's unit from `config/data/indicators.csv` (see below) |
+| `mission_day` | integer | greater than 0, at most 100000, "day N"; booleans and strings are rejected |
 | `time` | string | `HH:MM`, 24-hour clock |
 
 The id rule is `../FORMATS.md` section 2. The example ids here are placeholders
@@ -85,7 +85,8 @@ Path parameters: `person_id` and `indicator_id`, strings (same lowercase
 `snake_case` rule).
 
 Responses: `200` (a JSON array of `Entry`), an empty array when there are no
-entries.
+entries; `422` when a path id breaks the `snake_case` rule; `502` when the
+upstream store (Supabase) is unreachable or returns an error.
 
 ```bash
 curl "$API_URL/people/demo_astronaut_1/indicators/example_indicator/history"
@@ -109,6 +110,10 @@ message.
 | Cause | `msg` |
 | --- | --- |
 | `mission_day` is 0 or negative | `Input should be greater than 0` |
+| `mission_day` is above 100000 | `Input should be less than or equal to 100000` |
+| `person_id`, `indicator_id` or `unit` is longer than 64 characters | `String should have at most 64 characters` |
+| `value` is a boolean or a string | `Input should be a valid number` |
+| `mission_day` is a boolean or a string | `Input should be a valid integer` |
 | `time` is not `HH:MM` 24-hour | `Value error, time must be HH:MM (24-hour)` |
 | `person_id` or `indicator_id` breaks the id rule | `Value error, must be lowercase snake_case` |
 | a field is missing | `Field required` |
@@ -119,6 +124,11 @@ Indicator check: `detail` is a plain string.
 | --- | --- |
 | `indicator_id` not in `config/data/indicators.csv` | `unknown indicator` |
 | `unit` differs from the file's unit | `unit mismatch` |
+
+`GET /people/{person_id}/indicators/{indicator_id}/history` returns `422` with a
+plain-string `detail` when `person_id` or `indicator_id` breaks the `snake_case`
+rule, and `502` with `detail` `upstream storage error` when the Supabase store
+is unreachable or returns an error.
 
 ## CORS
 

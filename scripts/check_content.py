@@ -1,7 +1,7 @@
 """Checks the config files against FORMATS.md. Run from the repository root:
 
   python scripts/check_content.py           # a missing file is a warning
-  python scripts/check_content.py --strict  # every required file must exist
+  python scripts/check_content.py --strict  # required files must exist and hold data
 
 It validates every file that exists under config/ against the formats and rules
 in FORMATS.md: exact header and column order, empty required cells, duplicate
@@ -84,6 +84,8 @@ class Reporter:
 
 
 def is_number(value: str) -> bool:
+    if "_" in value:
+        return False
     try:
         return math.isfinite(float(value))
     except ValueError:
@@ -189,6 +191,7 @@ def check_indicators(rep: Reporter, root: Path, state: dict) -> None:
 
     validate_rows(rep, "config/data/indicators.csv", rows, header, required, row)
     state["indicators"] = units
+    state["indicator_row_count"] = len(rows)
 
 
 def check_demo_ranges(rep: Reporter, root: Path, state: dict) -> None:
@@ -225,6 +228,7 @@ def check_demo_ranges(rep: Reporter, root: Path, state: dict) -> None:
 
     validate_rows(rep, "config/data/demo_ranges.csv", rows, header, required, row)
     state["demo_ranges"] = ranges
+    state["demo_ranges_ids"] = seen
 
 
 def check_attention(rep: Reporter, root: Path, state: dict) -> None:
@@ -234,10 +238,13 @@ def check_attention(rep: Reporter, root: Path, state: dict) -> None:
         return
     required = set(header)
     levels: dict[str, set[str]] = {}
+    seen: set[str] = set()
 
     def row(cells, line_no):
         rel = "config/rules/attention.csv"
         iid = cells["indicator_id"].strip()
+        if iid:
+            seen.add(iid)
         indicators = state.get("indicators")
         if iid and indicators is not None and iid not in indicators:
             rep.error(f"{rel}:{line_no} unknown indicator_id '{iid}'")
@@ -264,6 +271,7 @@ def check_attention(rep: Reporter, root: Path, state: dict) -> None:
     validate_rows(rep, "config/rules/attention.csv", rows, header, required, row)
     check_attention_order(rep, bounds)
     state["attention"] = levels
+    state["attention_ids"] = seen
 
 
 def check_attention_order(rep: Reporter, bounds: dict) -> None:
@@ -367,7 +375,7 @@ def check_demo_data(rep: Reporter, root: Path, state: dict) -> None:
         if value and not is_number(value):
             rep.error(f"{rel}:{line_no} value must be a number, got '{value}'{decimal_comma_hint(value)}")
         day = cells["mission_day"].strip()
-        if day and (not day.isdigit() or int(day) <= 0):
+        if day and (not day.isdecimal() or int(day) <= 0):
             rep.error(f"{rel}:{line_no} mission_day must be a positive integer, got '{day}'")
         clock = cells["time"].strip()
         if clock and not TIME_RE.match(clock):
@@ -382,6 +390,7 @@ def check_demo_data(rep: Reporter, root: Path, state: dict) -> None:
                               f"{lo} to {hi} for '{iid}'")
 
     validate_rows(rep, "config/data/demo_data.csv", rows, header, required, row)
+    state["demo_data_row_count"] = len(rows)
 
 
 def parse_markdown(text: str) -> list[dict]:
@@ -523,6 +532,44 @@ def check_content_files(rep: Reporter, root: Path, state: dict, strict: bool) ->
                 rep.warn(f"{rel}: missing content file for indicator '{iid}'")
 
 
+def report_problem(rep: Reporter, strict: bool, msg: str) -> None:
+    """A problem that blocks the final submission under --strict, warns otherwise."""
+    if strict:
+        rep.error(msg)
+    else:
+        rep.warn(msg)
+
+
+def check_nonempty_tables(rep: Reporter, state: dict, strict: bool) -> None:
+    """A required table with only its header (no data rows) blocks --strict.
+
+    ``None`` means the file is missing (already reported by ``check``); ``0``
+    means the file exists but holds no data rows yet.
+    """
+    if state.get("indicator_row_count") == 0:
+        report_problem(rep, strict, "config/data/indicators.csv: no indicator rows (header only)")
+    if state.get("demo_data_row_count") == 0:
+        report_problem(rep, strict, "config/data/demo_data.csv: no demo data rows (header only)")
+
+
+def check_indicator_coverage(rep: Reporter, state: dict, strict: bool) -> None:
+    """Each indicator needs a demo range row and an attention row.
+
+    ``None`` means the table is missing (already reported); otherwise a set of
+    the indicator ids present in that table.
+    """
+    indicators = state.get("indicators")
+    if not indicators:
+        return
+    demo_ranges_ids = state.get("demo_ranges_ids")
+    attention_ids = state.get("attention_ids")
+    for iid in sorted(indicators):
+        if demo_ranges_ids is not None and iid not in demo_ranges_ids:
+            report_problem(rep, strict, f"config/data/demo_ranges.csv: no row for indicator '{iid}'")
+        if attention_ids is not None and iid not in attention_ids:
+            report_problem(rep, strict, f"config/rules/attention.csv: no row for indicator '{iid}'")
+
+
 def check(root: Path, strict: bool) -> list[str]:
     rep = Reporter()
     state: dict = {}
@@ -543,6 +590,8 @@ def check(root: Path, strict: bool) -> list[str]:
     check_body_regions(rep, root)
     check_demo_data(rep, root, state)
     check_content_files(rep, root, state, strict)
+    check_nonempty_tables(rep, state, strict)
+    check_indicator_coverage(rep, state, strict)
 
     return rep.lines
 
@@ -556,7 +605,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--strict",
         action="store_true",
-        help="treat a missing required file as an error (content/body_regions.csv excluded)",
+        help="treat missing required files, header-only tables, and a missing "
+             "demo range or attention row as errors (content/body_regions.csv excluded)",
     )
     args = parser.parse_args(argv)
 

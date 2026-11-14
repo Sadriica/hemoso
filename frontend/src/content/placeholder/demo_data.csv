@@ -1,0 +1,12 @@
+# Placeholder data. Not medical content. Replaced by config/data/demo_data.csv.
+person_id,indicator_id,value,unit,mission_day,time
+demo_astronaut_1,example_indicator,1,example_unit,1,13:30
+demo_astronaut_1,example_indicator,2,example_unit,2,13:30
+demo_astronaut_1,example_indicator,3,example_unit,3,13:30
+demo_astronaut_1,example_indicator,4,example_unit,4,13:30
+demo_astronaut_1,example_indicator,5,example_unit,5,13:30
+demo_astronaut_1,example_indicator,6,example_unit,6,13:30
+demo_astronaut_1,example_indicator,7,example_unit,7,13:30
+demo_astronaut_1,example_indicator,8,example_unit,8,13:30
+demo_astronaut_1,example_indicator,9,example_unit,9,13:30
+demo_astronaut_1,example_indicator,10,example_unit,10,13:30

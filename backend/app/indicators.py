@@ -22,7 +22,11 @@ def load_indicators() -> dict[str, str]:
     if not path.exists():
         return {}
     with path.open(newline="", encoding="utf-8-sig") as handle:
-        return {row["id"]: row["unit"] for row in csv.DictReader(handle)}
+        return {
+            row["id"].strip(): row["unit"].strip()
+            for row in csv.DictReader(handle)
+            if row["id"].strip()
+        }
 
 
 def validate_against_indicators(entry: Entry) -> str | None:
