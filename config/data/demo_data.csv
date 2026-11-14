@@ -3,269 +3,209 @@ demo_astronaut_1,hr_bpm,70,bpm,1,07:00
 demo_astronaut_1,bp_sys_mmhg,116,mmHg,1,07:10
 demo_astronaut_1,bp_dia_mmhg,74,mmHg,1,07:10
 demo_astronaut_1,temp_core_c,36.7,°C,1,07:05
-demo_astronaut_1,spo2_pct,95,%,1,07:15
-demo_astronaut_1,sleep_h,7.1,h,1,07:00
-demo_astronaut_1,sleep_quality_1_5,4,1 to 5,1,07:00
+demo_astronaut_1,sleep_h,7.2,h,1,07:00
 demo_astronaut_1,mood_1_5,4,1 to 5,1,21:00
-demo_astronaut_1,glucose_mgdl,105,mg/dL,1,07:30
+demo_astronaut_1,glucose_mgdl,103,mg/dL,1,07:30
 demo_astronaut_1,hr_bpm,71,bpm,2,07:00
 demo_astronaut_1,bp_sys_mmhg,119,mmHg,2,07:10
-demo_astronaut_1,bp_dia_mmhg,73,mmHg,2,07:10
-demo_astronaut_1,temp_core_c,36.8,°C,2,07:05
-demo_astronaut_1,spo2_pct,96,%,2,07:15
-demo_astronaut_1,sleep_h,7.5,h,2,07:00
-demo_astronaut_1,sleep_quality_1_5,4,1 to 5,2,07:00
+demo_astronaut_1,bp_dia_mmhg,70,mmHg,2,07:10
+demo_astronaut_1,temp_core_c,36.9,°C,2,07:05
+demo_astronaut_1,sleep_h,7.7,h,2,07:00
 demo_astronaut_1,mood_1_5,4,1 to 5,2,21:00
-demo_astronaut_1,glucose_mgdl,96,mg/dL,2,07:30
-demo_astronaut_1,hr_bpm,77,bpm,3,07:00
-demo_astronaut_1,bp_sys_mmhg,117,mmHg,3,07:10
-demo_astronaut_1,bp_dia_mmhg,74,mmHg,3,07:10
-demo_astronaut_1,temp_core_c,36.9,°C,3,07:05
-demo_astronaut_1,spo2_pct,96,%,3,07:15
-demo_astronaut_1,sleep_h,7.6,h,3,07:00
-demo_astronaut_1,sleep_quality_1_5,4,1 to 5,3,07:00
+demo_astronaut_1,glucose_mgdl,101,mg/dL,2,07:30
+demo_astronaut_1,hr_bpm,73,bpm,3,07:00
+demo_astronaut_1,bp_sys_mmhg,115,mmHg,3,07:10
+demo_astronaut_1,bp_dia_mmhg,70,mmHg,3,07:10
+demo_astronaut_1,temp_core_c,36.7,°C,3,07:05
+demo_astronaut_1,sleep_h,7.9,h,3,07:00
 demo_astronaut_1,mood_1_5,4,1 to 5,3,21:00
-demo_astronaut_1,glucose_mgdl,103,mg/dL,3,07:30
-demo_astronaut_1,hr_bpm,75,bpm,4,07:00
-demo_astronaut_1,bp_sys_mmhg,120,mmHg,4,07:10
-demo_astronaut_1,bp_dia_mmhg,74,mmHg,4,07:10
-demo_astronaut_1,temp_core_c,36.8,°C,4,07:05
-demo_astronaut_1,spo2_pct,95,%,4,07:15
-demo_astronaut_1,sleep_h,7.9,h,4,07:00
-demo_astronaut_1,sleep_quality_1_5,4,1 to 5,4,07:00
+demo_astronaut_1,glucose_mgdl,105,mg/dL,3,07:30
+demo_astronaut_1,hr_bpm,77,bpm,4,07:00
+demo_astronaut_1,bp_sys_mmhg,119,mmHg,4,07:10
+demo_astronaut_1,bp_dia_mmhg,71,mmHg,4,07:10
+demo_astronaut_1,temp_core_c,36.9,°C,4,07:05
+demo_astronaut_1,sleep_h,8.0,h,4,07:00
 demo_astronaut_1,mood_1_5,4,1 to 5,4,21:00
-demo_astronaut_1,glucose_mgdl,97,mg/dL,4,07:30
-demo_astronaut_1,hr_bpm,71,bpm,5,07:00
-demo_astronaut_1,bp_sys_mmhg,115,mmHg,5,07:10
-demo_astronaut_1,bp_dia_mmhg,70,mmHg,5,07:10
-demo_astronaut_1,temp_core_c,36.6,°C,5,07:05
-demo_astronaut_1,spo2_pct,97,%,5,07:15
-demo_astronaut_1,sleep_h,7.8,h,5,07:00
-demo_astronaut_1,sleep_quality_1_5,5,1 to 5,5,07:00
+demo_astronaut_1,glucose_mgdl,102,mg/dL,4,07:30
+demo_astronaut_1,hr_bpm,78,bpm,5,07:00
+demo_astronaut_1,bp_sys_mmhg,120,mmHg,5,07:10
+demo_astronaut_1,bp_dia_mmhg,71,mmHg,5,07:10
+demo_astronaut_1,temp_core_c,36.5,°C,5,07:05
+demo_astronaut_1,sleep_h,8.0,h,5,07:00
 demo_astronaut_1,mood_1_5,4,1 to 5,5,21:00
-demo_astronaut_1,glucose_mgdl,104,mg/dL,5,07:30
-demo_astronaut_1,hr_bpm,72,bpm,6,07:00
+demo_astronaut_1,glucose_mgdl,105,mg/dL,5,07:30
+demo_astronaut_1,hr_bpm,71,bpm,6,07:00
 demo_astronaut_1,bp_sys_mmhg,114,mmHg,6,07:10
-demo_astronaut_1,bp_dia_mmhg,73,mmHg,6,07:10
-demo_astronaut_1,temp_core_c,36.8,°C,6,07:05
-demo_astronaut_1,spo2_pct,95,%,6,07:15
-demo_astronaut_1,sleep_h,7.8,h,6,07:00
-demo_astronaut_1,sleep_quality_1_5,5,1 to 5,6,07:00
+demo_astronaut_1,bp_dia_mmhg,71,mmHg,6,07:10
+demo_astronaut_1,temp_core_c,36.6,°C,6,07:05
+demo_astronaut_1,sleep_h,8.1,h,6,07:00
 demo_astronaut_1,mood_1_5,4,1 to 5,6,21:00
 demo_astronaut_1,glucose_mgdl,100,mg/dL,6,07:30
-demo_astronaut_1,hr_bpm,75,bpm,7,07:00
-demo_astronaut_1,bp_sys_mmhg,119,mmHg,7,07:10
-demo_astronaut_1,bp_dia_mmhg,71,mmHg,7,07:10
+demo_astronaut_1,hr_bpm,78,bpm,7,07:00
+demo_astronaut_1,bp_sys_mmhg,114,mmHg,7,07:10
+demo_astronaut_1,bp_dia_mmhg,74,mmHg,7,07:10
 demo_astronaut_1,temp_core_c,36.7,°C,7,07:05
-demo_astronaut_1,spo2_pct,96,%,7,07:15
-demo_astronaut_1,sleep_h,7.5,h,7,07:00
-demo_astronaut_1,sleep_quality_1_5,4,1 to 5,7,07:00
+demo_astronaut_1,sleep_h,7.1,h,7,07:00
 demo_astronaut_1,mood_1_5,4,1 to 5,7,21:00
-demo_astronaut_1,glucose_mgdl,102,mg/dL,7,07:30
+demo_astronaut_1,glucose_mgdl,105,mg/dL,7,07:30
 demo_astronaut_1,hr_bpm,72,bpm,8,07:00
-demo_astronaut_1,bp_sys_mmhg,117,mmHg,8,07:10
-demo_astronaut_1,bp_dia_mmhg,70,mmHg,8,07:10
-demo_astronaut_1,temp_core_c,36.9,°C,8,07:05
-demo_astronaut_1,spo2_pct,96,%,8,07:15
-demo_astronaut_1,sleep_h,7.6,h,8,07:00
-demo_astronaut_1,sleep_quality_1_5,4,1 to 5,8,07:00
+demo_astronaut_1,bp_sys_mmhg,114,mmHg,8,07:10
+demo_astronaut_1,bp_dia_mmhg,72,mmHg,8,07:10
+demo_astronaut_1,temp_core_c,36.8,°C,8,07:05
+demo_astronaut_1,sleep_h,7.3,h,8,07:00
 demo_astronaut_1,mood_1_5,4,1 to 5,8,21:00
-demo_astronaut_1,glucose_mgdl,102,mg/dL,8,07:30
+demo_astronaut_1,glucose_mgdl,106,mg/dL,8,07:30
 demo_astronaut_1,hr_bpm,73,bpm,9,07:00
-demo_astronaut_1,bp_sys_mmhg,118,mmHg,9,07:10
-demo_astronaut_1,bp_dia_mmhg,72,mmHg,9,07:10
-demo_astronaut_1,temp_core_c,36.9,°C,9,07:05
-demo_astronaut_1,spo2_pct,97,%,9,07:15
-demo_astronaut_1,sleep_h,7.6,h,9,07:00
-demo_astronaut_1,sleep_quality_1_5,4,1 to 5,9,07:00
+demo_astronaut_1,bp_sys_mmhg,116,mmHg,9,07:10
+demo_astronaut_1,bp_dia_mmhg,74,mmHg,9,07:10
+demo_astronaut_1,temp_core_c,37.0,°C,9,07:05
+demo_astronaut_1,sleep_h,7.8,h,9,07:00
 demo_astronaut_1,mood_1_5,4,1 to 5,9,21:00
-demo_astronaut_1,glucose_mgdl,105,mg/dL,9,07:30
-demo_astronaut_1,hr_bpm,74,bpm,10,07:00
-demo_astronaut_1,bp_sys_mmhg,120,mmHg,10,07:10
-demo_astronaut_1,bp_dia_mmhg,73,mmHg,10,07:10
-demo_astronaut_1,temp_core_c,36.8,°C,10,07:05
-demo_astronaut_1,spo2_pct,95,%,10,07:15
-demo_astronaut_1,sleep_h,8.0,h,10,07:00
-demo_astronaut_1,sleep_quality_1_5,4,1 to 5,10,07:00
+demo_astronaut_1,glucose_mgdl,102,mg/dL,9,07:30
+demo_astronaut_1,hr_bpm,72,bpm,10,07:00
+demo_astronaut_1,bp_sys_mmhg,117,mmHg,10,07:10
+demo_astronaut_1,bp_dia_mmhg,71,mmHg,10,07:10
+demo_astronaut_1,temp_core_c,36.7,°C,10,07:05
+demo_astronaut_1,sleep_h,7.8,h,10,07:00
 demo_astronaut_1,mood_1_5,4,1 to 5,10,21:00
-demo_astronaut_1,glucose_mgdl,101,mg/dL,10,07:30
+demo_astronaut_1,glucose_mgdl,102,mg/dL,10,07:30
 demo_astronaut_1,hr_bpm,77,bpm,11,07:00
-demo_astronaut_1,bp_sys_mmhg,114,mmHg,11,07:10
-demo_astronaut_1,bp_dia_mmhg,72,mmHg,11,07:10
-demo_astronaut_1,temp_core_c,36.8,°C,11,07:05
-demo_astronaut_1,spo2_pct,96,%,11,07:15
+demo_astronaut_1,bp_sys_mmhg,118,mmHg,11,07:10
+demo_astronaut_1,bp_dia_mmhg,71,mmHg,11,07:10
+demo_astronaut_1,temp_core_c,36.7,°C,11,07:05
 demo_astronaut_1,sleep_h,7.8,h,11,07:00
-demo_astronaut_1,sleep_quality_1_5,4,1 to 5,11,07:00
 demo_astronaut_1,mood_1_5,4,1 to 5,11,21:00
-demo_astronaut_1,glucose_mgdl,107,mg/dL,11,07:30
-demo_astronaut_1,hr_bpm,76,bpm,12,07:00
+demo_astronaut_1,glucose_mgdl,108,mg/dL,11,07:30
+demo_astronaut_1,hr_bpm,77,bpm,12,07:00
 demo_astronaut_1,bp_sys_mmhg,120,mmHg,12,07:10
-demo_astronaut_1,bp_dia_mmhg,73,mmHg,12,07:10
-demo_astronaut_1,temp_core_c,36.9,°C,12,07:05
-demo_astronaut_1,spo2_pct,96,%,12,07:15
+demo_astronaut_1,bp_dia_mmhg,74,mmHg,12,07:10
+demo_astronaut_1,temp_core_c,36.8,°C,12,07:05
 demo_astronaut_1,sleep_h,7.8,h,12,07:00
-demo_astronaut_1,sleep_quality_1_5,5,1 to 5,12,07:00
 demo_astronaut_1,mood_1_5,4,1 to 5,12,21:00
-demo_astronaut_1,glucose_mgdl,101,mg/dL,12,07:30
-demo_astronaut_1,hr_bpm,80,bpm,13,07:00
-demo_astronaut_1,bp_sys_mmhg,115,mmHg,13,07:10
+demo_astronaut_1,glucose_mgdl,105,mg/dL,12,07:30
+demo_astronaut_1,hr_bpm,79,bpm,13,07:00
+demo_astronaut_1,bp_sys_mmhg,116,mmHg,13,07:10
 demo_astronaut_1,bp_dia_mmhg,75,mmHg,13,07:10
 demo_astronaut_1,temp_core_c,36.7,°C,13,07:05
-demo_astronaut_1,spo2_pct,96,%,13,07:15
-demo_astronaut_1,sleep_h,8.0,h,13,07:00
-demo_astronaut_1,sleep_quality_1_5,5,1 to 5,13,07:00
+demo_astronaut_1,sleep_h,8.2,h,13,07:00
 demo_astronaut_1,mood_1_5,4,1 to 5,13,21:00
-demo_astronaut_1,glucose_mgdl,107,mg/dL,13,07:30
-demo_astronaut_1,hr_bpm,79,bpm,14,07:00
-demo_astronaut_1,bp_sys_mmhg,117,mmHg,14,07:10
+demo_astronaut_1,glucose_mgdl,106,mg/dL,13,07:30
+demo_astronaut_1,hr_bpm,72,bpm,14,07:00
+demo_astronaut_1,bp_sys_mmhg,118,mmHg,14,07:10
 demo_astronaut_1,bp_dia_mmhg,75,mmHg,14,07:10
-demo_astronaut_1,temp_core_c,36.8,°C,14,07:05
-demo_astronaut_1,spo2_pct,96,%,14,07:15
+demo_astronaut_1,temp_core_c,36.9,°C,14,07:05
 demo_astronaut_1,sleep_h,7.3,h,14,07:00
-demo_astronaut_1,sleep_quality_1_5,4,1 to 5,14,07:00
 demo_astronaut_1,mood_1_5,4,1 to 5,14,21:00
-demo_astronaut_1,glucose_mgdl,104,mg/dL,14,07:30
-demo_astronaut_1,hr_bpm,73,bpm,15,07:00
-demo_astronaut_1,bp_sys_mmhg,116,mmHg,15,07:10
-demo_astronaut_1,bp_dia_mmhg,72,mmHg,15,07:10
+demo_astronaut_1,glucose_mgdl,101,mg/dL,14,07:30
+demo_astronaut_1,hr_bpm,79,bpm,15,07:00
+demo_astronaut_1,bp_sys_mmhg,119,mmHg,15,07:10
+demo_astronaut_1,bp_dia_mmhg,74,mmHg,15,07:10
 demo_astronaut_1,temp_core_c,36.6,°C,15,07:05
-demo_astronaut_1,spo2_pct,95,%,15,07:15
-demo_astronaut_1,sleep_h,7.3,h,15,07:00
-demo_astronaut_1,sleep_quality_1_5,4,1 to 5,15,07:00
+demo_astronaut_1,sleep_h,7.6,h,15,07:00
 demo_astronaut_1,mood_1_5,4,1 to 5,15,21:00
-demo_astronaut_1,glucose_mgdl,106,mg/dL,15,07:30
-demo_astronaut_1,hr_bpm,76,bpm,16,07:00
-demo_astronaut_1,bp_sys_mmhg,117,mmHg,16,07:10
-demo_astronaut_1,bp_dia_mmhg,75,mmHg,16,07:10
-demo_astronaut_1,temp_core_c,36.6,°C,16,07:05
-demo_astronaut_1,spo2_pct,96,%,16,07:15
-demo_astronaut_1,sleep_h,7.4,h,16,07:00
-demo_astronaut_1,sleep_quality_1_5,4,1 to 5,16,07:00
+demo_astronaut_1,glucose_mgdl,101,mg/dL,15,07:30
+demo_astronaut_1,hr_bpm,78,bpm,16,07:00
+demo_astronaut_1,bp_sys_mmhg,120,mmHg,16,07:10
+demo_astronaut_1,bp_dia_mmhg,72,mmHg,16,07:10
+demo_astronaut_1,temp_core_c,36.8,°C,16,07:05
+demo_astronaut_1,sleep_h,7.3,h,16,07:00
 demo_astronaut_1,mood_1_5,4,1 to 5,16,21:00
 demo_astronaut_1,glucose_mgdl,99,mg/dL,16,07:30
-demo_astronaut_1,hr_bpm,73,bpm,17,07:00
-demo_astronaut_1,bp_sys_mmhg,117,mmHg,17,07:10
-demo_astronaut_1,bp_dia_mmhg,72,mmHg,17,07:10
-demo_astronaut_1,temp_core_c,36.7,°C,17,07:05
-demo_astronaut_1,spo2_pct,96,%,17,07:15
+demo_astronaut_1,hr_bpm,75,bpm,17,07:00
+demo_astronaut_1,bp_sys_mmhg,118,mmHg,17,07:10
+demo_astronaut_1,bp_dia_mmhg,76,mmHg,17,07:10
+demo_astronaut_1,temp_core_c,36.6,°C,17,07:05
 demo_astronaut_1,sleep_h,7.9,h,17,07:00
-demo_astronaut_1,sleep_quality_1_5,4,1 to 5,17,07:00
-demo_astronaut_1,mood_1_5,3,1 to 5,17,21:00
-demo_astronaut_1,glucose_mgdl,100,mg/dL,17,07:30
-demo_astronaut_1,hr_bpm,80,bpm,18,07:00
-demo_astronaut_1,bp_sys_mmhg,118,mmHg,18,07:10
-demo_astronaut_1,bp_dia_mmhg,72,mmHg,18,07:10
-demo_astronaut_1,temp_core_c,36.7,°C,18,07:05
-demo_astronaut_1,spo2_pct,97,%,18,07:15
-demo_astronaut_1,sleep_h,7.8,h,18,07:00
-demo_astronaut_1,sleep_quality_1_5,4,1 to 5,18,07:00
+demo_astronaut_1,mood_1_5,4,1 to 5,17,21:00
+demo_astronaut_1,glucose_mgdl,102,mg/dL,17,07:30
+demo_astronaut_1,hr_bpm,79,bpm,18,07:00
+demo_astronaut_1,bp_sys_mmhg,116,mmHg,18,07:10
+demo_astronaut_1,bp_dia_mmhg,73,mmHg,18,07:10
+demo_astronaut_1,temp_core_c,36.8,°C,18,07:05
+demo_astronaut_1,sleep_h,7.9,h,18,07:00
 demo_astronaut_1,mood_1_5,4,1 to 5,18,21:00
-demo_astronaut_1,glucose_mgdl,101,mg/dL,18,07:30
-demo_astronaut_1,hr_bpm,75,bpm,19,07:00
-demo_astronaut_1,bp_sys_mmhg,119,mmHg,19,07:10
-demo_astronaut_1,bp_dia_mmhg,75,mmHg,19,07:10
-demo_astronaut_1,temp_core_c,37.0,°C,19,07:05
-demo_astronaut_1,spo2_pct,96,%,19,07:15
-demo_astronaut_1,sleep_h,8.0,h,19,07:00
-demo_astronaut_1,sleep_quality_1_5,5,1 to 5,19,07:00
-demo_astronaut_1,mood_1_5,4,1 to 5,19,21:00
-demo_astronaut_1,glucose_mgdl,104,mg/dL,19,07:30
-demo_astronaut_1,hr_bpm,74,bpm,20,07:00
-demo_astronaut_1,bp_sys_mmhg,117,mmHg,20,07:10
-demo_astronaut_1,bp_dia_mmhg,75,mmHg,20,07:10
-demo_astronaut_1,temp_core_c,36.7,°C,20,07:05
-demo_astronaut_1,spo2_pct,97,%,20,07:15
-demo_astronaut_1,sleep_h,8.0,h,20,07:00
-demo_astronaut_1,sleep_quality_1_5,5,1 to 5,20,07:00
-demo_astronaut_1,mood_1_5,4,1 to 5,20,21:00
-demo_astronaut_1,glucose_mgdl,106,mg/dL,20,07:30
-demo_astronaut_1,hr_bpm,77,bpm,21,07:00
-demo_astronaut_1,bp_sys_mmhg,119,mmHg,21,07:10
-demo_astronaut_1,bp_dia_mmhg,76,mmHg,21,07:10
-demo_astronaut_1,temp_core_c,36.6,°C,21,07:05
-demo_astronaut_1,spo2_pct,96,%,21,07:15
-demo_astronaut_1,sleep_h,7.4,h,21,07:00
-demo_astronaut_1,sleep_quality_1_5,4,1 to 5,21,07:00
+demo_astronaut_1,glucose_mgdl,105,mg/dL,18,07:30
+demo_astronaut_1,hr_bpm,74,bpm,19,07:00
+demo_astronaut_1,bp_sys_mmhg,117,mmHg,19,07:10
+demo_astronaut_1,bp_dia_mmhg,73,mmHg,19,07:10
+demo_astronaut_1,temp_core_c,36.8,°C,19,07:05
+demo_astronaut_1,sleep_h,7.7,h,19,07:00
+demo_astronaut_1,mood_1_5,3,1 to 5,19,21:00
+demo_astronaut_1,glucose_mgdl,106,mg/dL,19,07:30
+demo_astronaut_1,hr_bpm,78,bpm,20,07:00
+demo_astronaut_1,bp_sys_mmhg,121,mmHg,20,07:10
+demo_astronaut_1,bp_dia_mmhg,74,mmHg,20,07:10
+demo_astronaut_1,temp_core_c,36.6,°C,20,07:05
+demo_astronaut_1,sleep_h,8.2,h,20,07:00
+demo_astronaut_1,mood_1_5,3,1 to 5,20,21:00
+demo_astronaut_1,glucose_mgdl,102,mg/dL,20,07:30
+demo_astronaut_1,hr_bpm,75,bpm,21,07:00
+demo_astronaut_1,bp_sys_mmhg,121,mmHg,21,07:10
+demo_astronaut_1,bp_dia_mmhg,75,mmHg,21,07:10
+demo_astronaut_1,temp_core_c,36.5,°C,21,07:05
+demo_astronaut_1,sleep_h,7.0,h,21,07:00
 demo_astronaut_1,mood_1_5,3,1 to 5,21,21:00
-demo_astronaut_1,glucose_mgdl,106,mg/dL,21,07:30
-demo_astronaut_1,hr_bpm,74,bpm,22,07:00
-demo_astronaut_1,bp_sys_mmhg,121,mmHg,22,07:10
-demo_astronaut_1,bp_dia_mmhg,73,mmHg,22,07:10
-demo_astronaut_1,temp_core_c,36.8,°C,22,07:05
-demo_astronaut_1,spo2_pct,96,%,22,07:15
+demo_astronaut_1,glucose_mgdl,103,mg/dL,21,07:30
+demo_astronaut_1,hr_bpm,75,bpm,22,07:00
+demo_astronaut_1,bp_sys_mmhg,119,mmHg,22,07:10
+demo_astronaut_1,bp_dia_mmhg,76,mmHg,22,07:10
+demo_astronaut_1,temp_core_c,36.6,°C,22,07:05
 demo_astronaut_1,sleep_h,7.2,h,22,07:00
-demo_astronaut_1,sleep_quality_1_5,4,1 to 5,22,07:00
 demo_astronaut_1,mood_1_5,3,1 to 5,22,21:00
 demo_astronaut_1,glucose_mgdl,110,mg/dL,22,07:30
-demo_astronaut_1,hr_bpm,76,bpm,23,07:00
-demo_astronaut_1,bp_sys_mmhg,121,mmHg,23,07:10
-demo_astronaut_1,bp_dia_mmhg,72,mmHg,23,07:10
+demo_astronaut_1,hr_bpm,77,bpm,23,07:00
+demo_astronaut_1,bp_sys_mmhg,118,mmHg,23,07:10
+demo_astronaut_1,bp_dia_mmhg,73,mmHg,23,07:10
 demo_astronaut_1,temp_core_c,36.8,°C,23,07:05
-demo_astronaut_1,spo2_pct,96,%,23,07:15
-demo_astronaut_1,sleep_h,7.8,h,23,07:00
-demo_astronaut_1,sleep_quality_1_5,4,1 to 5,23,07:00
-demo_astronaut_1,mood_1_5,4,1 to 5,23,21:00
-demo_astronaut_1,glucose_mgdl,111,mg/dL,23,07:30
-demo_astronaut_1,hr_bpm,77,bpm,24,07:00
-demo_astronaut_1,bp_sys_mmhg,118,mmHg,24,07:10
-demo_astronaut_1,bp_dia_mmhg,72,mmHg,24,07:10
-demo_astronaut_1,temp_core_c,36.8,°C,24,07:05
-demo_astronaut_1,spo2_pct,96,%,24,07:15
+demo_astronaut_1,sleep_h,7.6,h,23,07:00
+demo_astronaut_1,mood_1_5,3,1 to 5,23,21:00
+demo_astronaut_1,glucose_mgdl,105,mg/dL,23,07:30
+demo_astronaut_1,hr_bpm,75,bpm,24,07:00
+demo_astronaut_1,bp_sys_mmhg,119,mmHg,24,07:10
+demo_astronaut_1,bp_dia_mmhg,74,mmHg,24,07:10
+demo_astronaut_1,temp_core_c,36.9,°C,24,07:05
 demo_astronaut_1,sleep_h,7.8,h,24,07:00
-demo_astronaut_1,sleep_quality_1_5,4,1 to 5,24,07:00
 demo_astronaut_1,mood_1_5,3,1 to 5,24,21:00
-demo_astronaut_1,glucose_mgdl,109,mg/dL,24,07:30
+demo_astronaut_1,glucose_mgdl,107,mg/dL,24,07:30
 demo_astronaut_1,hr_bpm,81,bpm,25,07:00
-demo_astronaut_1,bp_sys_mmhg,123,mmHg,25,07:10
-demo_astronaut_1,bp_dia_mmhg,72,mmHg,25,07:10
-demo_astronaut_1,temp_core_c,36.6,°C,25,07:05
-demo_astronaut_1,spo2_pct,96,%,25,07:15
-demo_astronaut_1,sleep_h,8.0,h,25,07:00
-demo_astronaut_1,sleep_quality_1_5,4,1 to 5,25,07:00
-demo_astronaut_1,mood_1_5,3,1 to 5,25,21:00
-demo_astronaut_1,glucose_mgdl,105,mg/dL,25,07:30
-demo_astronaut_1,hr_bpm,76,bpm,26,07:00
-demo_astronaut_1,bp_sys_mmhg,118,mmHg,26,07:10
-demo_astronaut_1,bp_dia_mmhg,73,mmHg,26,07:10
-demo_astronaut_1,temp_core_c,36.6,°C,26,07:05
-demo_astronaut_1,spo2_pct,97,%,26,07:15
-demo_astronaut_1,sleep_h,7.9,h,26,07:00
-demo_astronaut_1,sleep_quality_1_5,5,1 to 5,26,07:00
+demo_astronaut_1,bp_sys_mmhg,120,mmHg,25,07:10
+demo_astronaut_1,bp_dia_mmhg,74,mmHg,25,07:10
+demo_astronaut_1,temp_core_c,36.5,°C,25,07:05
+demo_astronaut_1,sleep_h,7.6,h,25,07:00
+demo_astronaut_1,mood_1_5,4,1 to 5,25,21:00
+demo_astronaut_1,glucose_mgdl,108,mg/dL,25,07:30
+demo_astronaut_1,hr_bpm,80,bpm,26,07:00
+demo_astronaut_1,bp_sys_mmhg,120,mmHg,26,07:10
+demo_astronaut_1,bp_dia_mmhg,75,mmHg,26,07:10
+demo_astronaut_1,temp_core_c,36.7,°C,26,07:05
+demo_astronaut_1,sleep_h,8.0,h,26,07:00
 demo_astronaut_1,mood_1_5,3,1 to 5,26,21:00
-demo_astronaut_1,glucose_mgdl,106,mg/dL,26,07:30
+demo_astronaut_1,glucose_mgdl,107,mg/dL,26,07:30
 demo_astronaut_1,hr_bpm,82,bpm,27,07:00
-demo_astronaut_1,bp_sys_mmhg,121,mmHg,27,07:10
-demo_astronaut_1,bp_dia_mmhg,76,mmHg,27,07:10
+demo_astronaut_1,bp_sys_mmhg,119,mmHg,27,07:10
+demo_astronaut_1,bp_dia_mmhg,74,mmHg,27,07:10
 demo_astronaut_1,temp_core_c,36.8,°C,27,07:05
-demo_astronaut_1,spo2_pct,96,%,27,07:15
-demo_astronaut_1,sleep_h,8.0,h,27,07:00
-demo_astronaut_1,sleep_quality_1_5,5,1 to 5,27,07:00
-demo_astronaut_1,mood_1_5,4,1 to 5,27,21:00
-demo_astronaut_1,glucose_mgdl,112,mg/dL,27,07:30
-demo_astronaut_1,hr_bpm,77,bpm,28,07:00
-demo_astronaut_1,bp_sys_mmhg,123,mmHg,28,07:10
-demo_astronaut_1,bp_dia_mmhg,73,mmHg,28,07:10
-demo_astronaut_1,temp_core_c,36.7,°C,28,07:05
-demo_astronaut_1,spo2_pct,97,%,28,07:15
-demo_astronaut_1,sleep_h,7.3,h,28,07:00
-demo_astronaut_1,sleep_quality_1_5,4,1 to 5,28,07:00
+demo_astronaut_1,sleep_h,7.8,h,27,07:00
+demo_astronaut_1,mood_1_5,3,1 to 5,27,21:00
+demo_astronaut_1,glucose_mgdl,108,mg/dL,27,07:30
+demo_astronaut_1,hr_bpm,76,bpm,28,07:00
+demo_astronaut_1,bp_sys_mmhg,122,mmHg,28,07:10
+demo_astronaut_1,bp_dia_mmhg,74,mmHg,28,07:10
+demo_astronaut_1,temp_core_c,36.9,°C,28,07:05
+demo_astronaut_1,sleep_h,7.2,h,28,07:00
 demo_astronaut_1,mood_1_5,3,1 to 5,28,21:00
-demo_astronaut_1,glucose_mgdl,110,mg/dL,28,07:30
-demo_astronaut_1,hr_bpm,77,bpm,29,07:00
-demo_astronaut_1,bp_sys_mmhg,119,mmHg,29,07:10
-demo_astronaut_1,bp_dia_mmhg,76,mmHg,29,07:10
+demo_astronaut_1,glucose_mgdl,107,mg/dL,28,07:30
+demo_astronaut_1,hr_bpm,75,bpm,29,07:00
+demo_astronaut_1,bp_sys_mmhg,124,mmHg,29,07:10
+demo_astronaut_1,bp_dia_mmhg,74,mmHg,29,07:10
 demo_astronaut_1,temp_core_c,36.9,°C,29,07:05
-demo_astronaut_1,spo2_pct,97,%,29,07:15
-demo_astronaut_1,sleep_h,7.4,h,29,07:00
-demo_astronaut_1,sleep_quality_1_5,4,1 to 5,29,07:00
+demo_astronaut_1,sleep_h,7.2,h,29,07:00
 demo_astronaut_1,mood_1_5,3,1 to 5,29,21:00
-demo_astronaut_1,glucose_mgdl,113,mg/dL,29,07:30
-demo_astronaut_1,hr_bpm,78,bpm,30,07:00
-demo_astronaut_1,bp_sys_mmhg,119,mmHg,30,07:10
-demo_astronaut_1,bp_dia_mmhg,73,mmHg,30,07:10
-demo_astronaut_1,temp_core_c,36.7,°C,30,07:05
-demo_astronaut_1,spo2_pct,96,%,30,07:15
+demo_astronaut_1,glucose_mgdl,106,mg/dL,29,07:30
+demo_astronaut_1,hr_bpm,83,bpm,30,07:00
+demo_astronaut_1,bp_sys_mmhg,120,mmHg,30,07:10
+demo_astronaut_1,bp_dia_mmhg,76,mmHg,30,07:10
+demo_astronaut_1,temp_core_c,36.8,°C,30,07:05
 demo_astronaut_1,sleep_h,7.5,h,30,07:00
-demo_astronaut_1,sleep_quality_1_5,4,1 to 5,30,07:00
 demo_astronaut_1,mood_1_5,3,1 to 5,30,21:00
-demo_astronaut_1,glucose_mgdl,112,mg/dL,30,07:30
+demo_astronaut_1,glucose_mgdl,103,mg/dL,30,07:30
