@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -16,7 +17,7 @@ def is_valid_id(value: str) -> bool:
 
 
 class Entry(BaseModel):
-    """One row of config/data/demo_data.csv: person, indicator, value, unit, day, time."""
+    """One row of config/data/demo_data.csv: person, indicator, value, unit, day, time, context."""
 
     person_id: str = Field(max_length=64)
     indicator_id: str = Field(max_length=64)
@@ -24,6 +25,7 @@ class Entry(BaseModel):
     unit: str = Field(max_length=64)
     mission_day: int = Field(gt=0, le=100000, strict=True)
     time: str
+    context: Literal["rest", "after_exercise", "on_waking", "before_sleep"] = "rest"
 
     @field_validator("person_id", "indicator_id")
     @classmethod

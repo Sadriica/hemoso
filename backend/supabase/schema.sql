@@ -8,6 +8,7 @@ create table entries (
     unit text not null,
     mission_day integer not null,
     time text not null,
+    context text not null default 'rest',
     created_at timestamptz not null default now()
 );
 
@@ -21,6 +22,10 @@ where id not in (
     select min(id) from entries
     group by person_id, indicator_id, mission_day, time
 );
+
+-- A project that already ran the create table above needs the context column;
+-- this is a no-op on a fresh one where the column is part of the create table.
+alter table entries add column if not exists context text not null default 'rest';
 
 alter table entries add constraint entries_natural_key_unique
     unique (person_id, indicator_id, mission_day, time);
