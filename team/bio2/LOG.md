@@ -4,6 +4,8 @@ One entry per decision. Newest first.
 
 | Time | What | Why | Source | AI used |
 | --- | --- | --- | --- | --- |
+| Sat 16:25 | `config/rules/conditions.csv` with 7 conditions, each mapped to existing indicator ids | REQ-06 asks what the astronaut may have as a probability; the file only says which signals support which condition, the probability comes from the person's own records | sources in the file | Yes |
+| Sat 16:20 | Removed `spo2_pct` and `sleep_quality_1_5` from my plans | Phys removed both from `indicators.csv`, so a row pointing at them is an unknown id | `config/data/indicators.csv` | Yes |
 | Sat 16:00 | `attention.csv` will hold only clinical boundaries with a source; the mild steps are dropped | F-phys-02 computes "outside your usual range" from the person's baseline, so an invented 37.5 °C step would flag a normal crew member | `docs/findings/phys-01`, `phys-02` | Yes |
 | Sat 15:55 | Reviewed `config/data/indicators.csv` without editing it | The file is Phys's; six findings written in `team/bio2/notes/indicators-review.md` | `FORMATS.md` section 1 | Yes |
 | Sat 15:40 | Drafted thresholds for six indicators in `team/bio2/notes/thresholds-draft.md` | The numbers and their sources do not depend on the indicator ids, so the work runs while Phys finishes REQ-03 | sources listed in the draft | Yes |
