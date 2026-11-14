@@ -61,12 +61,16 @@ def is_exempt(path: str) -> bool:
 
 
 def client_address(scope: Scope) -> str:
-    """The client address: first `X-Forwarded-For` value, else the socket address."""
+    """The client address: last `X-Forwarded-For` value, else the socket address.
+
+    The host's proxy appends the address it saw to the end of the list; anything
+    before it was sent by the client and can be forged, so it is not trusted.
+    """
     for name, raw in scope.get("headers", ()):
         if name == b"x-forwarded-for":
-            first = raw.decode("latin-1").split(",")[0].strip()
-            if first:
-                return first
+            last = raw.decode("latin-1").split(",")[-1].strip()
+            if last:
+                return last
             break
     client = scope.get("client")
     return client[0] if client else "unknown"

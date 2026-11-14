@@ -89,12 +89,12 @@ def test_exempt_paths():
     assert not is_exempt(HISTORY)
 
 
-def test_client_address_prefers_the_first_forwarded_value():
+def test_client_address_uses_the_last_forwarded_value():
     scope = {
         "headers": [(b"x-forwarded-for", b"203.0.113.9, 10.0.0.1")],
         "client": ("127.0.0.1", 5000),
     }
-    assert client_address(scope) == "203.0.113.9"
+    assert client_address(scope) == "10.0.0.1"
 
 
 def test_client_address_falls_back_to_the_socket():
@@ -162,13 +162,16 @@ def test_separate_addresses_are_limited_separately(client, monkeypatch):
     assert client.get(HISTORY, headers=second).status_code == 200
 
 
-def test_the_first_forwarded_value_is_the_address(client, monkeypatch):
+def test_the_last_forwarded_value_is_the_address(client, monkeypatch):
     monkeypatch.setenv("RATE_LIMIT_PER_MINUTE", "1")
-    behind_proxy = {"X-Forwarded-For": "203.0.113.9, 10.0.0.1"}
+    # A client that forges the first value is still counted by the address the
+    # proxy appended last.
+    forged = {"X-Forwarded-For": "203.0.113.9, 10.0.0.1"}
+    forged_again = {"X-Forwarded-For": "198.51.100.7, 10.0.0.1"}
 
-    assert client.get(HISTORY, headers=behind_proxy).status_code == 200
-    assert client.get(HISTORY, headers={"X-Forwarded-For": "203.0.113.9"}).status_code == 429
-    assert client.get(HISTORY, headers={"X-Forwarded-For": "10.0.0.1"}).status_code == 200
+    assert client.get(HISTORY, headers=forged).status_code == 200
+    assert client.get(HISTORY, headers=forged_again).status_code == 429
+    assert client.get(HISTORY, headers={"X-Forwarded-For": "203.0.113.9"}).status_code == 200
 
 
 def test_zero_turns_the_limit_off(client, monkeypatch):

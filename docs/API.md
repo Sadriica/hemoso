@@ -248,10 +248,11 @@ request is accepted while that address made fewer than 120 requests in the last
 - `RATE_LIMIT_PER_MINUTE` sets the cap; unset or empty means 120 and `0` turns
   the limit off. A value that is not a whole number, or is negative, is read as
   120.
-- The address is the first value of `X-Forwarded-For` when the header is
+- The address is the last value of `X-Forwarded-For` when the header is
   present, else the socket address. The deployed API sits behind Railway's
-  proxy, so the socket address of every request is the proxy and the header is
-  the only place the client's own address appears; the proxy sets that header.
+  proxy, so the socket address of every request is the proxy. The proxy appends
+  the address it saw to the end of that header; earlier values come from the
+  client and can be forged, so they are not used.
 - `GET /health`, `GET /docs` (and `/docs/oauth2-redirect`) and
   `GET /openapi.json` are exempt: they are never counted and never refused, so
   the health check and the schema stay reachable.
