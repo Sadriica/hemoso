@@ -1,0 +1,136 @@
+{
+  "rule": "attention_for",
+  "source": "FORMATS.md section 3, `config/rules/attention.csv`: \"`side`: `below` or `above`: which side of `threshold` triggers this row\" and \"When several rows match a value, the row with the most severe `notify` wins.\" `notify` is \"`crew`, `cmo` or `flight_surgeon`, from least to most severe\". FORMATS.md does NOT define the tie when two matching rows have the same `notify`; these cases follow frontend/src/domain/attention.ts, where the more extreme threshold wins (lower on `below`, higher on `above`) and two rows on opposite sides keep the first row in list order. FORMATS.md also does not say whether a value exactly on a threshold triggers its row; the two cases marked `undefined_by_formats` record that gap, and they expect the strict comparison attention.ts uses.",
+  "notes": "`input.rows` are the attention rows of one indicator, in file order, already filtered by `indicator_id` the way attention.ts receives them. `expected` is the winning row's `attention_level` and `notify`, or null when no row matches. attention.ts tells the two empty results apart as `no_rules` (no rows at all) and `in_range` (rows but no match); that distinction is not part of this rule.",
+  "cases": [
+    {
+      "name": "no rows means no row wins",
+      "input": {
+        "rows": [],
+        "value": 100
+      },
+      "expected": null
+    },
+    {
+      "name": "value below an above threshold matches nothing",
+      "input": {
+        "rows": [
+          {"indicator_id": "example_indicator", "side": "above", "threshold": 100, "attention_level": "example_level_high", "notify": "crew"}
+        ],
+        "value": 99
+      },
+      "expected": null
+    },
+    {
+      "name": "one matching row",
+      "input": {
+        "rows": [
+          {"indicator_id": "example_indicator", "side": "above", "threshold": 100, "attention_level": "example_level_high", "notify": "crew"}
+        ],
+        "value": 101
+      },
+      "expected": {"attention_level": "example_level_high", "notify": "crew"}
+    },
+    {
+      "name": "two steps on below, the FORMATS.md example",
+      "input": {
+        "rows": [
+          {"indicator_id": "example_indicator", "side": "below", "threshold": 37.5, "attention_level": "example_level_crew", "notify": "crew"},
+          {"indicator_id": "example_indicator", "side": "below", "threshold": 36.0, "attention_level": "example_level_cmo", "notify": "cmo"}
+        ],
+        "value": 35
+      },
+      "expected": {"attention_level": "example_level_cmo", "notify": "cmo"}
+    },
+    {
+      "name": "two steps on below, rows in the other order",
+      "input": {
+        "rows": [
+          {"indicator_id": "example_indicator", "side": "below", "threshold": 36.0, "attention_level": "example_level_cmo", "notify": "cmo"},
+          {"indicator_id": "example_indicator", "side": "below", "threshold": 37.5, "attention_level": "example_level_crew", "notify": "crew"}
+        ],
+        "value": 35
+      },
+      "expected": {"attention_level": "example_level_cmo", "notify": "cmo"}
+    },
+    {
+      "name": "below row wins for a low value when both sides have a row",
+      "input": {
+        "rows": [
+          {"indicator_id": "example_indicator", "side": "above", "threshold": 100, "attention_level": "example_level_high", "notify": "crew"},
+          {"indicator_id": "example_indicator", "side": "below", "threshold": 90, "attention_level": "example_level_low", "notify": "crew"}
+        ],
+        "value": 89
+      },
+      "expected": {"attention_level": "example_level_low", "notify": "crew"}
+    },
+    {
+      "name": "above row wins for a high value when both sides have a row",
+      "input": {
+        "rows": [
+          {"indicator_id": "example_indicator", "side": "above", "threshold": 100, "attention_level": "example_level_high", "notify": "crew"},
+          {"indicator_id": "example_indicator", "side": "below", "threshold": 90, "attention_level": "example_level_low", "notify": "crew"}
+        ],
+        "value": 101
+      },
+      "expected": {"attention_level": "example_level_high", "notify": "crew"}
+    },
+    {
+      "name": "exactly on an above threshold does not trigger",
+      "undefined_by_formats": true,
+      "input": {
+        "rows": [
+          {"indicator_id": "example_indicator", "side": "above", "threshold": 100, "attention_level": "example_level_high", "notify": "crew"}
+        ],
+        "value": 100
+      },
+      "expected": null
+    },
+    {
+      "name": "exactly on a below threshold does not trigger",
+      "undefined_by_formats": true,
+      "input": {
+        "rows": [
+          {"indicator_id": "example_indicator", "side": "below", "threshold": 90, "attention_level": "example_level_low", "notify": "crew"}
+        ],
+        "value": 90
+      },
+      "expected": null
+    },
+    {
+      "name": "equal severity on above, the higher threshold wins",
+      "undefined_by_formats": true,
+      "input": {
+        "rows": [
+          {"indicator_id": "example_indicator", "side": "above", "threshold": 100, "attention_level": "example_level_step_one", "notify": "crew"},
+          {"indicator_id": "example_indicator", "side": "above", "threshold": 120, "attention_level": "example_level_step_two", "notify": "crew"}
+        ],
+        "value": 130
+      },
+      "expected": {"attention_level": "example_level_step_two", "notify": "crew"}
+    },
+    {
+      "name": "equal severity on below, the lower threshold wins",
+      "undefined_by_formats": true,
+      "input": {
+        "rows": [
+          {"indicator_id": "example_indicator", "side": "below", "threshold": 90, "attention_level": "example_level_step_one", "notify": "crew"},
+          {"indicator_id": "example_indicator", "side": "below", "threshold": 80, "attention_level": "example_level_step_two", "notify": "crew"}
+        ],
+        "value": 70
+      },
+      "expected": {"attention_level": "example_level_step_two", "notify": "crew"}
+    },
+    {
+      "name": "escalating steps, the value crosses both",
+      "input": {
+        "rows": [
+          {"indicator_id": "example_indicator", "side": "above", "threshold": 100, "attention_level": "example_level_step_one", "notify": "crew"},
+          {"indicator_id": "example_indicator", "side": "above", "threshold": 120, "attention_level": "example_level_step_two", "notify": "cmo"}
+        ],
+        "value": 130
+      },
+      "expected": {"attention_level": "example_level_step_two", "notify": "cmo"}
+    }
+  ]
+}

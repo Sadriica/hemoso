@@ -1,0 +1,52 @@
+{
+  "rule": "baseline_state",
+  "source": "docs/findings/phys-02-baseline-state-rule.md, section \"Test vectors (for the backend tests)\": the nine cases below are that table, unchanged. The rule they test is the finding's \"The rule\": \"if baseline is no_baseline: return `no_data`; if attention triggers on value: return `needs_review`; if abs(value - median) <= 3 * spread: return `in_range`; return `outside_range`\". FORMATS.md section 3 (\"How each value is compared\") sets the same band: \"a value more than 3 spreads from the median is 'outside your usual range'\", with \"fewer than 3 entries\" giving \"no data yet\".",
+  "notes": "`median: null` is the finding's \"none\": no baseline yet, fewer than 3 entries, so `spread` is null too. The finding's \"Clinical boundary\" column gives one number and no side, and its `needs_review` case is a value above an upper boundary; FORMATS.md puts the real trigger in `rules/attention.csv` rows, which carry a side. The Python function treats `boundary` as a threshold that triggers when the value is on the far side of it from the median, and a value exactly on the boundary does not trigger, as `attention.ts` compares strictly. Neither the side nor that strictness is defined by FORMATS.md, and these nine vectors do not exercise either.",
+  "cases": [
+    {
+      "name": "two readings only",
+      "input": {"median": null, "spread": null, "value": 72, "boundary": null},
+      "expected": "no_data"
+    },
+    {
+      "name": "typical day",
+      "input": {"median": 70, "spread": 4, "value": 72, "boundary": null},
+      "expected": "in_range"
+    },
+    {
+      "name": "one point outside",
+      "input": {"median": 70, "spread": 4, "value": 85, "boundary": null},
+      "expected": "outside_range"
+    },
+    {
+      "name": "exactly on the edge",
+      "input": {"median": 70, "spread": 4, "value": 82, "boundary": null},
+      "expected": "in_range"
+    },
+    {
+      "name": "one past the edge",
+      "input": {"median": 70, "spread": 4, "value": 83, "boundary": null},
+      "expected": "outside_range"
+    },
+    {
+      "name": "flat history",
+      "input": {"median": 70, "spread": 0, "value": 70, "boundary": null},
+      "expected": "in_range"
+    },
+    {
+      "name": "flat history, one jump",
+      "input": {"median": 70, "spread": 0, "value": 71, "boundary": null},
+      "expected": "outside_range"
+    },
+    {
+      "name": "clinical boundary first",
+      "input": {"median": 120, "spread": 5, "value": 182, "boundary": 180},
+      "expected": "needs_review"
+    },
+    {
+      "name": "boundary not reached",
+      "input": {"median": 120, "spread": 5, "value": 175, "boundary": 180},
+      "expected": "outside_range"
+    }
+  ]
+}
