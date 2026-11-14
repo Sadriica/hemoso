@@ -33,9 +33,19 @@ this file only tracks the frontend side.
 | 8 | Playwright demo path, accessibility check, screenshots at 1280 × 800 | REQ-15, REQ-17 | Todo |
 | 9 | Read the real `config/` files once `FORMATS.md` is agreed | REQ-02 | Waiting on T-06 |
 | 10 | Deploy pipeline (see below) | REQ-18, T-13 | To do, Eng 1 |
-| 11 | Vercel pipeline: tests gate every deploy (see below) | REQ-18, T-13 | `frontend/vercel.json` written; Vercel project pending |
+| 11 | Vercel pipeline: tests gate every deploy (see below) | REQ-18, T-13 | Vercel project `hemoso` live (CLI deploy); git link waits for Eng 1 |
 
 ## Vercel pipeline
+Status Sat 14 11:58: project `julian-mejias-projects/hemoso`, Node 24.x,
+Vercel Authentication off (public, REQ-18). First deploy from branch `eng2`
+(db00106) made with the CLI from `frontend/`; install, lint, test (1/1) and
+build passed on Vercel.
+- Production: https://hemoso.vercel.app
+- Deployment: https://hemoso-bge3qfuq4-julian-mejias-projects.vercel.app
+- Not linked to GitHub yet: the Vercel GitHub app is not installed on
+  `Sadriica/hemoso`. Eng 1 approves it; then Root Directory `frontend`,
+  production branch `main`, and pushes deploy on their own.
+
 `frontend/vercel.json` makes Vercel run, on every push it builds:
 `pnpm install --frozen-lockfile` → `pnpm lint` → `pnpm test` → `pnpm build`.
 If lint or a test fails, the build fails and nothing is deployed; the last

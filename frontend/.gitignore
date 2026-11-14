@@ -6,13 +6,34 @@ dist
 
 # Python tooling
 .venv
+__pycache__
+*.pyc
+.pytest_cache
 
 # Playwright output
 test-results
 playwright-report
+screenshots
 
-# TypeScript build info
+# Test coverage
+coverage
+
+# Tool caches
+.vite
+.eslintcache
 *.tsbuildinfo
+
+# Logs
+*.log
+
+# Editor and OS files
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+
+# Vercel CLI project link
+.vercel
 
 # Local environment
 *.local
