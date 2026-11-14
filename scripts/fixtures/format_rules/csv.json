@@ -1,0 +1,67 @@
+{
+  "rule": "read_csv",
+  "source": "scripts/check_content.py, `read_table`: \"with path.open(encoding=\"utf-8-sig\", newline=\"\") as fh: reader = csv.reader(fh)\" and the blank-line rule \"if not row or (len(row) == 1 and row[0].strip() == \"\"): continue  # blank line\". `expected` is what Python's csv module yields through that path: the UTF-8 BOM dropped by utf-8-sig, blank and whitespace-only lines skipped, every other line a row of cells. A case whose text makes csv.reader raise is written \"error\"; Python accepts every text here, so none uses it.",
+  "notes": "The frontend reader (frontend/src/content/csv.ts) differs on two cases today: a quoted newline, which it splits at the physical line, and a line starting with \"#\", which it skips instead of reading as a row. FORMATS.md says nothing about comment lines.",
+  "cases": [
+    {
+      "name": "two rows",
+      "input": {"text": "a,b\n1,2\n"},
+      "expected": [["a", "b"], ["1", "2"]]
+    },
+    {
+      "name": "no trailing newline",
+      "input": {"text": "a,b\n1,2"},
+      "expected": [["a", "b"], ["1", "2"]]
+    },
+    {
+      "name": "UTF-8 BOM",
+      "input": {"text": "\ufeffa,b\n1,2\n"},
+      "expected": [["a", "b"], ["1", "2"]]
+    },
+    {
+      "name": "CRLF line endings",
+      "input": {"text": "a,b\r\n1,2\r\n"},
+      "expected": [["a", "b"], ["1", "2"]]
+    },
+    {
+      "name": "carriage return only",
+      "input": {"text": "a,b\r1,2\r"},
+      "expected": [["a", "b"], ["1", "2"]]
+    },
+    {
+      "name": "blank line between rows",
+      "input": {"text": "a,b\n\n1,2\n"},
+      "expected": [["a", "b"], ["1", "2"]]
+    },
+    {
+      "name": "line of spaces is blank",
+      "input": {"text": "a,b\n   \n1,2\n"},
+      "expected": [["a", "b"], ["1", "2"]]
+    },
+    {
+      "name": "quoted comma stays in one cell",
+      "input": {"text": "a,b\n\"1,5\",2\n"},
+      "expected": [["a", "b"], ["1,5", "2"]]
+    },
+    {
+      "name": "doubled quote reads as one quote",
+      "input": {"text": "a,b\n\"say \"\"hi\"\"\",2\n"},
+      "expected": [["a", "b"], ["say \"hi\"", "2"]]
+    },
+    {
+      "name": "quoted newline stays in one cell",
+      "input": {"text": "a,b\n\"line one\nline two\",2\n"},
+      "expected": [["a", "b"], ["line one\nline two", "2"]]
+    },
+    {
+      "name": "line starting with # is a row",
+      "input": {"text": "a,b\n#note\n1,2\n"},
+      "expected": [["a", "b"], ["#note"], ["1", "2"]]
+    },
+    {
+      "name": "empty text",
+      "input": {"text": ""},
+      "expected": []
+    }
+  ]
+}
