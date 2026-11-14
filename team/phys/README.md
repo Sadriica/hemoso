@@ -8,13 +8,13 @@
 ## Current status
 _Update before every checkpoint and at every shift change._
 
-- **Time:** Sat 14, 16:00
-- **Done:** `config/data/indicators.csv` (9 indicators), `demo_ranges.csv` (9 ranges with source) and `demo_data.csv` (30 days, 270 rows, seed 20261114); `docs/findings/phys-01` and `phys-02`; 3 notes; check_content: 0 errors
+- **Time:** Sat 14, 16:20
+- **Done:** `config/data/indicators.csv` now has the team's 7 indicators; `demo_ranges.csv` and `demo_data.csv` rebuilt for those 7 (210 rows, seed 20261114); check_content: 0 errors
 - **In progress:** none
-- **Next:** `docs/nasa_data.md` and `docs/sources.md` (both still empty and both mine)
+- **Next:** `docs/nasa_data.md` and `docs/sources.md` (both empty and both mine)
 
 ## Blockers
-- `config/data/indicators.csv` uses 9 ids that are not in the section 2 table of `FORMATS.md` yet. Eng 1 has to add them there, because that file is his.
+- The team's list adds `tier` and `system` columns. `FORMATS.md` and `scripts/check_content.py` still expect 7 columns, so Eng 1 has to update both before those columns can be committed.
 - `scripts/precheck.py` fails after any merge into a personal branch: it diffs against the upstream and counts the files that came from `main` as yours. Fix: `origin/main...HEAD` instead of `upstream..HEAD`.
 
 ## Shift

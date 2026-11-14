@@ -3,8 +3,6 @@ hr_bpm,55,95,Assumption,Synthetic resting value per mission day from a seeded un
 bp_sys_mmhg,100,135,https://www.who.int/news-room/fact-sheets/detail/hypertension,Synthetic value kept below the 140 mmHg threshold the source states for hypertension; same seed and drift; rounded to 0 decimals
 bp_dia_mmhg,60,85,https://www.who.int/news-room/fact-sheets/detail/hypertension,Synthetic value kept below the 90 mmHg threshold the source states for hypertension; same seed and drift; rounded to 0 decimals
 temp_core_c,36.0,37.5,Assumption,Synthetic core temperature per mission day with a small daily offset; seed 20261114; rounded to 1 decimal
-spo2_pct,92,100,Assumption,Synthetic value never below the range minimum; seed 20261114; rounded to 0 decimals
 sleep_h,5.5,8.5,Assumption,Synthetic sleep duration with a weekday-like rhythm; seed 20261114; rounded to 1 decimal
-sleep_quality_1_5,2,5,Assumption,Synthetic answer on a 1 to 5 scale tied to the sleep duration of the same day; seed 20261114; integer
 mood_1_5,2,5,Assumption,Synthetic answer on a 1 to 5 scale with a slow drift toward lower values in the last week; seed 20261114; integer
 glucose_mgdl,75,130,Assumption,Synthetic fasting value; no in-flight device exists so the range is a placeholder until a source is chosen; seed 20261114; rounded to 0 decimals
