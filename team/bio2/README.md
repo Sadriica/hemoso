@@ -8,22 +8,28 @@
 ## Current status
 _Update before every checkpoint and at every shift change._
 
-- **Time:** Sat 15:20
+- **Time:** Sat 17:40
 - **Done:** setup and branch (T-03). `main` merged twice, up to the checkpoint
-  `cp1` and the `notify` column commit. `config/rules/attention.csv` and
-  `config/rules/conditions.csv` created with their columns. Attention levels
-  decided: `watch`, `consult`, `urgent` (`team/bio2/notes/attention-levels.md`).
-- **In progress:** the rows of both files, waiting for the indicator list.
-- **Next:** fill `attention.csv` per indicator with one source per threshold,
-  then `conditions.csv`; review Bio 1's status texts (REQ-10); ask the four
-  questions of T-04 to the organiser.
+  `cp1` and the `notify` column commit. Attention levels decided: `watch`,
+  `consult`, `urgent` (`team/bio2/notes/attention-levels.md`). `attention.csv`
+  filled with 12 rows, at least one per indicator, with a source or
+  `Assumption` (REQ-05). `conditions.csv` has the seven conditions (REQ-06).
+  A proposal for the condition probability is in
+  `team/bio2/notes/condition-probability-proposal.md`. The glucose review now
+  has the in-flight analyser source (REQ-03).
+- **In progress:** waiting for the team decision on the probability method and
+  on the blood-pressure "or" rule.
+- **Next:** review Bio 1's status texts (REQ-10); ask the four questions of T-04
+  to the organiser; start the submission page.
 - **Board:** open cards #3, #4, #6, #16, #17, #21, #27, #31, #34, #35, #36,
   #38, #41, #50.
 
 ## Blockers
-- The indicator list (REQ-03, Phys) is not in `docs/DECISIONS.md` or in
-  `FORMATS.md`: no row of `attention.csv` or `conditions.csv` can be written
-  without an `indicator_id`.
+- The probability method and the blood-pressure "or" rule need a team decision
+  and a row in `docs/DECISIONS.md` (Eng 1). The proposal is ready.
+- `config/data/indicators.csv` still says glucose has no in-flight device and
+  `docs/DECISIONS.md` still lists it as tier C. Phys and Eng 1 own those files;
+  the source is in `team/bio2/notes/indicators-review.md`.
 - T-04 is still open: the local deadline and the pitch length and language are
   not confirmed.
 

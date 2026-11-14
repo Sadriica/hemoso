@@ -4,6 +4,10 @@ One entry per decision. Newest first.
 
 | Time | What | Why | Source | AI used |
 | --- | --- | --- | --- | --- |
+| Sat 17:40 | Wrote `team/bio2/notes/condition-probability-proposal.md` | REQ-06 needs a method, not a fixed percentage; the proposal uses the person's baseline and `attention.csv`, and flags the condition pairs that share every input | `docs/findings/phys-02`, `FORMATS.md` section 3 | Yes |
+| Sat 17:30 | Filled `config/rules/attention.csv` with 12 rows, at least one per indicator | Without a row the app never shows "needs review" (REQ-05); sleep, mood and heart rate below 50 have no source and are marked Assumption | NASA-STD-3001 Rev. C App. C p. 63, JSC 22538 Rev. F, MedlinePlus, WHO, ADA | Yes |
+| Sat 17:25 | Corrected the hypothermia location in my notes to Appendix C, p. 63 of 86 | The definition is in Appendix C (Definitions), not Appendix A (References); the page number and the text are right | NASA-STD-3001 Vol. 1 Rev. C | Yes |
+| Sat 17:20 | Verified the in-flight glucose analyser and left the source for Phys and Eng 1 | `indicators.csv` still says no in-flight device and `DECISIONS` still has glucose as tier C; the i-STAT is the current ISS blood analyser and its cartridges measure glucose, so the row needs a new source and wording | NTRS 20150012223 p. 6, Clinical Chemistry 1997, FDA CG8+ | Yes |
 | Sat 16:25 | `config/rules/conditions.csv` with 7 conditions, each mapped to existing indicator ids | REQ-06 asks what the astronaut may have as a probability; the file only says which signals support which condition, the probability comes from the person's own records | sources in the file | Yes |
 | Sat 16:20 | Removed `spo2_pct` and `sleep_quality_1_5` from my plans | Phys removed both from `indicators.csv`, so a row pointing at them is an unknown id | `config/data/indicators.csv` | Yes |
 | Sat 16:00 | `attention.csv` will hold only clinical boundaries with a source; the mild steps are dropped | F-phys-02 computes "outside your usual range" from the person's baseline, so an invented 37.5 °C step would flag a normal crew member | `docs/findings/phys-01`, `phys-02` | Yes |
