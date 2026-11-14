@@ -28,4 +28,6 @@ with `python scripts/si_use.py`. The table grows with each finished card.
 | Sat 12:30–12:40 | REQ-33 (#49) | SI-USE.md, scripts/si_use.py, scripts/precheck.py | Assistant wrote the acknowledgement file and the script that copies this log into it; quote checked against the submission guide | Wambi |
 | Sat 12:50–13:15 | T-08 (#8) | .github/workflows/checks.yml, docs/deploy/pages.yml | Assistant wrote the checks workflow and pinned each action to its current release; versions checked against GitHub | Wambi |
 | Sat 12:50–13:20 | REQ-14 (#25) | scripts/precheck.py, scripts/test_precheck.py, .gitignore, docs/PRIVACY.md | Assistant added the secrets check before push, its tests and the privacy page | Wambi |
+| Sat 12:50–13:30 | T-06 (#6) | scripts/check_content.py, scripts/test_check_content.py | Assistant wrote the content check from FORMATS.md and its tests; review added BOM, semicolon and decimal-comma cases | Wambi |
+| Sat 12:50–13:45 | REQ-27 (#43) | backend/ (FastAPI app, storage, tests, uv.lock, supabase/schema.sql) | Assistant wrote the entries API and storage; review found a SQLite thread bug under concurrent requests and added CORS, BOM handling and the Supabase schema | Wambi |
 <!-- SI-USE-TABLE:END -->
