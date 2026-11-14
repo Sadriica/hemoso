@@ -149,6 +149,19 @@ def _env(name: str, default: str) -> str:
     return value if value else default
 
 
+def ensure_supabase_config() -> None:
+    """Fail fast at startup when Supabase is selected but URL or key is empty.
+
+    Without this the first request would raise ValueError inside get_storage().
+    """
+    if _env("STORAGE", "sqlite") != "supabase":
+        return
+    if not _env("SUPABASE_URL", "") or not _env("SUPABASE_KEY", ""):
+        raise RuntimeError(
+            "STORAGE=supabase requires SUPABASE_URL and SUPABASE_KEY to be set"
+        )
+
+
 def _build(kind: str) -> Storage:
     if kind == "memory":
         return MemoryStorage()
