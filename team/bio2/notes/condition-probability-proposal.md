@@ -1,5 +1,10 @@
 # How to compute the condition probabilities (REQ-06)
 
+> **Superseded on Sat 14 Nov 18:05.** The team decided a condition shows an
+> **evidence score with a label, never a percentage**; the method and its test
+> vectors are in `docs/findings/bio2-02-evidence-score.md`. The direction
+> syntax and the `no_data` rule of this note are still useful.
+
 Sat 14 Nov 17:40. Proposal for the team. Nothing here is implemented in
 `config/rules/conditions.csv`; the format says the probability columns are
 added when the team answers this question.
