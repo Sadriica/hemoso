@@ -9,13 +9,21 @@ import { missionNow, type MissionClock } from '../domain/clock'
 import type { Entry as EntryRecord, Indicator } from '../domain/types'
 import type { EntryStore } from '../data/entryStore'
 import Notice from '../components/Notice'
-import { parseDraft, type DraftErrors } from './entryDraft'
+import {
+  SCALE_VALUES,
+  isScaleUnit,
+  parseDraft,
+  type DraftErrors,
+} from './entryDraft'
 import { strings } from '../strings'
 
 // The entry screen: one measurement for one person (REQ-02). Every field has a
-// visible label, the unit appears in the label and next to the field, and each
-// problem is written under its field and linked to it. Focus moves to the
-// first field that needs a fix.
+// visible label, the unit is the suffix inside the field, and each problem is
+// written under its field and linked to it. Focus moves to the first field
+// that needs a fix.
+//
+// Two kinds of value: a measured number, and the 1 to 5 scales of sleep quality
+// and mood, which are five radios instead of a number input.
 
 export default function Entry({
   store,
@@ -76,19 +84,49 @@ function EntryForm({
 
   const baseId = useId()
   const valueRef = useRef<HTMLInputElement>(null)
+  const choiceRefs = useRef<(HTMLInputElement | null)[]>([])
   const missionDayRef = useRef<HTMLInputElement>(null)
   const timeRef = useRef<HTMLInputElement>(null)
 
   const indicator =
     indicators.find((item) => item.id === indicatorId) ?? indicators[0]
+  const scale = isScaleUnit(indicator.unit)
   const indicatorFieldId = `${baseId}-indicator`
   const valueId = `${baseId}-value`
+  const valueUnitId = `${valueId}-unit`
+  const valueErrorId = `${valueId}-error`
   const dayId = `${baseId}-mission-day`
+  const dayErrorId = `${dayId}-error`
   const timeId = `${baseId}-time`
+  const timeErrorId = `${timeId}-error`
+
+  // A screen reader reads the unit, then the problem, in that order.
+  const valueDescription =
+    errors.value === undefined ? valueUnitId : `${valueUnitId} ${valueErrorId}`
+
+  function onIndicatorChange(nextId: string) {
+    setIndicatorId(nextId)
+    // The reading belongs to the indicator it was typed for, and a number is
+    // not a 1 to 5 choice.
+    setValueText('')
+    setErrors((current) => ({ ...current, value: undefined }))
+  }
+
+  function focusValue() {
+    if (valueRef.current !== null) {
+      valueRef.current.focus()
+      return
+    }
+    const chosen = SCALE_VALUES.findIndex(
+      (choice) => String(choice) === valueText,
+    )
+    choiceRefs.current[chosen === -1 ? 0 : chosen]?.focus()
+  }
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const draft = parseDraft({
+      unit: indicator.unit,
       value: valueText,
       missionDay: missionDayText,
       time: timeText,
@@ -96,7 +134,7 @@ function EntryForm({
     if (!draft.ok) {
       setErrors(draft.errors)
       setStatus('')
-      if (draft.errors.value !== undefined) valueRef.current?.focus()
+      if (draft.errors.value !== undefined) focusValue()
       else if (draft.errors.missionDay !== undefined)
         missionDayRef.current?.focus()
       else timeRef.current?.focus()
@@ -132,7 +170,7 @@ function EntryForm({
             className="field__select"
             id={indicatorFieldId}
             value={indicator.id}
-            onChange={(event) => setIndicatorId(event.target.value)}
+            onChange={(event) => onIndicatorChange(event.target.value)}
           >
             {indicators.map((item) => (
               <option key={item.id} value={item.id}>
@@ -142,33 +180,64 @@ function EntryForm({
           </select>
         </div>
 
-        <div className="field">
-          <label className="field__label" htmlFor={valueId}>
-            {strings.entry.value(indicator.unit)}
-          </label>
-          <div className="field__control">
-            <input
-              ref={valueRef}
-              className="field__input"
-              id={valueId}
-              type="number"
-              step="any"
-              value={valueText}
-              aria-invalid={errors.value === undefined ? undefined : true}
-              aria-describedby={
-                errors.value === undefined ? undefined : `${valueId}-error`
-              }
-              onChange={(event) => setValueText(event.target.value)}
-            />
-            {/* The label already reads the unit, so this copy is decoration. */}
-            <span className="field__unit" aria-hidden="true">
-              {indicator.unit}
-            </span>
+        {scale ? (
+          <fieldset
+            className="field field--scale"
+            aria-invalid={errors.value === undefined ? undefined : true}
+            aria-describedby={
+              errors.value === undefined ? undefined : valueErrorId
+            }
+          >
+            <legend className="field__label">
+              {strings.entry.valueWithUnit(indicator.unit)}
+            </legend>
+            <div className="field__choices">
+              {SCALE_VALUES.map((choice, index) => (
+                <label key={choice} className="field__choice">
+                  <input
+                    ref={(element) => {
+                      choiceRefs.current[index] = element
+                    }}
+                    type="radio"
+                    name={`${valueId}-choice`}
+                    value={choice}
+                    checked={valueText === String(choice)}
+                    onChange={() => setValueText(String(choice))}
+                  />
+                  {choice}
+                </label>
+              ))}
+            </div>
+            {errors.value !== undefined && (
+              <FieldError id={valueErrorId}>{errors.value}</FieldError>
+            )}
+          </fieldset>
+        ) : (
+          <div className="field">
+            <label className="field__label" htmlFor={valueId}>
+              {strings.entry.value}
+            </label>
+            <div className="field__control">
+              <input
+                ref={valueRef}
+                className="field__input"
+                id={valueId}
+                type="number"
+                step="any"
+                value={valueText}
+                aria-invalid={errors.value === undefined ? undefined : true}
+                aria-describedby={valueDescription}
+                onChange={(event) => setValueText(event.target.value)}
+              />
+              <span className="field__unit" id={valueUnitId}>
+                {indicator.unit}
+              </span>
+            </div>
+            {errors.value !== undefined && (
+              <FieldError id={valueErrorId}>{errors.value}</FieldError>
+            )}
           </div>
-          {errors.value !== undefined && (
-            <FieldError id={`${valueId}-error`}>{errors.value}</FieldError>
-          )}
-        </div>
+        )}
 
         <div className="field">
           <label className="field__label" htmlFor={dayId}>
@@ -185,12 +254,12 @@ function EntryForm({
             value={missionDayText}
             aria-invalid={errors.missionDay === undefined ? undefined : true}
             aria-describedby={
-              errors.missionDay === undefined ? undefined : `${dayId}-error`
+              errors.missionDay === undefined ? undefined : dayErrorId
             }
             onChange={(event) => setMissionDayText(event.target.value)}
           />
           {errors.missionDay !== undefined && (
-            <FieldError id={`${dayId}-error`}>{errors.missionDay}</FieldError>
+            <FieldError id={dayErrorId}>{errors.missionDay}</FieldError>
           )}
         </div>
 
@@ -206,12 +275,12 @@ function EntryForm({
             value={timeText}
             aria-invalid={errors.time === undefined ? undefined : true}
             aria-describedby={
-              errors.time === undefined ? undefined : `${timeId}-error`
+              errors.time === undefined ? undefined : timeErrorId
             }
             onChange={(event) => setTimeText(event.target.value)}
           />
           {errors.time !== undefined && (
-            <FieldError id={`${timeId}-error`}>{errors.time}</FieldError>
+            <FieldError id={timeErrorId}>{errors.time}</FieldError>
           )}
         </div>
 

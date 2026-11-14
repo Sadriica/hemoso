@@ -54,4 +54,7 @@ export interface Entry {
 export type Attention =
   | { kind: 'in_range' }
   | { kind: 'attention'; level: string; rule: AttentionRule }
+  // The indicator has no attention rule at all, so the app cannot say whether
+  // a value is in range.
+  | { kind: 'no_rules' }
   | { kind: 'no_data' }

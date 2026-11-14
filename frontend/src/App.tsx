@@ -98,11 +98,12 @@ export default function App() {
             </button>
           ))}
         </div>
+        {/* The panel holds the focusable controls, so it is not a tab stop of
+            the tabs pattern. */}
         <div
           role="tabpanel"
           id={`panel-${activeTab}`}
           aria-labelledby={`tab-${activeTab}`}
-          tabIndex={0}
         >
           {activeTab === 'home' && (
             <Home personId={selectedPerson} data={data} entries={entries} />

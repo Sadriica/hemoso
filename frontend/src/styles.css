@@ -16,6 +16,9 @@
   --color-bg-raised: #101827;
   --color-surface: #182333;
   --color-border: #536273;
+  /* Edge of a control (input, select, secondary button): 3:1 or more against
+     the page and the card, which the decorative --color-border does not meet. */
+  --color-border-control: #6b7a8c;
   --color-text: #ffffff;
   --color-text-muted: #a7b0be;
   --color-accent: #a9d6ff;
@@ -85,6 +88,7 @@
     --color-bg-raised: #ffffff;
     --color-surface: #ffffff;
     --color-border: #c5cdd8;
+    --color-border-control: #78859a;
     --color-text: #0b1220;
     --color-text-muted: #4a5568;
     --color-accent: #0b3d91;
@@ -164,16 +168,41 @@ label {
   color: var(--color-text-muted);
 }
 
-input,
+input:not([type='radio']):not([type='checkbox']),
 select {
   min-height: var(--tap-min);
   padding: 0 var(--space-2);
-  border: var(--border-subtle);
+  border: 1px solid var(--color-border-control);
   border-radius: var(--radius-card);
   background: var(--color-surface);
   color: var(--color-text);
   font-family: var(--font-body);
   font-size: var(--text-body);
+}
+
+input[type='radio'],
+input[type='checkbox'] {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--color-accent);
+}
+
+/* A field group and its legend: the legend reads as a label, but a legend can
+   name a unit, so it is never transformed (STANDARDS.md section 3). */
+fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+legend {
+  padding: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  color: var(--color-text-muted);
 }
 
 /* Primary and secondary buttons (7.5). The Entry form and the sync status use
@@ -184,7 +213,7 @@ select {
   justify-content: center;
   min-height: var(--tap-min);
   padding: 0 var(--space-4);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--color-border-control);
   border-radius: var(--radius-small);
   background: transparent;
   color: var(--color-text);
@@ -381,8 +410,40 @@ select {
   font-family: var(--font-mono);
   font-size: var(--text-small);
   line-height: var(--leading-small);
-  text-transform: uppercase;
+  /* A unit is never transformed: SI symbols are case-sensitive. */
+  text-transform: none;
+  letter-spacing: normal;
   color: var(--color-text-muted);
+}
+
+/* A 1 to 5 scale is answered with one choice per value (7.6). */
+.field__choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.field__choice {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--tap-min);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-small);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: var(--text-body);
+  letter-spacing: normal;
+  text-transform: none;
+  cursor: pointer;
+}
+
+/* The chosen number is marked by the radio itself and by a second border, not
+   by colour alone. */
+.field__choice:has(input:checked) {
+  border-color: var(--color-accent);
+  box-shadow: inset 0 0 0 1px var(--color-accent);
 }
 
 .field__error {
@@ -513,7 +574,9 @@ select {
   font-family: var(--font-mono);
   font-size: var(--text-small);
   line-height: var(--leading-small);
-  text-transform: uppercase;
+  /* A unit is never transformed: SI symbols are case-sensitive. */
+  text-transform: none;
+  letter-spacing: normal;
   color: var(--color-text-muted);
 }
 
@@ -585,7 +648,7 @@ select {
   gap: var(--space-1);
   min-height: var(--tap-min);
   padding: 0 var(--space-3);
-  border: var(--border-subtle);
+  border: 1px solid var(--color-border-control);
   border-radius: var(--radius-small);
   background: transparent;
   color: var(--color-text);

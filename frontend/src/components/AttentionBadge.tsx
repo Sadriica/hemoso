@@ -11,13 +11,16 @@ export default function AttentionBadge({
   if (attention.kind === 'no_data') {
     return <Badge kind="no_data" text={strings.badge.noData} />
   }
+  if (attention.kind === 'no_rules') {
+    return <Badge kind="no_rules" text={strings.badge.noRules} />
+  }
   if (attention.kind === 'in_range') {
     return <Badge kind="in_range" text={strings.badge.inRange} />
   }
   return <Badge kind="attention" text={attention.level} />
 }
 
-type BadgeKind = 'in_range' | 'attention' | 'no_data'
+type BadgeKind = 'in_range' | 'attention' | 'no_rules' | 'no_data'
 
 function Badge({ kind, text }: { kind: BadgeKind; text: string }) {
   return (
@@ -49,6 +52,27 @@ function BadgeIcon({ kind }: { kind: BadgeKind }) {
           strokeWidth="2.5"
           strokeLinecap="round"
           strokeLinejoin="round"
+        />
+      </>
+    )
+  }
+  if (kind === 'no_rules') {
+    return (
+      <>
+        <circle
+          cx="12"
+          cy="12"
+          r="9.5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+        />
+        <path
+          d="M8.5 12h7"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
         />
       </>
     )

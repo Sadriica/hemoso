@@ -46,7 +46,11 @@ describe('attentionFor', () => {
     if (result.kind === 'attention') expect(result.level).toBe('low')
   })
 
-  it('is in range when there are no rules', () => {
-    expect(attentionFor(50, [])).toEqual({ kind: 'in_range' })
+  it('says there are no rules when the indicator has none, never in range', () => {
+    expect(attentionFor(50, [])).toEqual({ kind: 'no_rules' })
+  })
+
+  it('is in range only when a rule exists and none matched', () => {
+    expect(attentionFor(50, [aboveRule, belowRule])).toEqual({ kind: 'in_range' })
   })
 })
