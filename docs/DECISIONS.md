@@ -70,4 +70,14 @@ planning, wording, and code. Not the base idea. Kept in `team/eng1/notes/si-use-
 ## Solution decisions (from Saturday 9:00)
 | Decision | What | Why | Serves |
 | --- | --- | --- | --- |
-| Open | The solution, its architecture and where it runs | Being decided by the team in T-06 (draft above) | |
+| Use | The app works with a network connection: React frontend on Vercel under the team's domain, Supabase for stored data, FastAPI backend (Wambi, Sat 14 12:45) | A public link with no login (REQ-32) and a history that survives a reload (REQ-27); the team already has the domain | REQ-27, REQ-32 |
+| Open | Where the FastAPI backend runs; Railway is the candidate | Vercel serves the frontend; the backend needs its own host | REQ-27 |
+| Open | REQ-13 and REQ-28 (working with delayed or no contact with Earth) now that the app needs a network: entries kept in the browser and sent later, or left out on purpose | `docs/STACK.md` rule 5 asked for offline-friendly; the network decision changes it | REQ-13, REQ-28 |
+| Use | Only synthetic data in Supabase and in every public deployment | The deployed app and its database are public infrastructure; no real personal data anywhere | REQ-14, REQ-29 |
+| Use | fastapi 0.162.7, MIT | The web framework for the entries and history routes | REQ-27 |
+| Use | pydantic 2.14.3, MIT | The `Entry` model and its validation | REQ-27 |
+| Use | httpx 0.28.1, BSD-3-Clause | The HTTP client the Supabase storage talks through | REQ-27 |
+| Use | uvicorn 0.54.0, BSD-3-Clause | The server that runs the FastAPI app | REQ-27 |
+| Use | pytest 9.2.0, MIT | The backend tests | REQ-27 |
+| Use | ruff 0.17.5, MIT | The backend lint | REQ-27 |
+| Use | No Supabase client library: the backend calls the Supabase REST API with httpx | One dependency less; its licence row is httpx's | REQ-27 |
