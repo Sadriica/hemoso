@@ -77,7 +77,7 @@ SYSTEMS = {
     "radiation",
 }
 DEMO_RANGES_HEADER = ["indicator_id", "min", "max", "source", "generation_note"]
-DEMO_DATA_HEADER = ["person_id", "indicator_id", "value", "unit", "mission_day", "time"]
+DEMO_DATA_HEADER = ["person_id", "indicator_id", "value", "unit", "mission_day", "time", "context"]
 ATTENTION_HEADER = ["indicator_id", "side", "threshold", "attention_level", "notify", "source"]
 
 # Who acts on an attention row (REQ-05), from least to most severe. When several
@@ -409,6 +409,9 @@ def check_demo_data(rep: Reporter, root: Path, state: dict) -> None:
         clock = cells["time"].strip()
         if clock and not TIME_RE.match(clock):
             rep.error(f"{rel}:{line_no} time must be 24-hour HH:MM, got '{clock}'")
+        ctx = cells["context"].strip()
+        if ctx and ctx not in ("rest", "after_exercise", "on_waking", "before_sleep"):
+            rep.error(f"{rel}:{line_no} context must be rest, after_exercise, on_waking or before_sleep, got '{ctx}'")
         if value and is_number(value) and iid and ranges is not None:
             if iid not in ranges:
                 rep.error(f"{rel}:{line_no} no range in demo_ranges.csv for indicator '{iid}'")
