@@ -5,13 +5,14 @@ columns are copied from `docs/requirements.md` (Eng 1 keeps them); the last
 four are added here. Wambi moves the requirement cards; this file is the
 evidence for each move.
 
-Updated Sat 14 Nov 16:35 on `eng2` at ee11cee.
+Updated Sat 14 Nov 17:00 on `eng2` at 3329dfd plus uncommitted H iteration 2
+(274 tests, lint, `tsc -b` and build pass).
 
 How "Dev" is set: the share of the "Done when" line that can be seen in the
 code now. Work on `eng2` counts; a requirement is ready to close only when it
 is on `main` and at the public link.
 
-Summary: 8 requirements, 0 ready to close, average 49 %. REQ-02 is complete on
+Summary: 8 requirements, 0 ready to close, average 51 %. REQ-02 is complete on
 `eng2` and closes with the 17:00 merge.
 
 | ID | Requirement | Class | Priority | Owner (GitHub) | Block | Done when | Dev | Seen now | Missing | Cards |
@@ -20,10 +21,10 @@ Summary: 8 requirements, 0 ready to close, average 49 %. REQ-02 is complete on
 | REQ-02 | Gather health indicators from user input: keyboard and clicks; camera or images are optional | challenge | P0 | Juli (@julimejia) | B2 Sat 13:30-17 | Every chosen indicator can be entered without special hardware; units shown at entry | 95 % | Entry screen: number field with the unit beside it, 1-to-5 radios for the two scales, 24-hour time, saved entry shows on Home (6005d58, 45539ea, 152965c) | Merge to `main` | #13, T-42 |
 | REQ-12 | History view: each indicator against the person's own earlier values | context | P1 | Juli (@julimejia) | B3 Sat 17-1 | Each indicator has a history view comparing with that astronaut's own earlier values, reading the stored history (REQ-27) | 0 % | Backend history function on `main` (REQ-27) | History screen and chart with a text alternative | #23, T-45, T-46 |
 | REQ-15 | Readable and usable without colour alone or a mouse | optional | P1 | Juli (@julimejia) | B3 Sat 17-1 | Every state has text or an icon besides colour; the demo path works by keyboard | 60 % | Badge with icon and text; control borders 3:1; 38 contrast checks pass; one Tab from the Entry tab reaches the first field | Keyboard demo path over Home and Entry with axe on every screen | #26, T-49 |
-| REQ-28 | Interface works offline and shows what is waiting to be sent | context | P1 | Juli (@julimejia) | B3 Sat 17-1 | The app opens and works with the network off after the first load; pending items and the last sync time are visible | 60 % | Browser outbox (70cb8b6); sync client and status: waiting count, last sent, online or offline, "No server set up for this demo" (ee11cee) | Status row layout (iteration 2 running); offline load after the first visit; warning M1 | #44, T-43, T-44, T-48 |
+| REQ-28 | Interface works offline and shows what is waiting to be sent | context | P1 | Juli (@julimejia) | B3 Sat 17-1 | The app opens and works with the network off after the first load; pending items and the last sync time are visible | 65 % | Browser outbox (70cb8b6); sync client and status: waiting count, last sent, online or offline chip, "No server set up for this demo", no "Send now" without a server (ee11cee; layout fix uncommitted at 17:00) | Offline load after the first visit; warning M1; wording: "Nothing waiting to be sent" and "Not sent yet" repeat each other (T-51) | #44, T-43, T-44, T-48 |
 | REQ-30 | The app interface is in English | delivery | P0 | Juli (@julimejia) | B4 Sun 9-12 | Every screen, label and message of the app in English | 70 % | Every string in `src/strings.ts` is English | Wording pass; raw person id `demo_astronaut_1` on screen | #46, T-51 |
 | REQ-31 | Demo video recorded with English subtitles and a public link | delivery | P0 | Juli (@julimejia) | B4 Sun 9-12 | Video of 30 s or less recorded from the app, English subtitles burned in, hosted outside Space Apps, link opens with no password, permission or registration | 0 % | — | Recording, subtitles, public link; hide "Content problems" first | #47, T-52, T-16 |
-| REQ-32 | Running app published at a public link | delivery | P0 | Juli (@julimejia) | B4 Sun 9-12 | The app opens at a public link in a private window with no login, on desktop and phone | 40 % | https://hemoso.vercel.app opens with no login | Serves the 12:00 build until `eng2` is on `main`; no sideways scroll at 320 px (sync row overflows today, fix running) | #48, T-50 |
+| REQ-32 | Running app published at a public link | delivery | P0 | Juli (@julimejia) | B4 Sun 9-12 | The app opens at a public link in a private window with no login, on desktop and phone | 45 % | https://hemoso.vercel.app opens with no login; no sideways scroll at 320 px and 375 px (checked 17:00, uncommitted fix) | Serves the 12:00 build until `eng2` is on `main`; check on a real phone (T-50) | #48, T-50 |
 
 ## Proposed, waiting for Wambi
 Not counted in the summary until Wambi gives it a number in
@@ -31,7 +32,7 @@ Not counted in the summary until Wambi gives it a number in
 
 | ID | Requirement | Class | Priority | Owner (GitHub) | Block | Done when | Dev | Seen now | Missing | Cards |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| REQ-36 (proposed) | Sign in with the face, on the device only | optional | P2 | Juli (@julimejia) | B3 Sat 17-1 | A person can register their face once and then sign in by looking at the camera; matching runs in the browser with bundled models; no image or face data leaves the device; the person picker still works without a camera | 0 % | Proposal and cards written (16:45), not committed | Wambi's number and a `docs/DECISIONS.md` row; the REQ-14 exception below; T-58 after the H iterations | T-58, T-59 |
+| REQ-36 (proposed) | Sign in with the face, on the device only | optional | P2 | Juli (@julimejia) | B3 Sat 17-1 | A person can register their face once and then sign in by looking at the camera; matching runs in the browser with bundled models; no image or face data leaves the device; the person picker still works without a camera | 0 % | Proposal with a "Blocker: REQ-14" section and cards T-58, T-59 committed (3329dfd); T-58 depends on the REQ-14 exception | Wambi's number; a `docs/DECISIONS.md` row choosing Use (exception, REQ-14 done-when updated) or Rejected (stays out of the product) | T-58, T-59 |
 
 Points to settle before T-58 starts:
 | Point | Why it matters | Who decides |
@@ -65,5 +66,7 @@ after the variable is set and the app is deployed again.
 ## Change log
 | Time | Change |
 | --- | --- |
+| 17:00 | H iteration 2 checked, uncommitted: 274 tests; sync row separated with an online chip, no sideways scroll at 320 px; REQ-28 65 %, REQ-32 45 %, average 51 % |
+| 16:55 | REQ-36 proposal committed in 3329dfd; T-58 waits on Wambi's REQ-14 decision |
 | 16:50 | Added REQ-36 (proposed): sign in with the face, with the points to settle; 3a1a6e5 committed this file |
 | 16:35 | File created from `frontend/sdd/progress.md`, in the column format of `docs/requirements.md` |
