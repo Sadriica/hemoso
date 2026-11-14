@@ -98,12 +98,16 @@ describe('SyncStatus', () => {
     expect(screen.queryByText('Nothing waiting to be sent')).toBeInTheDocument()
   })
 
-  it('disables Send now and gives the reason when no server is set up', () => {
+  it('offers no Send button and says why when no server is set up', () => {
     renderStatus()
-    const send = screen.getByRole('button', { name: 'Send now' })
-    expect(send).toBeDisabled()
-    expect(send).toHaveAccessibleDescription('No server set up for this demo')
     expect(screen.getByText('No server set up for this demo')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Send now' })).toBeNull()
+  })
+
+  it('offers Send now when a server is set up', () => {
+    renderStatus(new HttpSync('https://api.test', fakeFetch().fetchFn))
+    expect(screen.getByRole('button', { name: 'Send now' })).toBeEnabled()
+    expect(screen.queryByText('No server set up for this demo')).toBeNull()
   })
 
   it('sends what was waiting when the status appears', async () => {

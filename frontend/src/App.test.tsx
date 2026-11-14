@@ -59,9 +59,9 @@ describe('App', () => {
     render(<App />)
     expect(screen.getByText('Nothing waiting to be sent')).toBeInTheDocument()
     expect(screen.getByText('Not sent yet')).toBeInTheDocument()
-    const send = screen.getByRole('button', { name: 'Send now' })
-    expect(send).toBeDisabled()
-    expect(send).toHaveAccessibleDescription('No server set up for this demo')
+    expect(screen.getByText('Online')).toBeInTheDocument()
+    expect(screen.getByText('No server set up for this demo')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Send now' })).toBeNull()
   })
 
   it('warns when the browser does not save the entries on this device', () => {
