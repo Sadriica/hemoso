@@ -1,6 +1,6 @@
 # Content formats
 
-**Draft for the team to confirm** · Sat 14 Nov 12:31
+**Draft for the team to confirm** · Sat 14 Nov 12:31 · attention `notify` column added 15:15 (Bio 2)
 
 The agreement between biologists and engineers: which files the solution reads,
 their exact format, and who owns each one. Built from the team's solution
@@ -139,29 +139,39 @@ Valid when: `indicator_id` exists in `data/indicators.csv`; `min` is less than
 
 ### `config/rules/attention.csv`
 
-Purpose: when a result needs attention, per indicator (REQ-05). A range is two
-rows — one `below` bound and one `above` bound.
+Purpose: when a result needs attention, per indicator, and who acts (REQ-05).
+A range is two rows: one `below` bound and one `above` bound. Several rows on
+the same side give steps (for example a crew step and a stricter CMO step).
 
-Columns in order: `indicator_id`, `side`, `threshold`,
-`attention_level`, `source`.
+Columns in order: `indicator_id`, `side`, `threshold`, `attention_level`,
+`notify`, `source`.
 
 - `indicator_id`: an id from `data/indicators.csv`.
-- `side`: `below` or `above` — which side of `threshold` triggers this row.
+- `side`: `below` or `above`: which side of `threshold` triggers this row.
 - `threshold`: a number; its unit is the indicator's unit.
 - `attention_level`: the name of this state, filled by Bio 2; the same names
   are the sub-headings in `content/<indicator_id>.md`.
+- `notify`: who acts: `crew`, `cmo` or `flight_surgeon`, from least to most severe.
 - `source`: a link or `Assumption`.
+
+**When several rows match a value, the row with the most severe `notify` wins.**
+For that to be safe, the steps must escalate in one direction: on `below`, a
+lower threshold notifies the same or someone more severe; on `above`, a higher
+threshold does. Example: with `below 37.5 crew` and `below 36.0 cmo`, a value of
+35 matches both and `cmo` wins.
 
 Example:
 
 ```csv
-indicator_id,side,threshold,attention_level,source
-example_indicator,above,100,example_level,Assumption
+indicator_id,side,threshold,attention_level,notify,source
+example_indicator,above,100,example_level,crew,Assumption
 ```
 
 Valid when: `indicator_id` exists in `data/indicators.csv`; `side` is
-`below` or `above`; `threshold` is a number; `source` is a link or `Assumption`.
-The threshold here is a placeholder — the real value and its source are filled
+`below` or `above`; `threshold` is a number; `notify` is `crew`, `cmo` or
+`flight_surgeon`; the steps of each indicator and side escalate as above; no two
+rows share indicator, side and threshold; `source` is a link or `Assumption`.
+The threshold here is a placeholder: the real value and its source are filled
 by Bio 2 (REQ-05).
 
 ### `config/rules/conditions.csv`
@@ -307,9 +317,11 @@ blocked when it reports any of these failures:
 - **Malformed row**: wrong number of columns, an empty required cell, a
   duplicate id, a `unit` that does not match the section 2 table for its `id`,
   a non-numeric `value`, `threshold`, `min` or `max`, a `side` that is not
-  `below` or `above`, a `direction` that is not `higher`, `lower` or `both`, a
-  `time` that is not 24-hour `HH:MM`, or a `mission_day` that is not a positive
-  integer.
+  `below` or `above`, a `notify` that is not `crew`, `cmo` or `flight_surgeon`,
+  a `direction` that is not `higher`, `lower` or `both`, a `time` that is not
+  24-hour `HH:MM`, or a `mission_day` that is not a positive integer.
+- **Attention steps out of order**: on one indicator and side, a more extreme
+  threshold notifies someone less severe, or two rows share the same threshold.
 
 ## What is missing, by person
 
@@ -328,6 +340,8 @@ then fills their own files in `config/`.
 **Bio 2** (`config/rules/`)
 - The attention levels (REQ-05): how many and their names; Bio 1 uses the same
   names as headings.
+- Who acts at each step (`notify`: `crew`, `cmo` or `flight_surgeon`) and the
+  thresholds of each step, escalating as section 3 says.
 - The possible conditions (REQ-06): `id`, name and the indicators each rests on,
   with a source.
 - Then `rules/attention.csv` and `rules/conditions.csv`, once Phys has the
