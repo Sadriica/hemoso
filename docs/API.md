@@ -38,7 +38,7 @@ Request body: one `Entry`. Every field is required.
 | --- | --- | --- |
 | `person_id` | string | lowercase `snake_case`: letters, digits and underscores, starts with a letter, no spaces |
 | `indicator_id` | string | same rule as `person_id` |
-| `value` | number | any number |
+| `value` | number | a finite number |
 | `unit` | string | the indicator's unit from `config/data/indicators.csv` (see below) |
 | `mission_day` | integer | greater than 0, "day N" |
 | `time` | string | `HH:MM`, 24-hour clock |

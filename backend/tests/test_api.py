@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 ENTRY = {
     "person_id": "demo_astronaut_1",
     "indicator_id": "example_indicator",
@@ -45,6 +47,12 @@ def test_ordering(client):
     )
     assert [row["mission_day"] for row in history.json()] == [1, 2]
     assert [row["time"] for row in history.json()] == ["20:00", "08:00"]
+
+
+@pytest.mark.parametrize("bad_value", ["NaN", "Infinity", "-Infinity"])
+def test_non_finite_value_rejected(client, bad_value):
+    response = client.post("/entries", json={**ENTRY, "value": bad_value})
+    assert response.status_code == 422
 
 
 def test_unit_mismatch(client, tmp_path, monkeypatch):
