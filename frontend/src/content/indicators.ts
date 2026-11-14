@@ -1,5 +1,5 @@
 import type { Direction, Indicator } from '../domain/types'
-import { parseSource } from '../domain/source'
+import { parseSources } from '../domain/source'
 import { parseCsvFile } from './csv'
 
 // Validates and reads one indicators.csv. Problems are appended in place so a
@@ -22,8 +22,8 @@ export function parseIndicators(
       continue
     }
     seen.add(id)
-    const source = parseSource(row.source ?? '')
-    if (source === null) {
+    const sources = parseSources(row.source ?? '')
+    if (sources === null) {
       problems.push(`Indicator '${id}' has no source or Assumption.`)
     }
     indicators.push({
@@ -33,7 +33,7 @@ export function parseIndicators(
       direction: parseDirection(row.direction ?? '', id, problems),
       measuredOnBoard: row.measured_on_board?.trim() ?? '',
       hazards: (row.hazards ?? '').split(/\s+/).filter(Boolean),
-      sources: source === null ? [] : [source],
+      sources: sources ?? [],
     })
   }
   return indicators

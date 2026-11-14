@@ -111,6 +111,11 @@ function IndicatorRow({
       <p className="indicator-card__next-step">
         {nextStepFor(attention, content)}
       </p>
+      {attention.kind === 'attention' && (
+        <p className="indicator-card__who-acts">
+          {strings.whoActs[attention.rule.notify]}
+        </p>
+      )}
       <div className="indicator-card__actions">
         <Disclosure label={strings.sources.label}>
           {sources.length === 0 ? (

@@ -25,6 +25,7 @@ const rule: AttentionRule = {
   side: 'above',
   threshold: 100,
   attentionLevel: 'example_level',
+  notify: 'crew',
   sources: ['Assumption'],
 }
 
@@ -90,6 +91,70 @@ describe('Home', () => {
     renderHome(attentionData)
     expect(screen.getByText('example_level')).toBeInTheDocument()
     expect(screen.getByText('Example next step. Assumption.')).toBeInTheDocument()
+  })
+
+  it('says who acts when a level matches, from the notify column', () => {
+    const crossing: LoadedContent = {
+      ...data,
+      demoEntries: [entry(10, 101)],
+    }
+    renderHome(crossing)
+    expect(screen.getByText('Tell the crew.')).toBeInTheDocument()
+  })
+
+  it('names the CMO when the matching rule notifies the CMO', () => {
+    renderHome({
+      ...data,
+      rules: [{ ...rule, notify: 'cmo' }],
+      demoEntries: [entry(10, 101)],
+    })
+    expect(screen.getByText('Tell the CMO.')).toBeInTheDocument()
+    expect(screen.queryByText('Tell the crew.')).toBeNull()
+  })
+
+  it('names the flight surgeon when the matching rule notifies them', () => {
+    renderHome({
+      ...data,
+      rules: [{ ...rule, notify: 'flight_surgeon' }],
+      demoEntries: [entry(10, 101)],
+    })
+    expect(screen.getByText('Tell the flight surgeon.')).toBeInTheDocument()
+  })
+
+  it('does not say who acts when no level matches', () => {
+    renderHome(data)
+    expect(screen.queryByText(/^Tell the /)).toBeNull()
+  })
+
+  it('shows the most severe step of a stepped indicator', () => {
+    // The worked example of FORMATS.md section 3, value 35 crossing both rows.
+    const stepped: LoadedContent = {
+      ...data,
+      rules: [
+        { ...rule, side: 'below', threshold: 37.5, attentionLevel: 'watch' },
+        {
+          ...rule,
+          side: 'below',
+          threshold: 36,
+          attentionLevel: 'needs_review',
+          notify: 'cmo',
+        },
+      ],
+      contents: {
+        example_indicator: {
+          ...content,
+          statusAndNextSteps: {
+            watch: 'Rest and measure again.',
+            needs_review: 'Contact the CMO.',
+          },
+        },
+      },
+      demoEntries: [entry(10, 35)],
+    }
+    renderHome(stepped)
+    expect(screen.getByText('needs_review')).toBeInTheDocument()
+    expect(screen.getByText('Contact the CMO.')).toBeInTheDocument()
+    expect(screen.getByText('Tell the CMO.')).toBeInTheDocument()
   })
 
   it('opens the sources disclosure by keyboard and shows links and Assumption', async () => {

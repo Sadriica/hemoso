@@ -6,6 +6,10 @@ export type Direction = 'higher' | 'lower' | 'both'
 
 export type Source = { title: string; url: string } | 'Assumption'
 
+// Who acts on a crossed attention rule, from least to most severe
+// (FORMATS.md section 3, `notify`).
+export type Notify = 'crew' | 'cmo' | 'flight_surgeon'
+
 export interface Indicator {
   // config/data/indicators.csv
   id: string
@@ -23,6 +27,7 @@ export interface AttentionRule {
   side: 'below' | 'above'
   threshold: number
   attentionLevel: string
+  notify: Notify
   sources: Source[]
 }
 

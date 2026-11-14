@@ -87,4 +87,25 @@ describe('parseIndicators', () => {
       true,
     )
   })
+
+  it('reads every link of a source cell: the real hr_bpm row', () => {
+    const problems: string[] = []
+    const indicators = parseIndicators(
+      'config/data/indicators.csv',
+      header +
+        'hr_bpm,Heart rate,bpm,both,Bio-Monitor smart shirt or ECG,gravity_fields,https://www.asc-csa.gc.ca/eng/sciences/bio-monitor.asp https://www.nasa.gov/hrp/hazard-gravity-fields/\n',
+      problems,
+    )
+    expect(problems).toEqual([])
+    expect(indicators[0].sources).toEqual([
+      {
+        title: 'https://www.asc-csa.gc.ca/eng/sciences/bio-monitor.asp',
+        url: 'https://www.asc-csa.gc.ca/eng/sciences/bio-monitor.asp',
+      },
+      {
+        title: 'https://www.nasa.gov/hrp/hazard-gravity-fields/',
+        url: 'https://www.nasa.gov/hrp/hazard-gravity-fields/',
+      },
+    ])
+  })
 })

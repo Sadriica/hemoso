@@ -62,8 +62,8 @@ describe('loadContent', () => {
     const files = {
       'config/data/indicators.csv': indicatorsCsv,
       'config/rules/attention.csv':
-        'indicator_id,side,threshold,attention_level,source\n' +
-        'example_indicator,above,100,example_level,Assumption\n',
+        'indicator_id,side,threshold,attention_level,notify,source\n' +
+        'example_indicator,above,100,example_level,crew,Assumption\n',
       'config/content/example_indicator.md': contentFile(
         'Example indicator',
         '### example_level\nExample text. Assumption.\n' +
@@ -84,8 +84,8 @@ describe('loadContent', () => {
     const files = {
       'config/data/indicators.csv': indicatorsCsv,
       'config/rules/attention.csv':
-        'indicator_id,side,threshold,attention_level,source\n' +
-        'example_indicator,above,100,missing_level,Assumption\n',
+        'indicator_id,side,threshold,attention_level,notify,source\n' +
+        'example_indicator,above,100,missing_level,crew,Assumption\n',
       'config/content/example_indicator.md': contentFile(
         'Example indicator',
         '### example_level\nExample text. Assumption.\n',
@@ -105,8 +105,8 @@ describe('loadContent', () => {
         'id,name,unit,direction,measured_on_board,hazards,source\n' +
         'sample_indicator,Sample indicator,sample_unit,higher,sample measurement method,isolation_and_confinement,Assumption\n',
       'config/rules/attention.csv':
-        'indicator_id,side,threshold,attention_level,source\n' +
-        'sample_indicator,above,100,sample_level,Assumption\n',
+        'indicator_id,side,threshold,attention_level,notify,source\n' +
+        'sample_indicator,above,100,sample_level,crew,Assumption\n',
       'config/data/demo_data.csv':
         'person_id,indicator_id,value,unit,mission_day,time\n' +
         'demo_astronaut_1,sample_indicator,1,sample_unit,1,13:30\n',
@@ -124,5 +124,37 @@ describe('loadContent', () => {
     expect(result.rules).toHaveLength(1)
     expect(result.demoEntries).toHaveLength(1)
     expect(result.contents.sample_indicator).toBeDefined()
+  })
+
+  it('drops the placeholder attention rule when indicators.csv is real', () => {
+    const files = {
+      'config/data/indicators.csv':
+        'id,name,unit,direction,measured_on_board,hazards,source\n' +
+        'sample_indicator,Sample indicator,sample_unit,higher,sample measurement method,isolation_and_confinement,Assumption\n',
+    }
+    const result = loadContent(files)
+    expect(result.rules).toEqual([])
+    expect(
+      result.problems.some((problem) =>
+        problem.includes(
+          "Unknown indicator id 'example_indicator' in attention rules.",
+        ),
+      ),
+    ).toBe(false)
+  })
+
+  it('still reports an unknown indicator in a real attention file', () => {
+    const files = {
+      'config/data/indicators.csv': indicatorsCsv,
+      'config/rules/attention.csv':
+        'indicator_id,side,threshold,attention_level,notify,source\n' +
+        'other_indicator,above,100,example_level,crew,Assumption\n',
+    }
+    const result = loadContent(files)
+    expect(
+      result.problems.some((problem) =>
+        problem.includes("Unknown indicator id 'other_indicator'"),
+      ),
+    ).toBe(true)
   })
 })

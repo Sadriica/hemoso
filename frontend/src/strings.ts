@@ -35,6 +35,8 @@ export const strings = {
     time: 'Time',
     save: 'Save entry',
     saved: 'Saved. Waiting to be sent.',
+    // Without a server nothing is sent, so the message promises nothing.
+    savedOnDevice: 'Saved on this device.',
     noIndicators: 'No indicators are set up yet.',
     errors: {
       valueRequired: 'Enter a value.',
@@ -57,6 +59,13 @@ export const strings = {
     noData: 'No data yet.',
     missing: 'No guidance for this state yet.',
   },
+  // Who acts on a crossed attention rule, in the words of the glossary
+  // (STANDARDS.md section 5). Least to most severe (FORMATS.md section 3).
+  whoActs: {
+    crew: 'Tell the crew.',
+    cmo: 'Tell the CMO.',
+    flight_surgeon: 'Tell the flight surgeon.',
+  },
   sources: {
     label: 'Sources',
     assumption: 'Assumption',
@@ -64,6 +73,24 @@ export const strings = {
   },
   problems: {
     label: 'Content problems (for the team)',
+  },
+  // The header line about sending the outbox (REQ-28). Every state is a
+  // sentence, never a colour or an icon on its own.
+  sync: {
+    waiting: (count: number): string => `${count} waiting to be sent`,
+    nothingWaiting: 'Nothing waiting to be sent',
+    lastSent: (day: number, time: string): string =>
+      `Last sent: Day ${day} ${time}`,
+    notSentYet: 'Not sent yet',
+    online: 'Online',
+    offline: 'Offline',
+    sendNow: 'Send now',
+    noServer: 'No server set up for this demo',
+    notAccepted: (count: number): string =>
+      `${count} not accepted by the server`,
+    // The browser blocked storage, or replaced data it could not read.
+    notSaved: 'Entries are not saved on this device.',
+    reset: 'Saved entries could not be read and were replaced by the demo data.',
   },
   timeLabel: (day: number, time: string): string => `Day ${day} ${time}`,
   // The unit that follows a value on a card: "58 bpm". The 1 to 5 scales hold
