@@ -12,8 +12,11 @@ slides at most). How the solution is published is recorded in
   domain (the architecture is in `docs/DECISIONS.md`).
 - The backend runs on its own host; Railway is the candidate, not yet decided
   (`docs/DECISIONS.md`). The host builds `backend/Dockerfile` from the
-  repository root (`docker build -f backend/Dockerfile -t hemoso-backend .`);
-  the image copies `backend/` and `config/` and starts uvicorn on the port in
+  repository root with
+  `DOCKER_BUILDKIT=1 docker build -f backend/Dockerfile -t hemoso-backend .`.
+  BuildKit reads `backend/Dockerfile.dockerignore`, which the legacy builder
+  ignores and would otherwise copy the host `.venv` and secrets into the image.
+  The image copies `backend/` and `config/` and starts uvicorn on the port in
   `PORT`. Set `STORAGE=supabase` there: the container file system is not kept.
   It needs the variables below.
 - Supabase stores the data. Create the `entries` table once per project by
@@ -31,7 +34,9 @@ slides at most). How the solution is published is recorded in
   | `ALLOWED_ORIGINS` | Comma-separated origins the API accepts; it must list the Vercel URL |
 
   Values live only in host settings and local `.env` files, never in the
-  repository (`docs/PRIVACY.md`).
+  repository (`docs/PRIVACY.md`). Run the backend locally from `backend/` with
+  `uv run --env-file .env uvicorn app.main:app`; `--env-file` loads the local
+  `.env`, which uvicorn does not read on its own.
 - Anything published is public: only synthetic data, never real personal data
   (`docs/PRIVACY.md`).
 - Check both links in a private window, not signed in, before the internal freeze.
