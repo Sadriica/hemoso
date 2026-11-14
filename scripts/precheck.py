@@ -110,8 +110,17 @@ def main() -> int:
     files = {line[3:].split(" -> ")[-1].strip('"') for line in changed if line.strip()}
     upstream = run("git", "rev-parse", "--abbrev-ref", "@{u}")
     base = upstream or run("git", "merge-base", "HEAD", "origin/main") or run("git", "merge-base", "HEAD", "main") or ""
+    origin_main = run("git", "rev-parse", "--verify", "origin/main") or ""
+    # The person's own commits: <base>..HEAD minus everything reachable from
+    # origin/main. Merge commits are never the person's own work either.
+    own_range = [f"{base}..HEAD"] if base else ["-5"]
+    if origin_main:
+        own_range.append("^origin/main")
     if base:
-        files |= set(run("git", "diff", "--name-only", f"{base}..HEAD").splitlines())
+        if origin_main:
+            files |= {f for f in run("git", "log", "--no-merges", "--format=", "--name-only", *own_range).splitlines() if f}
+        else:
+            files |= set(run("git", "diff", "--name-only", f"{base}..HEAD").splitlines())
     foreign = sorted(f for f in files if f and not owns(person, f))
     if foreign:
         problems.append("files outside your paths:\n        " + "\n        ".join(foreign)
@@ -123,8 +132,11 @@ def main() -> int:
         if rule:
             problems.append(f"secret in '{f}': {rule}")
 
-    log_range = f"{base}..HEAD" if base else "-5"
-    messages = run("git", "log", "--format=%H%x00%B%x01", log_range).split("\x01")
+    log_args = ["--format=%H%x00%B%x01"]
+    if origin_main:
+        log_args.append("--no-merges")
+    log_args += own_range
+    messages = run("git", "log", *log_args).split("\x01")
     for raw in messages:
         if "\x00" not in raw:
             continue

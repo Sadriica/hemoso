@@ -8,6 +8,10 @@ Every secret value is built at runtime from pieces so this file never matches
 the patterns precheck scans for.
 """
 
+import contextlib
+import io
+import os
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -46,6 +50,10 @@ def supabase_key() -> str:
 
 def service_role_key() -> str:
     return "SUPABASE_SERVICE_ROLE" + "_KEY="
+
+
+def forbidden_word() -> str:
+    return "A" + "I"
 
 
 class SecretRuleTests(unittest.TestCase):
@@ -123,6 +131,70 @@ class SecretRuleTests(unittest.TestCase):
     def test_clean_file_passes(self):
         path = self._write("README.md", "# HeMoSo\nPlain text, no secrets.\n")
         self.assertIsNone(precheck.secret_rule(path))
+
+
+class MainTests(unittest.TestCase):
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        self.addCleanup(os.chdir, os.getcwd())
+        self.repo = Path(self._tmp.name) / "repo"
+        self.repo.mkdir()
+        self.git("init", "-q", "-b", "main")
+        self.git("config", "user.email", "t@example.com")
+        self.git("config", "user.name", "t")
+
+    def git(self, *args: str) -> None:
+        p = subprocess.run(["git", "-C", str(self.repo)] + list(args), capture_output=True, text=True)
+        if p.returncode != 0:
+            self.fail(f"git {' '.join(args)}: {p.stderr.strip()}")
+
+    def write(self, rel: str, content: str) -> None:
+        path = self.repo / rel
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content, encoding="utf-8")
+
+    def run_main(self) -> tuple[int, str]:
+        os.chdir(str(self.repo))
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            code = precheck.main()
+        return code, buf.getvalue()
+
+    def seed_root_commit(self) -> None:
+        self.write("README.md", "root\n")
+        self.git("add", ".")
+        self.git("commit", "-qm", "init")
+
+    def test_merge_of_main_commits_does_not_block_own_push(self):
+        self.seed_root_commit()
+        self.git("branch", "origin/main")
+        self.git("checkout", "-qb", "bio1")
+        self.write("config/content/o.md", "own\n")
+        self.git("add", ".")
+        self.git("commit", "-qm", "feat(config): own file (#8)")
+        self.git("checkout", "-q", "main")
+        self.write("scripts/now.py", "foreign\n")
+        self.git("add", ".")
+        self.git("commit", "-qm", "chore(eng1): " + forbidden_word() + " log")
+        self.git("branch", "-f", "origin/main", "main")
+        self.git("checkout", "-q", "bio1")
+        self.git("merge", "--no-edit", "-q", "main")
+        code, out = self.run_main()
+        self.assertEqual(code, 0, out)
+        self.assertIn("OK to push", out)
+
+    def test_foreign_file_in_own_commit_fails(self):
+        self.seed_root_commit()
+        self.git("branch", "origin/main")
+        self.git("checkout", "-qb", "bio1")
+        self.write("scripts/now.py", "foreign\n")
+        self.git("add", ".")
+        self.git("commit", "-qm", "feat(scripts): own file (#8)")
+        code, out = self.run_main()
+        self.assertEqual(code, 1, out)
+        self.assertIn("files outside your paths", out)
+        self.assertIn("scripts/now.py", out)
 
 
 if __name__ == "__main__":
