@@ -309,6 +309,35 @@ any of these failures:
   `time` that is not 24-hour `HH:MM`, or a `mission_day` that is not a positive
   integer.
 
+## What is missing, by person
+
+The formats above are ready; the lists are not. Each person sends their list
+to Eng 1, who writes the ids into section 2 (`FORMATS.md` is his file), and
+then fills their own files in `config/`.
+
+**Phys** (`config/data/`)
+- The indicators (REQ-03): for each one, `id`, name, unit, `direction`
+  (`higher`, `lower` or `both`) and how it is measured on board, with a source.
+- A scale for any indicator with no SI unit (for example mood or how strong a
+  symptom is): its range and what each end means.
+- Then `data/indicators.csv`, `data/demo_ranges.csv` and `data/demo_data.csv`
+  (REQ-29).
+
+**Bio 2** (`config/rules/`)
+- The attention levels (REQ-05): how many and their names; Bio 1 uses the same
+  names as headings.
+- The possible conditions (REQ-06): `id`, name and the indicators each rests on,
+  with a source.
+- Then `rules/attention.csv` and `rules/conditions.csv`, once Phys has the
+  indicator ids.
+
+**Bio 1** (`config/content/`) starts each `content/<indicator_id>.md` once an
+indicator id exists, from the findings of Phys (question 3) and Bio 2
+(question 5).
+
+**The whole team** answers the open questions below; without them, body regions,
+symptoms, the camera and the probability method have no format yet.
+
 ## Open questions for the team
 
 Not decided in the solution paragraph. The team answers these before the files
