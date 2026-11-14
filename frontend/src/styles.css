@@ -806,3 +806,93 @@ legend {
     transition: none;
   }
 }
+
+/* History (REQ-12): the sentence is the short version of the numbers and the
+   table is the full one, so the table stays a real <table> with a header row.
+   On a phone it scrolls inside its own box instead of pushing the page
+   sideways (REQ-32). */
+.history__heading {
+  margin-bottom: var(--space-3);
+  font-family: var(--font-display);
+  font-size: var(--text-h1);
+  line-height: var(--leading-h1);
+  font-weight: 700;
+}
+
+.history__indicator {
+  max-width: 360px;
+  margin-bottom: var(--space-4);
+}
+
+.history__summary {
+  max-width: 70ch;
+  margin-bottom: var(--space-3);
+  font-size: var(--text-body-l);
+  line-height: var(--leading-body-l);
+}
+
+.history__table-wrap {
+  overflow-x: auto;
+  border: var(--border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.history__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.history__caption {
+  padding: var(--space-2) var(--space-3);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  text-align: left;
+  color: var(--color-text-muted);
+}
+
+.history__table th,
+.history__table td {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: var(--border-subtle);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.history__table th {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.history__table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.history__value {
+  font-variant-numeric: tabular-nums;
+}
+
+.history__unit {
+  color: var(--color-text-muted);
+}
+
+/* Phone: tighter cells and a status that wraps, so the four columns fit at
+   320 px without scrolling the table sideways (REQ-32). The number and its
+   unit stay on one line. */
+@media (max-width: 599px) {
+  .history__table th,
+  .history__table td {
+    padding: var(--space-1) var(--space-2);
+  }
+
+  .history__table tbody td:last-child {
+    white-space: normal;
+  }
+}

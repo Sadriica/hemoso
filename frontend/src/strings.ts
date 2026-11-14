@@ -22,6 +22,7 @@ export const strings = {
     label: 'Screens',
     home: 'Home',
     entry: 'Entry',
+    history: 'History',
   },
   entry: {
     heading: 'Entry',
@@ -45,6 +46,39 @@ export const strings = {
       missionDay: 'Enter a whole mission day, 1 or more.',
       time: 'Enter a time as HH:MM.',
     },
+  },
+  // The history of one indicator against the person's own earlier readings
+  // (REQ-12). The table is the full text of the numbers; the sentence above it
+  // is the short version.
+  history: {
+    heading: 'History',
+    indicator: 'Indicator',
+    tableCaption: (name: string): string => `Readings for ${name}`,
+    columns: {
+      day: 'Day',
+      time: 'Time',
+      value: 'Value',
+      status: 'Status',
+    },
+    noEntries: 'No entries for this indicator yet.',
+    notEnough: 'Not enough earlier entries to compare yet.',
+    summary: (parts: {
+      value: string
+      unit: string
+      day: number
+      time: string
+      median: string
+      count: number
+      difference: string
+    }): string =>
+      `Latest: ${parts.value} ${parts.unit} on Day ${parts.day} ${parts.time}. ` +
+      `Your earlier median: ${parts.median} ${parts.unit} (${entryCount(
+        parts.count,
+      )}). ` +
+      `Difference: ${parts.difference} ${parts.unit}.`,
+    // A difference always carries its sign: "+5" and "-5" read as a change,
+    // "0" as none.
+    signed: (value: number): string => (value > 0 ? `+${value}` : String(value)),
   },
   badge: {
     inRange: 'In range',
@@ -96,4 +130,9 @@ export const strings = {
   // The unit that follows a value on a card: "58 bpm". The 1 to 5 scales hold
   // their range in the unit, so they read "4 / 5" and not "4 1 to 5".
   cardUnit: (unit: string): string => (unit === SCALE_UNIT ? '/ 5' : unit),
+}
+
+// "(1 entry)" and "(9 entries)": the count inside the history sentence.
+function entryCount(count: number): string {
+  return `${count} ${count === 1 ? 'entry' : 'entries'}`
 }

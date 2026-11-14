@@ -40,6 +40,33 @@ describe('App', () => {
     ).toBeInTheDocument()
   })
 
+  it('keeps History after Entry', () => {
+    render(<App />)
+    expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual([
+      'Home',
+      'Entry',
+      'History',
+    ])
+  })
+
+  it('opens History by keyboard and shows the table with a comparison', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    screen.getByRole('tab', { name: 'Home' }).focus()
+    await user.keyboard('{ArrowRight}{ArrowRight}')
+    expect(
+      screen.getByRole('tab', { name: 'History', selected: true }),
+    ).toBeInTheDocument()
+    // The number of readings comes from config/, so the test asks for the shape
+    // of the sentence, not for a value.
+    expect(
+      screen.getByText(/Your earlier median|Not enough earlier entries/),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('columnheader', { name: 'Status' }),
+    ).toBeInTheDocument()
+  })
+
   // The waiting-for text depends on which config files exist, so Home tests
   // cover it with fixed data. Here only the note that is always on screen.
   it('shows the synthetic data notice', () => {

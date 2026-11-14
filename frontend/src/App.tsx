@@ -7,12 +7,14 @@ import Notice from './components/Notice'
 import SyncStatus from './components/SyncStatus'
 import SyntheticNotice from './components/SyntheticNotice'
 import Entry from './screens/Entry'
+import History from './screens/History'
 import Home from './screens/Home'
 import { strings } from './strings'
 
 const TABS = [
   { id: 'home', label: strings.tabs.home },
   { id: 'entry', label: strings.tabs.entry },
+  { id: 'history', label: strings.tabs.history },
 ] as const
 
 type TabId = (typeof TABS)[number]['id']
@@ -136,6 +138,9 @@ export default function App() {
                 (entry) => entry.personId === selectedPerson,
               )}
             />
+          )}
+          {activeTab === 'history' && (
+            <History store={store} personId={selectedPerson} data={data} />
           )}
         </div>
       </main>
