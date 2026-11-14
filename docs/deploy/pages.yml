@@ -1,3 +1,4 @@
+# Obsolete: the demo is published on Vercel (docs/DECISIONS.md, REQ-32); do not copy this file to .github/workflows/.
 # Copy to .github/workflows/pages.yml on Saturday (repository must be public).
 # Publishes frontend/dist to GitHub Pages on every push to main (public demo link).
 name: Deploy demo to GitHub Pages
