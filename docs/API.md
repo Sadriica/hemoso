@@ -238,6 +238,43 @@ Allowed methods are `GET` and `POST`; allowed headers are all (`*`). A preflight
 `OPTIONS` request returns `200` with `access-control-allow-origin` set to the
 allowed origin.
 
+## Rate limit
+
+The API has no login (`PRIVACY.md`), so every client address is capped at 120
+requests per 60 seconds (`backend/app/ratelimit.py`). The window slides: a
+request is accepted while that address made fewer than 120 requests in the last
+60 seconds.
+
+- `RATE_LIMIT_PER_MINUTE` sets the cap; unset or empty means 120 and `0` turns
+  the limit off. A value that is not a whole number, or is negative, is read as
+  120.
+- The address is the last value of `X-Forwarded-For` when the header is
+  present, else the socket address. The deployed API sits behind Railway's
+  proxy, so the socket address of every request is the proxy. The proxy appends
+  the address it saw to the end of that header; earlier values come from the
+  client and can be forged, so they are not used.
+- `GET /health`, `GET /docs` (and `/docs/oauth2-redirect`) and
+  `GET /openapi.json` are exempt: they are never counted and never refused, so
+  the health check and the schema stay reachable.
+- Over the cap the answer is `429`, with `Retry-After` holding the seconds
+  until the oldest request in the window leaves it, and this body:
+
+```json
+{"detail": "too many requests, try again in a minute"}
+```
+
+```js
+const response = await fetch(`${VITE_API_BASE_URL}/health`);
+if (response.status === 429) {
+  const wait = Number(response.headers.get("Retry-After")); // seconds
+  // wait before sending again; the entry stays in the outbox meanwhile (REQ-13)
+}
+```
+
+Every route counts, `POST /entries` included. The counter lives in the memory of
+the backend process: with more than one instance each counts its own requests,
+and a restart clears every window.
+
 ## Not in the API yet
 
 - No endpoint lists people.
