@@ -28,8 +28,8 @@ Checked against the official page on Sat 14 Nov at 10:00; changes are marked "(p
 - Useful indicators it gives as examples: blood pressure, heart rate, glucose,
   body temperature, sleep hours, mood. Examples, not a closed or mandatory list.
 - Guidance on treatments and health improvements. The page says the interface should present
-  "metrics and diagnosis" clearly (page); not diagnosing is our own safety choice, so we
-  present status and guidance, and the CMO and flight surgeon decide.
+  "metrics and diagnosis" clearly (page); the team shows possible conditions as probabilities,
+  never as a certainty, and the CMO and flight surgeon confirm (docs/DECISIONS.md).
 
 ## What the statement offers as considerations (optional, not obligations)
 Interactive human figure (each part clickable, showing its function and health status) ·

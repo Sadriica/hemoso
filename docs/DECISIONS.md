@@ -25,12 +25,31 @@ Decisions: **Use** · **Plan B** · **Rejected** · **Out of scope** · **Open**
 | Use | Initial commit without requirements; Eng 1 writes them after checking the official page (T-05) | The first commit holds only the plan and tooling |
 | Use | A separate development repository (hemoso-dev) for board, script, deploy and heavy tests only | Product work stays in this repository so its history shows who did what and when |
 | Use | git credentials through `gh auth setup-git` | HTTPS push with a password is refused by GitHub; this reuses the gh login |
+| Use | Possible conditions shown as probabilities, never as a certainty; the CMO or flight surgeon confirms | Team decision in T-06; replaces the earlier "never diagnose" rule |
+| Use | Face and eye analysis for signs of fatigue, stress, mental state and sleep | Team decision in T-06; runs on the device, no external AI services |
+| Use | Learning from each person's own records; thresholds set to astronaut ranges, researched or derived, each sourced or marked Assumption | Team decision in T-06 |
 | Rejected | Reusing material written before the event | The team builds from its base idea during the event; nothing written earlier is copied in |
 | Use | Challenge resources read two levels deep, plus four evidence reports and NASA-STD-3001 Vol 1 Rev C (`team/eng1/notes/challenge-resources.md`) | Question 4 (when a result needs attention) has almost no in-flight thresholds in NASA sources; it must be sourced elsewhere or marked Assumption |
 
-## Solution (T-06, decided by the team on Sat 14 Nov)
+## Solution (T-06) · DRAFT until the team fills every line below
 
-**What HeMoSo is, in one paragraph** (the team writes it, in its own words):
+**What HeMoSo is** (the team's words, Sat 14 Nov 12:07):
+
+HeMoSo is a health monitoring application for astronauts on a mission, meant
+for continuous use. Each astronaut records their health data and symptoms and can
+consult their own history and trends at any time. From those records, the app
+suggests what the astronaut may have, as probabilities and never as a certainty,
+and recommends actions based on the symptoms. A 3D body lets the astronaut select
+where it hurts and shows them, graphically, where the discomfort may be. The camera
+looks at the face and eyes for signs of fatigue, stress, mental state and sleep.
+The app learns from each person's own records, while its thresholds are set to
+astronaut ranges, researched or derived from other sources. HeMoSo builds on
+open-source code from existing projects: face recognition, anatomy, and earlier
+work in health and gym apps that already model how the body works and how its
+parts act together. What sets it apart is the amount of information it gathers,
+its forecasting and symptom-recognition models, thresholds specific to
+spaceflight, learning that is biased to the fact that the user is an astronaut,
+and a core of face and eye analysis.
 
 **Where the idea came from:** the team's base idea, from Wambi: a health monitoring
 tool for astronauts for this challenge that reuses open-source code from existing
@@ -51,4 +70,4 @@ planning, wording, and code. Not the base idea. Kept in `team/eng1/notes/si-use-
 ## Solution decisions (from Saturday 9:00)
 | Decision | What | Why | Serves |
 | --- | --- | --- | --- |
-| Open | The solution, its architecture and where it runs | Task T-06 | |
+| Open | The solution, its architecture and where it runs | Being decided by the team in T-06 (draft above) | |

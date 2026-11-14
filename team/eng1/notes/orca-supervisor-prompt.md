@@ -39,7 +39,8 @@ HARD RULES
   team/eng1/notes/si-use-log.md (time, card, files or data produced, which agent
   helped, which person reviewed). The submission requires saying where AI tools
   were used in code and data; this log is its source.
-- Health content: never diagnose, no "you have X", no risk percentages, never
+- Health content: possible conditions only as probabilities with their basis,
+  never as a certainty (no "you have X"), never
   present the tool as a replacement for the CMO or flight surgeon. Every medical
   statement has a source with a link that someone opened, or is marked Assumption.
   Never invent a reference, author or number.

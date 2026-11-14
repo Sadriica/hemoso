@@ -8,7 +8,8 @@ only the team's work plan and tooling (Space Apps rules: teams may study the
 challenges and prepare, but may not start working on them before the event).
 
 ## Rules for any health content
-- Never diagnose. Never write "you have X" or risk percentages.
+- Possible conditions are shown as probabilities with what they are based on,
+  never as a certainty: no "you have X". The CMO or flight surgeon confirms.
 - Never present the tool as a replacement for the flight surgeon (the physician
   on Earth) or the crew medical officer (CMO) on board.
 - Every medical statement carries a source with a link, or is marked "Assumption".
