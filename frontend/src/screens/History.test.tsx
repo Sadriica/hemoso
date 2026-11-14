@@ -110,8 +110,9 @@ describe('History', () => {
       entry(2, '08:00', 101),
       entry(3, '08:00', 60),
     ])
-    expect(screen.getByText('example_level')).toBeInTheDocument()
-    expect(screen.getAllByText('In range')).toHaveLength(2)
+    const table = screen.getByRole('table')
+    expect(within(table).getByText('example_level')).toBeInTheDocument()
+    expect(within(table).getAllByText('In range')).toHaveLength(2)
   })
 
   it('says no threshold yet for an indicator without attention rules', async () => {
@@ -190,6 +191,44 @@ describe('History', () => {
     const summary = screen.getByText(/^Latest:/)
     expect(summary.id).not.toBe('')
     expect(summary).toHaveAttribute('data-summary-id', summary.id)
+  })
+
+  it('names the chart with the summary sentence', () => {
+    renderHistory(readings)
+    const summary = screen.getByText(/^Latest:/)
+    const chart = screen.getByRole('img')
+    expect(chart).toHaveAttribute('aria-labelledby', summary.id)
+    expect(chart).toHaveAccessibleName(summary.textContent ?? '')
+  })
+
+  it('names the chart with the not-enough sentence when there is one reading', () => {
+    renderHistory([entry(1, '08:00', 10)])
+    expect(
+      screen.getByRole('img', {
+        name: 'Not enough earlier entries to compare yet.',
+      }),
+    ).toBeInTheDocument()
+  })
+
+  it('shows the chart next to the table, with a point per reading', () => {
+    renderHistory(readings)
+    const chart = screen.getByRole('img')
+    expect(chart.querySelectorAll('circle')).toHaveLength(readings.length)
+    expect(screen.getByRole('table')).toBeInTheDocument()
+  })
+
+  it('draws no threshold line for an indicator without attention rules', async () => {
+    const user = userEvent.setup()
+    renderHistory([
+      { ...entry(1, '08:00', 4), indicatorId: 'sleep_quality_1_5', unit: '1 to 5' },
+    ])
+    await user.selectOptions(screen.getByLabelText('Indicator'), 'sleep_quality_1_5')
+    expect(screen.getByRole('img').querySelectorAll('.chart__threshold')).toHaveLength(0)
+  })
+
+  it('shows no chart without entries', () => {
+    renderHistory([])
+    expect(screen.queryByRole('img')).toBeNull()
   })
 
   it('says there is not enough with one entry', () => {

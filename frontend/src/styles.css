@@ -134,6 +134,7 @@ body {
 h1,
 h2,
 h3,
+h4,
 p,
 ul,
 ol {
@@ -593,11 +594,13 @@ legend {
   border-left-color: var(--status-attention-text);
 }
 
+/* Title and badge: the badge always takes its own row under the name, so every
+   card in the grid puts the reading on the same line whatever the length of
+   the name. */
 .indicator-card__top {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   align-items: flex-start;
-  justify-content: space-between;
   gap: var(--space-2);
 }
 
@@ -762,6 +765,55 @@ legend {
   color: var(--color-text-muted);
 }
 
+/* Details panel (7.7, REQ-01): the rows of indicators.csv first, then the
+   sections of the content file. The panel sits inside a card, so its text
+   keeps the card surface behind it and the contrast pairs in theme.test.ts
+   already cover it: body text and muted text on --color-surface. */
+.indicator-details {
+  display: grid;
+  gap: var(--space-3);
+}
+
+/* The prefix of a fact ("Measured on board"), in the technical label style and
+   on the same line as its value. */
+.indicator-details__label {
+  display: inline;
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+/* A section name is read as a sentence, so it is never uppercased: display
+   family, one size up from the body text of the panel. */
+.indicator-details__heading {
+  margin: 0 0 var(--space-1);
+  font-family: var(--font-display);
+  font-size: var(--text-body-l);
+  line-height: var(--leading-body-l);
+  font-weight: 600;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+/* Measurement steps: a numbered list, spaced like the source lists. */
+.indicator-details__steps {
+  padding-left: var(--space-4);
+}
+
+.indicator-details__steps li {
+  margin-block: var(--space-1);
+}
+
+/* No content file yet: quiet information, not a warning. */
+.indicator-details__missing {
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+  color: var(--color-text-muted);
+}
+
 /* Tablet: eight columns, two cards per row, 32 px side margin (4.1). */
 @media (max-width: 1023px) {
   .app-header__inner {
@@ -894,5 +946,219 @@ legend {
 
   .history__table tbody td:last-child {
     white-space: normal;
+  }
+}
+
+/* Chart (7.8): inline SVG, 1 px lines. The readings are the accent colour, the
+   person's earlier median a dashed muted line, each attention threshold a
+   dotted line with its level name in the technical label style. The table next
+   to it is the full text alternative, so the chart never carries a number on
+   its own.
+
+   The figure fits its box instead of scrolling: a scroll container would need
+   a keyboard stop and would hide the newest readings on a phone (REQ-15,
+   REQ-32). The component draws one SVG unit per CSS pixel and keeps the axis
+   text at --text-label at every width, thinning the day labels when the box is
+   narrow. */
+.history__chart {
+  max-width: 720px;
+  margin-bottom: var(--space-3);
+  padding: var(--space-2);
+  border: var(--border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.history__chart svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.chart {
+  font-family: var(--font-mono);
+}
+
+.chart__grid {
+  stroke: var(--color-border);
+  stroke-width: 1;
+}
+
+.chart__axis {
+  stroke: var(--color-border-control);
+  stroke-width: 1;
+}
+
+.chart__tick {
+  fill: var(--color-text-muted);
+  font-size: var(--text-label);
+  font-variant-numeric: tabular-nums;
+}
+
+.chart__axis-name,
+.chart__threshold-label {
+  font-size: var(--text-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+.chart__axis-name {
+  fill: var(--color-text-muted);
+}
+
+/* A threshold is the point from which a reading needs attention, so it carries
+   the attention colour as well as the dotted line and its level name: still
+   never colour alone. */
+.chart__threshold-label {
+  fill: var(--status-attention-text);
+}
+
+.chart__unit {
+  fill: var(--color-text-muted);
+  font-size: var(--text-label);
+  /* A unit is never transformed: SI symbols are case-sensitive. */
+  text-transform: none;
+}
+
+.chart__line {
+  fill: none;
+  stroke: var(--color-accent);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+.chart__point {
+  fill: var(--color-accent);
+}
+
+/* The dash patterns of the median and the thresholds are presentation
+   attributes on the lines, so a unit test can read them without a browser. */
+.chart__median {
+  stroke: var(--color-text-muted);
+  stroke-width: 1;
+}
+
+.chart__threshold {
+  stroke: var(--status-attention-text);
+  stroke-width: 1;
+}
+
+/* Face sign-in (REQ-36, T-58, T-59). A quiet panel under the header, opened
+   from its own button on a page with ?face=1. Structured like a card (4.3):
+   surface, 1 px border, 4 px radius, no shadow. The camera picture is the only
+   image the app ever shows, and only while the camera is on. */
+.app-header__account {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+
+.face-panel {
+  display: grid;
+  gap: var(--space-3);
+  max-width: 640px;
+  margin-bottom: var(--space-4);
+  padding: var(--space-4);
+  border: var(--border-subtle);
+  border-left: 2px solid var(--color-accent);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.face-panel__heading {
+  font-family: var(--font-display);
+  font-size: var(--text-h2);
+  line-height: var(--leading-h2);
+  font-weight: 600;
+}
+
+/* Sentences stay body font and sentence case (3.3); 70 characters is the
+   reading width of the history summary too. */
+.face-panel__text {
+  max-width: 70ch;
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+}
+
+.face-panel__note {
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+  color: var(--color-text-muted);
+}
+
+.face-panel__person {
+  max-width: 320px;
+}
+
+.face-panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.face-panel__delete {
+  display: grid;
+  gap: var(--space-2);
+  padding-top: var(--space-3);
+  border-top: var(--border-subtle);
+}
+
+/* The preview: a wide box the model can read, hidden until the camera is on.
+   --color-bg behind the picture, so a camera that is still starting is a dark
+   frame and not a white flash. */
+.face-panel__camera {
+  display: grid;
+  gap: var(--space-1);
+  justify-items: start;
+}
+
+.face-panel__camera[hidden] {
+  display: none;
+}
+
+.face-panel__video {
+  width: 100%;
+  max-width: 320px;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-card);
+  background: var(--color-bg);
+}
+
+.face-panel__camera-label {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+/* One line kept for the message, so the panel does not jump when a sentence
+   appears. */
+.face-panel__status {
+  min-height: var(--leading-body);
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+}
+
+/* The style guide's danger button (7.5): red border and text, transparent. The
+   only destructive action in the app is deleting a face. */
+.button--danger {
+  border-color: var(--color-signal);
+  color: var(--color-signal);
+}
+
+.button--danger:hover {
+  border-color: var(--color-signal);
+  color: var(--color-signal);
+  filter: brightness(1.15);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button--danger {
+    transition: none;
   }
 }

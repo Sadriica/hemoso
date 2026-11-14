@@ -1,16 +1,17 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
-import { SCALE_UNIT, strings } from '../src/strings'
+import { SCALE_UNIT, hazardName, strings } from '../src/strings'
 import { expectNoBlockingA11yIssues } from './axe'
 import { readIndicatorRows } from './config'
 
 // The demo path of the version we submit (REQ-15, REQ-31): Home, open the
-// Sources of a card, save a measured value, save a value on the 1 to 5 scale
+// Details of a card, save a measured value, save a value on the 1 to 5 scale
 // with the arrow keys, find both readings on Home again, and read one
 // indicator's history. The same spec runs on the desktop and on a phone.
 //
 // Keyboard only on purpose: if a step needs a mouse, an astronaut on a laptop
 // with a broken trackpad cannot do it either.
-const { names, units, scaleIndex } = readIndicatorRows()
+const { names, units, measuredOnBoard, hazards, scaleIndex } =
+  readIndicatorRows()
 
 const FIRST_VALUE = '72'
 const SCALE_VALUE = 3
@@ -35,7 +36,7 @@ test('demo path by keyboard with axe on every screen', async ({ page }) => {
     name: strings.personHeading(person),
   })
 
-  await test.step('Home: one card per indicator and a Sources disclosure', async () => {
+  await test.step('Home: one card per indicator and a Details disclosure', async () => {
     await focusByTab(page, page.getByRole('tab', { name: strings.tabs.home }))
     await expect(homeRegion).toBeVisible()
     for (const name of names) {
@@ -46,12 +47,28 @@ test('demo path by keyboard with axe on every screen', async ({ page }) => {
     await expect(page.getByText(strings.syntheticNotice)).toBeVisible()
 
     const card = cardFor(homeRegion, names[0])
-    const sources = card.getByRole('button', { name: strings.sources.label })
-    await focusByTab(page, sources)
+    const details = card.getByRole('button', { name: strings.details.label })
+    await focusByTab(page, details)
     await page.keyboard.press('Enter')
-    await expect(sources).toHaveAttribute('aria-expanded', 'true')
-    // Whichever the file holds: links, the word Assumption, or the note that
-    // the file lists none.
+    await expect(details).toHaveAttribute('aria-expanded', 'true')
+
+    // What config/data/indicators.csv says about the indicator, in words: how
+    // it is measured and which hazards touch it. A hazard id never shows.
+    const facts = card.locator('.indicator-details__fact')
+    await expect(facts.first()).toContainText(strings.details.measuredOnBoard)
+    await expect(facts.first()).toContainText(measuredOnBoard[0] ?? '')
+    const plainHazards = (hazards[0] ?? [])
+      .map((id) => hazardName(id))
+      .filter((name): name is string => name !== null)
+    if (plainHazards.length > 0) {
+      await expect(facts.nth(1)).toContainText(plainHazards.join(', '))
+    }
+    for (const id of hazards[0] ?? []) {
+      await expect(card).not.toContainText(id)
+    }
+
+    // The sources of the reading: a link, the word Assumption, or the note
+    // that the file lists none.
     await expect(
       card
         .getByRole('link')
@@ -59,10 +76,10 @@ test('demo path by keyboard with axe on every screen', async ({ page }) => {
         .or(card.getByText(strings.sources.empty))
         .first(),
     ).toBeVisible()
+    // The panel is new markup, so axe sees it open too.
+    await expectNoBlockingA11yIssues(page, 'Home with Details open')
     await page.keyboard.press('Enter')
-    await expect(sources).toHaveAttribute('aria-expanded', 'false')
-    // TODO(T-47): each card also gets a Details disclosure with the text of
-    // config/content/<id>.md; open and close it here when it exists.
+    await expect(details).toHaveAttribute('aria-expanded', 'false')
   })
 
   await expectNoBlockingA11yIssues(page, 'Home')

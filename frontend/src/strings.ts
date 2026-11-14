@@ -4,6 +4,23 @@
 // quality and mood). The screens read it, never a bound of their own.
 export const SCALE_UNIT = '1 to 5'
 
+// The hazard ids of FORMATS.md section 3, each with the plain name of the NASA
+// Human Research Program hazard it stands for. A card never shows the id.
+const HAZARD_NAMES: Record<string, string> = {
+  radiation: 'Radiation',
+  isolation_and_confinement: 'Isolation and confinement',
+  distance_from_earth: 'Distance from Earth',
+  gravity_fields: 'Gravity fields',
+  hostile_closed_environments: 'Hostile closed environments',
+}
+
+// The plain name of a hazard id, or null when the id is not one of the five.
+// An id with no name is a content problem for the team (src/content/indicators
+// reports it), never a line on the astronaut's screen.
+export function hazardName(id: string): string | null {
+  return HAZARD_NAMES[id] ?? null
+}
+
 export const strings = {
   appName: 'HeMoSo',
   skipToMain: 'Skip to main content',
@@ -105,6 +122,23 @@ export const strings = {
     assumption: 'Assumption',
     empty: 'No sources listed.',
   },
+  // The panel behind "Details" on a Home card (REQ-01): the facts of
+  // data/indicators.csv, then the sections of config/content/<id>.md.
+  details: {
+    label: 'Details',
+    measuredOnBoard: 'Measured on board:',
+    hazards: 'Hazards:',
+    // The text file of Bio 1 is not there yet, so the panel names what is
+    // still missing instead of an empty box.
+    missing:
+      'Details will appear when the team adds the text for this indicator.',
+    sections: {
+      why: 'Why it matters',
+      spaceflight: 'How spaceflight affects it',
+      steps: 'Measurement steps',
+      prevent: 'How to prevent problems',
+    },
+  },
   problems: {
     label: 'Content problems (for the team)',
   },
@@ -125,6 +159,49 @@ export const strings = {
     // The browser blocked storage, or replaced data it could not read.
     notSaved: 'Entries are not saved on this device.',
     reset: 'Saved entries could not be read and were replaced by the demo data.',
+  },
+  // The panel behind the header button (REQ-36, T-58, T-59). It only exists on
+  // a page opened with ?face=1. The consent text is read before the camera
+  // opens; a camera that will not start is a sentence, never a colour or an
+  // icon on its own.
+  face: {
+    buttonLabel: 'Sign in with face',
+    heading: 'Sign in with face',
+    consent:
+      'Your face is turned into numbers stored only in this browser. No picture is kept and nothing is sent. This is a quick way to pick your name, not a security lock.',
+    continueLabel: 'Continue',
+    cancelLabel: 'Cancel',
+    closeLabel: 'Close',
+    person: 'Person to register',
+    register: 'Register face',
+    signIn: 'Sign in',
+    // The label of the camera picture. The panel is the only place in the app
+    // that shows a camera at all.
+    videoLabel: 'Camera preview. No picture is kept.',
+    opening: 'Opening face sign-in.',
+    deleteAction: 'Delete my face data',
+    deleteConfirmAction: 'Delete face data',
+    deleteConfirm: (personId: string): string =>
+      `Delete the face data saved for ${personId}? The person picker keeps working either way.`,
+    noSavedFace: (personId: string): string =>
+      `No face is saved for ${personId} on this device.`,
+    status: {
+      registered: (personId: string): string =>
+        `Face saved for ${personId} on this device.`,
+      deleted: (personId: string): string =>
+        `Face data deleted for ${personId}.`,
+      noFace: 'No face found. Look at the camera and try again.',
+      // The model did not load, or the browser gave up on it: not the person's
+      // fault, and the picker still works.
+      failed: 'The face check could not run on this device. Pick your name in the header.',
+      notRecognised: 'Face not recognised. Pick your name instead.',
+    },
+    camera: {
+      denied:
+        'The browser blocked the camera. Allow it for this site, or pick your name in the header.',
+      missing: 'No camera was found. Pick your name in the header.',
+      busy: 'The camera is in use by another app. Close it and try again, or pick your name in the header.',
+    },
   },
   timeLabel: (day: number, time: string): string => `Day ${day} ${time}`,
   // The unit that follows a value on a card: "58 bpm". The 1 to 5 scales hold

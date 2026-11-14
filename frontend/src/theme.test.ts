@@ -46,6 +46,10 @@ const TEXT_PAIRS: ColorPair[] = [
   { name: 'attention badge', front: 'status-attention-text', back: 'status-attention-bg' },
   { name: 'no data badge', front: 'status-no-data-text', back: 'status-no-data-bg' },
   { name: 'signal red on a card', front: 'color-signal', back: 'color-surface' },
+  // The face panel (T-58): its sentences and its one destructive action sit on
+  // the panel surface, which is the card surface.
+  { name: 'face panel text', front: 'color-text', back: 'color-surface' },
+  { name: 'face panel delete action', front: 'color-signal', back: 'color-surface' },
 ]
 
 // Non-text contrast (WCAG 1.4.11): the focus outline and the edge of a control

@@ -1,5 +1,6 @@
 import type { Direction, Indicator } from '../domain/types'
 import { parseSources } from '../domain/source'
+import { hazardName } from '../strings'
 import { parseCsvFile } from './csv'
 
 // The columns this reader uses. FORMATS.md also lists min_spread, tier and
@@ -45,11 +46,29 @@ export function parseIndicators(
       unit: row.unit?.trim() ?? '',
       direction: parseDirection(row.direction ?? '', id, problems),
       measuredOnBoard: row.measured_on_board?.trim() ?? '',
-      hazards: (row.hazards ?? '').split(/\s+/).filter(Boolean),
+      hazards: parseHazards(row.hazards ?? '', id, problems),
       sources: sources ?? [],
     })
   }
   return indicators
+}
+
+// Only the five hazard ids of FORMATS.md section 3 reach a screen. An id with
+// no plain name is reported for the team and dropped, so it never appears raw.
+function parseHazards(
+  value: string,
+  id: string,
+  problems: string[],
+): string[] {
+  const hazards: string[] = []
+  for (const hazard of value.split(/\s+/).filter(Boolean)) {
+    if (hazardName(hazard) === null) {
+      problems.push(`Indicator '${id}' has unknown hazard '${hazard}'.`)
+      continue
+    }
+    hazards.push(hazard)
+  }
+  return hazards
 }
 
 function parseDirection(
