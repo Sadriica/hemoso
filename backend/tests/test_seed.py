@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from app import seed, storage
 
 
@@ -142,3 +144,93 @@ def test_command_seeds_fixture(tmp_path, monkeypatch, capsys):
     assert rc == 0
     assert "added 1" in out
     assert "skipped 0" in out
+
+
+def test_wrong_header_raises(tmp_path, monkeypatch):
+    monkeypatch.setenv("CONFIG_DIR", str(tmp_path))
+    write_indicators(tmp_path)
+    path = tmp_path / "demo_data.csv"
+    path.write_text(
+        "person_id,indicator_id,value,unit,mission_day\n"
+        "demo_astronaut_1,example_indicator,1,example_unit,1,13:30\n",
+        encoding="utf-8",
+    )
+    store = storage.MemoryStorage()
+
+    with pytest.raises(ValueError):
+        seed.load_demo_data(store, path)
+
+
+def test_command_wrong_header_exits_one(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("CONFIG_DIR", str(tmp_path))
+    path = tmp_path / "demo_data.csv"
+    path.write_text(
+        "person_id,indicator_id,value,unit,mission_day\n",
+        encoding="utf-8",
+    )
+
+    rc = seed.main(["--path", str(path)])
+
+    out = capsys.readouterr().out
+    assert rc == 1
+    assert "person_id,indicator_id,value,unit,mission_day,time" in out
+
+
+def test_wrong_number_of_columns_skipped(tmp_path, monkeypatch):
+    monkeypatch.setenv("CONFIG_DIR", str(tmp_path))
+    write_indicators(tmp_path)
+    path = write_demo(
+        tmp_path,
+        [
+            "demo_astronaut_1,example_indicator,1,example_unit,1,13:30",
+            "demo_astronaut_1,example_indicator,1,example_unit,1,13:30,EXTRA",
+            "demo_astronaut_1,example_indicator,1,example_unit,1",
+        ],
+    )
+    store = storage.MemoryStorage()
+
+    added, skipped, reasons = seed.load_demo_data(store, path)
+
+    assert added == 1
+    assert skipped == 2
+    assert all("wrong number of columns" in reason for reason in reasons)
+
+
+def test_blank_line_reports_its_line(tmp_path, monkeypatch):
+    monkeypatch.setenv("CONFIG_DIR", str(tmp_path))
+    write_indicators(tmp_path)
+    path = tmp_path / "demo_data.csv"
+    path.write_text(
+        "person_id,indicator_id,value,unit,mission_day,time\n"
+        "demo_astronaut_1,example_indicator,1,example_unit,1,13:30\n"
+        "\n"
+        "demo_astronaut_1,example_indicator,1,example_unit,1,25:00\n",
+        encoding="utf-8",
+    )
+    store = storage.MemoryStorage()
+
+    added, skipped, reasons = seed.load_demo_data(store, path)
+
+    assert added == 1
+    assert skipped == 2
+    assert "line 3: wrong number of columns" in reasons
+    assert "line 4: invalid time" in reasons
+
+
+def test_line_num_after_multiline_quoted_row(tmp_path, monkeypatch):
+    monkeypatch.setenv("CONFIG_DIR", str(tmp_path))
+    write_indicators(tmp_path)
+    path = tmp_path / "demo_data.csv"
+    path.write_text(
+        "person_id,indicator_id,value,unit,mission_day,time\n"
+        'demo_astronaut_1,example_indicator,"abc\n",example_unit,1,13:30\n'
+        "demo_astronaut_1,example_indicator,1,example_unit,1,25:00\n",
+        encoding="utf-8",
+    )
+    store = storage.MemoryStorage()
+
+    added, skipped, reasons = seed.load_demo_data(store, path)
+
+    assert added == 0
+    assert skipped == 2
+    assert reasons == ["line 3: invalid value", "line 4: invalid time"]

@@ -19,6 +19,15 @@ from .indicators import config_dir, validate_against_indicators
 from .models import Entry
 
 _DEMO_FILE = "demo_data.csv"
+_EXPECTED_COLUMNS = (
+    "person_id",
+    "indicator_id",
+    "value",
+    "unit",
+    "mission_day",
+    "time",
+)
+_HEADER = ",".join(_EXPECTED_COLUMNS)
 
 
 def _validation_reason(error: ValidationError) -> str:
@@ -38,7 +47,8 @@ def _key(entry: Entry) -> tuple[str, str, int, str]:
 def load_demo_data(store: storage.Storage, path: Path) -> tuple[int, int, list[str]]:
     """Add the valid rows of `path` to `store`; return (added, skipped, reasons).
 
-    Each row must pass the Entry model and match its indicator in
+    The header must be exactly the six expected columns. Each row must have the
+    same number of cells, pass the Entry model and match its indicator in
     data/indicators.csv. A row whose (person_id, indicator_id, mission_day,
     time) is already in the store's history is skipped, so the same file never
     adds a measurement twice.
@@ -47,9 +57,22 @@ def load_demo_data(store: storage.Storage, path: Path) -> tuple[int, int, list[s
     skipped = 0
     reasons: list[str] = []
     with path.open(newline="", encoding="utf-8-sig") as handle:
-        for line_no, row in enumerate(csv.DictReader(handle), start=2):
+        reader = csv.reader(handle)
+        try:
+            header = next(reader)
+        except StopIteration:
+            header = []
+        if header != list(_EXPECTED_COLUMNS):
+            raise ValueError(f"demo data header must be: {_HEADER}")
+        for row in reader:
+            line_no = reader.line_num
+            if len(row) != len(_EXPECTED_COLUMNS):
+                skipped += 1
+                reasons.append(f"line {line_no}: wrong number of columns")
+                continue
+            record = dict(zip(_EXPECTED_COLUMNS, row))
             try:
-                entry = Entry(**row)
+                entry = Entry(**record)
             except ValidationError as error:
                 skipped += 1
                 reasons.append(f"line {line_no}: {_validation_reason(error)}")
@@ -86,7 +109,11 @@ def main(argv: list[str] | None = None) -> int:
         print(f"demo data file not found at {path}")
         return 0
     store = storage.get_storage()
-    added, skipped, reasons = load_demo_data(store, path)
+    try:
+        added, skipped, reasons = load_demo_data(store, path)
+    except ValueError as error:
+        print(error)
+        return 1
     print(f"added {added}, skipped {skipped}")
     for reason in reasons:
         print(f"  {reason}")
