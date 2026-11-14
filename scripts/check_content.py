@@ -57,6 +57,14 @@ REQUIRED_FILES = [
     "config/rules/conditions.csv",
 ]
 
+# The exact CSV header (column order) of each table. scripts/new_config.py
+# imports these to write empty files, so the two can never drift.
+INDICATORS_HEADER = ["id", "name", "unit", "direction", "measured_on_board", "hazards", "source"]
+DEMO_RANGES_HEADER = ["indicator_id", "min", "max", "source", "generation_note"]
+DEMO_DATA_HEADER = ["person_id", "indicator_id", "value", "unit", "mission_day", "time"]
+ATTENTION_HEADER = ["indicator_id", "side", "threshold", "attention_level", "source"]
+CONDITIONS_HEADER = ["condition_id", "name", "based_on", "source"]
+
 
 class Reporter:
     """Collects problem lines in the order they are found."""
@@ -146,7 +154,7 @@ def validate_rows(rep: Reporter, rel: str, rows, header: list[str],
 
 
 def check_indicators(rep: Reporter, root: Path, state: dict) -> None:
-    header = ["id", "name", "unit", "direction", "measured_on_board", "hazards", "source"]
+    header = INDICATORS_HEADER
     rows = read_table(root, "config/data/indicators.csv", header, rep)
     if rows is None:
         return
@@ -180,7 +188,7 @@ def check_indicators(rep: Reporter, root: Path, state: dict) -> None:
 
 
 def check_demo_ranges(rep: Reporter, root: Path, state: dict) -> None:
-    header = ["indicator_id", "min", "max", "source", "generation_note"]
+    header = DEMO_RANGES_HEADER
     rows = read_table(root, "config/data/demo_ranges.csv", header, rep)
     if rows is None:
         return
@@ -216,7 +224,7 @@ def check_demo_ranges(rep: Reporter, root: Path, state: dict) -> None:
 
 
 def check_attention(rep: Reporter, root: Path, state: dict) -> None:
-    header = ["indicator_id", "side", "threshold", "attention_level", "source"]
+    header = ATTENTION_HEADER
     rows = read_table(root, "config/rules/attention.csv", header, rep)
     if rows is None:
         return
@@ -247,7 +255,7 @@ def check_attention(rep: Reporter, root: Path, state: dict) -> None:
 
 
 def check_conditions(rep: Reporter, root: Path, state: dict) -> None:
-    header = ["condition_id", "name", "based_on", "source"]
+    header = CONDITIONS_HEADER
     rows = read_table(root, "config/rules/conditions.csv", header, rep)
     if rows is None:
         return
@@ -299,7 +307,7 @@ def check_body_regions(rep: Reporter, root: Path) -> None:
 
 
 def check_demo_data(rep: Reporter, root: Path, state: dict) -> None:
-    header = ["person_id", "indicator_id", "value", "unit", "mission_day", "time"]
+    header = DEMO_DATA_HEADER
     rows = read_table(root, "config/data/demo_data.csv", header, rep)
     if rows is None:
         return
