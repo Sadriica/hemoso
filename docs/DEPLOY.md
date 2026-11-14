@@ -11,8 +11,11 @@ slides at most). How the solution is published is recorded in
   connects to the repository, builds and serves the frontend under the team's
   domain (the architecture is in `docs/DECISIONS.md`).
 - The backend runs on its own host; Railway is the candidate, not yet decided
-  (`docs/DECISIONS.md`). The host serves `backend/` with uvicorn
-  (`uv run uvicorn app.main:app`) and the variables below.
+  (`docs/DECISIONS.md`). The host builds `backend/Dockerfile` from the
+  repository root (`docker build -f backend/Dockerfile -t hemoso-backend .`);
+  the image copies `backend/` and `config/` and starts uvicorn on the port in
+  `PORT`. Set `STORAGE=supabase` there: the container file system is not kept.
+  It needs the variables below.
 - Supabase stores the data. Create the `entries` table once per project by
   running `backend/supabase/schema.sql` in the Supabase SQL editor
   (Dashboard → SQL editor).
