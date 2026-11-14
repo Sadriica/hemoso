@@ -12,21 +12,24 @@ _Update before every checkpoint and at every shift change._
 - **Done:** setup and branch (T-03). `main` merged twice, up to the checkpoint
   `cp1` and the `notify` column commit. Attention levels decided: `watch`,
   `consult`, `urgent` (`team/bio2/notes/attention-levels.md`). `attention.csv`
-  filled with 12 rows, at least one per indicator, with a source or
-  `Assumption` (REQ-05). `conditions.csv` has the seven conditions (REQ-06).
-  A proposal for the condition probability is in
-  `team/bio2/notes/condition-probability-proposal.md`. The glucose review now
-  has the in-flight analyser source (REQ-03).
-- **In progress:** waiting for the team decision on the probability method and
-  on the blood-pressure "or" rule.
+  with 10 rows: heart rate, both pressures, core temperature and glucose, each
+  with a source or `Assumption` (REQ-05); sleep and mood have no sourced limit.
+  `conditions.csv` has the seven conditions (REQ-06). The pressure rule is in
+  `docs/findings/bio2-01` and the evidence score in `docs/findings/bio2-02`.
+  The glucose review now has the in-flight analyser source (REQ-03).
+- **In progress:** the two rules are decided; Eng 1 has to record them in
+  `docs/DECISIONS.md`.
 - **Next:** review Bio 1's status texts (REQ-10); ask the four questions of T-04
   to the organiser; start the submission page.
-- **Board:** open cards #3, #4, #6, #16, #17, #21, #27, #31, #34, #35, #36,
-  #38, #41, #50.
+- **Board:** open cards #4, #16, #17, #21, #27, #31, #34, #35, #36, #38, #41, #50.
 
 ## Blockers
-- The probability method and the blood-pressure "or" rule need a team decision
-  and a row in `docs/DECISIONS.md` (Eng 1). The proposal is ready.
+- `team/bio2/notes/condition-probability-proposal.md` proposes a percentage with
+  a 95 % cap; `docs/findings/bio2-02` shows an evidence score with no
+  percentage. The team picked the second; the first has to be marked superseded
+  or deleted.
+- T-04 is still open: the local deadline and the pitch length and language are
+  not confirmed.
 - `config/data/indicators.csv` still says glucose has no in-flight device and
   `docs/DECISIONS.md` still lists it as tier C. Phys and Eng 1 own those files;
   the source is in `team/bio2/notes/indicators-review.md`.
