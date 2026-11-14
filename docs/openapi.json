@@ -5,15 +5,18 @@
         "description": "One row of config/data/demo_data.csv: person, indicator, value, unit, day, time.",
         "properties": {
           "indicator_id": {
+            "maxLength": 64,
             "title": "Indicator Id",
             "type": "string"
           },
           "mission_day": {
             "exclusiveMinimum": 0.0,
+            "maximum": 100000.0,
             "title": "Mission Day",
             "type": "integer"
           },
           "person_id": {
+            "maxLength": 64,
             "title": "Person Id",
             "type": "string"
           },
@@ -22,6 +25,7 @@
             "type": "string"
           },
           "unit": {
+            "maxLength": 64,
             "title": "Unit",
             "type": "string"
           },
