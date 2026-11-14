@@ -1,0 +1,22 @@
+# Secrets: never in the repository
+.env
+.env.*
+*.key
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+frontend/dist/
+
+# OS and editors
+.DS_Store
+.idea/
+.vscode/
+*.db
+board-export*.csv

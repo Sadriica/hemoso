@@ -1,0 +1,16 @@
+id,title,person,type,area,work,block,priority,estimate_h,done_when,paths,depends_on,source
+T-01,"Create the public repository, run setup and create the board",eng1,task,Ops,Ops,B0 Sat 9-10,P0,0.5,"Everyone has cloned, run setup.sh and sees the board",,,docs/BOARD.md
+T-02,Board views and workflows (browser prompt),eng1,task,Ops,Ops,B0 Sat 9-10,P1,0.25,Views from docs/BOARD.md exist; workflows have no red mark,,T-01,docs/BOARD.md
+T-03,"Each person: clone, setup.sh, open their agent",bio1+bio2+phys+eng2,task,Ops,Ops,B0 Sat 9-10,P0,1,Every branch exists and every agent answers,,T-01,docs/BOARD.md
+T-04,Ask the Medellín lead the open questions in docs/CHALLENGE.md,bio2,task,Ops,Ops,B0 Sat 9-10,P0,0.25,Answers logged in team/bio2/LOG.md and docs/CHALLENGE.md,docs/CHALLENGE.md,,docs/BOARD.md
+T-05,Check docs/CHALLENGE.md against the official page and write the requirements,eng1,task,Requirements,Requirements,B1 Sat 10-12,P0,0.5,Every line of CHALLENGE.md confirmed or corrected; resource list read; requirements written in docs/requirements.md and board/requirements.csv and imported,"docs/CHALLENGE.md, docs/requirements.md, docs/board/requirements.csv",,docs/BOARD.md
+T-06,"Choose the solution and write FORMATS.md (files, formats, owners)",eng1+eng2+bio1+bio2+phys,task,Ops,Ops,B1 Sat 10-12,P0,2.5,FORMATS.md agreed by everyone; architecture choice in docs/DECISIONS.md,"FORMATS.md, docs/DECISIONS.md",T-04,docs/BOARD.md
+T-07,Break the solution into cards for the rest of the weekend,eng1,task,Ops,Ops,B1 Sat 10-12,P0,0.75,Every person has cards for B2 and B3 that fit the block capacity,,T-06,docs/BOARD.md
+T-08,"Merge, tag and sync the board at every checkpoint",eng1,task,Ops,Ops,B1 Sat 10-12,P0,1,"cp1, cp2, cp3 and submission tags exist; CHANGELOG has one section each",CHANGELOG.md,,docs/BOARD.md
+T-09,Pitch script (2 minutes),bio1,task,Pitch,Pitch,B3 Sat 17-1,P0,1.5,submission/script.md read aloud in 2 minutes,submission/,T-07,docs/BOARD.md
+T-10,Seven slides in English,bio1,task,Pitch,Pitch,B3 Sat 17-1,P0,2,"7 slides including title, team and members",submission/,T-09,docs/BOARD.md
+T-11,30-second video with English subtitles,bio1+eng2,task,Pitch,Pitch,B4 Sun 9-12,P0,1.5,"Video of 30 s or less, subtitled, at a public link",submission/,,docs/BOARD.md
+T-12,"Submission page text, including the AI-use disclosure",bio2,task,Submission,Submission,B4 Sun 9-12,P0,1,Every field filled in English,submission/,,docs/BOARD.md
+T-13,Public demo online and checked anonymously,eng1+eng2,task,Ops,Ops,B4 Sun 9-12,P0,1,Links open in a private window without login,,,docs/BOARD.md
+T-14,README with how to run the project,eng1,task,Ops,Ops,B4 Sun 9-12,P0,0.5,A stranger can run it from README.md,README.md,,docs/BOARD.md
+T-15,Submit by the internal freeze and rehearse three times,bio2,task,Submission,Submission,Submit Sun 12-14,P0,1,Submitted by 13:30 (official close 23:59 local); story rehearsed 3 times,,T-12,docs/BOARD.md

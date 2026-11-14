@@ -1,0 +1,9 @@
+#!/bin/sh
+# Removes any automatic attribution line from the commit message
+# (co-authors, "Generated with", session links). Enable it with:
+#   git config core.hooksPath .githooks
+f="$1"
+grep -viE '^(co-authored-by:|generated with|🤖|claude-session:|assisted-by:|asistido-por:)' "$f" > "$f.tmp"
+# drop trailing empty lines
+awk 'NF{p=NR} {l[NR]=$0} END{for(i=1;i<=p;i++) print l[i]}' "$f.tmp" > "$f"
+rm -f "$f.tmp"

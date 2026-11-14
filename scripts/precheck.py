@@ -1,0 +1,108 @@
+"""Checks before every push. Run it from the repository root:
+
+  python scripts/precheck.py
+
+It checks that:
+  1. you are on your own branch (bio1, bio2, phys, eng1, eng2, or fix/<you>-<topic>), not main;
+  2. every changed, staged or unpushed file is inside the paths you own;
+  3. unpushed commit messages have no co-authors, signatures or AI mentions,
+     a first line of 72 characters at most, and a card number (#N);
+  4. if anything in config/ changed and the team's content check exists, it passes.
+Exits with code 1 when something must be fixed before pushing.
+"""
+
+from __future__ import annotations
+
+import fnmatch
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+OWNED = {
+    # Paths match the agent files. If FORMATS.md moves the config folders on
+    # Saturday, update both the same hour.
+    "bio1": ["config/content/*", "submission/script.md", "submission/slides.md", "submission/video.md",
+             "submission/slides/*", "team/bio1/*", "docs/findings/bio1-*.md"],
+    "bio2": ["config/rules/*", "submission/submission.md", "submission/README.md", "team/bio2/*",
+             "docs/findings/bio2-*.md"],
+    "phys": ["config/data/*", "docs/sources.md", "docs/nasa_data.md", "team/phys/*", "docs/findings/phys-*.md"],
+    "eng1": ["docs/CHALLENGE.md", "docs/requirements.md", "docs/board/requirements.csv", "backend/*", "scripts/*", "FORMATS.md", "README.md", "CHANGELOG.md", "config/README.md",
+             ".github/*", "team/eng1/*", "docs/BOARD.md", "docs/SETUP.md", "docs/STACK.md", "docs/DEPLOY.md",
+             "docs/DECISIONS.md", "docs/README.md", "docs/CONTRACTS.md", "docs/API.md", "docs/deploy/*",
+             "docs/board/seed-tasks.csv", "docs/board/issue-templates/*"],
+    "eng2": ["frontend/*", "team/eng2/*"],
+}
+FORBIDDEN = re.compile(
+    r"co-authored-by|generated (with|by)|assisted-by|asistido-por|claude(?!\.md)|chatgpt|openai|copilot|"
+    r"gemini|anthropic|\bllm\b|\bAI[- ]generated|🤖|signed-off-by", re.I)
+
+
+def run(*cmd: str) -> str:
+    p = subprocess.run(cmd, capture_output=True, text=True)
+    return p.stdout.strip() if p.returncode == 0 else ""
+
+
+def owns(person: str, path: str) -> bool:
+    return any(fnmatch.fnmatch(path, pat) for pat in OWNED.get(person, []))
+
+
+def main() -> int:
+    problems, notes = [], []
+    branch = run("git", "branch", "--show-current")
+    m = re.match(r"^(?:fix/)?(bio[12]|phys|eng[12])(?:-.*)?$", branch)
+    if not m:
+        print(f"FAIL  branch '{branch}' is not a personal branch (bio1, bio2, phys, eng1, eng2 or fix/<you>-<topic>).")
+        print("      Switch to yours: git switch <your-branch>")
+        return 1
+    person = m.group(1)
+    print(f"Branch {branch} · person {person}")
+
+    changed = set(run("git", "status", "--porcelain").splitlines())
+    files = {line[3:].split(" -> ")[-1].strip('"') for line in changed if line.strip()}
+    upstream = run("git", "rev-parse", "--abbrev-ref", "@{u}")
+    base = upstream or run("git", "merge-base", "HEAD", "origin/main") or run("git", "merge-base", "HEAD", "main") or ""
+    if base:
+        files |= set(run("git", "diff", "--name-only", f"{base}..HEAD").splitlines())
+    foreign = sorted(f for f in files if f and not owns(person, f))
+    if foreign:
+        problems.append("files outside your paths:\n        " + "\n        ".join(foreign)
+                        + "\n      Undo them (git restore <file>) or ask their owner.")
+    print(f"Files changed or not pushed: {len(files)}")
+
+    log_range = f"{base}..HEAD" if base else "-5"
+    messages = run("git", "log", "--format=%H%x00%B%x01", log_range).split("\x01")
+    for raw in messages:
+        if "\x00" not in raw:
+            continue
+        sha, body = raw.strip().split("\x00", 1)
+        first = body.strip().splitlines()[0] if body.strip() else ""
+        if FORBIDDEN.search(body):
+            problems.append(f"commit {sha[:7]} mentions a co-author, signature or AI: '{first}'")
+        if len(first) > 72:
+            problems.append(f"commit {sha[:7]} first line has {len(first)} characters (72 max)")
+        if not re.search(r"#\d+", body) and not first.startswith("merge"):
+            notes.append(f"commit {sha[:7]} does not mention its card (#N): '{first}'")
+
+    # The content check is written on Saturday with FORMATS.md (scripts/check_content.py).
+    checker = Path("scripts/check_content.py")
+    if any(f.startswith("config/") for f in files) and checker.exists():
+        p = subprocess.run([sys.executable, str(checker)], capture_output=True, text=True)
+        if p.returncode != 0:
+            problems.append("check_content fails:\n" + p.stdout.strip())
+        else:
+            print("check_content: OK")
+
+    for n in notes:
+        print(f"WARN  {n}")
+    for pr in problems:
+        print(f"FAIL  {pr}")
+    if problems:
+        print("\nFix the FAIL lines before pushing.")
+        return 1
+    print("\nOK to push.")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
