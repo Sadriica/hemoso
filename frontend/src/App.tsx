@@ -38,21 +38,27 @@ export default function App() {
         {strings.skipToMain}
       </a>
       <header className="app-header">
-        <h1>{strings.appName}</h1>
-        <SyntheticNotice />
-        <div className="person-picker">
-          <label htmlFor="person-picker">{strings.personPickerLabel}</label>
-          <select
-            id="person-picker"
-            value={selectedPerson}
-            onChange={(event) => setPersonId(event.target.value)}
-          >
-            {personIds.map((id) => (
-              <option key={id} value={id}>
-                {id}
-              </option>
-            ))}
-          </select>
+        <div className="app-header__inner">
+          <div className="app-header__bar">
+            <h1 className="app-header__brand">{strings.appName}</h1>
+            <div className="person-picker">
+              <label htmlFor="person-picker">
+                {strings.personPickerLabel}
+              </label>
+              <select
+                id="person-picker"
+                value={selectedPerson}
+                onChange={(event) => setPersonId(event.target.value)}
+              >
+                {personIds.map((id) => (
+                  <option key={id} value={id}>
+                    {id}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <SyntheticNotice />
         </div>
       </header>
       <main id="main-content" className="app-main" tabIndex={-1}>

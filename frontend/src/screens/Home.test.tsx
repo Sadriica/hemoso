@@ -63,8 +63,10 @@ const data: LoadedContent = {
 describe('Home', () => {
   it('shows name, latest value with unit, day/time, badge and next step', () => {
     render(<Home personId="demo_astronaut_1" data={data} />)
-    expect(screen.getByText('Example indicator')).toBeInTheDocument()
-    expect(screen.getByText('10 example_unit')).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { name: 'Example indicator' }),
+    ).toBeInTheDocument()
+    expect(screen.getByText('10')).toHaveTextContent('10 example_unit')
     expect(screen.getByText('Day 10 13:30')).toBeInTheDocument()
     expect(screen.getByText('In range')).toBeInTheDocument()
     expect(screen.getByText('No action needed.')).toBeInTheDocument()

@@ -10,6 +10,7 @@ import type {
 } from '../domain/types'
 import AttentionBadge from '../components/AttentionBadge'
 import Disclosure from '../components/Disclosure'
+import Notice from '../components/Notice'
 import type { LoadedContent } from '../content/load'
 import { strings } from '../strings'
 
@@ -25,20 +26,22 @@ export default function Home({
 
   return (
     <section aria-labelledby="home-heading">
-      <h2 id="home-heading" className="home-heading">
+      <h2 id="home-heading" className="home__heading">
         {strings.personHeading(personId)}
       </h2>
       {data.usingPlaceholders && (
-        <p className="app-note">{strings.placeholderNotice}</p>
+        <Notice tone="info">{strings.placeholderNotice}</Notice>
       )}
       {data.problems.length > 0 && (
-        <Disclosure label={strings.problems.label}>
-          <ul className="problems__list">
-            {data.problems.map((problem) => (
-              <li key={problem}>{problem}</li>
-            ))}
-          </ul>
-        </Disclosure>
+        <Notice tone="warning">
+          <Disclosure label={strings.problems.label}>
+            <ul className="problems__list">
+              {data.problems.map((problem) => (
+                <li key={problem}>{problem}</li>
+              ))}
+            </ul>
+          </Disclosure>
+        </Notice>
       )}
       <ul className="indicator-list">
         {data.indicators.map((indicator) => (
@@ -77,43 +80,46 @@ function IndicatorRow({
   const sources = sourcesFor(indicator, attention, content)
 
   return (
-    <li className="indicator-row">
-      <div className="indicator-row__header">
-        <span className="indicator-row__name">{indicator.name}</span>
-        {latest && (
-          <span className="indicator-row__reading">
-            <span className="indicator-row__value">
-              {latest.value} {indicator.unit}
-            </span>
-            <span className="indicator-row__time">
-              {strings.timeLabel(latest.missionDay, latest.time)}
-            </span>
-          </span>
-        )}
+    <li className={`indicator-card indicator-card--${attention.kind}`}>
+      <div className="indicator-card__top">
+        <h3 className="indicator-card__name">{indicator.name}</h3>
         <AttentionBadge attention={attention} />
       </div>
-      <p className="indicator-row__next-step">
+      {latest && (
+        <p className="indicator-card__reading">
+          <span className="indicator-card__value">
+            {latest.value}
+            <span className="indicator-card__unit"> {indicator.unit}</span>
+          </span>
+          <span className="indicator-card__time">
+            {strings.timeLabel(latest.missionDay, latest.time)}
+          </span>
+        </p>
+      )}
+      <p className="indicator-card__next-step">
         {nextStepFor(attention, content)}
       </p>
-      <Disclosure label={strings.sources.label}>
-        {sources.length === 0 ? (
-          <p className="sources__empty">{strings.sources.empty}</p>
-        ) : (
-          <ul className="sources__list">
-            {sources.map((source) => (
-              <li key={source === 'Assumption' ? 'Assumption' : source.url}>
-                {source === 'Assumption' ? (
-                  <span>{strings.sources.assumption}</span>
-                ) : (
-                  <a href={source.url} rel="noreferrer">
-                    {source.title}
-                  </a>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-      </Disclosure>
+      <div className="indicator-card__actions">
+        <Disclosure label={strings.sources.label}>
+          {sources.length === 0 ? (
+            <p className="sources__empty">{strings.sources.empty}</p>
+          ) : (
+            <ul className="sources__list">
+              {sources.map((source) => (
+                <li key={source === 'Assumption' ? 'Assumption' : source.url}>
+                  {source === 'Assumption' ? (
+                    <span>{strings.sources.assumption}</span>
+                  ) : (
+                    <a href={source.url} rel="noreferrer">
+                      {source.title}
+                    </a>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </Disclosure>
+      </div>
     </li>
   )
 }
