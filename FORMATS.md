@@ -226,12 +226,14 @@ problems) — `## How to prevent problems` with `rules/conditions.csv`.
 - `Why it matters`: why this indicator is needed (question 2), written by
   Bio 1, with its sources (REQ-04).
 - `How spaceflight affects it`: how the five hazards affect what is measured
-  (question 3, REQ-07).
+  (question 3, REQ-07); written by Bio 1 from the findings of Phys, with their
+  sources.
 - `Measurement steps`: numbered steps, one action per sentence (REQ-08).
 - `Status and next steps`: one `### <attention_level>` sub-section per level in
   `rules/attention.csv` (question 4, REQ-05); each holds the short status text
   and the next step the astronaut reads (REQ-26).
-- `How to prevent problems`: what the astronaut can do (question 5, REQ-06).
+- `How to prevent problems`: what the astronaut can do (question 5, REQ-06);
+  written by Bio 1 from the findings of Bio 2, with their sources.
 - `Sources`: the links from `STANDARDS.md` §6, one per line as
   `- <Title>: <link>`.
 
@@ -244,7 +246,7 @@ Example:
 Example reason, filled by Bio 1 (REQ-04). Assumption.
 
 ## How spaceflight affects it
-Example hazard effect, filled by Phys (REQ-07). Assumption.
+Example hazard effect, written by Bio 1 from Phys's findings (question 3, REQ-07). Assumption.
 
 ## Measurement steps
 1. Example step one.
@@ -255,7 +257,7 @@ Example hazard effect, filled by Phys (REQ-07). Assumption.
 Example status text and example next step. Assumption.
 
 ## How to prevent problems
-Example guidance, filled by Bio 2 (REQ-06). Assumption.
+Example guidance, written by Bio 1 from Bio 2's findings (question 5, REQ-06). Assumption.
 
 ## Sources
 - Example title: https://example.org
