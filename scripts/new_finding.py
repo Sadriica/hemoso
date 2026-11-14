@@ -24,7 +24,7 @@ FOLDER = Path("docs/findings")
 
 def slugify(text: str) -> str:
     s = re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
-    return "-".join(s.split("-")[:6])
+    return "-".join(s.split("-")[:6]) or "finding"
 
 
 def main() -> None:
