@@ -63,7 +63,7 @@ Your CMO is notified on board.
 
 Your resting heart rate is far above your baseline and today it is still high.
 
-Tell your CMO today. Rest, drink water and measure again in 2 hours. Assumption.
+Tell your CMO today. Rest, drink fluids and measure again in 2 hours. Assumption.
 
 Your CMO tells the flight surgeon at the next link with Earth.
 ```
@@ -87,7 +87,8 @@ which threshold the row uses. They must match the rule, not be invented.
   "usual range" or "normal range": a baseline is one value, compared with a
   tolerance set by `attention.csv`.
 - "Heart rhythm problems", not "rhythm problems". "Fluid intake", not "how much
-  water you drank". Bio 1 chose these on Sat 17:40.
+  water you drank". Bio 1 chose these on Sat 17:40. Never write "water" alone:
+  fluid intake covers every liquid the crew drinks, not only water.
 - No condition named and no "you have". A possible condition is Bio 2's row in
   `conditions.csv`, with its probability and its basis.
 - Advice that comes from a source carries the link in `## Sources`. Advice that
