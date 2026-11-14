@@ -101,6 +101,19 @@ def test_supabase_add_conflicting_value_raises():
         store.add(make_entry())
 
 
+def test_supabase_add_conflicting_context_raises():
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200, json=[{**make_entry().model_dump(), "context": "after_exercise"}]
+        )
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    store = storage.SupabaseStorage(URL, NEW_KEY, client=client)
+
+    with pytest.raises(storage.EntryConflict):
+        store.add(make_entry())
+
+
 def test_supabase_history_request_shape():
     captured: dict = {}
 
