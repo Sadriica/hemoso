@@ -120,6 +120,9 @@
           "required": true
         },
         "responses": {
+          "200": {
+            "description": "An entry with this key and value already existed."
+          },
           "201": {
             "content": {
               "application/json": {
@@ -129,6 +132,9 @@
               }
             },
             "description": "Successful Response"
+          },
+          "409": {
+            "description": "An entry with this key already exists with a different value or unit."
           },
           "422": {
             "content": {

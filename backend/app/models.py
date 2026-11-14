@@ -38,3 +38,8 @@ class Entry(BaseModel):
         if not _TIME.fullmatch(value):
             raise ValueError("time must be HH:MM (24-hour)")
         return value
+
+
+def entry_key(entry: Entry) -> tuple[str, str, int, str]:
+    """The natural key: one entry per person, indicator, day and time (REQ-13)."""
+    return (entry.person_id, entry.indicator_id, entry.mission_day, entry.time)

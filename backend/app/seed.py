@@ -16,7 +16,7 @@ from pydantic import ValidationError
 
 from . import storage
 from .indicators import config_dir, validate_against_indicators
-from .models import Entry
+from .models import Entry, entry_key
 
 _DEMO_FILE = "demo_data.csv"
 _EXPECTED_COLUMNS = (
@@ -38,10 +38,6 @@ def _validation_reason(error: ValidationError) -> str:
     loc = errors[0].get("loc", ())
     field = str(loc[0]) if loc else "row"
     return f"invalid {field}"
-
-
-def _key(entry: Entry) -> tuple[str, str, int, str]:
-    return (entry.person_id, entry.indicator_id, entry.mission_day, entry.time)
 
 
 def load_demo_data(store: storage.Storage, path: Path) -> tuple[int, int, list[str]]:
@@ -105,7 +101,7 @@ def load_demo_data(store: storage.Storage, path: Path) -> tuple[int, int, list[s
                 reasons.append(f"line {line_no}: {error}")
                 continue
             existing = store.history(entry.person_id, entry.indicator_id)
-            if any(_key(prior) == _key(entry) for prior in existing):
+            if any(entry_key(prior) == entry_key(entry) for prior in existing):
                 skipped += 1
                 reasons.append(f"line {line_no}: duplicate")
                 continue

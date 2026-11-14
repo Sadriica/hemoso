@@ -30,7 +30,10 @@ const body = await response.json(); // { status: "ok" }
 
 ### POST /entries
 
-Stores one measurement (REQ-27) and returns the stored entry.
+Stores one measurement (REQ-27) and returns the stored entry. The same entry can
+be re-sent (the frontend re-sends what waits in its outbox, REQ-13) without
+creating a duplicate: one entry is kept per `person_id`, `indicator_id`,
+`mission_day` and `time`.
 
 Request body: one `Entry`. Every field is required.
 
@@ -51,13 +54,21 @@ an unknown `indicator_id` returns `unknown indicator`, and a `unit` that differs
 from the file's unit returns `unit mismatch`. Until Phys writes that file, the
 check is skipped and any id and unit are accepted.
 
-Responses: `201` (the stored entry), `422` (validation).
+Responses:
+
+| Code | Meaning |
+| --- | --- |
+| `201` | A new entry was stored; the stored entry is returned. |
+| `200` | An entry with the same `person_id`, `indicator_id`, `mission_day` and `time` already exists with the same `value` and `unit`; that stored entry is returned and nothing is added. |
+| `409` | An entry with the same key already exists with a different `value` or `unit`; `detail` is a short plain message. |
+| `422` | Validation (field rule, or indicator check). |
 
 ```bash
 curl -X POST "$API_URL/entries" \
   -H "Content-Type: application/json" \
   -d '{"person_id":"demo_astronaut_1","indicator_id":"example_indicator","value":1.5,"unit":"example_unit","mission_day":1,"time":"13:30"}'
 # 201 {"person_id":"demo_astronaut_1","indicator_id":"example_indicator","value":1.5,"unit":"example_unit","mission_day":1,"time":"13:30"}
+# re-sending the same body returns 200 with the same stored entry
 ```
 
 ```js
@@ -73,7 +84,7 @@ const response = await fetch(`${API_URL}/entries`, {
     time: "13:30",
   }),
 });
-const entry = await response.json(); // status 201; the entry echoes the request
+const entry = await response.json(); // status 201 (new) or 200 (already stored); the entry echoes the request
 ```
 
 ### GET /people/{person_id}/indicators/{indicator_id}/history
@@ -124,6 +135,11 @@ Indicator check: `detail` is a plain string.
 | --- | --- |
 | `indicator_id` not in `config/data/indicators.csv` | `unknown indicator` |
 | `unit` differs from the file's unit | `unit mismatch` |
+
+`POST /entries` returns `409` when an entry with the same `person_id`,
+`indicator_id`, `mission_day` and `time` already exists with a different
+`value` or `unit`. The `detail` is the plain string `an entry for this person,
+indicator, day and time already exists with a different value`.
 
 `GET /people/{person_id}/indicators/{indicator_id}/history` returns `422` with a
 plain-string `detail` when `person_id` or `indicator_id` breaks the `snake_case`
