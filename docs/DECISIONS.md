@@ -70,7 +70,6 @@ was tier C until then). Ids in `FORMATS.md` section 2.
 | Name | Licence | What for |
 | --- | --- | --- |
 | React 19.3.1, React DOM | MIT | The app's screens |
-| MUI 9.5.0, Emotion 11.14 | MIT | Theme, header and tabs |
 | @vladmandic/face-api 1.7.15 and its models | MIT | Face sign-in on the device (REQ-36) |
 | Vite 8.3.8, TypeScript 6.0.3 | MIT, Apache-2.0 | Build and types (development only) |
 | Vitest, Testing Library, jsdom | MIT | Frontend tests (development only) |
@@ -107,7 +106,7 @@ planning, wording, and code. Not the base idea. Kept in `team/eng1/notes/si-use-
 | Use | No Supabase client library: the backend calls the Supabase REST API with httpx | One dependency less; its licence row is httpx's | REQ-27 |
 | Use | Face sign-in on the device (REQ-36), off unless the URL has `?face=1`: consent first, the descriptor stays in the person's own browser, never sent to the backend; exception to REQ-14 limited to that | Juli's proposal (team/eng2/notes/face-login-proposal.md), accepted by Wambi Sat 18:25; first step toward the team's face and eye analysis | REQ-36, REQ-14 |
 | Use | @vladmandic/face-api 1.7.15, MIT, with its tiny detector, tiny 68-point landmark and recognition models copied to `frontend/public/models/` with the licence | Runs in the browser with no external service and no CDN; loaded only when the face panel opens | REQ-36 |
-| Use | @mui/material 9.5.0 with @emotion/react 11.14.0 and @emotion/styled 11.14.1, MIT | The app's theme, header and tabs (Juli, Sat 19:00); split into its own `vendor-mui` file so the browser keeps it cached when only the app changes | REQ-01, REQ-15, REQ-30 |
+| Rejected | @mui/material 9.5.0 with @emotion/react and @emotion/styled (used Sat 19:00 to 19:50) | Juli replaced it with the app's own CSS and a three-phase check (identify, report, status): first-load JavaScript went from 525 kB to 290 kB (163 to 88 kB gzip) | REQ-01, REQ-15 |
 | Use | Blood pressure shows the worse of its two states (systolic or diastolic) for one reading | F-bio2-01: WHO and ACC/AHA both classify a mixed reading by the higher category | REQ-05 |
 | Use | Possible conditions shown as an evidence score from 0 to 1 with a three-step label and its signals, never a percentage; each signal in `rules/conditions.csv` names its side (`indicator_id:above` or `:below`) | F-bio2-02: a percentage would need prevalence and signal rates we do not have for astronauts; the score keeps "as probabilities, never a certainty" without inventing calibration. Bio 2's proposal, accepted by Wambi Sat 19:40 | REQ-06 |
 | Use | Blood glucose is tier A: i-STAT fingerstick on board, a value only when the crew takes a sample | Bio 2's review with the NTRS, FDA and Clinical Chemistry sources (`team/bio2/notes/indicators-review.md`); Phys updates `data/indicators.csv` | REQ-03 |
