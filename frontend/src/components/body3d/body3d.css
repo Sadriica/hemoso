@@ -1,0 +1,448 @@
+/* The 3D body, the pain picker and their panel. Every value is a token of
+   DESIGN.md: colours (2), spaces (5), radii (6), motion (7). The canvas is
+   sized here, so the space is reserved before the chunk arrives and nothing on
+   the page moves when it does. */
+
+.body3d {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-2);
+  width: 100%;
+  margin: 0;
+}
+
+/* The same box as the canvas: the lazy fallback keeps this height. */
+.body3d__stage,
+.body3d-slot {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  min-height: 320px;
+  overflow: hidden;
+  border-radius: var(--radius-card);
+  background:
+    radial-gradient(
+      circle at 50% 32%,
+      color-mix(in srgb, var(--color-accent) 12%, transparent),
+      transparent 62%
+    ),
+    var(--color-bg-raised);
+}
+
+.body3d__stage {
+  cursor: grab;
+  touch-action: none;
+}
+
+.body3d__stage:active {
+  cursor: grabbing;
+}
+
+.body3d__canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* The name of the region under the pointer, at the pointer. */
+.body3d__hover {
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding: var(--space-1) var(--space-2);
+  border: var(--border-subtle);
+  border-radius: var(--radius-small);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* The ring of a tap: it starts small at the point touched and grows as it
+   fades, in one --motion-slow step (DESIGN.md 7, never over 600 ms). */
+.body3d__pulse {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 144px;
+  height: 144px;
+  margin: -72px 0 0 -72px;
+  border: 3px solid var(--color-text);
+  border-radius: var(--radius-round);
+  opacity: 0;
+  pointer-events: none;
+  animation: body3d-pulse var(--motion-slow) var(--ease-out) forwards;
+}
+
+@keyframes body3d-pulse {
+  0% {
+    opacity: 0.95;
+    scale: 0.3;
+  }
+  100% {
+    opacity: 0;
+    scale: 1;
+  }
+}
+
+/* The turn controls sit under the figure, never over its feet. */
+.body3d__turn {
+  display: flex;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+.body3d__turn-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--tap-min);
+  height: var(--tap-min);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-round);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--text-body-l);
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color var(--motion-fast) var(--ease-out);
+}
+
+.body3d__turn-button:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+/* The keyboard path: every region is a button in this list. It sits in the
+   page next to the canvas, and it is hidden with the clip technique while the
+   canvas can be tapped (the list stays reachable by Tab). Without WebGL the
+   list is the figure instead, so it shows. */
+.body3d__regions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.body3d__regions--sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.body3d__region {
+  width: 100%;
+  min-height: var(--tap-min);
+  padding: 0 var(--space-2);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-small);
+  background: transparent;
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: var(--text-small);
+  text-align: start;
+  cursor: pointer;
+  transition:
+    border-color var(--motion-fast) var(--ease-out),
+    background-color var(--motion-fast) var(--ease-out);
+}
+
+.body3d__region:hover {
+  border-color: var(--color-accent);
+}
+
+.body3d__region[aria-pressed='true'] {
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 18%, transparent);
+  color: var(--color-text);
+}
+
+.body3d__regions span {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap-min);
+  color: var(--color-text-muted);
+  font-size: var(--text-small);
+}
+
+/* Words for a screen reader only: never the visible text of the figure. */
+.body3d__live,
+.body3d__hint {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.body3d__label,
+.body3d__note {
+  margin: 0;
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.body3d__note {
+  color: var(--color-text-muted);
+  text-transform: none;
+  letter-spacing: 0;
+  font-family: var(--font-body);
+  font-size: var(--text-small);
+}
+
+/* The fallback keeps the 2D silhouette at its own size, centred in the slot. */
+.body3d--flat {
+  align-items: center;
+}
+
+.body3d--flat .body-silhouette {
+  margin-inline: auto;
+}
+
+/* Pain picker ------------------------------------------------------------ */
+
+/* The block the status phase adds under the board: the button that opens the
+   picker, the picker itself, and the reports kept on this device. */
+.pain {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+}
+
+.pain-picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: var(--border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.pain-picker__heading {
+  margin: 0;
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-size: var(--text-h2);
+  line-height: var(--leading-h2);
+}
+
+.pain-picker__intro,
+.pain-picker__surgeon,
+.pain-picker__hint,
+.pain-picker__scale {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-small);
+}
+
+.pain-picker__surgeon {
+  padding-top: var(--space-2);
+  border-top: var(--border-subtle);
+  color: var(--color-text);
+}
+
+.pain-picker__body {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.pain-picker__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.pain-picker__marks {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pain-picker__mark {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: var(--border-subtle);
+  border-radius: var(--radius-card);
+}
+
+.pain-picker__region {
+  margin: 0;
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-size: var(--text-h3, var(--text-body-l));
+}
+
+.pain-picker__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.pain-picker__field label {
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+.pain-picker__field select,
+.pain-picker__note {
+  min-height: var(--tap-min);
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-card);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+}
+
+.pain-picker__note {
+  min-height: 72px;
+  resize: vertical;
+}
+
+.pain-picker__field input[type='range'] {
+  width: 100%;
+  min-height: var(--tap-min);
+  accent-color: var(--color-accent);
+}
+
+.pain-picker__value {
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: var(--text-value, var(--text-body-l));
+}
+
+.pain-picker__error {
+  margin: 0;
+  color: var(--status-attention-text);
+  font-size: var(--text-small);
+}
+
+.pain-picker__outcome {
+  min-height: var(--leading-small);
+  margin: 0;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+@media (min-width: 900px) {
+  .pain-picker__body {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .body3d__regions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* Reports saved on this device, under the button that opens the picker. */
+.pain-reports {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.pain-reports__heading {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+.pain-reports__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pain-reports__report {
+  padding: var(--space-3);
+  border: var(--border-subtle);
+  border-radius: var(--radius-card);
+}
+
+.pain-reports__when {
+  margin: 0 0 var(--space-1);
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+.pain-reports__marks,
+.pain-reports__note {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--text-small);
+}
+
+.pain-reports__marks {
+  padding-left: var(--space-3);
+}
+
+.pain-reports__empty {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-small);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .body3d__turn-button,
+  .body3d__region {
+    transition: none;
+  }
+
+  .body3d__pulse {
+    display: none;
+    animation: none;
+  }
+}
+
+.app--still .body3d__turn-button,
+.app--still .body3d__region {
+  transition: none;
+}
+
+.app--still .body3d__pulse {
+  display: none;
+  animation: none;
+}

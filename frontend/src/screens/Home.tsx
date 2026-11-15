@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { latestEntry } from '../domain/entries'
 import type {
   AttentionRule,
@@ -26,6 +26,9 @@ import { useIndicatorStates } from '../hooks/useIndicatorState'
 import { IndicatorIcon, StatusIcon, systemColor, systemOf } from '../icons'
 import { useCountUp, useMotionAllowed } from '../motion/motion'
 import { strings } from '../strings'
+// The slot of the lazy 3D body has its size here, so nothing moves when the
+// chunk arrives.
+import '../components/body3d/body3d.css'
 
 // The three figures are chunks of their own, so the first load stays small.
 // Each one waits in a box of its final size, so nothing moves when it arrives.
@@ -33,9 +36,8 @@ const Planetarium = lazy(() =>
   import('../components/planetarium').then((m) => ({ default: m.Planetarium })),
 )
 const Instrument = lazy(() => import('../components/instruments'))
-const BodySilhouette = lazy(() =>
-  import('../components/body').then((m) => ({ default: m.BodySilhouette })),
-)
+// The body is a chunk of its own: three.js never reaches the first load.
+const Body3D = lazy(() => import('../components/body3d/Body3D'))
 
 // One indicator with everything the screen draws from: its readings, its rules,
 // and the one status the planetarium, the notice and the card all read.
@@ -72,6 +74,10 @@ export default function Home({
   const [initialView] = useState<'list' | 'orbits'>(() =>
     window.matchMedia?.('(min-width: 900px)').matches ? 'orbits' : 'list',
   )
+  // The body sits in a column of its own that only exists from 900 px up
+  // (phases.css). Under that width it is not mounted at all, so a phone never
+  // downloads the three.js chunk of a figure it cannot show.
+  const wide = useWideScreen()
   const [chosenId, setChosenId] = useState<string | null>(null)
   const selectedId =
     data.indicators.find((item) => item.id === chosenId)?.id ??
@@ -204,22 +210,43 @@ export default function Home({
           </ul>
           <div className="detail__body">
             <Suspense
-              fallback={<div className="detail__body-slot" aria-hidden="true" />}
+              fallback={<div className="body3d-slot" aria-hidden="true" />}
             >
-              <BodySilhouette
-                system={selectedSystem}
-                label={
-                  selectedSystem
-                    ? strings.board.bodyLabel(selected.indicator.name)
-                    : strings.board.bodyNone
-                }
-              />
+              {wide && (
+                <Body3D
+                  mode="status"
+                  system={selectedSystem}
+                  state={statusBadgeKind(selected.status)}
+                  label={
+                    selectedSystem
+                      ? strings.board.bodyLabel(selected.indicator.name)
+                      : strings.board.bodyNone
+                  }
+                />
+              )}
             </Suspense>
           </div>
         </div>
       )}
     </section>
   )
+}
+
+// True from 900 px up, the width at which the body column appears (phases.css).
+// Read once and followed on resize, so the figure mounts exactly when the
+// layout has room for it.
+function useWideScreen(): boolean {
+  const [wide, setWide] = useState(
+    () => window.matchMedia?.('(min-width: 900px)').matches ?? false,
+  )
+  useEffect(() => {
+    if (typeof window.matchMedia !== 'function') return
+    const query = window.matchMedia('(min-width: 900px)')
+    const update = (): void => setWide(query.matches)
+    query.addEventListener('change', update)
+    return () => query.removeEventListener('change', update)
+  }, [])
+  return wide
 }
 
 // The status of one indicator: the answer of the state route when it arrives,
