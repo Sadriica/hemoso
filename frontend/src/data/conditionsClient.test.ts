@@ -116,3 +116,42 @@ describe('createConditionsClient', () => {
     expect(fake.headers[0].Authorization).toBeUndefined()
   })
 })
+
+describe('fetchConditions, symptom answers', () => {
+  beforeEach(() => localStorage.clear())
+
+  it('reads an urgent label, the red flag and the symptom signals', async () => {
+    const { fetchFn } = fakeFetch(
+      answer(200, [
+        {
+          ...row,
+          label: 'urgent',
+          red_flag: true,
+          signals: [
+            ...row.signals,
+            { kind: 'symptom', symptom_id: 'confusion', weight: 0.25, contribution: 0.25 },
+            { kind: 'symptom', symptom_id: 'thirst', weight: 0.5, contribution: null },
+          ],
+        },
+      ]),
+    )
+    const [condition] =
+      (await createConditionsClient('http://api.test', fetchFn).fetchConditions('p')) ?? []
+    expect(condition.label).toBe('urgent')
+    expect(condition.redFlag).toBe(true)
+    expect(condition.signals.slice(2)).toEqual([
+      { kind: 'symptom', symptomId: 'confusion', weight: 0.25, contribution: 0.25 },
+      { kind: 'symptom', symptomId: 'thirst', weight: 0.5, contribution: null },
+    ])
+  })
+
+  it('rejects a symptom signal with no weight', async () => {
+    const { fetchFn } = fakeFetch(
+      answer(200, [
+        { ...row, signals: [{ kind: 'symptom', symptom_id: 'x', contribution: 1 }] },
+      ]),
+    )
+    expect(await createConditionsClient('http://api.test', fetchFn).fetchConditions('p')).toBeNull()
+  })
+})
+

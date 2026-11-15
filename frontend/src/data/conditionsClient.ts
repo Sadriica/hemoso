@@ -73,7 +73,13 @@ class HttpConditions implements ConditionsClient {
   }
 }
 
-const LABELS: readonly string[] = ['no_data', 'low', 'possible', 'review']
+const LABELS: readonly string[] = [
+  'no_data',
+  'low',
+  'possible',
+  'review',
+  'urgent',
+]
 
 function parseConditions(value: unknown): Condition[] | null {
   if (!Array.isArray(value)) return null
@@ -106,6 +112,8 @@ function parseCondition(value: unknown): Condition | null {
     label: row.label as ConditionLabel,
     signals,
     source: row.source,
+    // Left out of the answer unless true, as in docs/API.md.
+    ...(row.red_flag === true ? { redFlag: true } : {}),
   }
 }
 
@@ -115,6 +123,21 @@ function parseSignals(value: unknown): ConditionSignal[] | null {
   for (const row of value) {
     if (typeof row !== 'object' || row === null) return null
     const signal = row as Record<string, unknown>
+    if (signal.kind === 'symptom') {
+      // A symptom signal: the report of the day, its weight and its term.
+      if (typeof signal.symptom_id !== 'string') return null
+      if (typeof signal.weight !== 'number' || !Number.isFinite(signal.weight)) {
+        return null
+      }
+      if (!isNumberOrNull(signal.contribution)) return null
+      signals.push({
+        kind: 'symptom',
+        symptomId: signal.symptom_id,
+        weight: signal.weight,
+        contribution: signal.contribution,
+      })
+      continue
+    }
     if (typeof signal.indicator_id !== 'string') return null
     const side = signal.side
     if (side !== null && side !== 'above' && side !== 'below') return null

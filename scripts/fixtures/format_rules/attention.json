@@ -1,6 +1,6 @@
 {
   "rule": "attention_for",
-  "source": "FORMATS.md section 3, `config/rules/attention.csv`: \"`side`: `below` or `above`: which side of `threshold` triggers this row\" and \"When several rows match a value, the row with the most severe `notify` wins.\" `notify` is \"`crew`, `cmo` or `flight_surgeon`, from least to most severe\". FORMATS.md does NOT define the tie when two matching rows have the same `notify`; these cases follow frontend/src/domain/attention.ts, where the more extreme threshold wins (lower on `below`, higher on `above`) and two rows on opposite sides keep the first row in list order. FORMATS.md also does not say whether a value exactly on a threshold triggers its row; the two cases marked `undefined_by_formats` record that gap, and they expect the strict comparison attention.ts uses.",
+  "source": "FORMATS.md section 3, `config/rules/attention.csv`: \"`side`: `below` or `above`: which side of `threshold` triggers this row\" and \"When several rows match a value, the row with the most severe `notify` wins.\" `notify` is \"`crew`, `cmo` or `flight_surgeon`, from least to most severe\". FORMATS.md does NOT define the tie when two matching rows have the same `notify`; these cases follow frontend/src/domain/attention.ts, where the more extreme threshold wins (lower on `below`, higher on `above`) and two rows on opposite sides keep the first row in list order. FORMATS.md also did not say whether a value exactly on a threshold triggers its row; Bio 2 decided on Sun 15 Nov (Q4, backend PR #173) that it does, `>=` on `above` and `<=` on `below`, because the cited limits say \"or higher\" and \"or lower\". The two cases named \"exactly on ... triggers\" follow that decision, and FORMATS.md now carries it in the `side` bullet.",
   "notes": "`input.rows` are the attention rows of one indicator, in file order, already filtered by `indicator_id` the way attention.ts receives them. `expected` is the winning row's `attention_level` and `notify`, or null when no row matches. attention.ts tells the two empty results apart as `no_rules` (no rows at all) and `in_range` (rows but no match); that distinction is not part of this rule.",
   "cases": [
     {
@@ -76,26 +76,24 @@
       "expected": {"attention_level": "example_level_high", "notify": "crew"}
     },
     {
-      "name": "exactly on an above threshold does not trigger",
-      "undefined_by_formats": true,
+      "name": "exactly on an above threshold triggers",
       "input": {
         "rows": [
           {"indicator_id": "example_indicator", "side": "above", "threshold": 100, "attention_level": "example_level_high", "notify": "crew"}
         ],
         "value": 100
       },
-      "expected": null
+      "expected": {"attention_level": "example_level_high", "notify": "crew"}
     },
     {
-      "name": "exactly on a below threshold does not trigger",
-      "undefined_by_formats": true,
+      "name": "exactly on a below threshold triggers",
       "input": {
         "rows": [
           {"indicator_id": "example_indicator", "side": "below", "threshold": 90, "attention_level": "example_level_low", "notify": "crew"}
         ],
         "value": 90
       },
-      "expected": null
+      "expected": {"attention_level": "example_level_low", "notify": "crew"}
     },
     {
       "name": "equal severity on above, the higher threshold wins",

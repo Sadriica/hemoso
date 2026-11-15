@@ -1,7 +1,8 @@
 """Record the prototype shots of the demo video (T-16, REQ-31).
 
-Walks the demo path of `submission/video.md` on a build of `main` at 1280 x 800
-and saves one WebM take plus one PNG per shot. Synthetic data only: the demo
+Walks the demo path of `submission/video.md` (shot map of Sun 08:47) on a build
+of `main` at 1280 x 800 and saves one WebM take plus one PNG per shot: S3, S4,
+S5, S1, S6 and S7, then S8. Synthetic data only: the demo
 astronaut, values typed in the report.
 
     pnpm --dir frontend build && pnpm --dir frontend preview --port 4399
@@ -79,10 +80,15 @@ def main() -> None:
 
         if page.get_by_role("button", name="List view").count():
             click(page, "List view")
-        still(page, "s6-status-list", 2500)
+        still(page, "s1-status-list", 2500)
 
         page.get_by_role("heading", name="Possible conditions").first.scroll_into_view_if_needed()
-        still(page, "s7-fever-evidence", 3000)
+        still(page, "s6-s7-fever-evidence", 3000)
+
+        # S8: back to the list, the other readings in their usual range.
+        page.get_by_role("heading", name="Status for Demo astronaut 1").first.scroll_into_view_if_needed()
+        page.mouse.wheel(0, 300)
+        still(page, "s8-status-list-again", 3000)
 
         context.close()
         browser.close()

@@ -41,15 +41,16 @@ const cited: AttentionRule = {
 const assumed: AttentionRule = { ...cited, threshold: 90, sources: ['Assumption'] }
 
 describe('trendBand', () => {
-  it('is the median and three spreads of the last 14 in the context', () => {
-    // 20 readings: only the last 14 (values 7 to 20) set the band.
+  it('is the median and three spreads of the last 14 days in the context', () => {
+    // 20 readings, one a day: the tested reading of day 20 is left out, so the
+    // 14 days before it (values 6 to 19) set the band.
     const rows = Array.from({ length: 20 }, (_, i) => entry(i + 1, i + 1))
     const band = trendBand(rows, 'rest', [], 0.5)
-    // median of 7..20 is 13.5, MAD is 3.5, spread = 1.4826 * 3.5
-    expect(band?.median).toBe(13.5)
+    // median of 6..19 is 12.5, MAD is 3.5, spread = 1.4826 * 3.5
+    expect(band?.median).toBe(12.5)
     expect(band?.spread).toBeCloseTo(1.4826 * 3.5, 6)
-    expect(band?.high).toBeCloseTo(13.5 + 3 * 1.4826 * 3.5, 6)
-    expect(band?.low).toBeCloseTo(13.5 - 3 * 1.4826 * 3.5, 6)
+    expect(band?.high).toBeCloseTo(12.5 + 3 * 1.4826 * 3.5, 6)
+    expect(band?.low).toBeCloseTo(12.5 - 3 * 1.4826 * 3.5, 6)
   })
 
   it('keeps the noise floor for a flat history', () => {
@@ -63,13 +64,14 @@ describe('trendBand', () => {
       entry(1, 10),
       entry(2, 10),
       entry(3, 10),
-      entry(4, 200, { context: 'after_exercise' }),
+      entry(4, 10),
+      entry(5, 200, { context: 'after_exercise' }),
     ]
     expect(trendBand(rows, 'rest', [], 1)?.median).toBe(10)
     expect(trendBand(rows, 'after_exercise', [], 1)).toBeNull()
   })
 
-  it('is null with fewer than 3 readings', () => {
+  it('is null with fewer than 3 days', () => {
     expect(trendBand([entry(1, 5), entry(2, 6)], 'rest', [], 1)).toBeNull()
     expect(trendBand([], 'rest', [], 1)).toBeNull()
   })

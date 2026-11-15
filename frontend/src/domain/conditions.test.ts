@@ -107,6 +107,7 @@ const orthostatic: ConditionRule = {
     { indicatorId: 'bp_sys_mmhg', side: 'below' },
     { indicatorId: 'bp_dia_mmhg', side: 'below' },
   ],
+  symptoms: [],
   source: 'https://example.org/ortho',
 }
 
