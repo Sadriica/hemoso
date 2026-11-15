@@ -9,7 +9,8 @@ import PhaseHeading from '../components/PhaseHeading'
 import { bodyRegionName } from '../components/body3d/regions'
 import { bodyWords, injuryWords } from '../components/body3d/words'
 import type { LoadedContent } from '../content/load'
-import { missionNow } from '../domain/clock'
+import { missionClockFor } from '../domain/clock'
+import { useMissionStart } from '../data/missionStart'
 import { readPainReports, removePainReport } from '../data/painStore'
 import type { EntryStore } from '../data/entryStore'
 import type { Entry } from '../domain/types'
@@ -59,7 +60,9 @@ export default function StatusPhase({
   motionReduced = false,
 }: StatusPhaseProps) {
   const copy = strings.phases.status
-  const clock = missionNow(entries)
+  // The same day the top bar shows: counted from this person's mission start,
+  // and re-read when the account's start arrives.
+  const clock = missionClockFor(entries, personId, useMissionStart(personId))
   const [painOpen, setPainOpen] = useState(false)
   // The indicator the card shows; the History panel follows it.
   const [selectedId, setSelectedId] = useState<string | null>(null)
