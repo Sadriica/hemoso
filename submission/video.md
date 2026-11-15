@@ -67,7 +67,7 @@ Line notes:
 ## Shots
 
 Record at 1280 × 800, 30 frames per second, same window, same zoom, one take per
-shot, plus one screenshot per shot for the slides.
+shot, plus one screenshot per shot.
 
 | Shot | Time (s) | Screen | Must be visible |
 | --- | --- | --- | --- |
@@ -210,7 +210,7 @@ judge should remember word for word.
 - The full official challenge title: it takes six seconds to say. "Astronaut
   health monitoring" names it.
 - The 3D body, the camera and the forecast models: each needs more than 4 s to be
-  understood and the product has ten. They belong in the slides.
+  understood and the product has ten. They stay out of the 30 seconds.
 - Accuracy figures, "detects", "diagnoses". The app suggests with a probability
   and a basis, and the CMO confirms.
 - Real faces, names or medical data of anyone outside the team, and any person
