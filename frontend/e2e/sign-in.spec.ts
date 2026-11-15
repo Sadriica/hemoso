@@ -143,9 +143,8 @@ function newApi(): Api {
   return { accounts: new Map(), tokens: new Set(), authorizations: [] }
 }
 
-// The username and PIN form waits behind a closed row on Identify.
+// The account block is on screen at once: Sign in and Create an account tabs.
 async function openMore(page: Page): Promise<void> {
-  await page.getByRole('button', { name: strings.signIn.moreToggle }).click()
   await expect(
     page.getByRole('textbox', { name: strings.signIn.username }),
   ).toBeVisible()
@@ -153,10 +152,9 @@ async function openMore(page: Page): Promise<void> {
 
 // The form of the account card, filled and sent.
 async function createAccount(page: Page): Promise<void> {
-  await openMore(page)
+  await page.getByRole('tab', { name: strings.signIn.createToggle }).click()
   await page.getByRole('textbox', { name: strings.signIn.username }).fill(PERSON)
   await page.getByLabel(strings.signIn.pin, { exact: true }).fill(PIN)
-  await page.getByRole('button', { name: strings.signIn.createToggle }).click()
   await page.getByLabel(strings.signIn.confirmPin).fill(PIN)
   await page.getByRole('button', { name: strings.signIn.createAction }).click()
 }
@@ -179,7 +177,7 @@ test('creates an account, signs in and sends its token on the person routes', as
 
   // Worth a sentence when it fails: the options are built, not fetched.
   await expect(
-    page.getByRole('button', { name: strings.signIn.moreToggle }),
+    page.getByRole('tab', { name: strings.signIn.createToggle }),
   ).toBeVisible()
 
   await createAccount(page)
@@ -253,7 +251,7 @@ test('names a wrong PIN and a username that is taken in plain words', async ({
     strings.signIn.errors.wrong,
   )
 
-  await page.getByRole('button', { name: strings.signIn.createToggle }).click()
+  await page.getByRole('tab', { name: strings.signIn.createToggle }).click()
   // The PIN of a refused sign-in leaves the field, so it is typed again here.
   await page.getByLabel(strings.signIn.pin, { exact: true }).fill('1111')
   await page.getByLabel(strings.signIn.confirmPin).fill('1111')

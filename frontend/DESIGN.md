@@ -495,8 +495,44 @@ arranges the tokens of sections 2 to 7.
   reading order; nothing sits side by side inside a panel.
 - **Status.** The same grammar. A system strip over the overview counts the
   channels and how many are in each state (icon and words, from the statuses
-  on screen). The indicator card and the 3D body are two framed panels side by
-  side from 900 px: the card with its state on the top edge, the body wider
-  and named "Digital twin", lighting the zone of the selected indicator. The
+  on screen). From 900 px the 3D body stands in the centre of the orbits,
+  where the astronaut mark was: only the figure, no tile and no frame, sized
+  as a share of the stage (10 % wide, 50 % tall) so the nearest indicators
+  stay clear of it, lighting the zone of the selected indicator. It is
+  decoration there: hidden from assistive technology, taking no pointer
+  event, with the centre named in words for a screen reader. While the 3D
+  chunk loads, and whenever it cannot be loaded or drawn, the flat body
+  outline takes the same place, so the centre is never empty. The indicator
+  card is one framed panel under the orbits, its state on the top edge. The
   possible conditions are an evidence board: one framed tile per condition,
   its step on the top edge.
+
+### 16.1 History trend (Sun 15 Nov)
+
+The History screen opens with one framed trend panel per indicator, in the same
+grammar as the report panels: hairline frame, 2 px accent top edge, corner
+marks, mono labels.
+
+- **Series.** The person's readings over Flight Days (x) and value (y), one mark
+  per reading, joined by a line. Two segmented controls sit above it: the
+  context (the NASA labels of `strings.entry.contextLabels`, opening on the
+  context with most readings) and "Last 14" or "All".
+- **Band.** The person's usual band, a soft strip: the median of the last 14
+  readings in the selected context and 3 spreads each side (`domain/trend.ts`,
+  the same rule as the state). No band under 3 readings, and it says so.
+- **Thresholds.** Thin dotted lines with the level name, only for attention rows
+  whose source is a link.
+- **Marks.** A shape per state, never colour alone: circle in range, diamond
+  outside, triangle needs review, open circle no data. A second series (blood
+  pressure) uses the square family (square, plus, inverted triangle, open
+  square) and a dashed line.
+- **Readout.** One line above the plot, never over it: value with unit, Flight
+  Day, GMT time, context and the state in words. Hover, tap or the arrow keys
+  (Left, Right, Home, End; Up and Down between two series; Escape clears)
+  fill it. The table below stays the text equivalent.
+- **Motion.** The series rises (opacity, transform) and the first line draws
+  (stroke offset) when the chart mounts or a filter changes. Off under
+  `prefers-reduced-motion`, with the top bar switch and paused while the tab is
+  hidden.
+- **Phone.** At 390 px the chart fills the width, the context segments sit two
+  by two, the readout keeps its own block and the tables scroll in their box.
