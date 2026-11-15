@@ -132,8 +132,8 @@ describe('Planetarium', () => {
       x: parseFloat(b.style.left), y: parseFloat(b.style.top), left: b.classList.contains('planetarium__body--left'),
     }))
     for (const p of pos) {
-      expect(p.x).toBeGreaterThanOrEqual(35)
-      expect(p.x).toBeLessThanOrEqual(65)
+      expect(p.x).toBeGreaterThanOrEqual(30)
+      expect(p.x).toBeLessThanOrEqual(70)
       expect(p.y).toBeGreaterThanOrEqual(10)
       expect(p.y).toBeLessThanOrEqual(90)
     }

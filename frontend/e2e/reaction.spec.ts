@@ -82,7 +82,7 @@ test('reaction check by keyboard, at the demo length', async ({ page }) => {
   })
 
   await test.step('Answer every stimulus with the space bar', async () => {
-    // Only a target is answered: a non-green light is left to clear by itself.
+    // Only a target is answered: a non-green lamp is left to clear by itself.
     const stimulus = page.locator(
       '[data-reaction-state="stimulus"][data-reaction-target="true"]',
     )
@@ -96,8 +96,7 @@ test('reaction check by keyboard, at the demo length', async ({ page }) => {
       // The demo length ran out while waiting: nothing more to answer.
       if (!shown) break
       if (!sawLight) {
-        // The light is a shape with a name; colour targets are off by default,
-        // so every light is a target.
+        // The light is a round lamp with a name, and the first one is a target.
         await expect(page.getByRole('img').first()).toBeVisible()
         sawLight = true
       }
@@ -119,8 +118,8 @@ test('reaction check by keyboard, at the demo length', async ({ page }) => {
     await expect(result).toBeVisible({ timeout: 20_000 })
     await expect(result).toContainText(reactionStrings.medianLabel)
     await expect(result).toContainText(new RegExp(`${reactionStrings.lapsesLabel}\\s*\\d+`))
-    // Without colour targets there are no errors to show.
-    await expect(result).not.toContainText(reactionStrings.errorsLabel)
+    // With colour targets the result also shows the errors, never stored.
+    await expect(result).toContainText(new RegExp(`${reactionStrings.errorsLabel}\\s*\\d+`))
     // A demo run is a demonstration of the screen, not a check the crew took:
     // it says so, and no entry reaches the outbox (REQ-28, T-76).
     await expect(page.getByText(reactionStrings.demoNotSaved)).toBeVisible()
@@ -133,7 +132,7 @@ test('reaction check by keyboard, at the demo length', async ({ page }) => {
   })
 
 
-  await test.step('A run in sound mode shows its cue, and Escape under 3 trials saves nothing', async () => {
+  await test.step('A run in sound mode keeps the stage steady, and Escape under 3 trials saves nothing', async () => {
     await page.getByRole('button', { name: reactionStrings.again }).focus()
     await page.keyboard.press('Enter')
     await page.getByRole('radio', { name: reactionStrings.sound }).focus()
@@ -147,7 +146,9 @@ test('reaction check by keyboard, at the demo length', async ({ page }) => {
     await expect(
       page.locator('[data-reaction-state="stimulus"]'),
     ).toBeVisible({ timeout: 20_000 })
-    await expect(page.getByText(reactionStrings.kind.tone)).toBeVisible()
+    // The stage shows the same steady line while the tone plays: no figure.
+    await expect(page.getByText(reactionStrings.listen)).toBeVisible()
+    await expect(page.locator('.reaction__stimulus')).toHaveCount(0)
     await page.keyboard.press('Escape')
     // Fewer than 3 valid trials, and a demo run besides: nothing is saved.
     await expect(page.getByText(reactionStrings.tooFew)).toBeVisible()

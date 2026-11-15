@@ -30,6 +30,12 @@ export interface PainPickerProps {
   reducedMotion?: boolean
   /** The report as written, so the list beside the picker shows it at once. */
   onSaved?: (report: PainReport) => void
+  /**
+   * A place tapped on the body outside the picker (the orbits of the status
+   * view): it is marked as if it had been tapped here. A new `count` is a new
+   * tap, so the same place twice is the same as tapping it twice in the picker.
+   */
+  pick?: { regionId: string; count: number }
   /** Test seam: the browser storage when left out, none when null. */
   storage?: PainStorage | null
 }
@@ -42,6 +48,7 @@ export default function PainPicker({
   time,
   reducedMotion = false,
   onSaved,
+  pick,
   storage,
 }: PainPickerProps) {
   const fieldId = useId()
@@ -49,6 +56,19 @@ export default function PainPicker({
   const [note, setNote] = useState('')
   const [outcome, setOutcome] = useState<Outcome>('idle')
   const [missing, setMissing] = useState(false)
+  const [seenPick, setSeenPick] = useState(0)
+
+  // The tap from outside is applied while rendering, once per count, so the
+  // mark is there on the first frame of the picker.
+  if (pick !== undefined && pick.count !== seenPick) {
+    setSeenPick(pick.count)
+    setOutcome('idle')
+    setMarks((current) =>
+      current.some((mark) => mark.regionId === pick.regionId)
+        ? current.filter((mark) => mark.regionId !== pick.regionId)
+        : [...current, { regionId: pick.regionId, kind: 'pain', intensity: 5 }],
+    )
+  }
 
   function toggleRegion(regionId: string): void {
     setOutcome('idle')

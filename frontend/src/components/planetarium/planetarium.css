@@ -4,8 +4,8 @@
   --planet-target: 44px;
   /* Widest the orbit stage grows. It is wider than tall so the two columns of
      tags sit on the outer sides, one line for the name and one for the state. */
-  --planet-stage-max: 1000px;
-  /* Stage shape: 16 wide to 10 tall gives each row of tags about 90 px at 900 px. */
+  --planet-stage-max: 1200px;
+  /* Stage shape: 16 wide to 10 tall gives each row of tags about 100 px at 900 px. */
   --planet-stage-ratio: 16 / 10;
   /* Ring around a body, the selected ring and the row edge: 3 px. */
   --planet-ring: 3px;
@@ -17,11 +17,11 @@
   --planet-gap: 3px;
   /* Space between an element and its focus ring (DESIGN.md 8). */
   --planet-focus-offset: 2px;
-  /* The body in the centre of the orbits, as shares of the stage: narrow and
-     tall, so the nearest indicators, 8 % of the stage away, stay clear of it
-     at every width. */
-  --planet-figure-width: 10%;
-  --planet-figure-height: 50%;
+  /* The body in the centre of the orbits, as shares of the stage: tall and
+     wide enough to read and to turn, while the nearest indicators, 15 % of the
+     stage away from the centre, stay clear of it at every width. */
+  --planet-figure-width: 20%;
+  --planet-figure-height: 84%;
 }
 .planetarium { display: grid; gap: var(--space-3); min-width: 0; }
 .planetarium__toggle {
@@ -73,6 +73,8 @@
 .planetarium__stage {
   position: relative; width: min(100%, var(--planet-stage-max)); aspect-ratio: var(--planet-stage-ratio); min-height: 0; justify-self: center;
   border: var(--border-subtle); border-radius: var(--radius-card); background: var(--color-bg-raised);
+  /* The tags measure their room against the stage width (cqw). */
+  container-type: inline-size;
 }
 .planetarium__lines { position: absolute; inset: 0; width: 100%; height: 100%; }
 .planetarium__lines circle { fill: none; stroke: var(--color-border); stroke-width: var(--planet-line); }
@@ -95,7 +97,11 @@
   display: grid; gap: 0; width: max-content; padding: var(--space-1) var(--space-2);
   border: var(--planet-line) solid var(--ring);
   background: var(--color-surface); color: var(--color-text); border-radius: var(--radius-small);
-  font-family: var(--font-mono); font-size: var(--text-label); text-align: left; white-space: nowrap; line-height: 1.3;
+  font-family: var(--font-mono); font-size: var(--text-label); text-align: left; line-height: 1.3;
+  /* One line each while there is room; when the stage is narrow the tag wraps
+     inside the room between its body and the stage edge, never over the figure
+     or past the edge. --dx is the body's distance from the centre, in percent. */
+  max-width: calc((50 - var(--dx, 15)) * 1cqw - var(--planet-target) / 2 - var(--space-2));
 }
 .planetarium__body--left .planetarium__tag { left: auto; right: 100%; margin: 0 var(--space-1) 0 0; }
 .planetarium__tag-name { font-weight: 600; }
@@ -108,9 +114,19 @@
   display: block; width: var(--planet-figure-width); height: var(--planet-figure-height);
   padding: 0; background: none; border-radius: 0; pointer-events: none;
 }
+/* An interactive figure (the status view on a wide screen) takes the pointer:
+   it turns with a drag and a tap on a place starts a pain report. */
+.planetarium__center--figure:has(.body3d--interactive) { pointer-events: auto; }
 .planetarium__figure { width: 100%; height: 100%; overflow: hidden; }
 /* Its words are read, not shown: the figure says the same to the eye. */
 .planetarium__center-text {
   position: absolute; width: var(--planet-line); height: var(--planet-line); overflow: hidden;
   clip-path: inset(50%); white-space: nowrap;
+}
+
+/* A row under the stage: the way to the pain report by keyboard, beside the
+   hint for the pointer. It stays above the trimmed bottom of the stage. */
+.planetarium__footer {
+  position: relative; z-index: 1;
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: var(--space-2) var(--space-3);
 }

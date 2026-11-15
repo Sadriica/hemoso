@@ -35,30 +35,23 @@ export type ReactionModality = 'light' | 'sound'
 export type ReactionPhase = 'idle' | 'waiting' | 'stimulus' | 'finished'
 
 /**
- * What a stimulus is. In a light run the first one is `white`; after it, only
- * `green` is a target and the other three shapes are not (team decision,
- * Sun 01:50, next to F-phys-06). The sound mode only has `tone`.
+ * What a stimulus is. Every light is the same round lamp. Without colour
+ * targets it is always `white` and every light is a target. With colour
+ * targets the first one is `white`; after it, only `green` is a target and the
+ * lamp in the other colours is not (team decision, Sun 01:50, next to
+ * F-phys-06). The sound mode only has `tone`.
  */
-export type StimulusKind =
-  | 'white'
-  | 'green'
-  | 'square'
-  | 'triangle'
-  | 'diamond'
-  | 'tone'
+export type StimulusKind = 'white' | 'green' | 'orange' | 'yellow' | 'blue' | 'tone'
 
-/** The light stimuli that are not targets, each with a shape of its own. */
-export const NON_TARGET_KINDS: StimulusKind[] = ['square', 'triangle', 'diamond']
-
-/** The lights of the mode without colour targets: four shapes, all targets. */
-export const PLAIN_KINDS: StimulusKind[] = ['white', 'square', 'triangle', 'diamond']
+/** The light stimuli that are not targets: the same lamp in other colours. */
+export const NON_TARGET_KINDS: StimulusKind[] = ['orange', 'yellow', 'blue']
 
 /** Whether an answer to this stimulus is a reaction (true) or an error (false). */
 export function isTarget(
   kind: StimulusKind,
   colourTargets: boolean = REACTION_COLOUR_TARGETS,
 ): boolean {
-  // Without colour targets every stimulus is a target; the shapes only vary.
+  // Without colour targets every stimulus is a target; only the size varies.
   return !colourTargets || !NON_TARGET_KINDS.includes(kind)
 }
 
@@ -72,7 +65,7 @@ export interface ToneParams {
 export interface ReactionState {
   modality: ReactionModality
   phase: ReactionPhase
-  /** The length of the run in ms: the 90 seconds, or the demo length. */
+  /** The length of the run in ms: the 50 seconds, or the demo length. */
   durationMs: number
   /** Clock times of the start and of the end, in the clock the caller passes. */
   startedAt: number | null
@@ -81,7 +74,10 @@ export interface ReactionState {
   done: number
   /** Clock time of the stimulus showing now. */
   stimulusAt: number | null
-  /** The reaction times measured so far, in ms. */
+  /**
+   * Every valid answer so far, in ms, the late ones (lapses) included. A trial
+   * that timed out with no answer has no time and is only a lapse.
+   */
   reactions: number[]
   lapses: number
   falseStarts: number
@@ -119,6 +115,9 @@ export type ReactionEvent =
       size?: number
     }
   | { type: 'answer'; at: number }
+  // The light has been drawn: the time of the frame that shows it replaces the
+  // time the timer fired, so the screen delay is not counted as reaction time.
+  | { type: 'painted'; at: number }
   | { type: 'timeout'; at: number }
   | { type: 'tick'; at: number }
   | { type: 'stop' }
@@ -198,6 +197,10 @@ export function reactionReducer(
       }
     case 'answer':
       return answered(state, event.at)
+    case 'painted':
+      if (state.phase !== 'stimulus' || state.stimulusAt === null) return state
+      if (event.at <= state.stimulusAt) return state
+      return { ...state, stimulusAt: event.at }
     case 'timeout':
       if (state.phase !== 'stimulus' || state.stimulusAt === null) return state
       // A non-target clears after a fixed short time. Not answering it is
@@ -253,8 +256,13 @@ function answered(state: ReactionState, at: number): ReactionState {
   if (state.kind !== null && !isTarget(state.kind, state.colourTargets)) {
     return { ...cleared(state, at), errors: state.errors + 1, wrong: true }
   }
-  if (latency >= REACTION_LAPSE_CUTOFF_MS) return closed(state, at, state.lapses + 1)
-  return closed(state, at, state.lapses, [...state.reactions, latency])
+  // Every answer of 100 ms or more is a valid response, a late one included:
+  // it counts as a lapse and it also stays in the list the median reads.
+  const reactions = [...state.reactions, latency]
+  if (latency >= REACTION_LAPSE_CUTOFF_MS) {
+    return closed(state, at, state.lapses + 1, reactions)
+  }
+  return closed(state, at, state.lapses, reactions)
 }
 
 // Too early. The trial is not closed: the wait starts again (waitToken) and the
@@ -310,13 +318,16 @@ function cleared(state: ReactionState, at: number): ReactionState {
 }
 
 export interface ReactionSummary {
-  /** The median of the reaction times, rounded to whole ms; null with none. */
+  /**
+   * The median of every valid answer, late ones included, rounded to whole
+   * ms; null when nobody answered (every trial timed out).
+   */
   medianMs: number | null
   lapses: number
   falseStarts: number
   /** Answers to a non-target; shown in the result, never stored. */
   errors: number
-  /** Trials that closed: the reactions plus the lapses. */
+  /** Trials that closed, by an answer or by a lapse with no answer. */
   trials: number
 }
 
@@ -326,7 +337,7 @@ export function summarize(state: ReactionState): ReactionSummary {
     lapses: state.lapses,
     falseStarts: state.falseStarts,
     errors: state.errors,
-    trials: state.reactions.length + state.lapses,
+    trials: state.done,
   }
 }
 
@@ -353,18 +364,15 @@ export function randomWait(random: () => number = Math.random): number {
 /**
  * The next light stimulus. The first of a run is white, a target. After it,
  * the share of non-targets is REACTION_NONTARGET_SHARE: a draw in the top of
- * the range picks one of the other shapes, any other draw is green.
+ * the range picks the lamp in one of the other colours, any other draw is green.
  */
 export function pickLightKind(
   shown: number,
   random: () => number = Math.random,
   colourTargets: boolean = REACTION_COLOUR_TARGETS,
 ): StimulusKind {
-  if (!colourTargets) {
-    // Every light is a target; only its shape changes (the circle is `white`).
-    const shapes = PLAIN_KINDS
-    return shapes[Math.min(shapes.length - 1, Math.floor(random() * shapes.length))]
-  }
+  // Every light is a target and the same white lamp; only its size changes.
+  if (!colourTargets) return 'white'
   if (shown === 0) return 'white'
   if (random() < 1 - REACTION_NONTARGET_SHARE) return 'green'
   const index = Math.min(

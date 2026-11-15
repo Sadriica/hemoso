@@ -59,5 +59,6 @@ export const injuryWords = {
   open: 'Where does it hurt?',
   close: 'Close the body',
   removeReportShort: 'Remove',
+  orbitHint: 'Turn the body with a drag. Tap a place to say where it hurts.',
   removeReport: (when: string): string => `Remove the report of ${when}`,
 }

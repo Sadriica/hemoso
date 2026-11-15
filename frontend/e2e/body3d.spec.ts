@@ -76,6 +76,73 @@ test('the body: choose a place, a strength and a kind, and save the report', asy
   await expectNoBlockingA11yIssues(page, 'Status with the pain picker')
 })
 
+// On a desktop the body stands in the centre of the status orbits. It takes the
+// pointer (a tap on a place starts the report) and a button under the orbits
+// opens the same picker by keyboard.
+test.describe('the body in the orbits on a desktop', () => {
+  test.use({ viewport: { width: 1280, height: 800 } })
+
+  async function openStatus(page: Page): Promise<void> {
+    await page.goto('/')
+    await pickFirstPerson(page)
+    await page.getByRole('button', { name: copy.identify.next }).press('Enter')
+    await page.getByRole('button', { name: copy.report.next }).press('Enter')
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(
+      copy.status.headline[0],
+    )
+  }
+
+  test('a tap on the body marks the place in the picker', async ({ page, isMobile }) => {
+    test.skip(isMobile === true, 'the orbit view is a desktop layout')
+    await openStatus(page)
+    const canvas = page.locator('.planetarium__figure canvas')
+    await expect(canvas).toBeVisible({ timeout: 20_000 })
+    // Nothing covers the figure: the pointer lands on its canvas.
+    const box = await canvas.boundingBox()
+    if (box === null) throw new Error('the body has no box')
+    const x = box.x + box.width / 2
+    const y = box.y + box.height * 0.42
+    expect(
+      await page.evaluate(
+        ([px, py]) => document.elementFromPoint(px, py)?.tagName,
+        [x, y],
+      ),
+    ).toBe('CANVAS')
+    await page.mouse.click(x, y)
+    await expect(
+      page.getByRole('heading', { name: injuryWords.heading }),
+    ).toBeVisible({ timeout: 20_000 })
+    await expect(page.locator('.pain-picker .body3d__live')).toContainText(
+      'Selected:',
+      { timeout: 20_000 },
+    )
+    await expect(
+      page.getByRole('slider', { name: /^How strong is it\?/ }),
+    ).toBeVisible()
+  })
+
+  test('the button under the orbits opens the picker by keyboard, and a place can be saved', async ({
+    page,
+    isMobile,
+  }) => {
+    test.skip(isMobile === true, 'the orbit view is a desktop layout')
+    await openStatus(page)
+    const open = page.locator('.planetarium__footer').getByRole('button', {
+      name: injuryWords.open,
+    })
+    await open.focus()
+    await page.keyboard.press('Enter')
+    const knee = page.getByRole('button', { name: 'Left knee', exact: true })
+    await expect(knee).toBeAttached({ timeout: 20_000 })
+    await knee.focus()
+    await page.keyboard.press('Enter')
+    await expect(knee).toHaveAttribute('aria-pressed', 'true')
+    await page.getByRole('button', { name: injuryWords.save }).click()
+    await expect(page.getByText(injuryWords.savedOnDevice)).toBeVisible()
+    await expect(page.getByText('Left knee: pain, 5 of 10')).toBeVisible()
+  })
+})
+
 // Phase 1 by keyboard: the first crew member, checked with Space.
 async function pickFirstPerson(page: Page): Promise<void> {
   const first = page

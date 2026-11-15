@@ -1,8 +1,14 @@
+/* The mission start line and its editor. Closed, it is one quiet line in the
+   mission line of the top bar. Open, it takes a row of its own under the brand
+   and the controls (see .topbar__bar:has(.mission-start--editing) in
+   phases.css), so the field, the hint and the buttons never share a row with
+   the other texts of the bar. Field, label and buttons follow the sign-in
+   form: same tokens, same tap size, same quiet second answer. */
 .mission-start {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-2);
+  gap: 0 var(--space-2);
   min-width: 0;
   margin: 0;
   color: var(--color-text-muted);
@@ -12,39 +18,103 @@
   letter-spacing: var(--tracking-label);
 }
 
+.mission-start--editing {
+  display: grid;
+  flex-basis: 100%;
+  gap: var(--space-1);
+  width: 100%;
+  padding-block: var(--space-2);
+}
+
+/* Field, hint and sentence stay a readable width on a wide screen. */
+.mission-start--editing > * {
+  max-width: 420px;
+}
+
 .mission-start__label {
-  text-transform: none;
+  text-transform: uppercase;
+}
+
+.mission-start__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
 }
 
 .mission-start__input {
-  min-height: 44px;
-  padding: 0 var(--space-2);
-  background: transparent;
-  color: var(--color-text);
+  flex: 1 1 11ch;
+  width: 100%;
+  min-width: 11ch;
+  max-width: 16ch;
+  min-height: var(--tap-min);
+  padding: 0 var(--space-3);
   border: 1px solid var(--color-border-control);
   border-radius: var(--radius-card);
-  font: inherit;
+  background: var(--color-bg-raised);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: var(--text-body);
+  letter-spacing: var(--tracking-label);
 }
 
-.mission-start__button {
-  min-height: 44px;
+.mission-start__input[aria-invalid='true'] {
+  border-color: var(--status-attention-text);
+}
+
+.mission-start__save {
+  flex: none;
+}
+
+.mission-start__open,
+.mission-start__cancel {
+  min-height: var(--tap-min);
   padding: 0 var(--space-2);
-  background: transparent;
-  color: var(--color-accent);
   border: 0;
-  font: inherit;
-  letter-spacing: inherit;
-  text-decoration: underline;
+  background: none;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
   cursor: pointer;
 }
 
-.mission-start__button:disabled {
-  color: var(--color-text-muted);
-  cursor: not-allowed;
+.mission-start__open {
+  color: var(--color-accent);
+}
+
+.mission-start__open:hover,
+.mission-start__cancel:hover {
+  color: var(--color-text);
+}
+
+.mission-start__hint {
+  margin: 0;
+  letter-spacing: var(--tracking-label);
+}
+
+.mission-start__error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+  letter-spacing: normal;
+  color: var(--status-attention-text);
+}
+
+.mission-start__error svg {
+  flex: none;
+  margin-top: 3px;
 }
 
 .mission-start__input:focus-visible,
-.mission-start__button:focus-visible {
+.mission-start__save:focus-visible,
+.mission-start__open:focus-visible,
+.mission-start__cancel:focus-visible {
   outline: 3px solid var(--color-accent);
   outline-offset: 2px;
 }

@@ -291,7 +291,55 @@ describe('PossibleConditions, symptoms', () => {
     const names = screen
       .getAllByRole('heading', { level: 3 })
       .map((heading) => heading.textContent)
-    expect(names[0]).toBe('Hyperglycaemia')
+    expect(names[0]).toBe(copy.urgentHeading)
+    expect(names[1]).toBe('Hyperglycaemia')
+  })
+
+  describe('with glucose 65 and two red flags', () => {
+    const staged = () =>
+      renderPanel([reading('glucose_mgdl', 65)], {
+        symptoms: data.symptoms,
+        symptomReports: [report('confusion'), report('vomiting')],
+      })
+
+    it('leads with one block that names the reported red flags and the action', () => {
+      staged()
+      const block = screen.getByRole('group', { name: copy.urgentHeading })
+      expect(
+        screen.getByRole('heading', { level: 3, name: copy.urgentHeading }),
+      ).toBeInTheDocument()
+      expect(within(block).getByText(copy.sentence.urgent)).toBeInTheDocument()
+      expect(
+        within(block).getByText(strings.symptoms.callCmoWhy('Confusion, Vomiting')),
+      ).toBeInTheDocument()
+      expect(within(block).getByText(copy.overlap)).toBeInTheDocument()
+      // The block comes before every row.
+      const first = screen.getAllByRole('heading', { level: 3 })[0]
+      expect(first).toHaveTextContent(copy.urgentHeading)
+    })
+
+    it('puts the row whose reading agrees first and quiets the other, never hiding it', () => {
+      staged()
+      const names = screen
+        .getAllByRole('heading', { level: 3 })
+        .map((heading) => heading.textContent)
+      expect(names.indexOf('Hypoglycaemia')).toBeLessThan(
+        names.indexOf('Hyperglycaemia'),
+      )
+      const quiet = rowOf('Hyperglycaemia')
+      expect(quiet).toHaveClass('condition--quiet')
+      expect(within(quiet).getByText(copy.label.urgent)).toBeInTheDocument()
+      expect(within(quiet).getByText(copy.bySymptom)).toBeInTheDocument()
+      expect(
+        within(quiet).getByText(copy.symptom.reported('Vomiting')),
+      ).toBeInTheDocument()
+      expect(rowOf('Hypoglycaemia')).not.toHaveClass('condition--quiet')
+    })
+
+    it('shows no block when nothing is urgent', () => {
+      renderPanel(feverish)
+      expect(screen.queryByText(copy.urgentHeading)).toBeNull()
+    })
   })
 
   it('caps a symptom-only condition at Possible', () => {
@@ -314,3 +362,48 @@ describe('PossibleConditions, symptoms', () => {
   })
 })
 
+
+describe('PossibleConditions on a phone', () => {
+  const phoneQuery = () => {
+    const listeners = new Set<() => void>()
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: query.includes('max-width: 599px'),
+      media: query,
+      addEventListener: (_: string, fn: () => void) => listeners.add(fn),
+      removeEventListener: (_: string, fn: () => void) => listeners.delete(fn),
+    }))
+  }
+
+  it('keeps review open, folds the rest behind a count, and shows the bar', async () => {
+    phoneQuery()
+    const user = userEvent.setup()
+    renderPanel(feverish)
+    expect(screen.getByRole('heading', { level: 3, name: 'Fever' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { level: 3, name: 'Sleep debt' })).toBeNull()
+    const toggle = screen.getByRole('button', { name: /^Show \d+ more$/ })
+    expect(toggle).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.getByRole('note')).toHaveTextContent(copy.sentence.review)
+    await user.click(toggle)
+    expect(screen.getByRole('heading', { level: 3, name: 'Sleep debt' })).toBeInTheDocument()
+    vi.unstubAllGlobals()
+  })
+
+  it('says "Call your CMO now" in the bar when something is urgent', () => {
+    phoneQuery()
+    renderPanel([reading('glucose_mgdl', 65)], {
+      symptoms: data.symptoms,
+      symptomReports: [
+        { personId: PERSON, symptomId: 'confusion', severity: 2, missionDay: lastDay + 1, time: '10:00' },
+      ],
+    })
+    expect(screen.getByRole('note')).toHaveTextContent(copy.sentence.urgent)
+    vi.unstubAllGlobals()
+  })
+
+  it('has no bar when nothing needs action', () => {
+    phoneQuery()
+    renderPanel([])
+    expect(screen.queryByRole('note')).toBeNull()
+    vi.unstubAllGlobals()
+  })
+})

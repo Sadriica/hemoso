@@ -188,6 +188,11 @@ export const strings = {
   // from the signed-in line.
   mission: {
     startLabel: 'Mission start date',
+    // The editor in the top bar: the one place a calendar date is shown.
+    dayOneLabel: 'Day 1 was',
+    dayOneHint: 'Year-month-day, for example 2026-11-02',
+    dayOneInvalid: 'Write a real date as year-month-day, for example 2026-11-02.',
+    dayOneFuture: 'That day has not come yet. Use today or an earlier day.',
     started: (date: string): string => `Mission started ${date}`,
     notSet: 'Mission start not set',
     change: 'change',
@@ -270,6 +275,8 @@ export const strings = {
     saved: 'Waiting to be sent.',
     // The same readings once the server took them, or when it did not.
     sent: 'Sent.',
+    // While a save of several readings is on its way: how many are there.
+    sendProgress: (done: number, total: number): string => `${done} of ${total} sent.`,
     notAccepted: 'The server did not accept it. Kept on this device.',
     savedOnDevice: 'Kept on this device.',
     noIndicators: 'No indicators are set up yet.',
@@ -475,6 +482,14 @@ export const strings = {
     openCard: (text: string): string => `Show the reading. ${text}`,
     source: 'Source:',
     notEnough: (count: number): string => `Not enough data yet (${count})`,
+    // Urgent symptoms lead the board; the action is the one the symptom list
+    // already says (strings.symptoms.callCmo).
+    urgentHeading: 'Urgent symptoms reported',
+    overlap: 'These possibilities may overlap. Your CMO or flight surgeon confirms.',
+    // On a row whose measured readings do not point to it.
+    bySymptom: 'Urgent because of a symptom you reported.',
+    // Phone: the quieter groups behind one line with their count.
+    showMore: (count: number): string => `Show ${count} more`,
   },
   // The optional symptom list of the Report (T-80). Plain names come from
   // config/data/symptoms.csv; nothing here names a condition.

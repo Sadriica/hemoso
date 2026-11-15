@@ -238,7 +238,7 @@ test('guided check by keyboard with axe on every phase', async ({ page }) => {
 
     // Every row of config/rules/conditions.csv is there: the scored ones in
     // the list, the others behind one closed line that says how many.
-    const waiting = panel.getByRole('button', { name: /^Not enough data yet/ })
+    const waiting = panel.getByRole('button', { name: /^(Not enough data yet|Show \d+ more)/ })
     if ((await waiting.count()) > 0) {
       await waiting.focus()
       await page.keyboard.press('Enter')
