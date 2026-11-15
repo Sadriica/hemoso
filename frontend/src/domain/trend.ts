@@ -1,5 +1,5 @@
 import { MEASUREMENT_CONTEXTS } from './context'
-import { BAND, WINDOW, localState } from './state'
+import { BAND, localState } from './state'
 import type { AttentionRule, Entry, MeasurementContext } from './types'
 
 // What the History trend chart draws, computed from the person's readings with
@@ -7,7 +7,10 @@ import type { AttentionRule, Entry, MeasurementContext } from './types'
 // compared"). Nothing here is stored or sent; it only arranges numbers the app
 // already has.
 
-// How much of the context the chart shows: the baseline window or everything.
+// Readings the chart draws when it shows "Last 14".
+const CHART_READINGS = 14
+
+// How much of the context the chart shows: the newest 14 readings or everything.
 export type TrendWindow = 'last14' | 'all'
 
 // The two series of a blood pressure chart (FORMATS.md section 2).
@@ -72,19 +75,21 @@ export function contextCounts(
 }
 
 // The readings the chart draws for one context, oldest first. `last14` keeps
-// the newest 14 of them, the window the baseline uses.
+// the newest 14 of them: a display choice, not the baseline window, which
+// counts mission days.
 export function trendSeries(
   entries: Entry[],
   context: MeasurementContext,
   window: TrendWindow,
 ): Entry[] {
   const inContext = oldestFirst(entries.filter((e) => e.context === context))
-  return window === 'all' ? inContext : inContext.slice(-WINDOW)
+  return window === 'all' ? inContext : inContext.slice(-CHART_READINGS)
 }
 
-// The person's usual band: the median of the last 14 readings in the context
-// and three spreads each side of it, the same window and spread the state rule
-// uses. Null with fewer than 3 readings, where the rule has no baseline.
+// The person's usual band: the median of the last 14 mission days in the
+// context and three spreads each side of it, the same window and spread the
+// state rule uses. The newest reading is left out of its own window. Null with
+// fewer than 3 days, where the rule has no baseline.
 export interface TrendBand {
   median: number
   spread: number
@@ -101,9 +106,7 @@ export function trendBand(
   const inContext = oldestFirst(entries.filter((e) => e.context === context))
   const last = inContext[inContext.length - 1]
   if (last === undefined) return null
-  // localState leaves its `latest` out of the window by identity. A copy of the
-  // newest reading is a stand-in that leaves every real reading in.
-  const local = localState({ ...last }, inContext, rules, minSpread)
+  const local = localState(last, inContext, rules, minSpread)
   if (local.median === null || local.spread === null) return null
   return {
     median: local.median,
