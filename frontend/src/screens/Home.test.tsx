@@ -68,6 +68,8 @@ const data: LoadedContent = {
   rules: [rule],
   contents: { example_indicator: content },
   demoEntries: [entry(1, 1), entry(10, 10)],
+  symptoms: [],
+  demoSymptoms: [],
   usingPlaceholders: false,
   problems: [],
 }

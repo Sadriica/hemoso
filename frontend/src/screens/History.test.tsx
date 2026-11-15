@@ -50,6 +50,8 @@ const data: LoadedContent = {
   ],
   contents: {},
   demoEntries: [],
+  symptoms: [],
+  demoSymptoms: [],
   usingPlaceholders: false,
   problems: [],
 }

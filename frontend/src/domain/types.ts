@@ -92,6 +92,9 @@ export interface ConditionRule {
   id: string
   name: string
   signals: ConditionSignalRule[]
+  // The optional `symptoms` column: symptom ids from config/data/symptoms.csv,
+  // in file order, none twice. Empty for a four-cell row.
+  symptoms: string[]
   // The row's `source` cell as written: a link or the word Assumption.
   source: string
 }
