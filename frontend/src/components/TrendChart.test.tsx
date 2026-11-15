@@ -232,3 +232,13 @@ describe('readoutText', () => {
     )
   })
 })
+
+describe('TrendChart threshold labels', () => {
+  it('uses the short series name when there is one', () => {
+    const rule = { ...cited, attentionLevel: 'urgent' }
+    const { container } = renderChart([
+      single({ label: 'Systolic', shortLabel: 'Sys', rules: [rule] }),
+    ])
+    expect(container.querySelector('.tc__threshold-label')?.textContent).toBe('Sys: urgent')
+  })
+})
