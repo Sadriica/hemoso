@@ -109,4 +109,25 @@ describe('Planetarium', () => {
     await userEvent.click(toggle())
     expect(Element.prototype.animate).not.toHaveBeenCalled()
   })
+
+  it.each([1, 2, 3, 5, 7, 8])('keeps %i bodies in their own bands inside the square', async (n) => {
+    vi.stubGlobal('matchMedia', (q: string) => ({ matches: q.includes('min-width'), addEventListener: () => {}, removeEventListener: () => {} }))
+    const many = Array.from({ length: n }, (_, i) => ({ ...items[0], id: `i${i}`, name: `Systolic blood pressure ${i}` }))
+    render(<Planetarium items={many} labels={labels} selectedId={null} onSelect={() => {}} reducedMotion />)
+    await userEvent.click(toggle())
+    const pos = Array.from(document.querySelectorAll<HTMLElement>('.planetarium__body')).map((b) => ({
+      x: parseFloat(b.style.left), y: parseFloat(b.style.top), left: b.classList.contains('planetarium__body--left'),
+    }))
+    for (const p of pos) {
+      expect(p.x).toBeGreaterThanOrEqual(18)
+      expect(p.x).toBeLessThanOrEqual(80)
+      expect(p.y).toBeGreaterThanOrEqual(10)
+      expect(p.y).toBeLessThanOrEqual(90)
+    }
+    for (const side of [true, false]) {
+      const ys = pos.filter((p) => p.left === side).map((p) => p.y).sort((a, b) => a - b)
+      ys.slice(1).forEach((y, k) => expect(y - ys[k]).toBeGreaterThanOrEqual(20))
+    }
+    expect(document.querySelectorAll('.planetarium__tag')).toHaveLength(n)
+  })
 })
