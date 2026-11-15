@@ -28,6 +28,94 @@ const response = await fetch(`${VITE_API_BASE_URL}/health`);
 const body = await response.json(); // { status: "ok" }
 ```
 
+### POST /accounts
+
+Creates one account (REQ-37). An account is what makes a person's data private:
+once the person has one, every route that names that person needs a token (see
+"Sessions and the Authorization header" below).
+
+Request body:
+
+| Field | Type | Rule |
+| --- | --- | --- |
+| `person_id` | string | at most 64 characters, lowercase `snake_case`, the same rule as everywhere else |
+| `pin` | string | 4 to 8 digits, nothing else |
+
+What the backend stores, and nothing more: `person_id`, a random 16-byte salt
+(hex) and the `hashlib.scrypt` digest of the PIN with that salt (`n` = 2**14,
+`r` = 8, `p` = 1), hex. The PIN itself is never stored, never logged and never
+returned. Two accounts with the same PIN get different hashes, because each has
+its own salt.
+
+Responses: `201` with `{"person_id": "..."}`; `409` when that person already
+has an account (`detail` `this person already has an account`); `422` when the
+body breaks a rule; `502` when the upstream store (Supabase) is unreachable or
+returns an error.
+
+```bash
+curl -X POST "$VITE_API_BASE_URL/accounts" \
+  -H "Content-Type: application/json" \
+  -d '{"person_id":"demo_astronaut_1","pin":"2468"}'
+# 201 {"person_id":"demo_astronaut_1"}
+```
+
+```js
+const response = await fetch(`${VITE_API_BASE_URL}/accounts`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ person_id: "demo_astronaut_1", pin: "2468" }),
+});
+if (response.status === 409) {
+  // this person already has an account: sign in instead
+}
+```
+
+### POST /sessions
+
+Signs in with the same body as `POST /accounts`: `person_id` and `pin`. The
+answer holds a token the frontend sends as `Authorization: Bearer <token>` on
+every request that names that person.
+
+The token is `base64url(payload) + "." + base64url(signature)`. The payload is
+the JSON object `{"sub": person_id, "exp": unix_seconds}`; the signature is
+`HMAC-SHA256` of the base64url payload with `SESSION_SECRET`, both base64url
+without padding. It is valid for 30 days; `expires_at` is that moment in ISO
+8601 UTC. When `SESSION_SECRET` is unset the API signs with a random key made at
+start, so every token stops working at a restart.
+
+Responses:
+
+| Code | Meaning |
+| --- | --- |
+| `200` | `{"token": "...", "person_id": "...", "expires_at": "YYYY-MM-DDTHH:MM:SSZ"}` |
+| `401` | Unknown person or wrong PIN; `detail` is `wrong username or PIN` in both cases, and an unknown person costs the same work as a wrong PIN |
+| `429` | Five wrong PINs for that person inside ten minutes; `detail` is `too many wrong PINs, try again later` |
+| `422` | The body breaks a rule (`person_id` not `snake_case`, `pin` not 4 to 8 digits) |
+| `502` | The upstream store (Supabase) is unreachable or returns an error |
+
+The wrong-PIN count lives in the memory of the backend process: a restart
+clears it, and with more than one instance each counts its own attempts. It is
+per person, so one locked astronaut does not lock another.
+
+```bash
+curl -X POST "$VITE_API_BASE_URL/sessions" \
+  -H "Content-Type: application/json" \
+  -d '{"person_id":"demo_astronaut_1","pin":"2468"}'
+# 200 {"token":"eyJ... . ...","person_id":"demo_astronaut_1","expires_at":"2026-12-14T21:55:00Z"}
+```
+
+```js
+const response = await fetch(`${VITE_API_BASE_URL}/sessions`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ person_id: "demo_astronaut_1", pin: "2468" }),
+});
+if (response.status === 429) {
+  // too many wrong PINs: wait ten minutes before trying again
+}
+const session = await response.json(); // keep session.token and session.expires_at
+```
+
 ### POST /entries
 
 Stores one measurement (REQ-27) and returns the stored entry. The same entry can
@@ -352,6 +440,57 @@ for (const condition of conditions) {
 
 The values above are placeholders in a synthetic history (REQ-14).
 
+## Sessions and the Authorization header
+
+Every route that names a person checks who is asking before it answers:
+
+| Route | Whose person |
+| --- | --- |
+| `POST /entries` | `person_id` in the body |
+| `GET /people/{person_id}/indicators/{indicator_id}/history` | the path |
+| `GET /people/{person_id}/indicators/{indicator_id}/state` | the path |
+| `GET /people/{person_id}/blood_pressure/state` | the path |
+| `GET /people/{person_id}/conditions` | the path |
+
+The rule depends on whether that person has an account:
+
+- A person **with** an account needs `Authorization: Bearer <token>`, a token
+  from `POST /sessions` for that same person.
+  - No header, or a value that is not `Bearer <token>`: `401`, `detail`
+    `missing or invalid token`.
+  - A token that was tampered with, signed with another key or past its
+    `expires_at`: `401`, same `detail`.
+  - A valid token for another person: `403`, `detail` `this token belongs to
+    another person`.
+- A person **without** an account stays open, as every route was before
+  accounts existed: the synthetic demo astronaut and the smoke-test person keep
+  working without a token (REQ-32). Nothing else about their requests changes.
+
+`GET /health`, `POST /accounts` and `POST /sessions` never need a token.
+
+The check runs before the route's own work: a refused request reads no history
+and stores no entry.
+
+```bash
+TOKEN="eyJ..."
+curl "$VITE_API_BASE_URL/people/demo_astronaut_1/indicators/hr_bpm/history" \
+  -H "Authorization: Bearer $TOKEN"
+# 200 [...]  without the header: 401 {"detail":"missing or invalid token"}
+```
+
+```js
+const response = await fetch(
+  `${VITE_API_BASE_URL}/people/demo_astronaut_1/indicators/hr_bpm/history`,
+  { headers: { Authorization: `Bearer ${session.token}` } }
+);
+if (response.status === 401) {
+  // no token, a tampered one or an expired one: sign in again with the PIN
+}
+if (response.status === 403) {
+  // the token belongs to another person: ask for that person's PIN
+}
+```
+
 ## Errors
 
 `POST /entries` returns `422` in two cases.
@@ -391,20 +530,39 @@ is unreachable or returns an error.
 `detail` `person_id must be lowercase snake_case`, and the same `502` with the
 same `detail` as the routes above.
 
+`POST /accounts` and `POST /sessions` return `422` with the field array when the
+body breaks a rule:
+
+| Cause | `msg` |
+| --- | --- |
+| `person_id` breaks the id rule | `Value error, must be lowercase snake_case` |
+| `pin` is not 4 to 8 digits | `Value error, pin must be 4 to 8 digits` |
+| `person_id` or `pin` is missing | `Field required` |
+
+`POST /accounts` returns `409` with `detail` `this person already has an
+account`. `POST /sessions` returns `401` with `detail` `wrong username or PIN`
+and `429` with `detail` `too many wrong PINs, try again later`.
+
+The five routes that name a person return `401` with `detail` `missing or
+invalid token` and `403` with `detail` `this token belongs to another person`;
+both come from the rule above, before the route does its own work.
+
 ## CORS
 
 The backend reads `ALLOWED_ORIGINS`, a comma-separated list of origins. When it
 is unset or empty, the default is `http://localhost:5173` (the Vite dev server).
-Allowed methods are `GET` and `POST`; allowed headers are all (`*`). A preflight
+Allowed methods are `GET` and `POST`; allowed headers are `Content-Type` and
+`Authorization`, so the frontend can send the bearer token. A preflight
 `OPTIONS` request returns `200` with `access-control-allow-origin` set to the
 allowed origin.
 
 ## Rate limit
 
-The API has no login (`PRIVACY.md`), so every client address is capped at 120
-requests per 60 seconds (`backend/app/ratelimit.py`). The window slides: a
-request is accepted while that address made fewer than 120 requests in the last
-60 seconds.
+Every client address is capped at 120 requests per 60 seconds
+(`backend/app/ratelimit.py`), sign-in included; the per-person PIN lockout in
+`POST /sessions` is a second, separate guard. The window slides: a request is
+accepted while that address made fewer than 120 requests in the last 60
+seconds.
 
 - `RATE_LIMIT_PER_MINUTE` sets the cap; unset or empty means 120 and `0` turns
   the limit off. A value that is not a whole number, or is negative, is read as
@@ -440,7 +598,8 @@ and a restart clears every window.
 
 - No endpoint lists people.
 - No endpoint lists indicators.
-- No auth, login or tokens.
+- No change of PIN, no sign-out and no refresh of a token: a token works until
+  `expires_at`.
 - No update or delete of entries.
 
 These are facts about the current code, not proposals.
