@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from '@testing-library/rea
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
+import { loadContent } from './content/load'
 import { STORAGE_KEY } from './data/storedState'
 import { strings } from './strings'
 
@@ -17,6 +18,9 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.restoreAllMocks()
+  // A test with a server leaves neither its fetch nor its base URL behind.
+  vi.unstubAllGlobals()
+  vi.stubEnv('VITE_API_BASE_URL', '')
 })
 
 function heading() {
@@ -90,6 +94,63 @@ describe('guided check', () => {
     expect(
       await screen.findByText(/Your earlier median|Not enough earlier entries/),
     ).toBeInTheDocument()
+  })
+
+  it('reads the stored history of every indicator for the chosen person', async () => {
+    vi.stubEnv('VITE_API_BASE_URL', 'https://api.example.test')
+    const indicators = loadContent().indicators
+    const first = indicators[0]
+    const urls: string[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((input: string) => {
+        urls.push(input)
+        // The server keeps one reading this device never saved, for the first
+        // indicator of the check; every other history is empty.
+        const body = input.endsWith(`/indicators/${first.id}/history`)
+          ? [
+              {
+                person_id: PERSON,
+                indicator_id: first.id,
+                value: 71,
+                unit: first.unit,
+                mission_day: 31,
+                time: '05:15',
+                context: 'rest',
+              },
+            ]
+          : []
+        return Promise.resolve({
+          status: 200,
+          json: () => Promise.resolve(body),
+        } as unknown as Response)
+      }),
+    )
+    const user = userEvent.setup()
+    render(<App />)
+
+    await signInByName(user)
+
+    // One request per indicator of the content, all for the chosen person.
+    await waitFor(() =>
+      expect(urls.filter((url) => url.endsWith('/history'))).toHaveLength(
+        indicators.length,
+      ),
+    )
+    for (const indicator of indicators) {
+      expect(urls).toContain(
+        `https://api.example.test/people/${PERSON}/indicators/${indicator.id}/history`,
+      )
+    }
+
+    // The reading of the other device is in the history the screen shows.
+    await user.click(screen.getByRole('button', { name: copy.report.next }))
+    await user.click(
+      screen.getByRole('button', { name: copy.status.historyToggle }),
+    )
+    const table = await screen.findByRole('table')
+    expect(within(table).getByText('05:15')).toBeInTheDocument()
+    expect(within(table).getByText('31')).toBeInTheDocument()
   })
 
   it('goes back one phase at a time and starts a new check from phase 1', async () => {

@@ -507,8 +507,9 @@ describe('Home', () => {
     expect(await screen.findAllByText('server_level')).not.toHaveLength(0)
     expect(screen.getByText('Tell the flight surgeon.')).toBeInTheDocument()
     expect(urls).toHaveLength(1)
-    expect(urls[0]).toContain(
-      '/people/demo_astronaut_1/indicators/example_indicator/state?value=100&context=rest',
+    expect(urls[0]).toBe(
+      'https://api.example.test/people/demo_astronaut_1/indicators/example_indicator/state' +
+        '?value=100&context=rest&mission_day=10&time=13%3A30',
     )
   })
 
