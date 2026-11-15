@@ -46,10 +46,12 @@ Your CMO or flight surgeon confirms.
 
 ### watch
 
-Your body mass is below 70 kg, the line the crew uses.
+Your body mass is below 70 kg. Assumption: this is a fixed line for the demo,
+not a NASA limit.
 
-Eat your full meals this week and measure again next week. The crew checks your
-record on board.
+Eat your full meals this week and measure again next week.
+
+The crew checks your record on board.
 
 ## How to prevent problems
 

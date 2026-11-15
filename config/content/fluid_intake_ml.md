@@ -45,10 +45,13 @@ Your CMO or flight surgeon confirms.
 
 ### watch
 
-Your fluid intake is below 2500 mL today, the line the crew uses.
+You drank less than 2.5 L today, counting the water in your food. NASA asks
+for at least 2.5 L a day for each crew member.
 
-Drink a glass of water now and log your total again tomorrow. The crew checks
-your record on board.
+Drink a glass of water now and keep a bottle near you. Log your total again
+tomorrow.
+
+The crew checks your record on board.
 
 ## How to prevent problems
 
@@ -59,3 +62,4 @@ Tell your CMO if your urine looks dark. Assumption.
 
 - NASA, Human Adaptation to Spaceflight: The Role of Nutrition (2020): https://nasa.gov/wp-content/uploads/2023/03/human-adaptation-2020-final.pdf
 - NASA, 5 Hazards of Human Spaceflight: https://www.nasa.gov/hrp/hazards/
+- NASA OCHMO technical brief, Water (OCHMO-TB-027), NASA-STD-3001 Volume 2 Rev C Table 4: https://www.nasa.gov/wp-content/uploads/2023/12/ochmo-tb-027-water.pdf
