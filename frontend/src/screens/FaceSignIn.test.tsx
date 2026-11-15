@@ -58,12 +58,31 @@ function renderPanel(overrides: Partial<FaceSignInProps> = {}) {
   return props
 }
 
+// jsdom has no camera and its video element never holds a frame, and starting
+// the camera waits for one now. The fake element reports the first frame as
+// soon as there is a stream, which is what a browser does.
+const ORIGINAL_READY_STATE = Object.getOwnPropertyDescriptor(
+  HTMLMediaElement.prototype,
+  'readyState',
+)
+
 beforeEach(() => {
   localStorage.clear()
   engine.descriptorFrom.mockReset()
+  Object.defineProperty(HTMLMediaElement.prototype, 'readyState', {
+    configurable: true,
+    get: () => 2,
+  })
 })
 
 afterEach(() => {
+  if (ORIGINAL_READY_STATE !== undefined) {
+    Object.defineProperty(
+      HTMLMediaElement.prototype,
+      'readyState',
+      ORIGINAL_READY_STATE,
+    )
+  }
   setMediaDevices(ORIGINAL_MEDIA_DEVICES)
 })
 

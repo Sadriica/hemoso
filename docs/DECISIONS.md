@@ -71,6 +71,7 @@ was tier C until then). Ids in `FORMATS.md` section 2.
 | --- | --- | --- |
 | React 19.3.1, React DOM | MIT | The app's screens |
 | @vladmandic/face-api 1.7.15 and its models | MIT | Face sign-in on the device (REQ-36) |
+| three (version pinned in frontend/package.json) | MIT | The 3D body: rotate, see the systems, select where it hurts (REQ-15) |
 | Vite 8.3.8, TypeScript 6.0.3 | MIT, Apache-2.0 | Build and types (development only) |
 | Vitest, Testing Library, jsdom | MIT | Frontend tests (development only) |
 | Playwright, axe-core | Apache-2.0, MPL-2.0 | End-to-end and accessibility tests (development only) |
@@ -121,3 +122,5 @@ planning, wording, and code. Not the base idea. Kept in `team/eng1/notes/si-use-
 | Use | Animations, kept short: transitions that show a change of state, all switched off under `prefers-reduced-motion` | Team decision (Wambi), Sat 18:45; they must not slow the 30 s demo | REQ-09, REQ-15 |
 | Use | Camera input: face sign-in on the device (REQ-36) and, later, face and eye analysis; the form keeps working on a device without a camera | Team decision (Wambi), Sat 18:45 | REQ-09, REQ-36 |
 | Use | First-load JavaScript budget of 600 kB raw, a target, not a CI check (was 300 kB in the visual brief) | Wambi, Sat 21:20: the visual layer and the state route left 0.8 kB of room, and restructuring the app to save under 1 kB risked the first screen; the face engine stays lazy and outside it; the team trims the bundle later if the demo needs it | REQ-15 |
+| Use | Accounts: username and a 4 to 8 digit PIN checked on the server (salted scrypt hash in Supabase, signed session token, routes of a person with an account need it); the face stays on the device and unlocks the session stored there after one PIN sign-in; the synthetic demo astronaut stays open with one click | Team decision (Wambi), Sat 21:55: the same account must work on the PC and the phone, the face is the quick way in but cannot be checked by the server without sending biometric data, and the judges need a link with no login (REQ-32) | REQ-37, REQ-36, REQ-32 |
+| Use | The 3D body is drawn with three.js from primitives (no model file, no asset licence), loaded on demand outside the first-load budget, with the 2D silhouette as the fallback without WebGL; the astronaut selects where it hurts and sets an intensity from 0 to 10, stored on the device only for now (`hemoso:pain:v1`) | Wambi, Sat 22:20: the 3D body is the core of the team's idea and only a 2D silhouette existed; the backend is paused, so pain reports stay local until it resumes; the region list lives in the frontend until the open question on `config/content/body_regions.csv` is answered | REQ-15 |

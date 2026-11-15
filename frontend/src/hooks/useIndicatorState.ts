@@ -3,11 +3,18 @@ import type { StateClient, StateQuery } from '../data/stateClient'
 import type { IndicatorState } from '../domain/state'
 
 // The key of one answer: the reading it belongs to. A new reading asks again;
-// the old answer is not shown for it, without a state reset in the effect.
+// the old answer is not shown for it, without a state reset in the effect. The
+// day and the time belong to the reading, so a new reading of the same value is
+// a new question.
 function keyOf(query: StateQuery): string {
-  return [query.personId, query.indicatorId, query.value, query.context].join(
-    '\u0000',
-  )
+  return [
+    query.personId,
+    query.indicatorId,
+    query.value,
+    query.context,
+    query.missionDay ?? '',
+    query.time ?? '',
+  ].join('\u0000')
 }
 
 // The backend answer for one reading, or null while there is none: no server,
@@ -49,6 +56,8 @@ export function useIndicatorState(
     query?.indicatorId,
     query?.value,
     query?.context,
+    query?.missionDay,
+    query?.time,
   ])
 
   return answer !== null && answer.key === key ? answer.state : null

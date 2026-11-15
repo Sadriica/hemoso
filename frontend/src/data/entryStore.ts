@@ -16,6 +16,13 @@ type EntryFilter = {
 export interface EntryStore {
   list(filter?: EntryFilter): Entry[]
   add(entry: Omit<Entry, 'id'>): Entry
+  // Rows the server holds for a person (REQ-27), read from GET .../history.
+  // One entry is the same entry when the person, the indicator, the mission day
+  // and the time match, which is the pair the backend keeps one row per
+  // (docs/API.md). A row this device already has keeps its own id and its place
+  // in the outbox; a row it does not have arrives already sent, so nothing is
+  // queued to go back to the server. Nothing is deleted.
+  mergeRemote(entries: Entry[]): void
   // false once a read or a write has failed: the screens then say the entries
   // are not saved on this device.
   isPersistent(): boolean
@@ -106,10 +113,25 @@ export class LocalEntryStore implements EntryStore, Outbox {
     return created
   }
 
+  // New rows only: the ones this device already has stay exactly as they are,
+  // with their ids and their outbox entries. A row the server holds and this
+  // device does not arrives already sent.
+  mergeRemote(entries: Entry[]): void {
+    const known = new Set(this.state.entries.map(entryKey))
+    const added: Entry[] = []
+    for (const entry of entries) {
+      const key = entryKey(entry)
+      if (known.has(key)) continue
+      known.add(key)
+      added.push(entry)
+    }
+    if (added.length === 0) return
+    this.commit({ ...this.state, entries: [...this.state.entries, ...added] })
+  }
+
   isPersistent(): boolean {
     return this.persistent
   }
-
   wasReset(): boolean {
     return this.reset
   }
@@ -216,6 +238,17 @@ export class LocalEntryStore implements EntryStore, Outbox {
       this.persistent = false
     }
   }
+}
+
+// The four fields the backend keeps one entry per (docs/API.md), so the same
+// measurement taken on another device is one entry, not two.
+function entryKey(entry: Entry): string {
+  return [
+    entry.personId,
+    entry.indicatorId,
+    entry.missionDay,
+    entry.time,
+  ].join('\u0000')
 }
 
 function browserStorage(): StorageLike | null {
