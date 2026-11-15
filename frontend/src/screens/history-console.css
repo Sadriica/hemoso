@@ -16,7 +16,6 @@
   position: relative;
   display: grid;
   gap: var(--space-3);
-  max-width: 720px;
   margin-bottom: var(--space-3);
   padding: var(--space-3);
   border: 1px solid var(--color-border);
@@ -55,6 +54,15 @@
   font-weight: 400;
   letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
+}
+
+.hc__empty p {
+  margin: 0;
+}
+
+.hc__empty-hint {
+  margin-top: var(--space-1);
+  font-size: var(--text-small);
 }
 
 .hc__empty {
