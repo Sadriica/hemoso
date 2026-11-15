@@ -4,14 +4,14 @@
 
 Body mass is how much you weigh. Losing mass in flight usually means you are
 eating less than you need, and it makes muscle, bone and heart loss worse.
-https://humanresearchroadmap.nasa.gov/Evidence/other/Nutrition%20ER_human_adaptation_2020_final.pdf
+https://nasa.gov/wp-content/uploads/2023/03/human-adaptation-2020-final.pdf
 
 ## How spaceflight affects it
 
 A normal scale does not work without gravity. Your mass is measured with the
 SLAMMD device, which applies a known force and measures how you accelerate.
 Crews often lose mass slowly over a mission.
-https://humanresearchroadmap.nasa.gov/Evidence/other/Nutrition%20ER_human_adaptation_2020_final.pdf
+https://nasa.gov/wp-content/uploads/2023/03/human-adaptation-2020-final.pdf
 
 ## Measurement steps
 
@@ -51,5 +51,5 @@ Keep the same weekly measure day. Assumption.
 
 ## Sources
 
-- NASA, Human Adaptation to Spaceflight: The Role of Nutrition (2020): https://humanresearchroadmap.nasa.gov/Evidence/other/Nutrition%20ER_human_adaptation_2020_final.pdf
+- NASA, Human Adaptation to Spaceflight: The Role of Nutrition (2020): https://nasa.gov/wp-content/uploads/2023/03/human-adaptation-2020-final.pdf
 - NASA, 5 Hazards of Human Spaceflight: https://www.nasa.gov/hrp/hazards/

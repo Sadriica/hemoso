@@ -4,7 +4,7 @@
 
 Water keeps your blood volume and blood pressure stable. In flight, drinking
 less than you need is common, and dehydration makes you slower and less
-accurate. https://humanresearchroadmap.nasa.gov/Evidence/other/Nutrition%20ER_human_adaptation_2020_final.pdf
+accurate. https://nasa.gov/wp-content/uploads/2023/03/human-adaptation-2020-final.pdf
 
 ## How spaceflight affects it
 
@@ -50,5 +50,5 @@ Tell your CMO if your urine looks dark. Assumption.
 
 ## Sources
 
-- NASA, Human Adaptation to Spaceflight: The Role of Nutrition (2020): https://humanresearchroadmap.nasa.gov/Evidence/other/Nutrition%20ER_human_adaptation_2020_final.pdf
+- NASA, Human Adaptation to Spaceflight: The Role of Nutrition (2020): https://nasa.gov/wp-content/uploads/2023/03/human-adaptation-2020-final.pdf
 - NASA, 5 Hazards of Human Spaceflight: https://www.nasa.gov/hrp/hazards/

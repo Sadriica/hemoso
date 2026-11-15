@@ -10,7 +10,7 @@ members reported less appetite. https://www.nasa.gov/wp-content/uploads/2023/12/
 
 Fluids move to your head, the schedule is tight and food tastes different.
 Those changes can lower appetite, and eating less than you need adds up over
-weeks. https://humanresearchroadmap.nasa.gov/Evidence/other/Nutrition%20ER_human_adaptation_2020_final.pdf
+weeks. https://nasa.gov/wp-content/uploads/2023/03/human-adaptation-2020-final.pdf
 
 ## Measurement steps
 
@@ -52,4 +52,4 @@ tastes different for several days. Assumption.
 ## Sources
 
 - NASA, Food and Nutrition technical brief: https://www.nasa.gov/wp-content/uploads/2023/12/ochmo-tb-013-food-and-nutrition.pdf
-- NASA, Human Adaptation to Spaceflight: The Role of Nutrition (2020): https://humanresearchroadmap.nasa.gov/Evidence/other/Nutrition%20ER_human_adaptation_2020_final.pdf
+- NASA, Human Adaptation to Spaceflight: The Role of Nutrition (2020): https://nasa.gov/wp-content/uploads/2023/03/human-adaptation-2020-final.pdf

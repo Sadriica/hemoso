@@ -46,7 +46,7 @@ No one is notified for now.
 
 ### watch
 
-You slept less than 6 hours for 3 nights.
+You slept less than 6 hours last night.
 
 Go to bed at your usual time today. Ask your CMO about light and rest.
 
