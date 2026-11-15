@@ -1,4 +1,4 @@
-﻿# F-phys-04 Â· Two indicators measure something other than what their name suggests
+# F-phys-04 · Two indicators measure something other than what their name suggests
 
 **Status:** Draft
 **Owner:** phys
@@ -22,12 +22,12 @@ temperature, and motion instead of sleep.
 | `hr_bpm` | ECG, Holter or the Bio-Monitor shirt | Not a stable baseline on Earth: in flight it was lower than preflight and rose past baseline at re-entry | https://humanresearchroadmap.nasa.gov/evidence/reports/Cardio%20Risk%20EB%202022%20FINAL_4-3-2023.pdf |
 | `glucose_mgdl` | i-STAT analyser: one fingerstick sample, read by amperometry | Not continuous monitoring. One value is a point, not a trend | https://ntrs.nasa.gov/citations/20230006919 https://pubmed.ncbi.nlm.nih.gov/9191561/ |
 | `bp_sys_mmhg`, `bp_dia_mmhg` | Bio-Monitor shirt or an arm cuff | Not a single rule: clinical sources state a threshold across both numbers, and one id cannot say "or" | https://www.asc-csa.gc.ca/eng/sciences/bio-monitor.asp |
-| all seven | â€” | No page read states an accuracy, a precision, a sampling rate or a calibration procedure | the pages above |
+| all seven | — | No page read states an accuracy, a precision, a sampling rate or a calibration procedure | the pages above |
 
 ## The two that matter most
 
 **Skin is not core.** The candidate answer to "body temperature" contains two different
-measurements, and a 36.8 Â°C reading from the shirt does not mean the same as 36.8 Â°C
+measurements, and a 36.8 °C reading from the shirt does not mean the same as 36.8 °C
 from the headband. A single warning value for both would be wrong for one of them.
 
 **Exercise moves the reading.** Stahn et al. 2017, the Thermolab investigation, reports that core temperature rises
@@ -66,7 +66,7 @@ documentation, which was not opened.
 ## Limits and open questions
 
 - It does not say the instruments are inaccurate. It says how much is unknown.
-- The manufacturer documentation (CarrÃ© Technologies, Hexoskin, Philips Actiwatch) was
+- The manufacturer documentation (Carré Technologies, Hexoskin, Philips Actiwatch) was
   not opened. If it publishes an accuracy, this finding gains a second half.
 - The page number for the cardiovascular report is quoted from
   `team/eng1/notes/challenge-resources.md`; re-check it before citing a number from it.
