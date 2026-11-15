@@ -3,6 +3,7 @@ import type {
   IndicatorStateName,
   StateAttention,
 } from '../domain/state'
+import { BASELINE_STATES } from '../domain/state'
 import type { MeasurementContext } from '../domain/types'
 import { defaultFetch, type FetchLike } from './sync'
 
@@ -74,12 +75,7 @@ class HttpState implements StateClient {
   }
 }
 
-const STATE_NAMES: readonly string[] = [
-  'no_data',
-  'in_range',
-  'outside_range',
-  'needs_review',
-]
+const STATE_NAMES: readonly string[] = [...BASELINE_STATES, 'needs_review']
 
 // An answer that breaks the contract is no answer: the local rule then decides,
 // instead of an unchecked body reaching a screen.

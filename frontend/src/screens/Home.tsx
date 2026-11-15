@@ -348,16 +348,33 @@ function IndicatorRow({
   )
 }
 
+// The text the astronaut reads for one state: the team's sentence from
+// config/content/<indicator_id>.md when it is there (FORMATS.md section 3), and
+// the app's short line when the file has none.
 function nextStepFor(
   status: Status,
   content: IndicatorContent | undefined,
 ): string {
-  if (status.state === 'no_data') return strings.nextStep.noData
-  if (status.state === 'in_range') return strings.nextStep.inRange
-  if (status.state === 'outside_range') return strings.nextStep.outsideRange
-  const level = status.level
-  if (level === null) return strings.nextStep.missing
-  return content?.statusAndNextSteps[level] ?? strings.nextStep.missing
+  const state = status.state
+  if (state === 'needs_review') {
+    if (status.level === null) return strings.nextStep.missing
+    return contentText(content, status.level) ?? strings.nextStep.missing
+  }
+  const words =
+    state === 'no_data'
+      ? strings.nextStep.noData
+      : state === 'in_range'
+        ? strings.nextStep.inRange
+        : strings.nextStep.outsideRange
+  return contentText(content, state) ?? words
+}
+
+function contentText(
+  content: IndicatorContent | undefined,
+  state: string,
+): string | undefined {
+  const text = content?.statusAndNextSteps[state]?.trim()
+  return text === undefined || text === '' ? undefined : text
 }
 
 // What the screens still lack, named instead of a generic "example content"
