@@ -2,6 +2,7 @@ import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import Home from './Home'
+import { strings } from '../strings'
 import type { LoadedContent } from '../content/load'
 import type {
   AttentionRule,
@@ -78,7 +79,7 @@ describe('Home', () => {
       screen.getByRole('heading', { name: 'Example indicator' }),
     ).toBeInTheDocument()
     expect(screen.getByText('10')).toHaveTextContent('10 example_unit')
-    expect(screen.getByText('Day 10 13:30')).toBeInTheDocument()
+    expect(screen.getByText(strings.timeLabel(10, '13:30'))).toBeInTheDocument()
     expect(screen.getByText('In range')).toBeInTheDocument()
     expect(screen.getByText('No action needed.')).toBeInTheDocument()
   })
@@ -303,7 +304,7 @@ describe('Home', () => {
     const saved: Entry = { ...entry(11, 42), id: 'saved-entry' }
     render(<Home personId="demo_astronaut_1" data={data} entries={[saved]} />)
     expect(screen.getByText('42')).toHaveTextContent('42 example_unit')
-    expect(screen.getByText('Day 11 13:30')).toBeInTheDocument()
+    expect(screen.getByText(strings.timeLabel(11, '13:30'))).toBeInTheDocument()
   })
 
   it('shows a 1 to 5 scale reading as the value over 5', () => {
