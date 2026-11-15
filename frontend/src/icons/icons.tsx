@@ -39,6 +39,15 @@ const SHAPES: Record<string, () => ReactNode> = {
     ...paths('M12 13.5V9', 'M9.5 2.5h5', 'M18.5 6.5l1.5 1.5'),
   ],
   reaction_lapses: () => paths('M6 5v14', 'M12 5v14', 'M18 5v6'),
+  // The three indicators added on Sun 15 Nov. A bowl with steam for appetite,
+  // a glass with its water line for fluid intake, a scale with its dial for
+  // body mass.
+  appetite_1_5: () => paths('M3.5 12h17a8.5 8.5 0 0 1-17 0z', 'M9 4.5c-1 1.2 1 2 0 3.5', 'M14 4.5c-1 1.2 1 2 0 3.5'),
+  fluid_intake_ml: () => paths('M6.5 3.5h11l-1.6 17h-7.8z', 'M7.3 11.5h9.4'),
+  body_mass_kg: () => [
+    <rect key="r" x="3.5" y="4.5" width="17" height="15" rx="3" />,
+    ...paths('M8 11a4 4 0 0 1 8 0', 'M12 11l1.8-2.4'),
+  ],
 };
 
 const STATUS: Record<StatusKind, () => ReactNode> = {

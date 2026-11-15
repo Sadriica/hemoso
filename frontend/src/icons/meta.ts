@@ -17,6 +17,11 @@ const SYSTEMS: Record<string, BodySystemId> = {
   reaction_median_ms: 'neuro',
   reaction_lapses: 'neuro',
   glucose_mgdl: 'metabolic',
+  // Added on Sun 15 Nov, with the system their row of indicators.csv names.
+  // Body mass is musculoskeletal, a system with no colour yet (DESIGN.md 2.3),
+  // so it has a glyph and no system colour.
+  appetite_1_5: 'metabolic',
+  fluid_intake_ml: 'metabolic',
 };
 
 /** Body system of an indicator id, or null when the id is unknown. */
