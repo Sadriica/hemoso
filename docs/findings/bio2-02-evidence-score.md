@@ -50,9 +50,14 @@ Labels, and what the astronaut reads:
 
 | Score | Label | Text |
 | --- | --- | --- |
-| 0 to 0.3 | Low | "Not likely with what you have recorded" |
-| 0.3 to 0.6 | Possible | "Possible. These signals point to it: ..." |
-| 0.6 to 1 | Review | "Ask your CMO or flight surgeon to check this" |
+| 0 ≤ score < 0.3 | Low | "Not likely with what you have recorded" |
+| 0.3 ≤ score < 0.6 | Possible | "Possible. These signals point to it: ..." |
+| 0.6 ≤ score ≤ 1 | Review | "Ask your CMO or flight surgeon to check this" |
+
+Each band includes its lower bound and excludes its upper one, except the last,
+which ends at 1. The convention is the same as `min`/`max` in `attention.csv`,
+so 0.6 is Review and 0.3 is Possible. It matters as soon as a condition rests on
+five signals, where a score lands on exactly 0.6.
 
 The app always adds that the CMO or the flight surgeon confirms. A clinical
 boundary does not need a baseline: a value beyond a published limit counts as
@@ -98,9 +103,15 @@ Orthostatic intolerance (`based_on`: `hr_bpm bp_sys_mmhg bp_dia_mmhg`):
 | --- | --- | --- | --- | --- | --- |
 | 68, in baseline | 118, in baseline | 75, in baseline | 0 + 0 + 0 | 0 | Low |
 | 88, outside baseline | 110, in baseline | 75, in baseline | 0.5 + 0 + 0 | 0.167 | Low |
-| 112, over 100 | 95, outside baseline | 62, in baseline | 1 + 0.5 + 0 | 0.5 | Possible |
-| 130, over 100 | 88, over no row | 120, over no row | 1 + 0.5 + 0.5 | 0.667 | Review |
-| one signal only, no baseline for the others | | | | - | no data |
+| 112, above 100 | 95, outside baseline | 62, in baseline | 1 + 0.5 + 0 | 0.5 | Possible |
+| 130, above 100 | 88, below and outside baseline | 55, below and outside baseline | 1 + 0.5 + 0.5 | 0.667 | Review |
+| 130, above 100 | 88, below and outside baseline | 120, above: wrong side | 1 + 0.5 + 0 | 0.5 | Possible |
+| one signal with a baseline, the others without | | | | - | no data |
+
+The fifth row is the one the fourth version missed: orthostatic intolerance
+needs a **low** diastolic, so a diastolic of 120 adds 0 even though it is far
+from the baseline. Without the side, that row would have scored 0.667 and said
+"Review" for a sign that points the other way.
 
 ## Confidence
 
