@@ -74,13 +74,13 @@ test('guided check by keyboard with axe on every phase', async ({ page }) => {
     })
     const paired = names.filter((name) => /systolic|diastolic/i.test(name)).length
     await expect(rows).toHaveCount(typedNames.length - (paired === 2 ? 1 : 0))
-    await expect(page.getByLabel(typedNames[0])).toBeVisible()
+    await expect(page.getByLabel(typedNames[0], { exact: true })).toBeVisible()
     await expect(
       page.getByRole('group', { name: strings.entry.bloodPressure }),
     ).toBeVisible()
     await expect(page.getByLabel(strings.entry.missionDay)).toBeVisible()
     await expect(
-      page.getByRole('group', { name: strings.entry.context }),
+      page.getByRole('group', { name: strings.entry.applyToAll }),
     ).toBeVisible()
   })
 
@@ -104,7 +104,7 @@ test('guided check by keyboard with axe on every phase', async ({ page }) => {
     await expect(page.getByLabel(strings.entry.time, { exact: true })).toBeFocused()
 
     // The measured row, typed with the keyboard only.
-    await focusByTab(page, page.getByLabel(names[0]))
+    await focusByTab(page, page.getByLabel(names[0], { exact: true }))
     await page.keyboard.type(FIRST_VALUE)
 
     // The mood row is five choices: two arrow presses reach the third one.
@@ -178,7 +178,9 @@ test('guided check by keyboard with axe on every phase', async ({ page }) => {
     await selectIndicator(page, names[scaleIndex])
     const scale = cardFor(statusRegion, names[scaleIndex])
     await expect(
-      scale.getByText(`${SCALE_VALUE} ${strings.cardUnit(SCALE_UNIT)}`, { exact: true }),
+      scale
+        .locator('.indicator-card__value')
+        .filter({ hasText: `${SCALE_VALUE} ${strings.cardUnit(SCALE_UNIT)}` }),
     ).toBeVisible()
     await expect(scale.getByText(new RegExp(`^DAY ${scaleDay} · `))).toBeVisible()
     await selectIndicator(page, names[0])

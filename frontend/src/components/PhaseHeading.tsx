@@ -13,7 +13,7 @@ interface PhaseHeadingProps {
 const PhaseHeading = forwardRef<HTMLHeadingElement, PhaseHeadingProps>(
   function PhaseHeading({ eyebrow, lines, intro }, ref) {
     return (
-      <div className="phase-heading">
+      <div className="phase-heading" data-enter="headline">
         <p className="eyebrow">
           <span className="hairline" aria-hidden="true" />
           {eyebrow}

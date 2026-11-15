@@ -35,6 +35,25 @@ describe('TrendRow', () => {
     expect(screen.getByText(strings.trend.notEnough(2, 3))).toBeInTheDocument()
   })
 
+  it('keeps the dot between 4 and 96 percent and on a rail that spans the track', () => {
+    const { container, rerender } = render(
+      <TrendRow value={70} unit="bpm" baseline={baseline} />,
+    )
+    const left = () =>
+      parseFloat((container.querySelector('.trend__dot') as HTMLElement).style.left)
+    // Far above and far below the usual band: clamped, still on the track.
+    rerender(<TrendRow value={500} unit="bpm" baseline={baseline} />)
+    expect(left()).toBe(96)
+    rerender(<TrendRow value={-500} unit="bpm" baseline={baseline} />)
+    expect(left()).toBe(4)
+    const rail = container.querySelector('.trend__rail')
+    expect(rail).toHaveAttribute('x', '0')
+    expect(rail).toHaveAttribute('width', '100')
+    const svg = container.querySelector('svg')
+    expect(svg).toHaveAttribute('viewBox', '0 0 100 12')
+    expect(svg).toHaveAttribute('preserveAspectRatio', 'none')
+  })
+
   it('names the context of the missing readings', () => {
     render(
       <TrendRow
@@ -56,5 +75,24 @@ describe('TrendRow', () => {
       <TrendRow value={71} unit="mmHg" baseline={baseline} />,
     )
     expect(container.querySelector('.trend__unit')).toHaveTextContent('70 mmHg')
+  })
+
+  it('keeps the dot between 4 and 96 percent and on a rail that spans the track', () => {
+    const { container, rerender } = render(
+      <TrendRow value={70} unit="bpm" baseline={baseline} />,
+    )
+    const left = () =>
+      parseFloat((container.querySelector('.trend__dot') as HTMLElement).style.left)
+    // Far above and far below the usual band: clamped, still on the track.
+    rerender(<TrendRow value={500} unit="bpm" baseline={baseline} />)
+    expect(left()).toBe(96)
+    rerender(<TrendRow value={-500} unit="bpm" baseline={baseline} />)
+    expect(left()).toBe(4)
+    const rail = container.querySelector('.trend__rail')
+    expect(rail).toHaveAttribute('x', '0')
+    expect(rail).toHaveAttribute('width', '100')
+    const svg = container.querySelector('svg')
+    expect(svg).toHaveAttribute('viewBox', '0 0 100 12')
+    expect(svg).toHaveAttribute('preserveAspectRatio', 'none')
   })
 })

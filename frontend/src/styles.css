@@ -76,6 +76,8 @@
   --leading-label: 16px;
   --tracking-label: 0.08em;
   --tracking-display: 0.01em;
+  --tracking-wide: 0.16em;
+  --tracking-eyebrow: 0.24em;
 
   /* Spacing, 4 px base (DESIGN.md 5) */
   --space-1: 4px;
@@ -90,6 +92,20 @@
   --radius-small: 2px;
   --radius-card: 4px;
   --radius-round: 999px;
+  /* Shape grammar of round 3 (DESIGN.md 6.1): a wide main panel, capsules for
+     state and telemetry, an occasional cut corner. Cards inside a panel keep
+     --radius-card. */
+  --radius-panel: 24px;
+  --radius-capsule: 999px;
+  --cut: 18px;
+  /* Depth (DESIGN.md 6.2): floating layers and a glow local to one object. */
+  --shadow-float: 0 18px 48px rgb(0 0 0 / 45%);
+  --glow-accent: color-mix(in srgb, var(--color-accent) 22%, transparent);
+  --glow-radius: 220px;
+  /* Layers of the stage: scene behind, panel over it, telemetry on top. */
+  --layer-scene: 0;
+  --layer-panel: 1;
+  --layer-telemetry: 2;
   --border-subtle: 1px solid var(--color-border);
   --shadow-raised: 0 0 0 1px var(--color-border), 0 8px 24px rgb(0 0 0 / 35%);
   --container-width: 1200px;
@@ -112,6 +128,15 @@
      key or tap ends it (DESIGN.md 7). */
   --motion-intro: 3400ms;
   --motion-cinematic: 1200ms;
+  /* Choreography (DESIGN.md 7.2): every piece is short; the whole sequence of
+     a phase entrance stays under --motion-cinematic and ends on any key. */
+  --motion-horizon: 800ms;
+  --motion-draw: 900ms;
+  --motion-rise: 500ms;
+  --motion-stagger: 70ms;
+  --move-hover: 4px;
+  --move-press: 2px;
+  --ease-settle: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-standard: cubic-bezier(0.2, 0.7, 0.1, 1);
   --ease-out: cubic-bezier(0, 0, 0.2, 1);
 }
@@ -149,6 +174,8 @@
     --system-metabolic: #0f766e;
 
     --shadow-raised: 0 0 0 1px var(--color-border), 0 8px 24px rgb(8 11 18 / 12%);
+    --shadow-float: 0 18px 48px rgb(8 11 18 / 16%);
+    --glow-accent: color-mix(in srgb, var(--color-accent) 12%, transparent);
   }
 }
 
@@ -266,7 +293,7 @@ legend {
   font-family: var(--font-mono);
   font-size: var(--text-small);
   font-weight: 600;
-  letter-spacing: 0.16em;
+  letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
   cursor: pointer;
   transition: filter var(--motion-fast) var(--ease-out), border-color var(--motion-fast) var(--ease-out);
@@ -714,8 +741,12 @@ legend {
   height: var(--space-3);
 }
 
-.trend__band {
+.trend__rail {
   fill: var(--color-border);
+}
+
+.trend__band {
+  fill: var(--color-border-control);
 }
 
 .trend__median {

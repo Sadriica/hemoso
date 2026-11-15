@@ -65,7 +65,7 @@ body {
 .cinema__vignette {
   position: absolute;
   inset: 0;
-  background: radial-gradient(130% 100% at 50% 40%, transparent 55%, rgb(0 0 0 / 55%));
+  background: radial-gradient(130% 100% at 50% 40%, transparent 55%, color-mix(in srgb, var(--color-bg) 55%, black));
 }
 
 /* The sticky route rail must never hide the control that has focus
@@ -181,7 +181,7 @@ html {
   font-family: var(--font-mono);
   font-size: var(--text-label);
   line-height: var(--leading-label);
-  letter-spacing: 0.04em;
+  letter-spacing: var(--tracking-label);
   white-space: nowrap;
 }
 
@@ -235,6 +235,29 @@ html {
 
   .topbar__motion-label {
     display: inline;
+  }
+}
+
+/* The offline notice sits full width under the bar row. It only pushes the
+   page down; nothing is reserved while the browser is online. */
+.offline-notice {
+  margin: 0;
+  border-width: 0 0 1px;
+  border-left-width: 0;
+  border-radius: 0;
+  background: var(--status-attention-bg);
+  color: var(--status-attention-text);
+}
+
+.offline-notice .notice__body {
+  max-width: var(--container-width);
+  margin: 0 auto;
+}
+
+/* From 600 to 700 px the stamp would be cut; it is hidden like on a phone. */
+@media (min-width: 600px) and (max-width: 700px) {
+  .topbar__stamp {
+    display: none;
   }
 }
 
@@ -310,7 +333,7 @@ html {
   color: var(--color-accent);
   font-family: var(--font-mono);
   font-size: var(--text-label);
-  letter-spacing: 0.24em;
+  letter-spacing: var(--tracking-eyebrow);
   text-transform: uppercase;
 }
 
@@ -408,7 +431,7 @@ html {
   font-family: var(--font-mono);
   font-size: var(--text-small);
   font-weight: 600;
-  letter-spacing: 0.16em;
+  letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
   cursor: pointer;
   transition:
@@ -444,7 +467,7 @@ html {
   color: var(--color-text-muted);
   font-family: var(--font-mono);
   font-size: var(--text-label);
-  letter-spacing: 0.18em;
+  letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
   cursor: pointer;
 }
@@ -482,7 +505,7 @@ html {
   color: var(--color-text-muted);
   font-family: var(--font-mono);
   font-size: var(--text-label);
-  letter-spacing: 0.24em;
+  letter-spacing: var(--tracking-eyebrow);
   text-transform: uppercase;
 }
 
@@ -537,7 +560,7 @@ html {
 .crew-option__name {
   font-family: var(--font-mono);
   font-size: var(--text-small);
-  letter-spacing: 0.04em;
+  letter-spacing: var(--tracking-label);
   text-transform: none;
 }
 
@@ -922,7 +945,7 @@ input.reading__input::-webkit-inner-spin-button {
   font-family: var(--font-mono);
   font-size: var(--text-label);
   line-height: var(--leading-label);
-  letter-spacing: 0.16em;
+  letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
 }
 
@@ -938,7 +961,7 @@ input.reading__input::-webkit-inner-spin-button {
   border-radius: var(--radius-round);
   background: var(--color-bg-raised);
   font-weight: 500;
-  letter-spacing: 0.04em;
+  letter-spacing: var(--tracking-label);
 }
 
 .phase-rail__step--current {
@@ -1056,7 +1079,7 @@ input.reading__input::-webkit-inner-spin-button {
   }
 
   .phase-rail__step {
-    letter-spacing: 0.08em;
+    letter-spacing: var(--tracking-label);
   }
 
   .report__panel {
@@ -1207,4 +1230,63 @@ input.reading__input::-webkit-inner-spin-button {
   inset: 0;
   z-index: 100;
   background: var(--color-bg);
+}
+
+/* Round 3 shape grammar (DESIGN.md 6.1): one wide main panel per screen, with
+   an optional cut corner, and capsules for state and telemetry. The cut is a
+   painted triangle in the page colour over a square corner, so nothing is
+   clipped: a focus ring or a field edge near it is always whole. */
+.panel {
+  position: relative;
+  padding: var(--space-4);
+  border: var(--border-subtle);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-float);
+}
+
+.panel--cut {
+  border-top-right-radius: 0;
+}
+
+.panel--cut::after {
+  content: '';
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  width: var(--cut);
+  height: var(--cut);
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom left,
+    var(--color-bg) 0 calc(50% - 0.5px),
+    var(--color-border) 0 calc(50% + 0.5px),
+    transparent 0
+  );
+}
+
+.capsule {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: fit-content;
+  padding: var(--space-1) var(--space-3);
+  border: var(--border-subtle);
+  border-radius: var(--radius-capsule);
+  background: color-mix(in srgb, var(--color-surface) 80%, transparent);
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+@media (max-width: 599px) {
+  /* On a phone the float shadow would be cut by the sideways clip of the
+     phase, so the panel keeps its border and loses the shadow. */
+  .panel {
+    padding: var(--space-3);
+    box-shadow: none;
+  }
 }

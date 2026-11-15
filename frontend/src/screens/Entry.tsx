@@ -11,7 +11,7 @@ import { missionClockFor, type MissionClock } from '../domain/clock'
 import { getMissionStart } from '../data/missionStart'
 import { MEASUREMENT_CONTEXTS, contextForTime } from '../domain/context'
 import { latestEntry } from '../domain/entries'
-import type { Entry as EntryRecord, Indicator } from '../domain/types'
+import type { Entry as EntryRecord, Indicator, MeasurementContext } from '../domain/types'
 import type { EntryStore } from '../data/entryStore'
 import { IndicatorIcon, StatusIcon, systemColor } from '../icons'
 import Notice from '../components/Notice'
@@ -19,6 +19,7 @@ import {
   SCALE_VALUES,
   parseReport,
   readingRows,
+  rowContexts,
   type ReadingRow,
 } from './entryDraft'
 import { strings } from '../strings'
@@ -107,7 +108,19 @@ function ReportForm({
   const [timeText, setTimeText] = useState(defaults.time)
   // The routine prompt (REQ-09): the readings are taken at the clock time the
   // form opens with, so the context that fits that time is picked first.
-  const [context, setContext] = useState(() => contextForTime(defaults.time))
+  // Each row keeps its own context: its usual one from the person's earlier
+  // entries, or the clock's when there are none. The header control sets all.
+  const [contexts, setContexts] = useState<Record<string, MeasurementContext>>(
+    () => rowContexts(rows, entries, contextForTime(defaults.time)),
+  )
+  const contextOf = (row: ReadingRow): MeasurementContext =>
+    contexts[row.key] ?? contextForTime(defaults.time)
+  const sharedContext = rows.every((row) => contextOf(row) === contextOf(rows[0]))
+    ? contextOf(rows[0])
+    : null
+  const rowOfField = new Map(
+    rows.flatMap((row) => row.fields.map((field) => [field.indicatorId, row] as const)),
+  )
   const [valueErrors, setValueErrors] = useState<Record<string, string>>({})
   const [dayError, setDayError] = useState<string | undefined>()
   const [timeError, setTimeError] = useState<string | undefined>()
@@ -125,6 +138,10 @@ function ReportForm({
   const timeId = `${baseId}-time`
   const timeErrorId = `${timeId}-error`
 
+  // With an odd number of plain rows the last one takes the full width, so the
+  // two-column layout leaves no hole (presentation only).
+  const plain = rows.filter((row) => !row.scale)
+  const lastPlainKey = plain.length % 2 === 1 ? plain[plain.length - 1].key : null
   const names = new Map(indicators.map((item) => [item.id, item.name]))
   const errorOf = (row: ReadingRow) =>
     row.fields
@@ -200,7 +217,7 @@ function ReportForm({
         unit: reading.unit,
         missionDay: draft.missionDay,
         time: draft.time,
-        context,
+        context: contextOf(rowOfField.get(reading.indicatorId) ?? rows[0]),
       })
     }
 
@@ -260,7 +277,7 @@ function ReportForm({
         <h2 id={`${baseId}-heading`} className="report-form__heading">
           {strings.entry.heading}
         </h2>
-        <div className="rep-progress">
+        <div className="rep-progress capsule">
           <span className="rep-progress__dots" aria-hidden="true">
             {rows.map((row, index) => (
               <span
@@ -339,7 +356,10 @@ function ReportForm({
               section 3). One segmented control of radios: the arrow keys
               change it like the scale. */}
           <fieldset className="rep-segment">
-            <legend className="rep-segment__legend">{strings.entry.context}</legend>
+            <legend className="rep-segment__legend">
+              {strings.entry.applyToAll}
+              <span className="rep-segment__hint" aria-hidden="true">{strings.entry.applyToAllHint}</span>
+            </legend>
             <div className="rep-segment__track">
               {MEASUREMENT_CONTEXTS.map((choice) => (
                 <label key={choice} className="rep-segment__option">
@@ -347,8 +367,10 @@ function ReportForm({
                     type="radio"
                     name={`${baseId}-context`}
                     value={choice}
-                    checked={context === choice}
-                    onChange={() => setContext(choice)}
+                    checked={sharedContext === choice}
+                    onChange={() =>
+                      setContexts(Object.fromEntries(rows.map((row) => [row.key, choice])))
+                    }
                   />
                   <span className="rep-segment__mark" aria-hidden="true">
                     ✓
@@ -373,6 +395,11 @@ function ReportForm({
               valueRefs={valueRefs}
               choiceRefs={choiceRefs}
               onEnter={onEnter}
+              wide={row.key === lastPlainKey}
+              context={contextOf(row)}
+              onContext={(choice) =>
+                setContexts((current) => ({ ...current, [row.key]: choice }))
+              }
             />
           ))}
         </ul>
@@ -410,6 +437,9 @@ function ReadingRowField({
   valueRefs,
   choiceRefs,
   onEnter,
+  wide,
+  context,
+  onContext,
 }: {
   row: ReadingRow
   baseId: string
@@ -420,11 +450,15 @@ function ReadingRowField({
   valueRefs: { current: Record<string, HTMLInputElement | null> }
   choiceRefs: { current: Record<string, HTMLInputElement | null> }
   onEnter: (event: KeyboardEvent<HTMLInputElement>) => void
+  wide: boolean
+  context: MeasurementContext
+  onContext: (choice: MeasurementContext) => void
 }) {
   const unitId = `${baseId}-${row.key}-unit`
   const lastId = `${baseId}-${row.key}-last`
   const errorId = `${baseId}-${row.key}-error`
   const nameId = `${baseId}-${row.key}-name`
+  const ctxId = `${baseId}-${row.key}-ctx`
   // A screen reader reads the name, then the unit, the last reading and the
   // problem of the group it is in.
   const describedBy = [
@@ -460,7 +494,7 @@ function ReadingRowField({
 
   return (
     <li
-      className={`rep-row${row.scale ? ' rep-row--scale' : ''}`}
+      className={`rep-row${row.scale ? ' rep-row--scale' : ''}${wide ? ' rep-row--wide' : ''}${pair ? ' rep-row--pair' : ''}`}
       style={style}
     >
       <span className="rep-row__icon">
@@ -482,6 +516,23 @@ function ReadingRowField({
           <div className="rep-row__head">
             {title}
             {lastLine}
+            <span className="rep-ctx">
+              <label className="sr-only" htmlFor={ctxId}>
+                {strings.entry.rowContext(row.name)}
+              </label>
+              <select
+                id={ctxId}
+                className="rep-ctx__select"
+                value={context}
+                onChange={(event) => onContext(event.target.value as MeasurementContext)}
+              >
+                {MEASUREMENT_CONTEXTS.map((choice) => (
+                  <option key={choice} value={choice}>
+                    {strings.entry.contextLabels[choice]}
+                  </option>
+                ))}
+              </select>
+            </span>
           </div>
           <div className="rep-pills">
             {SCALE_VALUES.map((choice, index) => (
@@ -515,6 +566,23 @@ function ReadingRowField({
           <div className="rep-row__head">
             {title}
             {lastLine}
+            <span className="rep-ctx">
+              <label className="sr-only" htmlFor={ctxId}>
+                {strings.entry.rowContext(row.name)}
+              </label>
+              <select
+                id={ctxId}
+                className="rep-ctx__select"
+                value={context}
+                onChange={(event) => onContext(event.target.value as MeasurementContext)}
+              >
+                {MEASUREMENT_CONTEXTS.map((choice) => (
+                  <option key={choice} value={choice}>
+                    {strings.entry.contextLabels[choice]}
+                  </option>
+                ))}
+              </select>
+            </span>
           </div>
 
           {/* One field, one border: the value large on the left, the unit

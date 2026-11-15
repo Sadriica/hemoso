@@ -234,22 +234,29 @@ The rule is FORMATS.md section 3, "How each value is compared", and
 - `median` is the median of the window; `spread` is
   `max(1.4826 × median absolute deviation, min_spread)`, with `min_spread` from
   that indicator's row in `config/data/indicators.csv`.
-- Fewer than 3 entries gives `no_data`; then `median`, `spread` and `attention`
-  are null and `n` counts the entries available.
-- A matching row of `config/rules/attention.csv` gives `needs_review` and the
-  row, with the most severe `notify` (`crew` < `cmo` < `flight_surgeon`) when
-  several rows match. `attention` is null otherwise.
-- With no attention row, a value at most 3 spreads from the median is
-  `in_range`, anything further is `outside_range`.
+The checks run in this order (phys-02, safety decision of Sat 14 Nov):
+
+1. A matching row of `config/rules/attention.csv` whose `source` is a link
+   gives `needs_review` and the row, with or without a baseline. When several
+   rows match, the most severe `notify` wins (`crew` < `cmo` <
+   `flight_surgeon`). A row marked `Assumption` is ignored: it never gives
+   `needs_review` and never appears in `attention`.
+2. Otherwise, fewer than 3 entries gives `no_data`; `median` and `spread` are
+   null and `n` counts the entries available.
+3. Otherwise, a value at most 3 spreads from the median is `in_range`, and
+   anything further is `outside_range`. `attention` is null.
+
+So a core temperature of 39.5 °C on the first day, past a cited limit, is
+`needs_review` and not `no_data`, while the same value past an `Assumption`
+limit is `no_data`.
 
 Four points the decision does not settle, resolved here and reported as open
 questions in `team/eng1/`:
 
 - The window counts entries, not days: entries carry a mission day and a time,
   not a date, so "the last 14 days" cannot be measured from the store.
-- `no_data` is checked before `attention.csv`, as `phys-02` orders the checks,
-  so a value crossing an attention threshold is still `no_data` until the
-  window holds 3 entries.
+- A row's `source` counts as a link when every word in it starts with
+  `https://` or `http://`; a cell that mixes a link and `Assumption` does not.
 - A value exactly on an attention threshold does not trigger that row.
 - Two matching rows with the same `notify` are not defined by FORMATS.md; the
   more extreme threshold wins, as the shared vectors in
@@ -368,8 +375,8 @@ The rule is FORMATS.md section 3, "How each value is compared", point 3:
 | --- | --- |
 | Which reading is scored? | The newest stored entry of the signal. Its `context` decides what it is compared with. |
 | What is its baseline? | `state.py`'s: the last 14 readings before the newest one in that same context, median and spread with the indicator's `min_spread`. |
-| What does one signal add? | `1` when the value crossed a row of `config/rules/attention.csv` whose `side` is the signal's side. `0.5` when it is outside the baseline on that side. `0` otherwise, including a value on the wrong side of the condition, whatever its distance from the baseline: a glucose of 180 mg/dL adds nothing to `hypoglycaemia`. |
-| When is a signal not usable? | With no reading, no baseline (fewer than 3 readings in that context, or no row in `config/data/indicators.csv`), or no side in `based_on`. It is listed, with `contribution` and `value` null, and left out of the mean. |
+| What does one signal add? | `1` when the value crossed a row of `config/rules/attention.csv` whose `side` is the signal's side and whose `source` is a link, with or without a baseline. Rows marked `Assumption` never add this point. `0.5` when it is outside the baseline on that side. `0` otherwise, including a value on the wrong side of the condition, whatever its distance from the baseline: a glucose of 180 mg/dL adds nothing to `hypoglycaemia`. |
+| When is a signal not usable? | With no reading, no side in `based_on`, or no baseline (fewer than 3 readings in that context, or no row in `config/data/indicators.csv`) and no cited limit crossed. It is listed, with `contribution` and `value` null, and left out of the mean. |
 | How is the score computed? | The mean of the usable signals, from 0 to 1, shown with three decimals. Fewer than 2 usable signals gives `score` null and `label` `no_data`, never a low score. |
 
 Labels:
@@ -389,8 +396,9 @@ Four points the finding does not settle, resolved here:
 - The context is the newest reading's own: heart rate after exercise is
   compared with readings after exercise, and a context with fewer than 3
   readings leaves the signal without a baseline.
-- A signal without a baseline is not usable even when its value crossed an
-  attention row, as the finding leaves such a signal out of the score.
+- A signal without a baseline still adds 1 when its value crossed a cited
+  attention row on its side (bio2-02: "a clinical boundary does not need a
+  baseline"); with no cited row crossed it is left out of the score.
 - The finding's fourth vector gives a diastolic of 120 the baseline point for
   `orthostatic_intolerance`, whose diastolic signal is `below`, and reads 0.667
   `review`. With the side it adds 0, and the condition scores 0.5 `possible`.

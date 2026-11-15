@@ -1,4 +1,12 @@
-import { lazy, Suspense, useEffect, useId, useRef, useState } from 'react'
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type RefObject,
+} from 'react'
 import { attentionFor } from '../domain/attention'
 import { latestEntry } from '../domain/entries'
 import type {
@@ -96,6 +104,7 @@ export default function Home({
   // from the parent never move the page.
   const scrollAfterPick = useRef(false)
   const detailRef = useRef<HTMLDivElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
   const smooth = useMotionAllowed(motionReduced)
   const setChosenId = (id: string): void => {
     scrollAfterPick.current = true
@@ -212,6 +221,7 @@ export default function Home({
           {strings.board.needsReview(reviewRows.length)}
         </Notice>
       )}
+      <div ref={panelRef} className="status-panel panel panel--cut" data-enter="panel">
       {rows.length > 0 && (
         <div className="board">
           <div className="board__orbit">
@@ -247,6 +257,13 @@ export default function Home({
         </div>
       )}
       {selected && (
+        <>
+        <StatusLink
+          panelRef={panelRef}
+          selectedId={selected.indicator.id}
+          kind={statusBadgeKind(selected.status)}
+          still={motionReduced}
+        />
         <div className="detail home__detail" ref={detailRef}>
           <ul className="indicator-list">
             <IndicatorRow
@@ -282,7 +299,9 @@ export default function Home({
             </Suspense>
           </div>
         </div>
+        </>
       )}
+      </div>
     </section>
   )
 }
@@ -590,4 +609,89 @@ function dedupeSources(sources: Source[]): Source[] {
     }
   }
   return result
+}
+
+// The line from the selected body of the planetarium to the top of its card: a
+// thin path measured from the two elements, drawn in on each selection, with a
+// dot in the state colour where it lands. In the list view there is no body to
+// start from, so a short stub marks the link instead. Decoration only.
+function StatusLink({
+  panelRef,
+  selectedId,
+  kind,
+  still,
+}: {
+  panelRef: RefObject<HTMLDivElement | null>
+  selectedId: string
+  kind: string
+  still: boolean
+}) {
+  const [geo, setGeo] = useState<{ d: string; x: number; y: number } | null>(null)
+  const allowed = useMotionAllowed(still)
+
+  // After the commit, so the panel's ref is set (a child's layout effect runs
+  // before its parent's ref is attached).
+  useEffect(() => {
+    const panel = panelRef.current
+    if (!panel) return
+    const measure = () => {
+      const orb = panel.querySelector<HTMLElement>(
+        '.planetarium__stage button[aria-pressed="true"]',
+      )
+      const card = panel.querySelector<HTMLElement>('.indicator-card')
+      if (!orb || !card) {
+        setGeo(null)
+        return
+      }
+      const base = panel.getBoundingClientRect()
+      const a = orb.getBoundingClientRect()
+      const b = card.getBoundingClientRect()
+      const x1 = a.left + a.width / 2 - base.left
+      const y1 = a.bottom - base.top
+      const x2 = Math.min(Math.max(x1, b.left - base.left + 32), b.right - base.left - 32)
+      const y2 = b.top - base.top
+      const mid = (y2 - y1) / 2
+      const round = (n: number) => Math.round(n * 10) / 10
+      setGeo({
+        d: `M${round(x1)} ${round(y1)} C${round(x1)} ${round(y1 + mid)} ${round(x2)} ${round(y2 - mid)} ${round(x2)} ${round(y2)}`,
+        x: round(x2),
+        y: round(y2),
+      })
+    }
+    measure()
+    // The planetarium loads on its own and the view can change inside the
+    // panel, so the line is measured again when the panel resizes or its
+    // content changes (one frame at most).
+    let frame = 0
+    const later = () => {
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(measure)
+    }
+    const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(later) : null
+    observer?.observe(panel)
+    const mutations = new MutationObserver(later)
+    mutations.observe(panel, { childList: true, subtree: true, attributes: true, attributeFilter: ['aria-pressed'] })
+    window.addEventListener('resize', measure)
+    return () => {
+      cancelAnimationFrame(frame)
+      mutations.disconnect()
+      observer?.disconnect()
+      window.removeEventListener('resize', measure)
+    }
+  }, [panelRef, selectedId])
+
+  if (geo === null) {
+    return <div className={`status-link status-link--${kind}`} aria-hidden="true" />
+  }
+  return (
+    <svg
+      key={selectedId}
+      className={`status-path status-link--${kind}${allowed ? '' : ' status-path--still'}`}
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path d={geo.d} pathLength={1} data-draw="" />
+      <circle cx={geo.x} cy={geo.y} r="4" />
+    </svg>
+  )
 }

@@ -1,10 +1,15 @@
-import { useState, type RefObject } from 'react'
+import { lazy, Suspense, useState, type RefObject } from 'react'
 import PhaseHeading from '../components/PhaseHeading'
 import type { EntryStore } from '../data/entryStore'
 import type { Indicator, Entry as EntryRecord } from '../domain/types'
 import Entry from '../screens/Entry'
 import ReactionCheck from '../reaction/ReactionCheck'
 import { strings } from '../strings'
+import '../screens/scene-grammar.css'
+
+// The quiet scene band of the report: a chunk of its own, never on the first
+// screen's critical path, decoration only.
+const OrbitalScene = lazy(() => import('../components/orbital'))
 
 interface ReportPhaseProps {
   headingRef: RefObject<HTMLHeadingElement | null>
@@ -16,6 +21,8 @@ interface ReportPhaseProps {
   serverConfigured: boolean
   onBack: () => void
   onDone: () => void
+  /** The top bar switch is on: the scene stands still. */
+  still?: boolean
 }
 
 // Phase 2: today's readings, one at a time with the entry form (REQ-02). The
@@ -30,6 +37,7 @@ export default function ReportPhase({
   serverConfigured,
   onBack,
   onDone,
+  still = false,
 }: ReportPhaseProps) {
   const copy = strings.phases.report
   // Entries present when the phase opened; the rest were logged in this check.
@@ -44,8 +52,14 @@ export default function ReportPhase({
     <section className="phase phase--report" aria-labelledby="phase-heading">
       <PhaseHeading ref={headingRef} eyebrow={copy.eyebrow} lines={copy.headline} intro={copy.intro} />
 
+      <div className="scene-band scene-band--report" data-enter="scene" aria-hidden="true">
+        <Suspense fallback={null}>
+          <OrbitalScene variant="report" still={still} />
+        </Suspense>
+      </div>
+
       <div className="report">
-        <div className="report__panel">
+        <div className="report__panel panel panel--cut" data-enter="panel">
           <Entry
             store={store}
             personId={personId}
@@ -69,7 +83,7 @@ export default function ReportPhase({
         serverConfigured={serverConfigured}
       />
 
-      <div className="phase__actions">
+      <div className="phase__actions" data-enter="rest">
         <button type="button" className="text-link" onClick={onBack}>
           <span aria-hidden="true">←</span> {copy.back}
         </button>

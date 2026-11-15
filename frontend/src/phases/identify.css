@@ -1,61 +1,128 @@
-/* Phase 1, Identify (REQ-37, REQ-36, REQ-32): one centred column, the headline
-   and its sentence, then the ways in stacked on one another — the face kept on
-   this device, a username and a PIN, a new account, the open demo.
-   Every colour, size, space and radius is a token of frontend/DESIGN.md. The
-   rules here only override the shared layout of phases.css for this phase, with
-   a selector of their own, so the shared files stay as the lead locked them. */
+/* Phase 1, Identify, round 3 (DESIGN.md 6 and 15): a mission scene with a
+   control panel in it. Two zones from 900 px: telemetry, headline and the
+   panel on the left, the stage with the orbital object on the right, the panel
+   reaching over its edge. Under 900 px one column, with the stage as a band
+   behind the headline.
+   The main panel carries one primary action, "Open the demo". The face is a
+   quiet row inside it, the username and PIN form waits behind a closed row.
+   Every colour, size, space, radius and layer is a token of DESIGN.md; the
+   panel and capsule shapes are shared rules of phases.css. */
 
 .phase--identify {
-  justify-items: center;
+  position: relative;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    'head'
+    'main';
+  align-items: start;
+  gap: var(--space-4);
 }
 
-/* The headline sits in the same centred column as the choices, with no box
-   behind it: DESIGN.md 14 accepts display type and the eyebrow on the
-   Starfield, and their contrast is checked against the page colour. */
+/* Left zone: the eyebrow (real data) and the headline, as left-aligned text. */
+.identify__head {
+  grid-area: head;
+  position: relative;
+  z-index: var(--layer-telemetry);
+}
+
 .phase--identify .phase-heading {
   width: 100%;
-  max-width: 560px;
+  max-width: none;
   margin: 0;
   padding: 0;
-  text-align: center;
-}
-
-.phase--identify .eyebrow {
-  justify-content: center;
-}
-
-.phase--identify .phase-heading__intro {
-  margin-inline: auto;
-}
-
-.phase--identify .identify {
-  display: grid;
-  gap: var(--space-3);
-  width: 100%;
-  max-width: 560px;
-}
-
-/* One way in: a card per choice, on the surface step of the rest of the app. */
-.signin__option {
-  display: grid;
-  gap: var(--space-3);
-  padding: var(--space-4);
-  border: var(--border-subtle);
-  border-radius: var(--radius-card);
-  background: var(--color-surface);
   text-align: left;
 }
 
-/* The name of a choice reads as the eyebrow of a card: mono, uppercase. */
-.signin__title {
-  margin: 0;
-  font-family: var(--font-mono);
-  font-size: var(--text-label);
-  line-height: var(--leading-label);
-  font-weight: 500;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--color-accent);
+.phase--identify .phase-heading__intro {
+  margin-inline: 0;
+  margin-top: var(--space-3);
+}
+
+/* The main column: the panel first, the secondary row after it. */
+.identify__main {
+  grid-area: main;
+  position: relative;
+  z-index: var(--layer-panel);
+  display: grid;
+  gap: var(--space-3);
+  align-content: start;
+  min-width: 0;
+}
+
+/* The stage. A band behind the right of the headline on a phone, a tall zone
+   beside the text on a wide screen. The slot is sized as the stage, so the
+   orbital object can be mounted in it without moving anything. */
+.identify__scene {
+  position: absolute;
+  top: var(--space-4);
+  right: calc(var(--space-3) * -1);
+  z-index: var(--layer-scene);
+  width: 46%;
+  max-width: 220px;
+  aspect-ratio: 1 / 1;
+  pointer-events: none;
+}
+
+/* The glow sits around the object only, never as a uniform halo. */
+.identify__scene::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    closest-side,
+    var(--glow-accent),
+    transparent
+  );
+}
+
+.identify__fallback {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Arcs replace boxes: 1 px lines at low strength. */
+.identify__arc {
+  fill: none;
+  stroke: var(--color-border);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.identify__arc--dash {
+  stroke: var(--color-border-control);
+  stroke-dasharray: 2 8;
+}
+
+.identify__arc--tilt {
+  stroke: var(--color-accent);
+  opacity: 0.5;
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: rotate(-24deg);
+}
+
+.identify__moon {
+  fill: var(--color-accent);
+}
+
+/* The panel: one wide surface, one primary action. */
+.identify__panel {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.identify__demo {
+  display: grid;
+  gap: var(--space-3);
+  justify-items: start;
+}
+
+.identify__primary {
+  width: 100%;
+  border-radius: var(--radius-capsule);
+  padding-inline: var(--space-5);
 }
 
 .signin__text {
@@ -65,12 +132,128 @@
   color: var(--color-text-muted);
 }
 
-.signin__hint {
+/* The name of a part, as a capsule label in the accent. */
+.signin__title {
+  margin: 0;
+  color: var(--color-accent);
+}
+
+/* The face and the username and PIN rows are quiet: text, a line above and a
+   small capsule button, no box of their own. */
+.identify__face {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'title action'
+    'text action';
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+  padding-top: var(--space-3);
+  border-top: var(--border-subtle);
+}
+
+.identify__row-title {
+  grid-area: title;
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+  font-weight: 600;
+}
+
+.identify__row-text {
+  grid-area: text;
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+  color: var(--color-text-muted);
+}
+
+.identify__face > button {
+  grid-area: action;
+}
+
+/* The opened face panel and its status take the whole row. */
+.identify__face > :not(h2):not(p):not(button) {
+  grid-column: 1 / -1;
+}
+
+.identify__quiet,
+.identify__more-toggle,
+.crew-begin {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--tap-min);
+  padding: 0 var(--space-4);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-capsule);
+  background: transparent;
+  color: var(--color-text);
   font-family: var(--font-mono);
   font-size: var(--text-label);
   line-height: var(--leading-label);
   letter-spacing: var(--tracking-label);
-  color: var(--color-text-muted);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.identify__quiet:hover,
+.identify__more-toggle:hover,
+.crew-begin:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+/* The crew and the way on share a row, and wrap on a narrow screen. */
+.identify__who {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-2) var(--space-3);
+}
+
+.identify__who .crew-picker {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* The way on for a picked crew member: quiet, since the demo is the primary. */
+.signin__begin {
+  flex: none;
+}
+
+.signin__begin .journey-button__arrow {
+  font-size: var(--text-body);
+}
+
+/* The secondary row: a capsule that opens the form. */
+.identify__more {
+  display: grid;
+  gap: var(--space-3);
+  justify-items: start;
+}
+
+.identify__more-toggle {
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.identify__more-chevron {
+  display: inline-block;
+  transition: transform var(--motion-fast) var(--ease-out);
+}
+
+.identify__more-toggle[aria-expanded='true'] .identify__more-chevron {
+  transform: rotate(90deg);
+}
+
+.identify__more-body {
+  width: 100%;
+  padding: var(--space-4);
+  border: var(--border-subtle);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
 }
 
 /* The form of a username and a PIN: one column, labels above the fields. */
@@ -93,6 +276,14 @@
   color: var(--color-text-muted);
 }
 
+.signin__hint {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  letter-spacing: var(--tracking-label);
+  color: var(--color-text-muted);
+}
+
 .signin__input {
   width: 100%;
   min-height: var(--tap-min);
@@ -107,9 +298,8 @@
 
 /* The PIN is a code, never a word: mono, spaced, masked by the input type. */
 .signin__input--pin {
-  max-width: 12ch;
   font-family: var(--font-mono);
-  letter-spacing: 0.24em;
+  letter-spacing: var(--tracking-label);
 }
 
 .signin__input:focus-visible {
@@ -124,8 +314,8 @@
   gap: var(--space-2);
 }
 
-/* The second answer of a card (creating an account, signing out) is a text
-   link, so each card keeps one primary action. */
+/* The second answer of a part (creating an account, signing out) is a text
+   link, so the screen keeps one primary action. */
 .signin__link,
 .signin__signout {
   min-height: var(--tap-min);
@@ -135,7 +325,7 @@
   color: var(--color-text-muted);
   font-family: var(--font-mono);
   font-size: var(--text-label);
-  letter-spacing: 0.18em;
+  letter-spacing: var(--tracking-label);
   text-transform: uppercase;
   cursor: pointer;
 }
@@ -145,8 +335,7 @@
   color: var(--color-accent);
 }
 
-/* A wrong PIN or a taken username: words and the attention colour, never the
-   colour alone. */
+/* A wrong PIN or a taken username: the attention icon, words and colour. */
 .signin__error {
   display: flex;
   align-items: flex-start;
@@ -156,43 +345,32 @@
   color: var(--status-attention-text);
 }
 
-/* Who is on duty on this device, with the way out. */
+/* Who is on duty on this device, with the way out, as one capsule. */
 .signin__session {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
   justify-content: space-between;
   gap: var(--space-1) var(--space-3);
-  padding: var(--space-1) var(--space-1) var(--space-1) var(--space-3);
-  border: var(--border-subtle);
-  border-radius: var(--radius-card);
-  background: var(--color-bg-raised);
+  padding-block: 0;
+  padding-right: var(--space-1);
 }
 
 .signin__who {
-  font-family: var(--font-mono);
-  font-size: var(--text-label);
-  line-height: var(--leading-label);
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
   color: var(--color-text);
 }
 
-/* The card-wide button of a choice, and the way on to the report. */
-.signin__option > .journey-button {
-  width: 100%;
+.identify__offer {
+  display: grid;
+  gap: var(--space-3);
+  justify-items: start;
 }
 
-/* The crew names of the demo, one per line: a card per person, with a circle
-   of initials, the name and the role, not a row of radios. The radio itself
-   covers the card, so a tap anywhere on it answers. */
+/* The crew: a row of capsules, each a person, the whole capsule the target. */
 .phase--identify .crew-picker {
-  margin-top: var(--space-1);
+  margin: 0;
 }
 
 .phase--identify .crew-picker__options {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--space-2);
   margin-top: var(--space-2);
 }
@@ -201,12 +379,13 @@
   position: relative;
   display: flex;
   align-items: center;
-  gap: var(--space-3);
-  min-height: var(--space-7);
-  padding: var(--space-2) var(--space-3);
+  gap: var(--space-2);
+  min-height: var(--space-6);
+  padding: var(--space-1) var(--space-3) var(--space-1) var(--space-1);
   border: 1px solid var(--color-border-control);
-  border-radius: var(--radius-card);
-  background: var(--color-bg-raised);
+  border-radius: var(--radius-capsule);
+  background: transparent;
+  box-shadow: none;
   cursor: pointer;
 }
 
@@ -222,11 +401,11 @@
   border-color: var(--color-accent);
 }
 
-/* Chosen: an accent edge on the left, a tinted card and the check shape. */
+/* Chosen: an accent edge, a tint and the check shape. */
 .phase--identify .crew-option:has(input:checked) {
   border-color: var(--color-accent);
-  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
-  box-shadow: inset var(--space-1) 0 0 var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+  box-shadow: none;
 }
 
 .phase--identify .crew-option:has(input:focus-visible) {
@@ -234,25 +413,23 @@
   outline-offset: 2px;
 }
 
-/* The circle: initials of the person id, in the accent, on the raised band. */
 .crew-option__avatar {
   flex: none;
   display: grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
+  width: calc(var(--space-6) - var(--space-2));
+  height: calc(var(--space-6) - var(--space-2));
   border: 1px solid var(--color-border-control);
   border-radius: var(--radius-round);
   background: color-mix(in srgb, var(--color-accent) 12%, transparent);
   color: var(--color-accent);
   font-family: var(--font-mono);
   font-size: var(--text-small);
-  letter-spacing: 0.08em;
+  letter-spacing: var(--tracking-label);
 }
 
 .crew-option__body {
   display: grid;
-  gap: var(--space-1);
   min-width: 0;
 }
 
@@ -275,13 +452,10 @@
   color: var(--color-text-muted);
 }
 
-/* The mark: an empty ring, and a filled circle with a check when chosen, so
-   the choice is a shape and not a colour alone. */
 .phase--identify .crew-option__mark {
   flex: none;
   display: grid;
   place-items: center;
-  margin-left: auto;
   width: var(--space-4);
   height: var(--space-4);
   border: 1px solid var(--color-text-muted);
@@ -308,8 +482,45 @@
   opacity: 1;
 }
 
+/* Two zones: from 900 px the stage takes the right column and the panel
+   reaches a little way over its edge (DESIGN.md 6.2). */
+@media (min-width: 900px) {
+  .phase--identify {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    grid-template-areas:
+      'head scene'
+      'main scene';
+    column-gap: var(--space-5);
+    row-gap: var(--space-3);
+  }
+
+  .identify__scene {
+    grid-area: scene;
+    position: relative;
+    top: auto;
+    right: auto;
+    align-self: center;
+    justify-self: center;
+    width: min(100%, 560px);
+    max-width: none;
+  }
+
+  .identify__main {
+    margin-right: calc(var(--space-6) * -1);
+  }
+}
+
 @media (max-width: 599px) {
-  .signin__option {
-    padding: var(--space-3);
+  /* The quiet face row stacks: words, then its button across the row. */
+  .identify__face {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'title'
+      'text'
+      'action';
+  }
+
+  .identify__face > button {
+    width: 100%;
   }
 }

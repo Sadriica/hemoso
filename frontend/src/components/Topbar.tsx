@@ -3,6 +3,7 @@ import type { SyncClient } from '../data/sync'
 import type { MissionClock } from '../domain/clock'
 import { UtilityIcon } from '../icons'
 import { strings } from '../strings'
+import OfflineNotice from './OfflineNotice'
 import MissionStart from './MissionStart'
 import SyncStatus from './SyncStatus'
 import SyntheticNotice from './SyntheticNotice'
@@ -90,6 +91,7 @@ export default function Topbar({
           </button>
         </div>
       </div>
+      <OfflineNotice client={client} />
       <SyntheticNotice />
     </header>
   )

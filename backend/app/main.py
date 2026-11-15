@@ -35,7 +35,14 @@ from .models import (
     is_valid_time,
 )
 from .ratelimit import RateLimitMiddleware, limiter
-from .state import attention_for, baseline, state_for, window, worse_state
+from .state import (
+    attention_for,
+    baseline,
+    cited_rows,
+    state_for,
+    window,
+    worse_state,
+)
 
 
 def allowed_origins() -> list[str]:
@@ -138,9 +145,8 @@ def state_of(
     """One value against the stored entries before it (FORMATS.md section 3)."""
     recent = window(entries, context, before)
     median, spread = baseline([entry.value for entry in recent], min_spread)
-    attention = None
-    if median is not None:
-        attention = attention_for(load_attention_rows(indicator_id), value)
+    # Cited limits first, with or without a baseline (phys-02 safety order).
+    attention = attention_for(cited_rows(load_attention_rows(indicator_id)), value)
     return IndicatorState(
         state=state_for(value, median, spread, attention),
         median=median,

@@ -84,11 +84,11 @@ describe('Instrument', () => {
     ['outside', '--status-attention-text'],
     ['review', '--status-review-text'],
     ['no_data', '--status-no-data-text'],
-  ] as const)('tints the accent with the %s colour and keeps the system outline', (state, token) => {
+  ] as const)('draws the whole figure in the %s colour, outline included', (state, token) => {
     const { container } = render(<Instrument indicatorId="glucose_mgdl" value={100} state={state} />)
     const root = container.firstElementChild as HTMLElement
     expect(root.style.color).toBe(`var(${token})`)
-    expect(root.style.getPropertyValue('--ins-system')).toBe('var(--system-metabolic)')
+    expect(root.style.color).not.toContain('--system-')
     expect(root.className).toContain('instrument--state')
     expect(root).toHaveAttribute('data-state', state)
   })

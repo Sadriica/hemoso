@@ -48,8 +48,9 @@ export interface ReactionCheckProps {
 // tone appears after a random wait and the person answers with a tap on the
 // test area or the space bar; the median reaction time and the lapses are saved
 // as two entries of the existing store, so the outbox sends them like any other
-// reading. The step is hidden while Phys has not added the two indicators
-// (T-72), so a missing row is never a crash.
+// reading. A run of the demo length shows the result and saves nothing. The
+// step is hidden while Phys has not added the two indicators (T-72), so a
+// missing row is never a crash.
 export default function ReactionCheck({
   store,
   personId,
@@ -174,11 +175,14 @@ export default function ReactionCheck({
 
   // 8. The result is saved once, through the store: the outbox sends it like
   // any other reading, so nothing here needs the network (REQ-28). A run
-  // stopped with Escape is thrown away on purpose.
+  // stopped with Escape is thrown away on purpose, and so is a run of the demo
+  // length: 30 seconds is a demonstration of the screen, and its two entries
+  // would sit in the mission record as a check nobody took (T-76).
   useEffect(() => {
     if (state.phase !== 'finished' || saved.current) return
     saved.current = true
     if (state.stopped) return
+    if (state.durationMs === REACTION_DEMO_DURATION_MS) return
     const run = summarize(state)
     if (run.trials === 0) return
     const { store, personId, entries, indicators } = latest.current
@@ -391,7 +395,9 @@ export default function ReactionCheck({
                 {copy.falseStarts(summary.falseStarts)}
               </p>
               <p className="reaction__meta" role="status">
-                {copy.saved(savedCount, serverConfigured)}
+                {state.durationMs === REACTION_DEMO_DURATION_MS
+                  ? copy.demoNotSaved
+                  : copy.saved(savedCount, serverConfigured)}
               </p>
             </>
           )}

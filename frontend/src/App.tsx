@@ -153,6 +153,7 @@ export default function App() {
             headingRef={headingRef}
             personIds={personIds}
             session={session}
+            still={motionReduced}
             onDone={() => setPhase('report')}
           />
         )}
@@ -168,6 +169,7 @@ export default function App() {
             serverConfigured={client.isConfigured()}
             onBack={() => setPhase('identify')}
             onDone={() => setPhase('status')}
+            still={motionReduced}
           />
         )}
         {phase === 'status' && personId && (
