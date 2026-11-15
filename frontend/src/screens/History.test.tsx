@@ -440,4 +440,47 @@ describe('History', () => {
     expect(screen.getAllByRole('row')).toHaveLength(5)
     expect(screen.getByText(/Your usual at rest: 10 example_unit/)).toBeInTheDocument()
   })
+
+  it('opens on the indicator of the card and follows a new card selection', () => {
+    const store = new LocalEntryStore({
+      storage: null,
+      seedEntries: [
+        entry(1, '08:00', 10),
+        { ...entry(1, '08:00', 4), indicatorId: 'sleep_quality_1_5', unit: '1 to 5' },
+      ],
+    })
+    const { rerender } = render(
+      <History
+        store={store}
+        personId="demo_astronaut_1"
+        data={data}
+        indicatorId="sleep_quality_1_5"
+      />,
+    )
+    expect(screen.getByLabelText('Indicator')).toHaveValue('sleep_quality_1_5')
+    rerender(
+      <History
+        store={store}
+        personId="demo_astronaut_1"
+        data={data}
+        indicatorId="example_indicator"
+      />,
+    )
+    expect(screen.getByLabelText('Indicator')).toHaveValue('example_indicator')
+  })
+
+  it('lets the person pick another indicator without moving the card', async () => {
+    const user = userEvent.setup()
+    const store = new LocalEntryStore({ storage: null, seedEntries: [] })
+    render(
+      <History
+        store={store}
+        personId="demo_astronaut_1"
+        data={data}
+        indicatorId="example_indicator"
+      />,
+    )
+    await user.selectOptions(screen.getByLabelText('Indicator'), 'sleep_quality_1_5')
+    expect(screen.getByLabelText('Indicator')).toHaveValue('sleep_quality_1_5')
+  })
 })

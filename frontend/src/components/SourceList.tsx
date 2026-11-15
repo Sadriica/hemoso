@@ -7,7 +7,7 @@ const MAX_LABEL = 48
 // A readable label for a source that has no title of its own: the host and the
 // last path segment of its own address. Nothing is invented; the full address
 // stays in href and title.
-function sourceLabel(source: { title: string; url: string }): string {
+export function sourceLabel(source: { title: string; url: string }): string {
   if (source.title !== source.url) return source.title
   try {
     const url = new URL(source.url)

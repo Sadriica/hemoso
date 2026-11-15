@@ -134,6 +134,9 @@ export const strings = {
       `Limit crossed: ${side} ${threshold} ${unit}.`,
     limitSource: 'Source:',
     bodyNone: 'No body zone for this indicator',
+    // A new account with no reading at all.
+    noReadings:
+      'No readings yet. Log your first readings in the report, then come back here.',
     loading: 'Loading the overview.',
   },
   // The first-load intro (skippable with any key or tap).

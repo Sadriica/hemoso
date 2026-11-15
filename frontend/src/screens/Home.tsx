@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useId, useRef, useState } from 'react'
 import { attentionFor } from '../domain/attention'
 import { latestEntry } from '../domain/entries'
 import type {
@@ -21,6 +21,7 @@ import AttentionBadge from '../components/AttentionBadge'
 import { statusBadgeKind, statusText } from '../components/attentionText'
 import Disclosure from '../components/Disclosure'
 import IndicatorDetails from '../components/IndicatorDetails'
+import { sourceLabel } from '../components/SourceList'
 import Notice from '../components/Notice'
 import TrendRow, { type Baseline } from '../components/TrendRow'
 import type { LoadedContent } from '../content/load'
@@ -61,6 +62,8 @@ export default function Home({
   data,
   entries,
   motionReduced = false,
+  selectedId: controlledId,
+  onSelect,
 }: {
   personId: string
   data: LoadedContent
@@ -69,6 +72,10 @@ export default function Home({
   entries: Entry[]
   // The top bar switch; the system setting is read as well.
   motionReduced?: boolean
+  // The selected indicator, when the parent keeps it (so the History panel can
+  // follow the card). Left out, this screen keeps its own choice.
+  selectedId?: string | null
+  onSelect?: (id: string) => void
 }) {
   const personEntries = entries.filter((entry) => entry.personId === personId)
   const waitingFor = waitingForFrom(data)
@@ -83,11 +90,34 @@ export default function Home({
   // (phases.css). Under that width it is not mounted at all, so a phone never
   // downloads the three.js chunk of a figure it cannot show.
   const wide = useWideScreen()
-  const [chosenId, setChosenId] = useState<string | null>(null)
+  const [ownId, setOwnId] = useState<string | null>(null)
+  const chosenId = onSelect === undefined ? ownId : (controlledId ?? null)
+  // Set only by a person's pick, so the first render and a change that comes
+  // from the parent never move the page.
+  const scrollAfterPick = useRef(false)
+  const detailRef = useRef<HTMLDivElement>(null)
+  const smooth = useMotionAllowed(motionReduced)
+  const setChosenId = (id: string): void => {
+    scrollAfterPick.current = true
+    if (onSelect === undefined) setOwnId(id)
+    else onSelect(id)
+  }
   const selectedId =
     data.indicators.find((item) => item.id === chosenId)?.id ??
     data.indicators[0]?.id ??
     null
+
+  // On a narrow screen the card sits far below the list. After a pick, bring it
+  // into view; `nearest` leaves the page alone when it is already all in view.
+  // Focus stays where it was. The rail and the top edge are kept clear with
+  // scroll margins in CSS.
+  useEffect(() => {
+    if (!scrollAfterPick.current) return
+    scrollAfterPick.current = false
+    const card = detailRef.current
+    if (card === null || typeof card.scrollIntoView !== 'function') return
+    card.scrollIntoView({ block: 'nearest', behavior: smooth ? 'smooth' : 'auto' })
+  }, [selectedId, smooth])
 
   // Every question the screen asks the state route, one per indicator with a
   // reading, all of them at once.
@@ -163,6 +193,9 @@ export default function Home({
           </Disclosure>
         </Notice>
       )}
+      {personEntries.length === 0 && (
+        <Notice tone="info">{strings.board.noReadings}</Notice>
+      )}
       {reviewRows.length > 0 && (
         <Notice
           tone="review"
@@ -214,7 +247,7 @@ export default function Home({
         </div>
       )}
       {selected && (
-        <div className="detail">
+        <div className="detail home__detail" ref={detailRef}>
           <ul className="indicator-list">
             <IndicatorRow
               key={selected.indicator.id}
@@ -447,11 +480,16 @@ function LimitCrossed({
   rules: AttentionRule[]
   fallback: Source[]
 }) {
+  const hintId = useId()
   const match = attentionFor(latest.value, rules)
   if (match.kind !== 'attention') return null
   const sources = match.rule.sources.length > 0 ? match.rule.sources : fallback
   return (
     <p className="indicator-card__limit">
+      {/* The new-tab hint describes the link, so its name stays the label. */}
+      <span id={hintId} className="sr-only">
+        {strings.sources.opensNewTab}
+      </span>
       {strings.board.limitCrossed(
         match.rule.side,
         match.rule.threshold,
@@ -464,24 +502,20 @@ function LimitCrossed({
           {source === 'Assumption' ? (
             source
           ) : (
-            <a href={source.url} target="_blank" rel="noreferrer">
-              {sourceName(source)}
+            <a
+              href={source.url}
+              title={source.url}
+              target="_blank"
+              rel="noreferrer noopener"
+              aria-describedby={hintId}
+            >
+              {sourceLabel(source)}
             </a>
           )}
         </span>
       ))}
     </p>
   )
-}
-
-// The title of a source, or its host when the title is the link itself.
-function sourceName(source: { title: string; url: string }): string {
-  if (source.title !== source.url) return source.title
-  try {
-    return new URL(source.url).hostname
-  } catch {
-    return source.url
-  }
 }
 
 // The text the astronaut reads for one state: the team's sentence from

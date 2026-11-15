@@ -56,6 +56,8 @@ export default function StatusPhase({
   const copy = strings.phases.status
   const clock = missionNow(entries)
   const [painOpen, setPainOpen] = useState(false)
+  // The indicator the card shows; the History panel follows it.
+  const [selectedId, setSelectedId] = useState<string | null>(null)
   // The reports of the person on duty, newest first (data/painStore.ts). The
   // read is local and small, so the list is read from the store on every
   // render: no second copy of it to keep in step. A saved report bumps the
@@ -77,12 +79,19 @@ export default function StatusPhase({
           data={data}
           entries={entries}
           motionReduced={motionReduced}
+          selectedId={selectedId}
+          onSelect={setSelectedId}
         />
         <PsychologicalState personId={personId} indicators={data.indicators} />
         <div className="status__history">
           <Disclosure label={copy.historyToggle}>
             <Suspense fallback={<Notice tone="info">{strings.board.loading}</Notice>}>
-              <History store={store} personId={personId} data={data} />
+              <History
+                store={store}
+                personId={personId}
+                data={data}
+                indicatorId={selectedId ?? undefined}
+              />
             </Suspense>
           </Disclosure>
         </div>

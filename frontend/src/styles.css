@@ -366,6 +366,13 @@ legend {
   color: var(--color-text);
 }
 
+/* The card keeps clear of the sticky rail and the top edge when a pick scrolls
+   it into view. */
+.home__detail {
+  scroll-margin-top: var(--space-3);
+  scroll-margin-bottom: calc(var(--rail-height) + var(--space-3));
+}
+
 /* Screen title (3.2). */
 .home__heading,
 .report-form__heading {

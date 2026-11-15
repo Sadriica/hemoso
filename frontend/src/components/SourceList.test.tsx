@@ -1,6 +1,14 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import SourceList from './SourceList'
+import SourceList, { sourceLabel } from './SourceList'
+
+describe('sourceLabel', () => {
+  it('uses the title, or the host and last segment when there is none', () => {
+    expect(sourceLabel({ title: 'NASA', url: 'https://nasa.gov/x' })).toBe('NASA')
+    const url = 'https://www.who.int/fact-sheets/hypertension'
+    expect(sourceLabel({ title: url, url })).toBe('who.int \u00b7 hypertension')
+  })
+})
 
 describe('SourceList', () => {
   it('shortens a source with no title and keeps the full address', () => {

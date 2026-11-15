@@ -167,6 +167,19 @@ describe('Home', () => {
     ).toHaveAttribute('href', 'https://example.org/limit')
   })
 
+  it('labels an untitled limit source like Details does, with the same link attributes', () => {
+    const url = 'https://www.who.int/news-room/fact-sheets/detail/hypertension'
+    const cited = { ...rule, sources: [{ title: url, url }] }
+    renderHome({ ...homeWith([entry(10, 101)]), rules: [cited] })
+    const link = within(card()).getByRole('link', {
+      name: 'who.int \u00b7 hypertension',
+    })
+    expect(link).toHaveAttribute('title', url)
+    expect(link).toHaveAttribute('target', '_blank')
+    expect(link).toHaveAttribute('rel', 'noreferrer noopener')
+    expect(link).toHaveAccessibleDescription(strings.sources.opensNewTab)
+  })
+
   it('shows the content text for in_range when the file has one', () => {
     renderHome({
       ...homeWith([...baseline, entry(10, 10)]),
@@ -691,5 +704,89 @@ describe('Home board', () => {
     expect(
       await screen.findByRole('list', { name: strings.board.planetarium.orbitsHeading }),
     ).toBeInTheDocument()
+  })
+
+  it('explains an empty account with one notice', () => {
+    render(
+      <Home personId="demo_astronaut_9" data={data} entries={data.demoEntries} motionReduced />,
+    )
+    expect(screen.getByText(strings.board.noReadings)).toBeInTheDocument()
+  })
+
+  it('shows no empty-account notice once the person has a reading', () => {
+    render(
+      <Home personId="demo_astronaut_1" data={data} entries={data.demoEntries} motionReduced />,
+    )
+    expect(screen.queryByText(strings.board.noReadings)).toBeNull()
+  })
+
+  it('does not scroll on the first render and scrolls the card into view after a pick', async () => {
+    const user = userEvent.setup()
+    const scrollIntoView = vi.fn()
+    Element.prototype.scrollIntoView = scrollIntoView
+    const two: LoadedContent = {
+      ...data,
+      indicators: [indicator, { ...indicator, id: 'other', name: 'Other indicator' }],
+      rules: [],
+      contents: {},
+    }
+    try {
+      render(<Home personId="demo_astronaut_1" data={two} entries={two.demoEntries} />)
+      expect(scrollIntoView).not.toHaveBeenCalled()
+      const rows = await screen.findByRole('list', { name: strings.board.planetarium.orbitsHeading })
+      await user.click(within(rows).getByRole('button', { name: /Other indicator/ }))
+      expect(scrollIntoView).toHaveBeenCalledTimes(1)
+      expect(scrollIntoView.mock.calls[0][0]).toMatchObject({ block: 'nearest' })
+      expect(scrollIntoView.mock.instances[0]).toHaveClass('detail')
+    } finally {
+      // @ts-expect-error jsdom has no scrollIntoView; remove the fake again.
+      delete Element.prototype.scrollIntoView
+    }
+  })
+
+  it('jumps without animation when motion is reduced', async () => {
+    const user = userEvent.setup()
+    const scrollIntoView = vi.fn()
+    Element.prototype.scrollIntoView = scrollIntoView
+    const two: LoadedContent = {
+      ...data,
+      indicators: [indicator, { ...indicator, id: 'other', name: 'Other indicator' }],
+      rules: [],
+      contents: {},
+    }
+    try {
+      render(<Home personId="demo_astronaut_1" data={two} entries={two.demoEntries} motionReduced />)
+      const rows = await screen.findByRole('list', { name: strings.board.planetarium.orbitsHeading })
+      await user.click(within(rows).getByRole('button', { name: /Other indicator/ }))
+      expect(scrollIntoView.mock.calls[0][0]).toMatchObject({ behavior: 'auto' })
+    } finally {
+      // @ts-expect-error jsdom has no scrollIntoView; remove the fake again.
+      delete Element.prototype.scrollIntoView
+    }
+  })
+
+  it('follows a selection kept by the parent and reports the pick', async () => {
+    const user = userEvent.setup()
+    const onSelect = vi.fn()
+    const two: LoadedContent = {
+      ...data,
+      indicators: [indicator, { ...indicator, id: 'other', name: 'Other indicator' }],
+      rules: [],
+      contents: {},
+    }
+    render(
+      <Home
+        personId="demo_astronaut_1"
+        data={two}
+        entries={two.demoEntries}
+        motionReduced
+        selectedId="other"
+        onSelect={onSelect}
+      />,
+    )
+    expect(screen.getByRole('heading', { level: 3, name: 'Other indicator' })).toBeInTheDocument()
+    const rows = await screen.findByRole('list', { name: strings.board.planetarium.orbitsHeading })
+    await user.click(within(rows).getByRole('button', { name: /Example indicator/ }))
+    expect(onSelect).toHaveBeenCalledWith('example_indicator')
   })
 })
