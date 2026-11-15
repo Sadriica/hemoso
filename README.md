@@ -1,11 +1,120 @@
-# HeMoSo · team ReTardis · Space Apps 2026
+# HeMoSo
 
-HeMoSo is the product; ReTardis is the team
-(https://www.spaceappschallenge.org/2026/find-a-team/tardis2/). NASA Space Apps
-Challenge 2026 · Medellín · Challenge: *Create Health Monitoring
-Software for Astronauts on Space Missions*.
+**Your health, checked against your own usual range, wherever the doctor is far away.**
 
-What the challenge asks: `docs/CHALLENGE.md`.
+Team ReTardis · NASA Space Apps Challenge 2026 · Medellín
+(https://www.spaceappschallenge.org/2026/find-a-team/tardis2/) · Challenge:
+*Create Health Monitoring Software for Astronauts on Space Missions*
+(`docs/CHALLENGE.md`).
+
+- **Live app:** https://www.hemoso.space/ (synthetic data only, no login for the demo)
+- **Demo video:** link coming (placeholder until the team publishes it)
+
+<p align="center">
+  <img src="docs/images/status-orbit.png" alt="The Status screen for the demo astronaut on flight day 31: twelve indicators around a body figure, one reading that needs review and the rest in or outside the usual range." width="900">
+</p>
+
+## Why HeMoSo
+
+- **The problem.** On a deep-space mission, medical care from Earth gets harder
+  to reach. NASA's Human Research Program lists distance from Earth as one of
+  the five hazards: "Instructions, new supplies, medical care, and more become
+  increasingly challenging to receive from Earth"
+  (https://www.nasa.gov/hrp/hazards/).
+- **Who uses it.** The crew member records a daily check. The crew medical
+  officer (CMO) and the flight surgeon on Earth are the people the app names
+  when a result needs attention. It does not replace either of them.
+- **What changes for the crew.** Each reading is shown against the person's
+  own usual range and against limits that cite a source, with the next step in
+  plain words and who acts. It works offline and sends the data when the link
+  returns.
+
+## What it does
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/images/identify.png" alt="The Identify screen: the question who is on duty today, a button to open the synthetic demo astronaut and the three phases listed at the bottom.">
+      <br><sub><b>Identify.</b> Sign in with a PIN, or open the synthetic demo astronaut.</sub>
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/images/report-fever-day.png" alt="The Report screen with core temperature 38.5 degrees Celsius typed in on flight day 31, next to the sleep duration and mood rows with their recent readings.">
+      <br><sub><b>Report.</b> One row per indicator, with its context and the earlier readings.</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/images/evidence-board.png" alt="The evidence board: the Fever card with its evidence score, the signals behind it and a source link, next to the Hypoglycaemia card.">
+      <br><sub><b>Possible conditions.</b> An evidence score from 0 to 1, the signals behind it and its source. The CMO or flight surgeon confirms.</sub>
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/images/indicator-details.png" alt="The Details panel of the heart rate card: why it matters, how spaceflight affects it, measurement steps, when it needs attention and a list of source links.">
+      <br><sub><b>Details.</b> Why it matters, how to measure it, when it needs attention, with sources.</sub>
+    </td>
+  </tr>
+</table>
+
+On a phone, Status keeps the same content in one column:
+
+<p align="center">
+  <img src="docs/images/status-phone.png" alt="The Status screen on a phone: the count of indicators needing review and the list of heart rate and blood pressure readings." width="280">
+</p>
+
+## Why you can trust what it says
+
+A plausible system that uses what actually flies, with rules you can check.
+
+- **Every limit has a source you can open.** Each threshold in
+  [`config/rules/attention.csv`](config/rules/attention.csv) carries a link or
+  the word `Assumption`, and the app shows it next to the result. The links are
+  collected in [`docs/sources.md`](docs/sources.md).
+- **The same rule in two places.** Your own baseline is computed by one rule
+  ([`docs/findings/phys-02-baseline-state-rule.md`](docs/findings/phys-02-baseline-state-rule.md))
+  in the API ([`backend/app/state.py`](backend/app/state.py)) and in the app
+  ([`frontend/src/domain/state.ts`](frontend/src/domain/state.ts)). The app is
+  tested against that finding's vectors
+  ([`scripts/fixtures/format_rules/window.json`](scripts/fixtures/format_rules/window.json)).
+- **A sourced limit comes first.** It is checked before the baseline, so a core
+  temperature of 39.5 °C on day 1, with no history, already needs review (the
+  cited row is above 38.0 °C). A row marked `Assumption` never raises an alarm
+  on its own ([`FORMATS.md`](FORMATS.md) section 3,
+  [`phys-02`](docs/findings/phys-02-baseline-state-rule.md)).
+- **Instruments documented for the ISS** (the values are typed in; the app does
+  not connect to the devices), from the sourced rows of
+  [`config/data/indicators.csv`](config/data/indicators.csv): the Bio-Monitor
+  smart shirt (heart rate, blood pressure), the T-Mini headband (core
+  temperature), the Actiwatch (sleep), the i-STAT blood analyser (glucose, one
+  fingerstick at a time), SLAMMD (body mass), the metered galley dispenser (fluid intake) and the ISS
+  Reaction Self Test (our check is a 90-second adaptation). Mood and appetite
+  are questions the crew answers.
+- **Never a diagnosis.** Possible conditions are an evidence score with its
+  signals ([`docs/findings/bio2-02-evidence-score.md`](docs/findings/bio2-02-evidence-score.md)),
+  the `notify` column names who acts (crew, CMO, flight surgeon), and the tool
+  is never a diagnosis or a replacement for either doctor (REQ-11).
+
+Every value in the app, in the database and in the deployments is synthetic
+(REQ-14). There are no real personal health data anywhere.
+
+## Built for a real mission
+
+- **Built on instruments documented for the ISS.** The instruments named in
+  [`config/data/indicators.csv`](config/data/indicators.csv), each with a
+  source link: Bio-Monitor smart shirt, T-Mini core temperature headband,
+  Actiwatch, i-STAT blood analyser, the ISS Reaction Self Test (our check is a
+  90-second adaptation), the metered galley dispenser and SLAMMD. The values are
+  typed into the app; it does not connect to those devices. Mood and appetite are
+  daily questions.
+- **Works without contact with Earth.** Readings are saved on the device and
+  an outbox sends them when the link returns
+  ([`docs/API.md`](docs/API.md), REQ-13 in
+  [`docs/requirements.md`](docs/requirements.md)).
+- **Crew, then crew medical officer, then flight surgeon.** The `notify`
+  column of [`attention.csv`](config/rules/attention.csv) names who acts,
+  possible conditions are an evidence score
+  ([`bio2-02`](docs/findings/bio2-02-evidence-score.md)), and the tool is
+  never a diagnosis or a replacement for either doctor (REQ-11).
+- **NASA crew terms.** Flight Day, GMT and Post-sleep, with plain words beside
+  them ([`STANDARDS.md`](STANDARDS.md) glossary).
 
 ## What HeMoSo is
 
@@ -47,41 +156,6 @@ replace them.
 - **Possible conditions:** `config/rules/conditions.csv` scores each signal and
   each reported symptom (`config/data/symptoms.csv`) into an evidence score from
   0 to 1 with a three-step label (`docs/findings/bio2-02-evidence-score.md`).
-
-### Why you can trust what it says
-
-A plausible system that uses what actually flies, with rules you can check.
-
-- **Every limit has a source you can open.** Each threshold in
-  [`config/rules/attention.csv`](config/rules/attention.csv) carries a link or
-  the word `Assumption`, and the app shows it next to the result. The links are
-  collected in [`docs/sources.md`](docs/sources.md).
-- **The same rule in two places.** Your own baseline is computed by one rule
-  ([`docs/findings/phys-02-baseline-state-rule.md`](docs/findings/phys-02-baseline-state-rule.md))
-  in the API ([`backend/app/state.py`](backend/app/state.py)) and in the app
-  ([`frontend/src/domain/state.ts`](frontend/src/domain/state.ts)). The app is
-  tested against that finding's vectors
-  ([`scripts/fixtures/format_rules/window.json`](scripts/fixtures/format_rules/window.json)).
-- **A sourced limit comes first.** It is checked before the baseline, so a core
-  temperature of 39.5 °C on day 1, with no history, already needs review (the
-  cited row is above 38.0 °C). A row marked `Assumption` never raises an alarm
-  on its own ([`FORMATS.md`](FORMATS.md) section 3,
-  [`phys-02`](docs/findings/phys-02-baseline-state-rule.md)).
-- **Instruments documented for the ISS** (the values are typed in; the app does
-  not connect to the devices), from the sourced rows of
-  [`config/data/indicators.csv`](config/data/indicators.csv): the Bio-Monitor
-  smart shirt (heart rate, blood pressure), the T-Mini headband (core
-  temperature), the Actiwatch (sleep), the i-STAT blood analyser (glucose, one
-  fingerstick at a time), SLAMMD (body mass), the metered galley dispenser (fluid intake) and the ISS
-  Reaction Self Test (our check is a 90-second adaptation). Mood and appetite
-  are questions the crew answers.
-- **Never a diagnosis.** Possible conditions are an evidence score with its
-  signals ([`docs/findings/bio2-02-evidence-score.md`](docs/findings/bio2-02-evidence-score.md)),
-  the `notify` column names who acts (crew, CMO, flight surgeon), and the tool
-  is never a diagnosis or a replacement for either doctor (REQ-11).
-
-Every value in the app, in the database and in the deployments is synthetic
-(REQ-14). There are no real personal health data anywhere.
 
 ## Run it
 
