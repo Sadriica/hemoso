@@ -1404,3 +1404,13 @@ input.reading__input::-webkit-inner-spin-button {
     display: none;
   }
 }
+
+/* Round of Sun 07:15: the dot that joins the day to the person. Under 1100 px
+   the line can wrap, and a dot at the start of the second line reads as a
+   stray mark, so it closes the first part instead: at the end of the day and
+   the clock, whether the person follows on the same line or on the next. */
+@media (max-width: 1099px) {
+  .topbar__stamp:has(+ .topbar__duty)::after {
+    content: ' ·';
+  }
+}
