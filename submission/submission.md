@@ -59,8 +59,9 @@ an astronaut records health indicators and understands the result.
    tested against that finding's vectors in
    [`window.json`](https://github.com/Sadriica/hemoso/blob/main/scripts/fixtures/format_rules/window.json).
 3. **A sourced limit is checked before the baseline.** A core temperature of
-   39.5 °C on the first day already needs review (the 38.0 °C row cites
-   JSC 22538; see [`FORMATS.md`](https://github.com/Sadriica/hemoso/blob/main/FORMATS.md) section 3). A limit marked
+   39.5 °C on the first day already needs review (the 38.0 °C row cites NIH
+   MedlinePlus, 38 °C measured rectally, the reading closest to core, and the
+   WHO case definitions, measured fever of 38 °C or more; see [`FORMATS.md`](https://github.com/Sadriica/hemoso/blob/main/FORMATS.md) section 3). A limit marked
    Assumption never raises an alarm on its own
    ([`phys-02`](https://github.com/Sadriica/hemoso/blob/main/docs/findings/phys-02-baseline-state-rule.md)).
 
@@ -139,8 +140,13 @@ Two rules make the result reproducible and explainable:
   https://www.asc-csa.gc.ca/eng/sciences/bio-monitor.asp
 - NASA-STD-3001 Volume 1, Revision C (monitoring and trending, limits relative
   to pre-mission values): https://www.nasa.gov/wp-content/uploads/2023/11/nasa-std-3001-vol-1-rev-c-with-signature.pdf
-- JSC 22538 Rev F, Health Stabilization Program (fever defined as 100.4 °F):
+- JSC 22538 Rev F, Health Stabilization Program (the fever condition in
+  `config/rules/conditions.csv`):
   https://ntrs.nasa.gov/api/citations/20230012738/downloads/JSC%2022538%20Health%20Stabilization%20Program%20Rev%20F%20Clean.pdf
+- NIH MedlinePlus, Fever (38 °C measured rectally; the core temperature limit):
+  https://medlineplus.gov/ency/article/003090.htm
+- WHO, surveillance case definitions for ILI and SARI (measured fever of 38 °C
+  or more): https://cdn.who.int/media/docs/default-source/influenza/who_ili_sari_case_definitions_2014.pdf
 - NASA, In-Situ Laboratory Analysis Capability (point-of-care blood analysis in
   flight): https://ntrs.nasa.gov/citations/20230006919
 - Assessment of a portable clinical blood analyzer during space flight,
