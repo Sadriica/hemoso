@@ -18,6 +18,10 @@ export interface Indicator {
   direction: Direction
   measuredOnBoard: string
   hazards: string[]
+  // The noise floor of the baseline rule, in the indicator's unit: the spread
+  // never goes below it (FORMATS.md section 3). 0 for a file without the
+  // column, so an older file still loads.
+  minSpread: number
   sources: Source[]
 }
 
@@ -43,6 +47,16 @@ export interface IndicatorContent {
   sources: Source[]
 }
 
+// What the astronaut was doing when they took the reading (FORMATS.md
+// section 3, demo_data.csv `context`). Heart rate and core temperature after
+// exercise are a different population from the same values at rest, so a
+// reading is only compared with readings in the same context.
+export type MeasurementContext =
+  | 'rest'
+  | 'after_exercise'
+  | 'on_waking'
+  | 'before_sleep'
+
 export interface Entry {
   // A measurement. The stored columns match config/data/demo_data.csv;
   // `id` is assigned by the app (demo data has no id column, so load.ts
@@ -54,6 +68,7 @@ export interface Entry {
   unit: string
   missionDay: number
   time: string // HH:MM
+  context: MeasurementContext
 }
 
 export type Attention =

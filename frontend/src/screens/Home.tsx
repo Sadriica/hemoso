@@ -1,18 +1,27 @@
-import { attentionFor } from '../domain/attention'
+import { useState } from 'react'
 import { latestEntry } from '../domain/entries'
 import type {
-  Attention,
   AttentionRule,
   Entry,
   Indicator,
   IndicatorContent,
   Source,
 } from '../domain/types'
+import {
+  NO_DATA_STATUS,
+  localState,
+  statusFromApi,
+  statusFromLocal,
+  type Status,
+} from '../domain/state'
 import AttentionBadge from '../components/AttentionBadge'
+import { statusBadgeKind, statusText } from '../components/attentionText'
 import Disclosure from '../components/Disclosure'
 import IndicatorDetails from '../components/IndicatorDetails'
 import Notice from '../components/Notice'
 import type { LoadedContent } from '../content/load'
+import { createStateClient, type StateClient } from '../data/stateClient'
+import { useIndicatorState } from '../hooks/useIndicatorState'
 import { strings } from '../strings'
 
 // One screen: the status of each indicator and a clear next step (REQ-01).
@@ -28,6 +37,9 @@ export default function Home({
   entries: Entry[]
 }) {
   const personEntries = entries.filter((entry) => entry.personId === personId)
+  // Built once from VITE_API_BASE_URL. Empty is the public demo: every card
+  // uses the local rule.
+  const [client] = useState(() => createStateClient())
   const waitingFor = waitingForFrom(data)
 
   return (
@@ -57,6 +69,8 @@ export default function Home({
         {data.indicators.map((indicator) => (
           <IndicatorRow
             key={indicator.id}
+            personId={personId}
+            client={client}
             indicator={indicator}
             entries={personEntries.filter(
               (entry) => entry.indicatorId === indicator.id,
@@ -73,27 +87,51 @@ export default function Home({
 }
 
 function IndicatorRow({
+  personId,
+  client,
   indicator,
   entries,
   rules,
   content,
 }: {
+  personId: string
+  client: StateClient
   indicator: Indicator
   entries: Entry[]
   rules: AttentionRule[]
   content: IndicatorContent | undefined
 }) {
   const latest = latestEntry(entries)
-  const attention: Attention = latest
-    ? attentionFor(latest.value, rules)
-    : { kind: 'no_data' }
-  const sources = sourcesFor(indicator, attention, content)
+  const answer = useIndicatorState(
+    client,
+    latest === null
+      ? null
+      : {
+          personId,
+          indicatorId: indicator.id,
+          value: latest.value,
+          context: latest.context,
+        },
+  )
+  // The backend state wins when it answers; the local rule (the same rule, run
+  // on the entries of this device) covers no server, an error and the moment
+  // before the answer arrives.
+  const status: Status =
+    answer !== null
+      ? statusFromApi(answer)
+      : latest === null
+        ? NO_DATA_STATUS
+        : statusFromLocal(
+            localState(latest, entries, rules, indicator.minSpread),
+          )
+  const sources = sourcesFor(indicator, status, content)
+  const kind = statusBadgeKind(status)
 
   return (
-    <li className={`indicator-card indicator-card--${attention.kind}`}>
+    <li className={`indicator-card indicator-card--${kind}`}>
       <div className="indicator-card__top">
         <h3 className="indicator-card__name">{indicator.name}</h3>
-        <AttentionBadge attention={attention} />
+        <AttentionBadge kind={kind} text={statusText(status)} />
       </div>
       {latest && (
         <p className="indicator-card__reading">
@@ -110,11 +148,11 @@ function IndicatorRow({
         </p>
       )}
       <p className="indicator-card__next-step">
-        {nextStepFor(attention, content)}
+        {nextStepFor(status, content)}
       </p>
-      {attention.kind === 'attention' && (
+      {status.state === 'needs_review' && status.notify !== null && (
         <p className="indicator-card__who-acts">
-          {strings.whoActs[attention.rule.notify]}
+          {strings.whoActs[status.notify]}
         </p>
       )}
       <div className="indicator-card__actions">
@@ -131,13 +169,15 @@ function IndicatorRow({
 }
 
 function nextStepFor(
-  attention: Attention,
+  status: Status,
   content: IndicatorContent | undefined,
 ): string {
-  if (attention.kind === 'in_range') return strings.nextStep.inRange
-  if (attention.kind === 'no_rules') return strings.nextStep.noRules
-  if (attention.kind === 'no_data') return strings.nextStep.noData
-  return content?.statusAndNextSteps[attention.level] ?? strings.nextStep.missing
+  if (status.state === 'no_data') return strings.nextStep.noData
+  if (status.state === 'in_range') return strings.nextStep.inRange
+  if (status.state === 'outside_range') return strings.nextStep.outsideRange
+  const level = status.level
+  if (level === null) return strings.nextStep.missing
+  return content?.statusAndNextSteps[level] ?? strings.nextStep.missing
 }
 
 // What the screens still lack, named instead of a generic "example content"
@@ -163,11 +203,10 @@ function waitingForFrom(data: LoadedContent): string[] {
 
 function sourcesFor(
   indicator: Indicator,
-  attention: Attention,
+  status: Status,
   content: IndicatorContent | undefined,
 ): Source[] {
-  const sources: Source[] = [...indicator.sources]
-  if (attention.kind === 'attention') sources.push(...attention.rule.sources)
+  const sources: Source[] = [...indicator.sources, ...status.sources]
   if (content) sources.push(...content.sources)
   return dedupeSources(sources)
 }

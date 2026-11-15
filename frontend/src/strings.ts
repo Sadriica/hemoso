@@ -92,6 +92,16 @@ export const strings = {
     valueWithUnit: (unit: string): string => `Value (${unit})`,
     missionDay: 'Mission day',
     time: 'Time',
+    // What the astronaut was doing when they took the reading (FORMATS.md
+    // section 3, `context`). The choice that fits the local clock is picked
+    // first, and the person can change it.
+    context: 'Context',
+    contextLabels: {
+      rest: 'At rest',
+      after_exercise: 'After exercise',
+      on_waking: 'On waking',
+      before_sleep: 'Before sleep',
+    },
     save: 'Save entry',
     saved: 'Saved. Waiting to be sent.',
     // Without a server nothing is sent, so the message promises nothing.
@@ -138,16 +148,21 @@ export const strings = {
     // "0" as none.
     signed: (value: number): string => (value > 0 ? `+${value}` : String(value)),
   },
+  // The four states of docs/API.md, GET .../state, in plain words (REQ-30).
   badge: {
-    inRange: 'In range',
+    inRange: 'In your usual range',
+    outsideRange: 'Outside your usual range',
     // No attention rule for this indicator, so no "in range" claim.
     noRules: 'No threshold yet',
-    noData: 'No data',
+    noData: 'No data yet',
+    // A review is needed and the server named no level: the app does not invent
+    // one.
+    needsReview: 'Needs review',
   },
   nextStep: {
     inRange: 'No action needed.',
-    noRules:
-      'No attention rule for this indicator yet. Check with your CMO if you are unsure.',
+    outsideRange:
+      'Outside your usual range. Your CMO or flight surgeon confirms.',
     noData: 'No data yet.',
     missing: 'No guidance for this state yet.',
   },

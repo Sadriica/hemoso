@@ -10,6 +10,7 @@ const indicator: Indicator = {
   direction: 'higher',
   measuredOnBoard: 'example measurement method',
   hazards: ['isolation_and_confinement', 'gravity_fields', 'space_weather'],
+  minSpread: 1,
   sources: ['Assumption'],
 }
 
