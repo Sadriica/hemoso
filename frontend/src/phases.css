@@ -228,6 +228,72 @@ html {
   color: var(--color-accent);
 }
 
+/* The link to the public repository: same family as the motion switch, plain
+   muted text with an icon, 44 px high. The long word shows from 900 px, the
+   short one before, so the row never grows past a phone. */
+.topbar__source {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-width: var(--tap-min);
+  min-height: var(--tap-min);
+  padding: 0 var(--space-2);
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  letter-spacing: var(--tracking-display);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.topbar__source:hover {
+  color: var(--color-text);
+  text-decoration: underline;
+}
+
+.topbar__source-label--long {
+  display: none;
+}
+
+@media (min-width: 900px) {
+  .topbar__source-label--long {
+    display: inline;
+  }
+
+  .topbar__source-label--short {
+    display: none;
+  }
+}
+
+/* The quiet line above the rail, read again after the page is scrolled. */
+.page-footer {
+  max-width: var(--container-width);
+  width: 100%;
+  margin: 0 auto;
+  padding: var(--space-3) var(--space-6);
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  text-align: center;
+}
+
+.page-footer p {
+  margin: 0;
+}
+
+.page-footer a {
+  display: inline-block;
+  padding-block: var(--space-2);
+}
+
+@media (max-width: 599px) {
+  .page-footer {
+    padding-inline: var(--space-3);
+  }
+}
+
 /* The word beside the icon, from 900 px up; the button keeps its name. */
 .topbar__motion-label {
   display: none;
@@ -1529,4 +1595,10 @@ input.reading__input::-webkit-inner-spin-button {
 .topbar__mission > .mission-start--editing {
   display: grid;
   flex: 0 0 100%;
+}
+
+/* The footer line sits above the rail, so the stage no longer needs to keep
+   the rail's height free under its own content. */
+.app > .stage {
+  padding-bottom: var(--space-4);
 }

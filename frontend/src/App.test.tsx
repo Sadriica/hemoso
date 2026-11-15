@@ -308,6 +308,27 @@ describe('sign in', { timeout: WALK_TIMEOUT }, () => {
 })
 
 describe('top bar', () => {
+  it('links to the public repository from the bar and the footer on every phase', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    const expectLinks = () => {
+      const links = screen.getAllByRole('link', { name: new RegExp(strings.footer.link) })
+      expect(links).toHaveLength(2)
+      for (const link of links) {
+        expect(link).toHaveAttribute('href', 'https://github.com/Sadriica/hemoso')
+        expect(link).toHaveAttribute('target', '_blank')
+        expect(link).toHaveAttribute('rel', 'noopener noreferrer')
+      }
+      expect(links[0]).toHaveAccessibleName(strings.topbar.sourceName)
+    }
+    expectLinks()
+    await signInByName(user)
+    expectLinks()
+    await user.click(screen.getByRole('button', { name: copy.report.next }))
+    expect(heading()).toHaveTextContent(copy.status.headline.join(' '))
+    expectLinks()
+  })
+
   it('shows the synthetic data sentence on every phase', async () => {
     const user = userEvent.setup()
     render(<App />)

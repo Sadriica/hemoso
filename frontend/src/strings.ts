@@ -210,6 +210,15 @@ export const strings = {
     // What the motion switch turns off, in words for its tooltip.
     motionOn: 'Motion is on',
     motionOff: 'Motion is off',
+    // The public repository, linked from the bar and from the page footer.
+    sourceUrl: 'https://github.com/Sadriica/hemoso',
+    sourceLabel: 'Source code',
+    sourceLabelShort: 'GitHub',
+    sourceName: 'Source code on GitHub (opens in a new tab)',
+  },
+  footer: {
+    line: 'HeMoSo · Team ReTardis · NASA Space Apps 2026 · ',
+    link: 'Source code on GitHub',
   },
   // The routine report: one row per indicator of config/data/indicators.csv,
   // one shared day, time and context, one save.

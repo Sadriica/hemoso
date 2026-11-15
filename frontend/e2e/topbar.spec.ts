@@ -107,6 +107,7 @@ const ITEMS = [
   '.mission-start',
   '.synthetic-notice',
   '.sync-chip',
+  '.topbar__source',
   '.topbar__motion',
 ]
 
