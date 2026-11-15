@@ -9,9 +9,10 @@ export interface SyncState {
   sendNow: () => void
 }
 
-// Runs the outbox: once when the app loads, on every `online` event and on the
-// "Send now" button (REQ-28). One round at a time: a second request while one
-// is running is dropped, and the next event or click sends what is left.
+// Runs the outbox: once when the app loads, on every `online` event, when a
+// new reading is saved on line, and on the "Send now" button (REQ-28). One
+// round at a time: a second request while one is running is dropped, and the
+// next event or click sends what is left.
 export function useSync(
   store: EntryStore & Outbox,
   client: SyncClient,
@@ -49,6 +50,20 @@ export function useSync(
   useEffect(() => {
     sendNow()
   }, [sendNow])
+
+  // A reading saved while the browser is on line goes out at once: without
+  // this it waited for a reload, an `online` event or the "Send now" link,
+  // and the bar said "1 waiting" with the server reachable. Only a growing
+  // count starts a round, so a round that fails does not start another one.
+  useEffect(() => {
+    let known = store.getOutboxSnapshot().pendingCount
+    return store.subscribe(() => {
+      const count = store.getOutboxSnapshot().pendingCount
+      const grew = count > known
+      known = count
+      if (grew && isOnline()) sendNow()
+    })
+  }, [store, sendNow])
 
   return { online, sendNow }
 }
