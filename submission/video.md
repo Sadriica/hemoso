@@ -128,16 +128,16 @@ sitting: they are the same shot, 26 seconds apart.
 The guide asks how NASA's free and open data and partner data made the solution
 possible. The video answers three times: the voice ("built from NASA's open
 data"), the source line inside the evidence board (`ntrs.nasa.gov`), and a
-caption from 13 to 20 s with two lines, the exact resource and what we took:
+caption from 13 to 20 s with the label Phys wrote for this purpose
+(`docs/nasa_data.md`, REQ-19). Two lines, mono, on a dark strip:
 
 ```
-{{NASA_RESOURCE}}
-{{WHAT_WE_TOOK}}
+NASA Human Research Program
+Risks · five hazards · nutrition and cardiovascular reports
 ```
 
-The name comes from Phys (`docs/nasa_data.md`, REQ-19). If Phys also uses a
-partner agency resource, the second line adds it; if not, the video does not
-mention partner data.
+It names only resources in Phys's table. If a resource leaves that table, the
+caption leaves with it. No logo, no mission patch.
 
 ## Subtitles
 
@@ -253,13 +253,12 @@ judge, not a transcript. Cue 10 is the only one written exactly as spoken.
 
 ## Still open
 
-- The NASA resource and what we took: Phys (REQ-19).
-- The public demo already carries a saved reading (glucose, Flight Day 30), so it
-  is no longer the seeded state. Recording stays on the local build.
-- `ffmpeg`, the cut and the final `ffprobe`: Juli's machine.
-- Voices and faces for S0 and S10: the team, before the 9:00 block.
+- The cut, the voices and the faces: Eng 2 and the team.
 - "Baseline" (the team's word since Sat 17:45) or "usual range" (the interface's
   word): the video uses the interface's, because the judge reads it on screen. If
   Bio 2 prefers one word everywhere, the subtitles change with it.
 - The demo astronaut's name: the video says "she", no name, so it holds even if
   the persona changes.
+- The fever score of 0.75 comes from Eng 2's local take. Recheck it on the take
+  before the cut, because `config/rules/conditions.csv` changed on Sunday
+  morning.
