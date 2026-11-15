@@ -280,7 +280,9 @@ html {
 /* Text never sits on the stars: the headline block has a solid page colour
    (DESIGN.md 6). */
 .phase-heading {
-  padding-block: var(--space-3);
+  width: fit-content;
+  max-width: 100%;
+  padding: var(--space-3) var(--space-4) var(--space-3) 0;
   background: var(--color-bg);
 }
 
