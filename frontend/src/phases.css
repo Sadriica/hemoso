@@ -1508,3 +1508,25 @@ input.reading__input::-webkit-inner-spin-button {
     background: var(--color-accent);
   }
 }
+
+/* The mission start editor needs room for a label, a field, two buttons and a
+   hint. While it is open the mission line takes a full row under the brand and
+   the controls, at every width, and the sentence keeps the row below it. The
+   closed line stays where it was. */
+.topbar__bar:has(.mission-start--editing) {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'brand controls'
+    'mission mission'
+    'notice notice';
+}
+
+.topbar__bar:has(.mission-start--editing) .synthetic-notice {
+  text-align: left;
+  white-space: normal;
+}
+
+.topbar__mission > .mission-start--editing {
+  display: grid;
+  flex: 0 0 100%;
+}

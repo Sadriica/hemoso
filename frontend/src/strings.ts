@@ -188,6 +188,11 @@ export const strings = {
   // from the signed-in line.
   mission: {
     startLabel: 'Mission start date',
+    // The editor in the top bar: the one place a calendar date is shown.
+    dayOneLabel: 'Day 1 was',
+    dayOneHint: 'Year-month-day, for example 2026-11-02',
+    dayOneInvalid: 'Write a real date as year-month-day, for example 2026-11-02.',
+    dayOneFuture: 'That day has not come yet. Use today or an earlier day.',
     started: (date: string): string => `Mission started ${date}`,
     notSet: 'Mission start not set',
     change: 'change',
