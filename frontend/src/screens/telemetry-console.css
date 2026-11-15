@@ -253,3 +253,9 @@
     letter-spacing: 0;
   }
 }
+
+/* A panel with no earlier reading: one muted line under the readout, so the
+   empty card says why it has no trend. */
+.rep.rep--console .rep-row__history--empty {
+  padding-inline: var(--space-1);
+}

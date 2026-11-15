@@ -93,6 +93,13 @@ describe('Entry as a telemetry console', () => {
     expect(screen.getByLabelText('Heart rate')).toHaveAccessibleDescription(/bpm/)
   })
 
+  it('says why a panel with no earlier reading has no trend', () => {
+    renderConsole([])
+    expect(
+      within(panel()).getByText(strings.entry.noHistory),
+    ).toBeInTheDocument()
+  })
+
   it('says the small history in words: how many, the lowest and the highest', () => {
     renderConsole()
     expect(
