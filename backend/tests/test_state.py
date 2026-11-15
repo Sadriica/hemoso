@@ -16,13 +16,25 @@ import pytest
 from app import storage
 from app.main import app
 from app.models import Entry
-from app.state import attention_for, baseline, state_for, window, worse_state
+from app.state import (
+    attention_for,
+    baseline,
+    cited_rows,
+    daily_values,
+    is_cited,
+    state_for,
+    window,
+    worse_state,
+)
 
 FIXTURES = (
     Path(__file__).resolve().parents[2] / "scripts" / "fixtures" / "format_rules"
 )
 BASELINE = json.loads((FIXTURES / "baseline.json").read_text(encoding="utf-8"))
 ATTENTION = json.loads((FIXTURES / "attention.json").read_text(encoding="utf-8"))
+
+# A source with a link: only these rows can raise needs_review (phys-02).
+CITED = "https://example.org/limit"
 
 INDICATORS_CSV = (
     "id,name,unit,direction,measured_on_board,hazards,min_spread,tier,system,source\n"
@@ -31,6 +43,13 @@ INDICATORS_CSV = (
 )
 
 ATTENTION_CSV = (
+    "indicator_id,side,threshold,attention_level,notify,source\n"
+    f"example_indicator,above,84,example_level_high,crew,{CITED}\n"
+    f"example_indicator,below,56,example_level_low,cmo,{CITED}\n"
+)
+
+# The same two rows with no link: they never raise needs_review (phys-02).
+ASSUMPTION_ATTENTION_CSV = (
     "indicator_id,side,threshold,attention_level,notify,source\n"
     "example_indicator,above,84,example_level_high,crew,Assumption\n"
     "example_indicator,below,56,example_level_low,cmo,Assumption\n"
@@ -47,10 +66,10 @@ BLOOD_PRESSURE_INDICATORS_CSV = (
 # The rows of config/rules/attention.csv for the two blood pressure indicators.
 BLOOD_PRESSURE_ATTENTION_CSV = (
     "indicator_id,side,threshold,attention_level,notify,source\n"
-    "bp_sys_mmhg,above,140,consult,cmo,Assumption\n"
-    "bp_sys_mmhg,above,180,urgent,flight_surgeon,Assumption\n"
-    "bp_dia_mmhg,above,90,consult,cmo,Assumption\n"
-    "bp_dia_mmhg,above,120,urgent,flight_surgeon,Assumption\n"
+    f"bp_sys_mmhg,above,140,consult,cmo,{CITED}\n"
+    f"bp_sys_mmhg,above,180,urgent,flight_surgeon,{CITED}\n"
+    f"bp_dia_mmhg,above,90,consult,cmo,{CITED}\n"
+    f"bp_dia_mmhg,above,120,urgent,flight_surgeon,{CITED}\n"
 )
 
 ENTRY = {
@@ -95,7 +114,7 @@ def attention_row(boundary: float, median: float) -> dict:
         "threshold": boundary,
         "attention_level": "example_level",
         "notify": "crew",
-        "source": "Assumption",
+        "source": CITED,
     }
 
 
@@ -124,6 +143,61 @@ def test_attention_vectors(case):
     assert got == case["expected"]
 
 
+def temperature_row(source: str) -> dict:
+    """The limit of phys-02's new vectors: core temperature above 39.0."""
+    return {
+        "indicator_id": "temp_core_c",
+        "side": "above",
+        "threshold": 39.0,
+        "attention_level": "example_level",
+        "notify": "cmo",
+        "source": source,
+    }
+
+
+@pytest.mark.parametrize(
+    ("value", "source", "expected"),
+    [
+        (39.5, CITED, "needs_review"),
+        (39.5, "Assumption", "no_data"),
+        (37.0, CITED, "no_data"),
+    ],
+    ids=[
+        "no baseline, cited limit crossed",
+        "no baseline, Assumption limit crossed",
+        "no baseline, below any limit",
+    ],
+)
+def test_safety_order_vectors(value, source, expected):
+    rows = cited_rows([temperature_row(source)])
+
+    got = state_for(value, None, None, attention_for(rows, value))
+
+    assert got == expected
+
+
+def test_an_assumption_row_never_raises_needs_review_on_its_own():
+    row = temperature_row("Assumption")
+
+    assert state_for(39.5, None, None, row) == "no_data"
+    assert state_for(39.5, 37.0, 0.2, row) == "outside_range"
+
+
+@pytest.mark.parametrize(
+    ("source", "expected"),
+    [
+        (CITED, True),
+        (f"{CITED} https://example.org/other", True),
+        ("Assumption", False),
+        (f"{CITED} Assumption", False),
+        ("", False),
+        ("example.org", False),
+    ],
+)
+def test_is_cited(source, expected):
+    assert is_cited({"source": source}) is expected
+
+
 def test_two_entries_give_no_baseline():
     assert baseline([70.0, 71.0], 4) == (None, None)
 
@@ -139,13 +213,106 @@ def test_mad_above_the_floor_sets_the_spread():
     assert spread == pytest.approx(1.4826 * 10)
 
 
-def test_window_keeps_the_last_fourteen_in_the_same_context():
+def test_window_keeps_the_last_fourteen_days_in_the_same_context():
     entries = [entry(day, float(day)) for day in range(1, 21)]
     entries.insert(10, entry(5, 99.0, context="after_exercise"))
 
     kept = window(entries, "rest")
 
     assert [row.value for row in kept] == [float(day) for day in range(7, 21)]
+
+
+# The window: the last 14 mission days that hold a reading, one value per day.
+
+
+def stored(*pairs: tuple[int, float]) -> list[Entry]:
+    """Entries from (mission_day, value) pairs, one every minute from 08:00."""
+    return [
+        Entry(**{**ENTRY, "value": value, "mission_day": day, "time": f"08:{index:02d}"})
+        for index, (day, value) in enumerate(pairs)
+    ]
+
+
+def daily_state(
+    entries: list[Entry],
+    context: str = "rest",
+    before: tuple[int, str] | None = None,
+    min_spread: float = 4.0,
+) -> tuple[list[float], int, float | None, float | None]:
+    """The daily values of the window, the readings behind them and the baseline."""
+    recent = window(entries, context, before)
+    daily = daily_values(recent)
+    median, spread = baseline(daily, min_spread)
+    return daily, len(recent), median, spread
+
+
+def test_one_day_of_readings_has_no_baseline():
+    daily, readings, median, spread = daily_state(stored((1, 60.0), (1, 70.0)))
+
+    assert daily == [65.0]
+    assert readings == 2
+    assert (median, spread) == (None, None)
+
+
+def test_three_days_average_each_day_and_take_their_median():
+    entries = stored((1, 60.0), (1, 70.0), (2, 62.0), (3, 64.0), (3, 66.0))
+
+    daily, readings, median, spread = daily_state(entries)
+
+    assert daily == [65.0, 62.0, 65.0]
+    assert readings == 5
+    assert median == 65.0
+    assert spread == 4.0
+
+
+def test_a_noisy_day_counts_once():
+    pairs = [(10, 60.0)] + [(10, 120.0)] * 9 + [(11, 61.0), (12, 62.0)]
+
+    daily, readings, median, _ = daily_state(stored(*pairs))
+
+    assert daily == [114.0, 61.0, 62.0]
+    assert readings == 12
+    assert median == 62.0
+
+
+def test_the_window_holds_the_last_fourteen_days():
+    entries = stored(*[(day, float(day)) for day in range(1, 21)])
+
+    daily, readings, _, _ = daily_state(entries)
+
+    assert daily == [float(day) for day in range(7, 21)]
+    assert readings == 14
+
+
+def test_gaps_between_days_do_not_shrink_the_window():
+    entries = stored((1, 60.0), (2, 61.0), (5, 62.0), (9, 63.0))
+
+    daily, readings, _, _ = daily_state(entries)
+
+    assert daily == [60.0, 61.0, 62.0, 63.0]
+    assert readings == 4
+
+
+def test_the_context_still_separates_readings():
+    entries = stored((3, 60.0)) + [entry(3, 95.0, context="after_exercise")]
+
+    rest = daily_values(window(entries, "rest"))
+    exercised = daily_values(window(entries, "after_exercise"))
+
+    assert rest == [60.0]
+    assert exercised == [95.0]
+
+
+def test_a_reading_after_the_tested_one_is_not_in_its_day():
+    entries = [
+        Entry(**{**ENTRY, "value": 70.0, "mission_day": 4, "time": "07:00"}),
+        Entry(**{**ENTRY, "value": 90.0, "mission_day": 4, "time": "09:00"}),
+    ]
+
+    daily, readings, _, _ = daily_state(entries, before=(4, "08:00"))
+
+    assert daily == [70.0]
+    assert readings == 1
 
 
 def test_state_route_no_data_with_two_entries(client, tmp_path):
@@ -162,18 +329,51 @@ def test_state_route_no_data_with_two_entries(client, tmp_path):
         "median": None,
         "spread": None,
         "n": 2,
+        "readings": 2,
         "attention": None,
     }
 
 
-def test_state_route_no_data_stops_before_attention(client, tmp_path):
+def test_state_route_cited_limit_without_baseline_needs_review(client, tmp_path):
     write_config(tmp_path)
 
     response = client.get(
         "/people/demo_astronaut_1/indicators/example_indicator/state?value=90"
     )
 
+    assert response.json()["state"] == "needs_review"
+    assert response.json()["median"] is None
+    assert response.json()["n"] == 0
+    assert response.json()["readings"] == 0
+    assert response.json()["attention"] == {
+        "attention_level": "example_level_high",
+        "notify": "crew",
+        "source": CITED,
+    }
+
+
+def test_state_route_assumption_limit_without_baseline_is_no_data(client, tmp_path):
+    write_config(tmp_path, ASSUMPTION_ATTENTION_CSV)
+
+    response = client.get(
+        "/people/demo_astronaut_1/indicators/example_indicator/state?value=90"
+    )
+
     assert response.json()["state"] == "no_data"
+    assert response.json()["attention"] is None
+
+
+def test_state_route_assumption_limit_with_baseline_is_not_needs_review(
+    client, tmp_path
+):
+    write_config(tmp_path, ASSUMPTION_ATTENTION_CSV)
+    post_entries(client, [70.0, 70.0, 70.0])
+
+    response = client.get(
+        "/people/demo_astronaut_1/indicators/example_indicator/state?value=90"
+    )
+
+    assert response.json()["state"] == "outside_range"
     assert response.json()["attention"] is None
 
 
@@ -190,6 +390,35 @@ def test_state_route_compares_with_the_stored_history(client, tmp_path):
         "median": 70.0,
         "spread": 4.0,
         "n": 3,
+        "readings": 3,
+        "attention": None,
+    }
+
+
+def test_state_route_counts_days_and_readings(client, tmp_path):
+    write_config(tmp_path)
+    for value, day, time in (
+        (60.0, 1, "08:00"),
+        (70.0, 1, "09:00"),
+        (62.0, 2, "08:00"),
+        (64.0, 3, "08:00"),
+        (66.0, 3, "09:00"),
+    ):
+        response = client.post(
+            "/entries", json={**ENTRY, "value": value, "mission_day": day, "time": time}
+        )
+        assert response.status_code == 201
+
+    response = client.get(
+        "/people/demo_astronaut_1/indicators/example_indicator/state?value=63"
+    )
+
+    assert response.json() == {
+        "state": "in_range",
+        "median": 65.0,
+        "spread": 4.0,
+        "n": 3,
+        "readings": 5,
         "attention": None,
     }
 
@@ -225,7 +454,7 @@ def test_state_route_returns_the_attention_row_that_matched(client, tmp_path):
     assert response.json()["attention"] == {
         "attention_level": "example_level_high",
         "notify": "crew",
-        "source": "Assumption",
+        "source": CITED,
     }
 
 
@@ -407,11 +636,30 @@ def test_blood_pressure_vectors(
         assert body[side]["attention"]["notify"] == notify
 
 
-def test_blood_pressure_without_history_is_no_data(client, tmp_path):
+def test_blood_pressure_first_reading_past_cited_limits_needs_review(
+    client, tmp_path
+):
+    """phys-02 safety order: 185/125 on the first day is not "no data yet"."""
     write_blood_pressure_config(tmp_path)
 
     response = client.get(
         "/people/demo_astronaut_1/blood_pressure/state?systolic=185&diastolic=125"
+    )
+
+    body = response.json()
+    assert body["state"] == "needs_review"
+    assert body["systolic"]["state"] == "needs_review"
+    assert body["systolic"]["median"] is None
+    assert body["systolic"]["attention"]["notify"] == "flight_surgeon"
+    assert body["diastolic"]["state"] == "needs_review"
+    assert body["diastolic"]["attention"]["attention_level"] == "urgent"
+
+
+def test_blood_pressure_without_history_is_no_data(client, tmp_path):
+    write_blood_pressure_config(tmp_path)
+
+    response = client.get(
+        "/people/demo_astronaut_1/blood_pressure/state?systolic=120&diastolic=80"
     )
 
     assert response.json() == {
@@ -421,6 +669,7 @@ def test_blood_pressure_without_history_is_no_data(client, tmp_path):
             "median": None,
             "spread": None,
             "n": 0,
+            "readings": 0,
             "attention": None,
         },
         "diastolic": {
@@ -428,6 +677,7 @@ def test_blood_pressure_without_history_is_no_data(client, tmp_path):
             "median": None,
             "spread": None,
             "n": 0,
+            "readings": 0,
             "attention": None,
         },
     }
@@ -518,20 +768,20 @@ def test_window_drops_entries_from_the_same_day_after_the_time():
 def test_state_route_leaves_out_the_stored_reading_being_tested(client, tmp_path):
     write_config(tmp_path)
     post_entries(client, [70.0, 71.0], first_day=1)
-    stored = client.post("/entries", json={**ENTRY, "value": 90.0, "mission_day": 3})
+    stored = client.post("/entries", json={**ENTRY, "value": 80.0, "mission_day": 3})
     assert stored.status_code == 201
 
     tested = client.get(
         "/people/demo_astronaut_1/indicators/example_indicator/state"
-        "?value=90&mission_day=3&time=08:00"
+        "?value=80&mission_day=3&time=08:00"
     )
     plain = client.get(
-        "/people/demo_astronaut_1/indicators/example_indicator/state?value=90"
+        "/people/demo_astronaut_1/indicators/example_indicator/state?value=80"
     )
 
     assert tested.json()["state"] == "no_data"
     assert tested.json()["n"] == 2
-    assert plain.json()["state"] == "needs_review"
+    assert plain.json()["state"] == "in_range"
     assert plain.json()["n"] == 3
 
 
@@ -551,6 +801,7 @@ def test_state_route_keeps_earlier_entries_and_drops_later_ones(client, tmp_path
         "median": 70.0,
         "spread": 4.0,
         "n": 3,
+        "readings": 3,
         "attention": None,
     }
 
