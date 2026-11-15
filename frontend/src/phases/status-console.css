@@ -327,3 +327,26 @@
     margin-bottom: var(--space-3);
   }
 }
+
+/* Round of Sun 07:25. In "When it needs attention" the source of a limit sat
+   as a bullet under it. It reads on the same line as the limit it backs, and
+   wraps under it only when the line is full. */
+.phase--status .indicator-details__rules > li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-2);
+}
+
+.phase--status .indicator-details__rules .sources__list {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.phase--status .indicator-details__rules .sources__list li {
+  margin: 0;
+}
