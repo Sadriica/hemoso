@@ -5,23 +5,27 @@ columns are copied from `docs/requirements.md` (Eng 1 keeps them); the last
 four are added here. Wambi moves the requirement cards; this file is the
 evidence for each move.
 
-Updated Sat 14 Nov 17:10 on `eng2` at 858dfb4, pushed (274 tests, lint,
-`tsc -b` and build pass). `main` holds `eng2` up to 38baa27 (15:54): Home,
-Entry and the T-56 design, but not the H fixes.
+Updated Sat 14 Nov 19:45 on `eng2` at dec97ba, pushed (lint, `tsc -b`, 391
+unit tests, build and e2e pass). Since dec97ba the app is the guided
+three-phase check: Identify, Report (REQ-02), Status (REQ-01, REQ-12). `main`
+holds `eng2` only up to 38baa27 (15:54).
 
 How "Dev" is set: the share of the "Done when" line that can be seen in the
 code now. Work on `eng2` counts; a requirement is ready to close only when it
 is on `main` and at the public link.
 
- REQ-02 is complete on
-`eng2` and closes with the 17:00 merge.
+Summary: 8 requirements, 0 ready to close, average 65 %. REQ-02 and REQ-15
+are complete on `eng2` and close with the next merge to `main`.
+
+Note on times: some change-log times between 16:45 and 17:55 below ran ahead
+of the clock; the commit hashes give the reliable order.
 
 | ID | Requirement | Class | Priority | Owner (GitHub) | Block | Done when | Dev | Seen now | Missing | Cards |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| REQ-01 | A visual tool astronauts use to assess their own health and act on its status: the screens | challenge | P0 | Juli (@julimejia) | B2 Sat 13:30-17 | On one screen the astronaut sees the status of each indicator they track and a clear next step; content comes from config/ (REQ-26) | 70 % | Home shows the real indicators from `config/data/indicators.csv` with reading, unit, day and time; "No threshold yet" and a CMO next step while no rule exists; every source link read; who to tell shown from `notify` (4d098f3) | Bio 2 thresholds and Bio 1 texts on `main`; merge to `main` | #11, T-53, T-47 |
-| REQ-02 | Gather health indicators from user input: keyboard and clicks; camera or images are optional | challenge | P0 | Juli (@julimejia) | B2 Sat 13:30-17 | Every chosen indicator can be entered without special hardware; units shown at entry | 95 % | Entry screen: number field with the unit beside it, 1-to-5 radios for the two scales, 24-hour time, saved entry shows on Home (6005d58, 45539ea, 152965c) | Merge to `main` | #13, T-42 |
-| REQ-12 | History view: each indicator against the person's own earlier values | context | P1 | Juli (@julimejia) | B3 Sat 17-1 | Each indicator has a history view comparing with that astronaut's own earlier values, reading the stored history (REQ-27) | 65 % | History screen (T-45 done, uncommitted at 17:55): one indicator against the person's earlier values, a table and a comparison sentence; e2e passes on phone and desktop; reads the browser store | Commit; chart with a text alternative (T-46); reading the stored backend history (T-54, after #24) | #23, T-45, T-46 |
-| REQ-15 | Readable and usable without colour alone or a mouse | optional | P1 | Juli (@julimejia) | B3 Sat 17-1 | Every state has text or an icon besides colour; the demo path works by keyboard | 90 % | Badge with icon and text; control borders 3:1; 38 contrast checks pass; `pnpm e2e` walks Home, Entry and History by keyboard with axe on every screen, 0 violations, on Pixel 7 and desktop (T-49 done, uncommitted at 17:55) | Commit; then on `main` | #26, T-49 |
+| REQ-01 | A visual tool astronauts use to assess their own health and act on its status: the screens | challenge | P0 | Juli (@julimejia) | B2 Sat 13:30-17 | On one screen the astronaut sees the status of each indicator they track and a clear next step; content comes from config/ (REQ-26) | 70 % | Status phase (dec97ba) shows the real indicators from `config/data/indicators.csv` with reading, unit, day and time; "No threshold yet" and a CMO next step while no rule exists; every source link read; who to tell shown from `notify` (4d098f3) | Bio 2 thresholds and Bio 1 texts on `main`; merge to `main` | #11, T-53, T-47 |
+| REQ-02 | Gather health indicators from user input: keyboard and clicks; camera or images are optional | challenge | P0 | Juli (@julimejia) | B2 Sat 13:30-17 | Every chosen indicator can be entered without special hardware; units shown at entry | 95 % | Report phase: number field with the unit beside it, 1-to-5 choice for the two scales, 24-hour time (6005d58, 45539ea, 152965c, dec97ba) | Merge to `main` | #13, T-42, T-60 |
+| REQ-12 | History view: each indicator against the person's own earlier values | context | P1 | Juli (@julimejia) | B3 Sat 17-1 | Each indicator has a history view comparing with that astronaut's own earlier values, reading the stored history (REQ-27) | 75 % | History in the Status phase: one indicator against the person's earlier values, chart that fits any width, table and comparison sentence (b06350b, 40dbde7, dec97ba); e2e on phone and desktop; reads the browser store | Reading the stored backend history (T-54, after #24); merge to `main` | #23, T-45, T-46, T-60 |
+| REQ-15 | Readable and usable without colour alone or a mouse | optional | P1 | Juli (@julimejia) | B3 Sat 17-1 | Every state has text or an icon besides colour; the demo path works by keyboard | 95 % | Badge with icon and text; contrast pairs pass in both themes; `pnpm e2e` walks the guided check (Identify, Report, Status) by keyboard with axe on every phase, 0 violations, on Pixel 7 and desktop (785bed5, rewritten in dec97ba) | Merge to `main` | #26, T-49, T-60 |
 | REQ-28 | Interface works offline and shows what is waiting to be sent | context | P1 | Juli (@julimejia) | B3 Sat 17-1 | The app opens and works with the network off after the first load; pending items and the last sync time are visible | 65 % | Browser outbox (70cb8b6); sync client and status: waiting count, last sent, online or offline chip, "No server set up for this demo", no "Send now" without a server (ee11cee; layout fix uncommitted at 17:00) | Offline load after the first visit; warning M1; wording: "Nothing waiting to be sent" and "Not sent yet" repeat each other (T-51) | #44, T-43, T-44, T-48 |
 | REQ-30 | The app interface is in English | delivery | P0 | Juli (@julimejia) | B4 Sun 9-12 | Every screen, label and message of the app in English | 70 % | Every string in `src/strings.ts` is English | Wording pass; raw person id `demo_astronaut_1` on screen | #46, T-51 |
 | REQ-31 | Demo video recorded with English subtitles and a public link | delivery | P0 | Juli (@julimejia) | B4 Sun 9-12 | Video of 30 s or less recorded from the app, English subtitles burned in, hosted outside Space Apps, link opens with no password, permission or registration | 0 % | — | Recording, subtitles, public link; hide "Content problems" first | #47, T-52, T-16 |
@@ -68,6 +72,7 @@ after the variable is set and the app is deployed again.
 ## Change log
 | Time | Change |
 | --- | --- |
+| 19:45 | T-60 guided three-phase check (dec97ba, 19:40) checked on an isolated copy: 391 unit tests, e2e 7 passed with axe on every phase, first load 290 kB / 88 kB gzip. REQ-12 75 %, REQ-15 95 %, average 65 % |
 | 17:55 | T-45 and T-49 done, uncommitted: 304 unit tests; e2e 5 passed on Pixel 7 and desktop (demo path with axe, History, 320 px); REQ-12 65 %, REQ-15 90 %, REQ-32 50 %, average 63 % |
 | 17:35 | T-45 and T-49 iteration 1 checked, uncommitted: 301 unit tests, `pnpm e2e` keyboard demo path with axe passes (History test skipped); REQ-12 40 %, REQ-15 70 %, average 57 % |
 | 17:25 | Public link: Wambi connects the deploy to `main` |

@@ -49,7 +49,7 @@ VALID = {
         "## Why it matters\nExample reason. Assumption.\n\n"
         "## How spaceflight affects it\nExample hazard effect. Assumption.\n\n"
         "## Measurement steps\n1. Example step one.\n2. Example step two.\n\n"
-        "## Status and next steps\n### example_level\n"
+        "## Status and next steps\n### in_range\nIn your usual range. Assumption.\n### outside_range\nOutside your usual range. Assumption.\n### example_level\n"
         "Example status text and example next step. Assumption.\n\n"
         "## How to prevent problems\nExample guidance. Assumption.\n\n"
         "## Sources\n- Example title: https://example.org\n"
@@ -362,7 +362,28 @@ class ContentCheckTest(unittest.TestCase):
         files["config/content/example_indicator.md"] = VALID[
             "config/content/example_indicator.md"
         ].replace("### example_level\n", "### wrong_level\n")
-        self.assert_error(files, "not an attention_level for indicator 'example_indicator'")
+        self.assert_error(files, "nor an attention_level for indicator 'example_indicator'")
+
+    def test_missing_baseline_state_heading(self):
+        files = dict(VALID)
+        files["config/content/example_indicator.md"] = VALID[
+            "config/content/example_indicator.md"
+        ].replace("### in_range\nIn your usual range. Assumption.\n", "")
+        self.assert_error(files, "no '### in_range' heading for the baseline state")
+
+    def test_duplicate_status_heading(self):
+        files = dict(VALID)
+        files["config/content/example_indicator.md"] = VALID[
+            "config/content/example_indicator.md"
+        ].replace("### example_level\n", "### example_level\nText. Assumption.\n### example_level\n")
+        self.assert_error(files, "duplicate heading '### example_level'")
+
+    def test_no_data_heading_is_allowed(self):
+        files = dict(VALID)
+        files["config/content/example_indicator.md"] = VALID[
+            "config/content/example_indicator.md"
+        ].replace("### example_level\n", "### no_data\nNo readings yet. Assumption.\n### example_level\n")
+        self.assertEqual(self.errors(files), [])
 
     def test_missing_attention_level_heading(self):
         files = dict(VALID)
@@ -380,7 +401,7 @@ class ContentCheckTest(unittest.TestCase):
             "## Why it matters\nNo source here.\n\n"
             "## How spaceflight affects it\nExample. Assumption.\n\n"
             "## Measurement steps\n1. Step.\n\n"
-            "## Status and next steps\n### example_level\nText. Assumption.\n\n"
+            "## Status and next steps\n### in_range\nIn your usual range. Assumption.\n### outside_range\nOutside your usual range. Assumption.\n### example_level\nText. Assumption.\n\n"
             "## How to prevent problems\nText. Assumption.\n\n"
             "## Sources\n- Example title\n"
         )

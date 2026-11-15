@@ -5,14 +5,23 @@ const indicatorsCsv =
   'id,name,unit,direction,measured_on_board,hazards,source\n' +
   'example_indicator,Example indicator,example_unit,higher,example measurement method,isolation_and_confinement,Assumption\n'
 
-function contentFile(name: string, levels: string): string {
+// The two ### headings every content file carries (FORMATS.md section 3).
+const baselineStatus =
+  '### in_range\nExample text for the usual range. Assumption.\n' +
+  '### outside_range\nExample text outside the usual range. Assumption.\n'
+
+function contentFile(name: string, levels = ''): string {
+  return contentFileWithStatus(name, baselineStatus + levels)
+}
+
+function contentFileWithStatus(name: string, status: string): string {
   return (
     `# ${name}\n\n` +
     '## Why it matters\nReason. Assumption.\n\n' +
     '## How spaceflight affects it\nEffect. Assumption.\n\n' +
     '## Measurement steps\n1. Step one.\n\n' +
     '## Status and next steps\n' +
-    levels +
+    status +
     '\n## How to prevent problems\nGuidance. Assumption.\n\n' +
     '## Sources\n- Example title: https://example.org\n'
   )
@@ -97,6 +106,67 @@ describe('loadContent', () => {
         problem.includes("level 'missing_level' has no status text"),
       ),
     ).toBe(true)
+  })
+
+  it('accepts in_range, outside_range and no_data as baseline states', () => {
+    const files = {
+      'config/data/indicators.csv': indicatorsCsv,
+      'config/rules/attention.csv':
+        'indicator_id,side,threshold,attention_level,notify,source\n' +
+        'example_indicator,above,100,example_level,crew,Assumption\n',
+      'config/content/example_indicator.md': contentFile(
+        'Example indicator',
+        '### no_data\nExample text with no reading yet. Assumption.\n' +
+          '### example_level\nExample text. Assumption.\n',
+      ),
+    }
+    const result = loadContent(files)
+    expect(result.problems).toEqual([])
+    expect(
+      Object.keys(result.contents.example_indicator.statusAndNextSteps),
+    ).toEqual(['in_range', 'outside_range', 'no_data', 'example_level'])
+  })
+
+  it('reports a content file with no in_range status text', () => {
+    const files = {
+      'config/data/indicators.csv': indicatorsCsv,
+      'config/rules/attention.csv':
+        'indicator_id,side,threshold,attention_level,notify,source\n' +
+        'example_indicator,above,100,example_level,crew,Assumption\n',
+      'config/content/example_indicator.md': contentFileWithStatus(
+        'Example indicator',
+        '### outside_range\nExample text. Assumption.\n' +
+          '### example_level\nExample text. Assumption.\n',
+      ),
+    }
+    const result = loadContent(files)
+    expect(result.problems).toContain(
+      "Indicator 'example_indicator' has no status text for state 'in_range'.",
+    )
+    expect(
+      result.problems.some((problem) => problem.includes("'outside_range'")),
+    ).toBe(false)
+  })
+
+  it('reports a content file with no outside_range status text', () => {
+    const files = {
+      'config/data/indicators.csv': indicatorsCsv,
+      'config/rules/attention.csv':
+        'indicator_id,side,threshold,attention_level,notify,source\n' +
+        'example_indicator,above,100,example_level,crew,Assumption\n',
+      'config/content/example_indicator.md': contentFileWithStatus(
+        'Example indicator',
+        '### in_range\nExample text. Assumption.\n' +
+          '### example_level\nExample text. Assumption.\n',
+      ),
+    }
+    const result = loadContent(files)
+    expect(result.problems).toContain(
+      "Indicator 'example_indicator' has no status text for state 'outside_range'.",
+    )
+    expect(
+      result.problems.some((problem) => problem.includes("'in_range'")),
+    ).toBe(false)
   })
 
   it('loads a complete valid config without placeholders or problems', () => {

@@ -18,6 +18,7 @@ function entry(
     unit: 'example_unit',
     missionDay,
     time,
+    context: 'rest',
     ...extra,
   }
 }

@@ -11,6 +11,7 @@ function entry(overrides: Partial<Entry> = {}): Entry {
     unit: 'example_unit',
     missionDay: 1,
     time: '08:00',
+    context: 'rest',
     ...overrides,
   }
 }
@@ -86,6 +87,24 @@ describe('parseStoredState', () => {
     expect(parseStoredState(stored({ entries: [{ ...entry(), id: 3 }] }))).toBeNull()
     expect(
       parseStoredState(stored({ entries: [{ ...entry(), value: '1' }] })),
+    ).toBeNull()
+  })
+
+  it('reads an entry saved before the app recorded a context as at rest', () => {
+    // The payload of the version before the context column: the same entry
+    // without `context`, which must survive instead of being replaced.
+    const legacy: Record<string, unknown> = { ...entry() }
+    delete legacy.context
+    const state = parseStoredState(stored({ entries: [legacy] }))
+    expect(state?.entries[0]).toEqual(entry())
+    expect(state?.entries[0].context).toBe('rest')
+  })
+
+  it('rejects an entry whose context is not one of the four', () => {
+    expect(
+      parseStoredState(
+        stored({ entries: [entry({ context: 'nap' as unknown as 'rest' })] }),
+      ),
     ).toBeNull()
   })
 

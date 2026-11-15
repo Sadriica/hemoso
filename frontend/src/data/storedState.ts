@@ -1,5 +1,6 @@
 import { isClockTime, isMissionDay } from '../domain/clock'
 import type { MissionClock } from '../domain/clock'
+import { DEFAULT_CONTEXT, isMeasurementContext } from '../domain/context'
 import type { Entry } from '../domain/types'
 
 // The shape of the one localStorage key: the entries, the outbox, the ids the
@@ -75,10 +76,44 @@ function readEntries(value: unknown): Entry[] | null {
   if (!Array.isArray(value)) return null
   const entries: Entry[] = []
   for (const item of value) {
-    if (!isEntry(item)) return null
-    entries.push(item)
+    const entry = readEntry(item)
+    if (entry === null) return null
+    entries.push(entry)
   }
   return entries
+}
+
+// One stored entry, with the context a payload written before the app recorded
+// one loads as 'rest': those readings were taken without an exercise or a sleep
+// step around them, and dropping the whole payload would lose the save.
+function readEntry(value: unknown): Entry | null {
+  if (typeof value !== 'object' || value === null) return null
+  const entry = value as Record<string, unknown>
+  if (
+    typeof entry.id !== 'string' ||
+    typeof entry.personId !== 'string' ||
+    typeof entry.indicatorId !== 'string' ||
+    typeof entry.value !== 'number' ||
+    !Number.isFinite(entry.value) ||
+    typeof entry.unit !== 'string' ||
+    !isMissionDay(entry.missionDay) ||
+    typeof entry.time !== 'string' ||
+    !isClockTime(entry.time)
+  ) {
+    return null
+  }
+  const context = entry.context === undefined ? DEFAULT_CONTEXT : entry.context
+  if (!isMeasurementContext(context)) return null
+  return {
+    id: entry.id,
+    personId: entry.personId,
+    indicatorId: entry.indicatorId,
+    value: entry.value,
+    unit: entry.unit,
+    missionDay: entry.missionDay,
+    time: entry.time,
+    context,
+  }
 }
 
 function readIds(value: unknown): string[] | null {
@@ -93,22 +128,6 @@ function readIds(value: unknown): string[] | null {
 
 function readIdsMissingAsEmpty(value: unknown): string[] | null {
   return value === undefined ? [] : readIds(value)
-}
-
-function isEntry(value: unknown): value is Entry {
-  if (typeof value !== 'object' || value === null) return false
-  const entry = value as Record<string, unknown>
-  return (
-    typeof entry.id === 'string' &&
-    typeof entry.personId === 'string' &&
-    typeof entry.indicatorId === 'string' &&
-    typeof entry.value === 'number' &&
-    Number.isFinite(entry.value) &&
-    typeof entry.unit === 'string' &&
-    isMissionDay(entry.missionDay) &&
-    typeof entry.time === 'string' &&
-    isClockTime(entry.time)
-  )
 }
 
 function isMissionClock(value: unknown): value is MissionClock {

@@ -1,0 +1,725 @@
+/* Guided check (Sat 14 Nov, Juli): one journey in three phases, identify,
+   report, status, in a dark cinematic frame. The reference is an aerospace
+   "chapter" layout: a numbered eyebrow, a headline set as stacked lines, one
+   sentence of help, one way forward, and a route rail along the bottom.
+   There is no navigation menu: each phase has its own buttons.
+   Every colour comes from the tokens in styles.css. */
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* One declaration: the technical grid of styles.css and the cold glow, so the
+   glow does not replace the grid and leave blocks in the side gutters. */
+body {
+  background-color: var(--color-bg);
+  background-image:
+    radial-gradient(120% 80% at 80% -10%, color-mix(in srgb, var(--color-interactive) 12%, transparent), transparent 60%),
+    linear-gradient(to right, var(--color-grid) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--color-grid) 1px, transparent 1px);
+  background-size: 100% 100%, 40px 40px, 40px 40px;
+  background-repeat: no-repeat, repeat, repeat;
+}
+
+.app {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  isolation: isolate;
+}
+
+/* Backdrop: stars, a cold glow, a vignette and a little grain. Decoration
+   only; it sits under everything. */
+.cinema {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.cinema__stars {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.6;
+}
+
+.cinema__glow {
+  position: absolute;
+  inset: auto -20% -40% -20%;
+  height: 70%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--color-accent) 10%, transparent), transparent);
+}
+
+.cinema__vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(130% 100% at 50% 40%, transparent 55%, rgb(0 0 0 / 55%));
+}
+
+/* The sticky route rail must never hide the control that has focus
+   (WCAG 2.4.11): scrolling into view leaves room for it. */
+html {
+  scroll-padding-bottom: 120px;
+}
+
+.skip-link {
+  position: absolute;
+  top: var(--space-2);
+  left: var(--space-2);
+  z-index: 20;
+  min-height: var(--tap-min);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-interactive);
+  color: var(--color-on-interactive);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  text-decoration: none;
+  transform: translateY(-200%);
+}
+
+.skip-link:focus-visible {
+  transform: none;
+}
+
+/* Top bar: mark, name and the motion switch; one mono telemetry line from
+   real data; the synthetic data sentence and the sync facts. It sits on the
+   raised band, never on the stars (DESIGN.md 6, 8). */
+.topbar {
+  padding: var(--space-2) var(--space-6);
+  border-bottom: var(--border-subtle);
+  background: var(--color-bg-raised);
+}
+
+.topbar__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-4);
+  max-width: var(--container-width);
+  margin: 0 auto;
+}
+
+.topbar__row:first-child {
+  flex-wrap: nowrap;
+  justify-content: space-between;
+}
+
+.topbar__row--meta {
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+.topbar__row--facts {
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-4);
+}
+
+.identity {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-right: auto;
+}
+
+.identity__mark {
+  width: 28px;
+  height: 28px;
+  fill: none;
+  stroke: var(--color-accent);
+  stroke-width: 1.5;
+}
+
+.identity__name {
+  font-family: var(--font-display);
+  font-size: var(--text-h2);
+  font-weight: 700;
+  letter-spacing: var(--tracking-display);
+  line-height: var(--leading-h2);
+  text-transform: uppercase;
+}
+
+.topbar__duty {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text);
+}
+
+.topbar__duty i {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-round);
+  background: var(--status-in-range-text);
+}
+
+.topbar__motion {
+  min-height: var(--tap-min);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-small);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.topbar__motion[aria-pressed="true"] {
+  border-color: var(--color-accent);
+  color: var(--color-text);
+}
+
+.synthetic-notice {
+  color: var(--color-text-muted);
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+}
+
+/* The stage: one phase at a time, room to breathe. */
+.stage {
+  flex: 1;
+  width: 100%;
+  max-width: var(--container-width);
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-6) var(--space-7);
+}
+
+.stage:focus {
+  outline: none;
+}
+
+.stage > .notice {
+  margin-bottom: var(--space-5);
+}
+
+.phase {
+  display: grid;
+  gap: var(--space-6);
+}
+
+/* Eyebrow: a hairline and the numbered phase name. */
+.eyebrow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--color-accent);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+}
+
+.hairline {
+  display: inline-block;
+  width: 48px;
+  height: 1px;
+  background: currentcolor;
+}
+
+/* Headline: the one big line of a phase, uppercase condensed, two or three
+   lines; the middle line in the accent (DESIGN.md 4.2 hero, 12). */
+.headline {
+  margin: var(--space-3) 0 0;
+  font-family: var(--font-display);
+  font-size: var(--text-hero);
+  font-weight: 700;
+  letter-spacing: var(--tracking-display);
+  line-height: var(--leading-hero);
+  text-transform: uppercase;
+}
+
+.headline:focus {
+  outline: none;
+}
+
+.headline:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 6px;
+}
+
+.headline__line {
+  display: block;
+  animation: headline-rise var(--motion-slow) var(--ease-standard) both;
+}
+
+.headline__line:nth-child(2) {
+  color: var(--color-accent);
+}
+
+@keyframes headline-rise {
+  from {
+    opacity: 0;
+    transform: translateY(0.4em);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Text never sits on the stars: the headline block has a solid page colour
+   (DESIGN.md 6). */
+.phase-heading {
+  width: fit-content;
+  max-width: 100%;
+  padding: var(--space-3) var(--space-4) var(--space-3) 0;
+  background: var(--color-bg);
+}
+
+.phase-heading__intro {
+  max-width: 46ch;
+  margin-top: var(--space-4);
+  color: var(--color-text-muted);
+  font-size: var(--text-body-l);
+  line-height: var(--leading-body-l);
+}
+
+/* Journey button: the way forward of a phase. Outline by default, solid for
+   the main action, an arrow glyph on the right. */
+.journey-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+  min-height: 56px;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-small);
+  background: color-mix(in srgb, var(--color-bg) 40%, transparent);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: var(--text-small);
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    border-color var(--motion-base) var(--ease-out),
+    background-color var(--motion-base) var(--ease-out),
+    transform var(--motion-base) var(--ease-out);
+}
+
+.journey-button:hover {
+  border-color: var(--color-accent);
+  transform: translateY(-1px);
+}
+
+.journey-button--solid {
+  border-color: var(--color-interactive);
+  background: var(--color-interactive);
+  color: var(--color-on-interactive);
+}
+
+.journey-button__arrow {
+  font-size: var(--text-body-l);
+  letter-spacing: 0;
+}
+
+.text-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--tap-min);
+  padding: 0 var(--space-2);
+  border: 0;
+  background: none;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.text-link:hover {
+  color: var(--color-text);
+}
+
+.phase__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-top: var(--space-4);
+  border-top: 1px solid color-mix(in srgb, var(--color-border) 45%, transparent);
+}
+
+/* Phase 1: the face, then the crew list, then the way on. */
+.identify {
+  display: grid;
+  gap: var(--space-5);
+  max-width: 640px;
+}
+
+.identify__face {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.identify__or {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+}
+
+.identify__or .hairline {
+  flex: 1;
+}
+
+.crew-picker {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.crew-picker__options {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.crew-option {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 56px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-card);
+  background: color-mix(in srgb, var(--color-surface) 70%, transparent);
+  cursor: pointer;
+}
+
+.crew-option input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.crew-option__mark {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--color-text-muted);
+  border-radius: var(--radius-round);
+}
+
+/* A person id is shown as it is written: never transformed. */
+.crew-option__name {
+  font-family: var(--font-mono);
+  font-size: var(--text-small);
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+
+.crew-option:has(input:checked) {
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+}
+
+.crew-option:has(input:checked) .crew-option__mark {
+  border: 4px solid var(--color-accent);
+}
+
+.crew-option:has(input:focus-visible) {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* Phase 2: the form on a dark glass panel and the running count. */
+.report {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.report__panel {
+  max-width: 640px;
+  padding: var(--space-5);
+  border: 1px solid color-mix(in srgb, var(--color-border) 70%, transparent);
+  border-radius: var(--radius-card);
+  background: color-mix(in srgb, var(--color-bg-raised) 88%, transparent);
+}
+
+.report__count {
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+/* Phase 3: the cards, then the history. */
+.status {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.status__history {
+  padding-top: var(--space-5);
+  border-top: 1px solid color-mix(in srgb, var(--color-border) 45%, transparent);
+}
+
+/* The route rail: three steps on a track, the current one lit. Progress, not
+   navigation. */
+.phase-rail {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  padding: var(--space-2) var(--space-6) var(--space-2);
+  border-top: var(--border-subtle);
+  background: var(--color-bg-raised);
+}
+
+.phase-rail__track {
+  max-width: var(--container-width);
+  height: 2px;
+  margin: 0 auto var(--space-3);
+  background: color-mix(in srgb, var(--color-border) 50%, transparent);
+}
+
+.phase-rail__progress {
+  height: 100%;
+  background: var(--color-accent);
+  transition: width var(--motion-slow) var(--ease-out);
+}
+
+.phase-rail__steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  max-width: var(--container-width);
+  margin: 0 auto;
+  padding: 0;
+  list-style: none;
+}
+
+.phase-rail__step {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.phase-rail__step b {
+  font-weight: 500;
+}
+
+.phase-rail__step--current,
+.phase-rail__step--current b {
+  color: var(--color-accent);
+}
+
+.phase-rail__step--done {
+  color: var(--color-text);
+}
+
+.phase-rail__next {
+  max-width: var(--container-width);
+  margin: var(--space-1) auto 0;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+/* Light theme: the same layout on light surfaces, no stars or grain. */
+@media (prefers-color-scheme: light) {
+  /* No stars, glow or blue wash behind the text on the light theme. */
+  body {
+    background-image: none;
+  }
+
+  .cinema {
+    display: none;
+  }
+
+  .phase__actions,
+  .status__history {
+    border-color: var(--color-border);
+  }
+
+  .journey-button,
+  .crew-option,
+  .report__panel {
+    background: var(--color-surface);
+  }
+
+  .journey-button--solid {
+    background: var(--color-interactive);
+  }
+}
+
+/* Phone: one column, smaller margins, full-width buttons. */
+@media (max-width: 599px) {
+  /* The hero steps down to 44 / 42 under 600 px (DESIGN.md 4.2). */
+  .headline {
+    --text-hero: 44px;
+    --leading-hero: 42px;
+  }
+
+  .topbar {
+    padding: var(--space-1) var(--space-3) var(--space-2);
+  }
+
+  .stage {
+    padding: var(--space-5) var(--space-3) var(--space-6);
+  }
+
+  .phase-rail {
+    padding: var(--space-2) var(--space-3) var(--space-3);
+  }
+
+  .phase-rail__step {
+    flex-direction: column;
+    gap: 0;
+    letter-spacing: 0.08em;
+  }
+
+  .report__panel {
+    padding: var(--space-3);
+  }
+
+  .journey-button {
+    width: 100%;
+  }
+}
+
+/* Motion off: the system setting or the switch in the top bar. */
+@media (prefers-reduced-motion: reduce) {
+  .headline__line,
+  .journey-button,
+  .button,
+  .disclosure__toggle,
+  .disclosure__chevron,
+  .phase-rail__progress {
+    animation: none;
+    transition: none;
+  }
+}
+
+.app--still .headline__line,
+.app--still .journey-button,
+.app--still .button,
+.app--still .disclosure__toggle,
+.app--still .disclosure__chevron,
+.app--still .phase-rail__progress {
+  animation: none;
+  transition: none;
+}
+
+/* Status board: the planetarium (or its list) with the lit body zone beside
+   it on wide screens; the cards come right after. */
+.board {
+  display: grid;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+.board__orbit {
+  min-width: 0;
+  min-height: 320px;
+}
+
+.board__loading {
+  padding: var(--space-3);
+  border: var(--border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+/* The selected card, with the body zone beside it on wide screens. */
+.detail {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.detail__body {
+  display: none;
+}
+
+.board__body-slot {
+  width: 200px;
+  height: 440px;
+}
+
+@media (min-width: 900px) {
+  .detail {
+    grid-template-columns: minmax(0, 1fr) 240px;
+    align-items: start;
+  }
+
+  .detail__body {
+    display: block;
+    padding: var(--space-3);
+    border: var(--border-subtle);
+    border-radius: var(--radius-card);
+    background: var(--color-surface);
+  }
+
+  .detail__body svg {
+    display: block;
+    width: 100%;
+    max-height: 440px;
+  }
+}
+
+/* The figure of a card sits beside its value, in a box of its final size. */
+.instrument-slot {
+  display: inline-block;
+  width: 96px;
+  height: 96px;
+}
+
+/* One card at a time: it takes the full width of its column. */
+.detail .indicator-list {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* Same size as the intro layer, so nothing shows under it while it loads. */
+.intro-cover {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: var(--color-bg);
+}

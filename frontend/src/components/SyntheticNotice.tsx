@@ -1,12 +1,6 @@
-import { Typography } from '@mui/material'
 import { strings } from '../strings'
 
-// The synthetic data note of REQ-14, on every tab. A sentence in body type: the
-// metadata line above it already carries the short label.
+// The synthetic data sentence of REQ-14, in the top bar of every phase.
 export default function SyntheticNotice() {
-  return (
-    <Typography component="p" variant="body2" sx={{ color: 'text.secondary' }}>
-      {strings.syntheticNotice}
-    </Typography>
-  )
+  return <p className="synthetic-notice">{strings.syntheticNotice}</p>
 }
