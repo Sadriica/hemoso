@@ -2,6 +2,20 @@
 
 Written by Eng 1 at every merge into `main`. Newest entry first.
 
+## submission · Sunday 14:15 (tag `submission`, merges #207, #208, #209)
+- eng1: the review polish (#207): Assumption rows never raise a review in the
+  app, as in the API; baseline texts count days; the Report grid on desktop;
+  link preview tags; README and docs say what the app does.
+- Owners' texts, done by Eng 1 at Wambi's request (#208): the submission page
+  and the script match the app (twelve indicators, symptoms ship, evidence
+  score, no unsourced delay), the fever condition cites NIH MedlinePlus and
+  WHO, docs/sources.md has the WHO row and no broken characters, FORMATS says a
+  symptom counts on the newest mission day with a report, DECISIONS records
+  that rule, the "watch" label and the API rate limit of 600 a minute.
+- bio2 (#209): the seven slides, the stack and the platform field map.
+- The demo video: https://youtu.be/MsjzAZ2Txwc (0:29), on the submission page,
+  the README and docs/DEPLOY.md.
+
 ## Final polish · Sunday 13:45 (merges the review branches)
 - eng1: the app no longer raises "needs review" for a crossed Assumption row
   when a baseline exists, as the API and F-phys-02 say; the baseline texts
