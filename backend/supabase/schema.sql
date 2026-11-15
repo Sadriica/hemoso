@@ -89,3 +89,8 @@ begin
                             'burn', 'sprain_or_strain'));
     end if;
 end $$;
+
+-- Mission start per account (REQ-37): each astronaut's date, the one Flight Day
+-- 1 is counted from. This block stands alone too, and only adds a column: the
+-- accounts already in the table keep their rows and read with a null date.
+alter table accounts add column if not exists mission_start date;
