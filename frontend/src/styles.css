@@ -1380,8 +1380,14 @@ legend {
   justify-items: start;
 }
 
+/* Not display: none: Safari does not decode a hidden video, so the first frame
+   never arrives and the camera looks broken (T-70). Off screen, with a size. */
 .face-panel__camera[hidden] {
-  display: none;
+  display: grid;
+  position: absolute;
+  left: -9999px;
+  width: 320px;
+  pointer-events: none;
 }
 
 .face-panel__video {

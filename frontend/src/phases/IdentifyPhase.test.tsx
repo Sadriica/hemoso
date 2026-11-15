@@ -13,10 +13,14 @@ import IdentifyPhase from './IdentifyPhase'
 // the person it recognised, and the demo that needs neither. The camera and the
 // model are faked: no test opens a camera (REQ-36).
 
-const engine = vi.hoisted(() => ({ descriptorFrom: vi.fn() }))
+const engine = vi.hoisted(() => ({
+  descriptorFrom: vi.fn(),
+  loadModels: vi.fn().mockResolvedValue('webgl'),
+}))
 
 vi.mock('../face/engine', () => ({
   descriptorFrom: engine.descriptorFrom,
+  loadModels: engine.loadModels,
 }))
 
 const ORIGINAL_MEDIA_DEVICES = navigator.mediaDevices
@@ -185,6 +189,23 @@ describe('Identify', () => {
     await matchFace(user)
 
     await waitFor(() => expect(onDone).toHaveBeenCalledTimes(1))
+  })
+
+  it('points at the Sign in tab, and focuses it, when the face check cannot run', async () => {
+    fakeCamera()
+    engine.descriptorFrom.mockRejectedValue(new Error('webgl lost'))
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const user = userEvent.setup()
+    render(<Harness onDone={vi.fn()} />)
+
+    const panel = await matchFace(user)
+
+    expect(await within(panel).findByRole('alert')).toHaveTextContent(
+      strings.face.problem('failed', 'tab'),
+    )
+    expect(
+      screen.getByRole('tab', { name: strings.signIn.signInTab }),
+    ).toHaveFocus()
   })
 
   it('asks for the PIN of a face with no session on this device', async () => {

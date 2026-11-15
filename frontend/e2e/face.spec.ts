@@ -161,7 +161,7 @@ test('face: a camera that shows no face registers nobody and names nobody', asyn
   // face either. No name is picked, the sentence names what happened and every
   // control comes back, so the person can try again or pick a name.
   await signIn.click()
-  await expect(panel.getByRole('alert')).toHaveText(copy.status.notRecognised, {
+  await expect(panel.getByRole('alert')).toHaveText(copy.problem('notRecognised', 'picker'), {
     timeout: 60_000,
   })
   await expect(register).toBeEnabled()
@@ -220,4 +220,77 @@ test('face: deleting the saved face leaves nothing behind for faces', async ({
   ).toEqual([])
 
   await goOnWithPicker(page)
+})
+
+test('face: when the face check cannot run, the sentence points at the crew list and the list has the focus', async ({
+  page,
+}) => {
+  // The model files do not arrive: the same dead end a device with a broken
+  // network path or an old browser reaches (T-70).
+  await page.route('**/models/*.bin', (route) => route.abort())
+  const warnings: string[] = []
+  page.on('console', (message) => {
+    if (message.type() === 'warning') warnings.push(message.text())
+  })
+  await openFacePanel(page)
+  const panel = await acceptConsent(page)
+
+  await panel.getByRole('button', { name: copy.signIn, exact: true }).click()
+
+  await expect(panel.getByRole('alert')).toHaveText(
+    copy.problem('failed', 'picker'),
+    { timeout: 30_000 },
+  )
+  await expect(crewPicker(page).getByRole('radio').first()).toBeFocused()
+  // The cause is in the console for the next report.
+  expect(warnings.some((text) => text.startsWith('face: '))).toBe(true)
+  // Nothing is left on: the panel is usable again and the way in still works.
+  await expect(
+    panel.getByRole('button', { name: copy.signIn, exact: true }),
+  ).toBeEnabled()
+  await goOnWithPicker(page)
+})
+
+test('face: with WebGL missing the model runs on WebAssembly', async ({
+  page,
+}) => {
+  // A device or browser mode with no WebGL context at all (privacy modes,
+  // some phones, blocklisted GPUs).
+  await page.addInitScript(() => {
+    // The page canvas and the off-screen one TensorFlow.js tries both answer
+    // "no WebGL".
+    for (const target of [HTMLCanvasElement, OffscreenCanvas]) {
+      const proto = target.prototype as unknown as {
+        getContext: (type: string, ...rest: unknown[]) => unknown
+      }
+      const original = proto.getContext
+      proto.getContext = function (this: unknown, type: string, ...rest: unknown[]) {
+        if (/webgl/.test(type)) return null
+        return original.call(this, type, ...rest)
+      }
+    }
+  })
+  const logs: string[] = []
+  page.on('console', (message) => logs.push(message.text()))
+  const wasmRequests: string[] = []
+  page.on('request', (request) => {
+    if (request.url().endsWith('.wasm')) wasmRequests.push(request.url())
+  })
+  await openFacePanel(page)
+  const panel = await acceptConsent(page)
+  await pickFirstCrew(page)
+
+  await panel.getByRole('button', { name: copy.register }).click()
+
+  // The test pattern holds no face, so the model ran and found none: that is
+  // the proof the backend works, not a failure sentence.
+  await expect(panel.getByRole('alert')).toHaveText(copy.status.noFace, {
+    timeout: 120_000,
+  })
+  expect(logs).toContain('face: running on the wasm backend')
+  expect(wasmRequests.length, 'wasm files from this site').toBeGreaterThan(0)
+  expect(
+    wasmRequests.every((url) => new URL(url).hostname === 'localhost'),
+    'no wasm file from another host',
+  ).toBe(true)
 })
