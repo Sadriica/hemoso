@@ -48,6 +48,13 @@ export interface Body3DProps {
   /** The app's reduce motion switch. The system setting is read as well. */
   reducedMotion?: boolean
   onSelect?: (regionId: string) => void
+  /**
+   * Only the figure: no stage background, no turn buttons, no caption. For a
+   * place where the body is part of a larger drawing (the centre of the status
+   * orbits). It is then decoration: hidden from assistive technology, never
+   * taking a pointer event, and its text equivalent is the caller's.
+   */
+  bare?: boolean
 }
 
 /** WebGL, once per session: two contexts asked for one is a waste. */
@@ -109,6 +116,7 @@ export default function Body3D({
   marks = [],
   reducedMotion = false,
   onSelect,
+  bare = false,
 }: Body3DProps) {
   const still = useStillMotion(reducedMotion)
   const listId = useId()
@@ -273,6 +281,24 @@ export default function Body3D({
     mode === 'status' && lit.length > 0 ? (
       <p className="body3d__hint">{bodyWords.lit(litNames)}</p>
     ) : null
+
+  if (bare) {
+    return (
+      <figure
+        className={`body3d body3d--bare${webgl === false ? ' body3d--flat' : ''}`}
+        data-mode={mode}
+        aria-hidden="true"
+      >
+        {webgl === false ? (
+          <BodySilhouette system={iconSystem(system)} label={bodyWords.figure} />
+        ) : (
+          <div className="body3d__stage">
+            {webgl === true && <canvas ref={canvasRef} className="body3d__canvas" />}
+          </div>
+        )}
+      </figure>
+    )
+  }
 
   if (webgl === false) {
     return (

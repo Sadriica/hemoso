@@ -155,8 +155,6 @@ export const strings = {
         no_data: (count: number): string => `${count} with no data yet`,
       },
     },
-    // The label over the 3D body beside the card.
-    twin: 'Digital twin',
     // The overview figure failed to draw; the cards and the history still work.
     overviewFailed: 'The overview could not be drawn. Reload the page to try again.',
   },
@@ -327,6 +325,39 @@ export const strings = {
     // A difference always carries its sign: "+5" and "-5" read as a change,
     // "0" as none.
     signed: (value: number): string => (value > 0 ? `+${value}` : String(value)),
+    // The trend chart over the table: comparison words only, the states come
+    // from `badge` and the contexts from `entry.contextLabels`.
+    trend: {
+      heading: 'Trend',
+      contextLegend: 'Context',
+      windowLegend: 'Show',
+      last14: 'Last 14',
+      all: 'All',
+      chartName: (name: string): string => `Trend of ${name}`,
+      hint: 'Arrow keys move between readings. Home and End jump to the first and last.',
+      hintPair: 'Up and down switch between the two series.',
+      noneInContext: 'No readings in this context yet.',
+      usualBand: (series: string | null): string =>
+        series === null ? 'Usual band' : `${series} usual band`,
+      noBand: 'The usual band needs 3 earlier readings in this context.',
+      thresholdLabel: (series: string | null, level: string): string =>
+        series === null ? level : `${series}: ${level}`,
+      markLegend: 'Marks',
+      pickReading: 'Select a reading to see it here.',
+      readout: (parts: {
+        series: string | null
+        value: string
+        unit: string
+        day: number
+        time: string
+        context: string
+        state: string
+      }): string =>
+        `${parts.series === null ? '' : `${parts.series}: `}${parts.value} ${parts.unit} · ` +
+        `FD ${parts.day} · GMT ${parts.time} · ${parts.context} · ${parts.state}`,
+      point: (parts: { index: number; count: number }): string =>
+        `Reading ${parts.index} of ${parts.count}`,
+    },
   },
   // The four states of docs/API.md, GET .../state, in plain words (REQ-30).
   badge: {

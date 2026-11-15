@@ -1,4 +1,4 @@
-/* The status phase in the console grammar of DESIGN.md section 15: a system
+/* The status phase in the console grammar of DESIGN.md section 16: a system
    strip, the card and the 3D body as instrument panels, and the possible
    conditions as an evidence board. Tokens only. */
 
@@ -30,7 +30,7 @@
 }
 
 .sys-strip__item--total {
-  --strip: var(--color-accent);
+  --strip: var(--accent-cyan);
 }
 
 .sys-strip__item--review {
@@ -74,9 +74,7 @@
 }
 
 .phase--status .indicator-card::before,
-.phase--status .indicator-card::after,
-.phase--status .detail__body::before,
-.phase--status .detail__body::after {
+.phase--status .indicator-card::after {
   content: '';
   position: absolute;
   bottom: -1px;
@@ -86,49 +84,27 @@
   pointer-events: none;
 }
 
-.phase--status .indicator-card::before,
-.phase--status .detail__body::before {
+.phase--status .indicator-card::before {
   left: -1px;
   border-left: 2px solid var(--color-border-control);
 }
 
-.phase--status .indicator-card::after,
-.phase--status .detail__body::after {
+.phase--status .indicator-card::after {
   right: -1px;
   border-right: 2px solid var(--color-border-control);
 }
 
-/* The 3D body beside the card: wider, framed and named, so it reads as the
-   centrepiece of the console and not as a thumbnail. */
-.phase--status .detail__eyebrow {
-  margin: 0 0 var(--space-2);
-  color: var(--color-accent);
-  font-family: var(--font-mono);
-  font-size: var(--text-label);
-  line-height: var(--leading-label);
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-}
-
+/* The card stands alone now: the body is in the centre of the orbits. */
 @media (min-width: 900px) {
   .phase--status .detail {
-    grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
-  }
-
-  .phase--status .detail__body {
-    position: relative;
-    padding: var(--space-3);
-    border: var(--border-subtle);
-    border-top: 2px solid var(--color-accent);
-    border-radius: var(--radius-card);
-    background: var(--color-bg-raised);
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
 /* The possible conditions as an evidence board. */
 .conditions__eyebrow {
   margin: 0;
-  color: var(--color-accent);
+  color: var(--accent-cyan);
   font-family: var(--font-mono);
   font-size: var(--text-label);
   line-height: var(--leading-label);

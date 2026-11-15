@@ -141,7 +141,9 @@ describe('History', () => {
   it('never says in your usual range without a baseline', () => {
     renderHistory([entry(1, '08:00', 50), entry(2, '08:00', 51)])
     expect(screen.queryByText('In your usual range')).toBeNull()
-    expect(screen.getAllByText('No data yet')).toHaveLength(2)
+    expect(
+      within(screen.getByRole('table')).getAllByText('No data yet'),
+    ).toHaveLength(2)
   })
 
   it('shows the context of each reading', () => {
@@ -186,7 +188,9 @@ describe('History', () => {
       { ...entry(1, '08:00', 4), indicatorId: 'sleep_quality_1_5', unit: '1 to 5' },
     ])
     await user.selectOptions(screen.getByLabelText('Indicator'), 'sleep_quality_1_5')
-    expect(screen.getByText('No data yet')).toBeInTheDocument()
+    expect(
+      within(screen.getByRole('table')).getByText('No data yet'),
+    ).toBeInTheDocument()
   })
 
   it('shows a 1 to 5 reading as the value over 5', async () => {
@@ -333,27 +337,17 @@ describe('History', () => {
     expect(summary).toHaveAttribute('data-summary-id', summary.id)
   })
 
-  it('names the chart with the summary sentence', () => {
+  it('describes the chart group with the summary sentence', () => {
     renderHistory(readings)
     const summary = screen.getByText(/^Latest:/)
-    const chart = screen.getByRole('img')
-    expect(chart).toHaveAttribute('aria-labelledby', summary.id)
-    expect(chart).toHaveAccessibleName(summary.textContent ?? '')
+    const chart = screen.getByRole('group', { name: 'Trend of Example indicator' })
+    expect(chart.getAttribute('aria-describedby')).toContain(summary.id)
   })
 
-  it('names the chart with the not-enough sentence when there is one reading', () => {
-    renderHistory([entry(1, '08:00', 10)])
-    expect(
-      screen.getByRole('img', {
-        name: 'Latest: 10 example_unit on FD 1, GMT 08:00. Not enough earlier entries to compare yet.',
-      }),
-    ).toBeInTheDocument()
-  })
-
-  it('shows the chart next to the table, with a point per reading', () => {
+  it('shows the chart next to the table, with a mark per reading in the context', () => {
     renderHistory(readings)
-    const chart = screen.getByRole('img')
-    expect(chart.querySelectorAll('circle')).toHaveLength(readings.length)
+    const chart = screen.getByRole('group', { name: 'Trend of Example indicator' })
+    expect(chart.querySelectorAll('.tc__pt')).toHaveLength(readings.length)
     expect(screen.getByRole('table')).toBeInTheDocument()
   })
 
@@ -363,12 +357,12 @@ describe('History', () => {
       { ...entry(1, '08:00', 4), indicatorId: 'sleep_quality_1_5', unit: '1 to 5' },
     ])
     await user.selectOptions(screen.getByLabelText('Indicator'), 'sleep_quality_1_5')
-    expect(screen.getByRole('img').querySelectorAll('.chart__threshold')).toHaveLength(0)
+    expect(document.querySelectorAll('.tc__threshold')).toHaveLength(0)
   })
 
   it('shows no chart without entries', () => {
     renderHistory([])
-    expect(screen.queryByRole('img')).toBeNull()
+    expect(screen.queryByRole('group', { name: /^Trend of/ })).toBeNull()
   })
 
   it('says there is not enough with one entry', () => {
@@ -483,5 +477,92 @@ describe('History', () => {
     )
     await user.selectOptions(screen.getByLabelText('Indicator'), 'sleep_quality_1_5')
     expect(screen.getByLabelText('Indicator')).toHaveValue('sleep_quality_1_5')
+  })
+})
+
+describe('History trend', () => {
+  const cited = {
+    indicatorId: 'example_indicator',
+    side: 'above' as const,
+    threshold: 100,
+    attentionLevel: 'consult',
+    notify: 'cmo' as const,
+    sources: [{ title: 'NASA', url: 'https://example.org' }],
+  }
+
+  function renderWith(entries: Entry[], content: LoadedContent = data) {
+    const store = new LocalEntryStore({ storage: null, seedEntries: entries })
+    render(<History store={store} personId="demo_astronaut_1" data={content} />)
+  }
+
+  const mixed = [
+    entry(1, '07:00', 10, { context: 'on_waking' }),
+    entry(2, '07:00', 11, { context: 'on_waking' }),
+    entry(3, '07:00', 12, { context: 'on_waking' }),
+    entry(4, '12:00', 50),
+    entry(5, '12:00', 52),
+  ]
+
+  it('opens on the usual context of the indicator', () => {
+    renderWith(mixed)
+    expect(
+      screen.getByRole('radio', { name: 'Post-sleep · on waking' }),
+    ).toBeChecked()
+    expect(document.querySelectorAll('.tc__svg .tc__pt')).toHaveLength(3)
+  })
+
+  it('filters the chart by context with the segmented control', async () => {
+    const user = userEvent.setup()
+    renderWith(mixed)
+    await user.click(screen.getByRole('radio', { name: 'At rest' }))
+    expect(document.querySelectorAll('.tc__svg .tc__pt')).toHaveLength(2)
+    await user.click(screen.getByRole('radio', { name: 'After exercise' }))
+    expect(screen.getByText('No readings in this context yet.')).toBeInTheDocument()
+    // The table keeps every reading: it is the text of all the numbers.
+    expect(within(screen.getByRole('table')).getAllByRole('row')).toHaveLength(6)
+  })
+
+  it('switches between the last 14 and all readings', async () => {
+    const user = userEvent.setup()
+    const many = Array.from({ length: 20 }, (_, i) => entry(i + 1, '08:00', 40 + i))
+    renderWith(many)
+    expect(screen.getByRole('radio', { name: 'Last 14' })).toBeChecked()
+    expect(document.querySelectorAll('.tc__svg .tc__pt')).toHaveLength(14)
+    await user.click(screen.getByRole('radio', { name: 'All' }))
+    expect(document.querySelectorAll('.tc__svg .tc__pt')).toHaveLength(20)
+  })
+
+  it('draws a threshold only when its row has a link as a source', () => {
+    renderWith(readings, {
+      ...data,
+      rules: [cited, { ...cited, threshold: 90, attentionLevel: 'watch', sources: ['Assumption'] }],
+    })
+    const labels = [...document.querySelectorAll('.tc__threshold-label')].map(
+      (node) => node.textContent,
+    )
+    expect(labels).toEqual(['consult'])
+  })
+
+  it('puts systolic and diastolic on one chart', () => {
+    const sys: Indicator = { ...indicator, id: 'bp_sys_mmhg', name: 'Systolic blood pressure', unit: 'mmHg' }
+    const dia: Indicator = { ...indicator, id: 'bp_dia_mmhg', name: 'Diastolic blood pressure', unit: 'mmHg' }
+    const bp = { ...data, indicators: [sys, dia], rules: [] }
+    const store = new LocalEntryStore({
+      storage: null,
+      seedEntries: [
+        entry(1, '08:00', 120, { indicatorId: 'bp_sys_mmhg', unit: 'mmHg' }),
+        entry(2, '08:00', 121, { indicatorId: 'bp_sys_mmhg', unit: 'mmHg' }),
+        entry(1, '08:00', 80, { indicatorId: 'bp_dia_mmhg', unit: 'mmHg' }),
+        entry(2, '08:00', 81, { indicatorId: 'bp_dia_mmhg', unit: 'mmHg' }),
+      ],
+    })
+    render(<History store={store} personId="demo_astronaut_1" data={bp} indicatorId="bp_dia_mmhg" />)
+    expect(
+      screen.getByRole('group', { name: 'Trend of Blood pressure' }),
+    ).toBeInTheDocument()
+    expect(document.querySelectorAll('.tc__line')).toHaveLength(2)
+    expect(document.querySelectorAll('.tc__svg .tc__pt')).toHaveLength(4)
+    // One text table per series.
+    expect(screen.getAllByRole('table')).toHaveLength(2)
   })
 })

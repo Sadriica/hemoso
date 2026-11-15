@@ -66,6 +66,9 @@
   --color-signal: #ff6a4d;
   /* Technical grid on the page background, dark theme only. */
   --color-grid: rgb(255 255 255 / 4%);
+  /* Console accents (DESIGN.md 2.4): decoration only, never a state. */
+  --accent-cyan: #5ee6ff;
+  --accent-violet: #b49cff;
 
   /* State colours: always shown with their own icon shape and words. Outside
      the usual range reads as amber, like any warning: its open-ring icon and
@@ -193,6 +196,8 @@
     --color-on-interactive: #ffffff;
     --color-signal: #b82a14;
     --color-grid: transparent;
+    --accent-cyan: #0e7490;
+    --accent-violet: #6d28d9;
 
     --status-in-range-text: #14532d;
     --status-in-range-bg: #dcfce7;
