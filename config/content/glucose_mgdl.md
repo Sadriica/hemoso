@@ -23,35 +23,35 @@ this project. Assumption.
 
 ## Status and next steps
 
+### no_data
+
+HeMoSo needs 3 entries before it can compare you with yourself.
+
+Measure again at the same time tomorrow. No one is notified for now.
+
+### in_range
+
 Your blood glucose is in your usual range today.
 
 No action today. Measure again at the same time tomorrow.
 
 No one is notified for now.
 
-### watch
+### outside_range
 
-Your blood glucose has been above your usual range for 2 days.
+Your blood glucose is outside your usual range today.
 
 Eat your next meal at the usual time and measure again before it. Assumption.
 
-Your CMO checks your record on board.
+No one is notified for now.
 
 ### consult
 
-Your blood glucose is far from your usual range and it has stayed there.
+Your blood glucose is far outside your usual range.
 
 Tell your CMO today. Drink fluids and measure again in 2 hours. Assumption.
 
 Your CMO checks you in person.
-
-### urgent
-
-Your blood glucose is well outside your usual range.
-
-Tell your CMO now. Do not exercise. Assumption.
-
-Your CMO contacts the flight surgeon at once.
 
 ## How to prevent problems
 

@@ -22,35 +22,35 @@ on purpose.
 
 ## Status and next steps
 
+### no_data
+
+HeMoSo needs 3 entries before it can compare you with yourself.
+
+Answer again tomorrow morning. No one is notified for now.
+
+### in_range
+
 You slept in your usual range last night.
 
 No action today. Keep the same sleep and wake times.
 
 No one is notified for now.
 
+### outside_range
+
+You slept outside your usual range last night.
+
+Go to bed at your usual time today. Keep the record.
+
+No one is notified for now.
+
 ### watch
 
-You slept less than your usual range for 3 nights.
+You slept less than 6 hours for 3 nights.
 
-Go to bed at your usual time today. Ask your CMO about light and rest. Assumption.
+Go to bed at your usual time today. Ask your CMO about light and rest.
 
-Your CMO checks your record on board.
-
-### consult
-
-You have slept much less than your usual range for several nights.
-
-Tell your CMO today. Keep the rest of your day light. Assumption.
-
-Your CMO checks you in person.
-
-### urgent
-
-You have slept very little for several nights and you feel it in your work.
-
-Tell your CMO now. Stop your tasks for today. Assumption.
-
-Your CMO contacts the flight surgeon at once.
+The crew checks your record on board.
 
 ## How to prevent problems
 

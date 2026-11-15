@@ -24,24 +24,31 @@ Heat, sleep loss and low fluid intake also change the reading.
 
 ## Status and next steps
 
+### no_data
+
+HeMoSo needs 3 entries before it can compare you with yourself.
+
+Measure again at the same hour. No one is notified for now.
+
+### in_range
+
 Your diastolic blood pressure is in your usual range today.
 
 No action today. Measure again at the same hour tomorrow.
 
 No one is notified for now.
 
-### watch
+### outside_range
 
-Your diastolic blood pressure has been below your usual range for 3 days.
+Your diastolic blood pressure is outside your usual range today.
 
-Rest 10 minutes and measure again. Check your fluid intake and how you slept
-last night. Assumption.
+Rest 10 minutes and measure again. Keep the record.
 
-Your CMO checks your record on board.
+No one is notified for now.
 
 ### consult
 
-Your diastolic blood pressure is far below your usual range.
+Your diastolic blood pressure is far outside your usual range.
 
 Sit down and tell your CMO today. Drink fluids and measure again in 1 hour.
 Assumption.
@@ -50,9 +57,9 @@ Your CMO checks you in person.
 
 ### urgent
 
-Your diastolic blood pressure is well below your usual range.
+Your diastolic blood pressure is well above your usual range.
 
-Sit or lie down now and call your CMO. Drink fluids. Assumption.
+Sit down now and call your CMO. Do not exercise. Assumption.
 
 Your CMO contacts the flight surgeon at once.
 

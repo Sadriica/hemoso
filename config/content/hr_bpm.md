@@ -21,36 +21,35 @@ faint. Sleep loss and stress raise your resting heart rate too.
 
 ## Status and next steps
 
+### no_data
+
+HeMoSo needs 3 entries before it can compare you with yourself.
+
+Measure again at the same hour. No one is notified for now.
+
+### in_range
+
 Your resting heart rate is in your usual range today.
 
 No action today. Measure again at the same hour tomorrow.
 
 No one is notified for now.
 
-### watch
+### outside_range
 
-Your resting heart rate has been above your usual range for 3 days.
+Your resting heart rate is outside your usual range today.
 
-Rest 10 minutes and measure again. Check your temperature, how you slept last
-night and your fluid intake. Assumption.
+Sit still for 10 minutes and measure again. Keep the record.
 
-Your CMO checks your record on board.
+No one is notified for now.
 
 ### consult
 
-Your resting heart rate is far above your usual range and today it is still high.
+Your resting heart rate is far outside your usual range.
 
-Tell your CMO today. Rest, drink fluids and measure again in 2 hours. Assumption.
+Tell your CMO today. Rest and measure again in 2 hours. Assumption.
 
 Your CMO checks you in person.
-
-### urgent
-
-Your resting heart rate is well outside your usual range.
-
-Tell your CMO now. Rest and skip your exercise session. Assumption.
-
-Your CMO contacts the flight surgeon at once.
 
 ## How to prevent problems
 

@@ -18,14 +18,21 @@ order:
 No lists inside the block, no labels printed in the app: Juli renders the three
 paragraphs. Two sentences per paragraph at most.
 
-Four states, from F-phys-02:
+Four states, from F-phys-02, plus Bio 2's levels:
 
-| State | When it shows |
-| --- | --- |
-| `no_data` | Fewer than 3 readings: the app cannot compare yet |
-| `in_range` | The reading is inside the astronaut's usual range |
-| `outside_range` | The reading is more than 3 spreads from the median |
-| `needs_review` | A cited clinical boundary is crossed; only Bio 2's `attention.csv` creates this state |
+| Heading | When it shows | `notify` |
+| --- | --- | --- |
+| `no_data` | Fewer than 3 readings: the app cannot compare yet | none |
+| `in_range` | The reading is inside the astronaut's usual range | none |
+| `outside_range` | The reading is more than 3 spreads from the median | none |
+| `watch` | A cited boundary is crossed in a mild indicator (sleep, mood) | crew |
+| `consult` | A cited clinical boundary is crossed | cmo |
+| `urgent` | A stricter cited boundary is crossed | flight_surgeon |
+
+Every file carries the three baseline states; the level headings are the ones
+`config/rules/attention.csv` lists for that indicator (Sat 20:45: `consult` for
+heart rate and glucose, `consult` and `urgent` for both pressures and
+temperature, `watch` for sleep and mood).
 
 ## 2. What changes in the draft of Elena
 

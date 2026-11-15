@@ -27,9 +27,25 @@ what your CMO needs to see.
 
 ## Status and next steps
 
+### no_data
+
+HeMoSo needs 3 entries before it can compare you with yourself.
+
+Answer again before you sleep. No one is notified for now.
+
+### in_range
+
 Your mood is in your usual range this week.
 
 No action today. Answer again before you sleep.
+
+No one is notified for now.
+
+### outside_range
+
+Your mood is outside your usual range today.
+
+Write one line about your day. Keep the record.
 
 No one is notified for now.
 
@@ -37,25 +53,9 @@ No one is notified for now.
 
 Your mood has been below your usual range for a week.
 
-Write two lines about your day. Talk to someone on the crew today. Assumption.
+Write two lines about your day. Talk to someone on the crew today.
 
-Your CMO checks your record on board.
-
-### consult
-
-Your mood has stayed below your usual range for several days.
-
-Tell your CMO today. Keep your sleep schedule. Assumption.
-
-Your CMO checks you in person.
-
-### urgent
-
-Your mood is very low and it has stayed there for days.
-
-Tell your CMO now. Do not stay alone today. Assumption.
-
-Your CMO contacts the flight surgeon at once.
+The crew checks your record on board.
 
 ## How to prevent problems
 

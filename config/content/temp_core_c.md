@@ -24,23 +24,31 @@ Assumption.
 
 ## Status and next steps
 
+### no_data
+
+HeMoSo needs 3 entries before it can compare you with yourself.
+
+Measure again at the same hour. No one is notified for now.
+
+### in_range
+
 Your temperature is in your usual range today.
 
 No action today. Measure again at the same hour tomorrow.
 
 No one is notified for now.
 
-### watch
+### outside_range
 
-Your temperature has been above your usual range for 2 days.
+Your temperature is outside your usual range today.
 
-Measure again in 4 hours. Check your fluid intake and how you slept. Assumption.
+Rest 10 minutes and measure again. Keep the record.
 
-Your CMO checks your record on board.
+No one is notified for now.
 
 ### consult
 
-Your temperature is far above your usual range.
+Your temperature is far outside your usual range.
 
 Tell your CMO today. Rest, drink fluids and measure again in 2 hours.
 Assumption.
@@ -49,7 +57,7 @@ Your CMO checks you in person.
 
 ### urgent
 
-Your temperature is well above your usual range.
+Your temperature is well above your usual range, or well below it.
 
 Tell your CMO now. Rest and drink fluids. Assumption.
 
