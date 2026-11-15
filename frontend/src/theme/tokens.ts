@@ -31,6 +31,13 @@ export interface ColorTokens {
   'color-signal': string
   /** Technical grid on the page background (5), dark theme only. */
   'color-grid': string
+  /**
+   * Console accents (DESIGN.md 2.4): decoration only. The scene, the orbits,
+   * the scope grid, the channel numbers, the focus glow and the scan line of a
+   * phase change. Never a state, and never the only carrier of a meaning.
+   */
+  'accent-cyan': string
+  'accent-violet': string
   /** Attention badges (2.2): state is always icon, text and colour together. */
   'status-in-range-text': string
   'status-in-range-bg': string
@@ -62,6 +69,8 @@ export const COLORS: Record<ThemeMode, ColorTokens> = {
     'color-on-interactive': '#FFFFFF',
     'color-signal': '#FF6A4D',
     'color-grid': 'rgba(255, 255, 255, 0.04)',
+    'accent-cyan': '#5EE6FF',
+    'accent-violet': '#B49CFF',
     'status-in-range-text': '#5FD49A',
     'status-in-range-bg': '#0D2A1F',
     'status-attention-text': '#F5C542',
@@ -89,6 +98,8 @@ export const COLORS: Record<ThemeMode, ColorTokens> = {
     'color-on-interactive': '#FFFFFF',
     'color-signal': '#B82A14',
     'color-grid': 'transparent',
+    'accent-cyan': '#0E7490',
+    'accent-violet': '#6D28D9',
     'status-in-range-text': '#14532D',
     'status-in-range-bg': '#DCFCE7',
     'status-attention-text': '#6B3A06',

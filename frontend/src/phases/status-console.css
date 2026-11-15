@@ -1,4 +1,4 @@
-/* The status phase in the console grammar of DESIGN.md section 15: a system
+/* The status phase in the console grammar of DESIGN.md section 16: a system
    strip, the card and the 3D body as instrument panels, and the possible
    conditions as an evidence board. Tokens only. */
 
@@ -30,7 +30,7 @@
 }
 
 .sys-strip__item--total {
-  --strip: var(--color-accent);
+  --strip: var(--accent-cyan);
 }
 
 .sys-strip__item--review {
@@ -102,7 +102,7 @@
    centrepiece of the console and not as a thumbnail. */
 .phase--status .detail__eyebrow {
   margin: 0 0 var(--space-2);
-  color: var(--color-accent);
+  color: var(--accent-cyan);
   font-family: var(--font-mono);
   font-size: var(--text-label);
   line-height: var(--leading-label);
@@ -119,7 +119,7 @@
     position: relative;
     padding: var(--space-3);
     border: var(--border-subtle);
-    border-top: 2px solid var(--color-accent);
+    border-top: 2px solid var(--accent-violet);
     border-radius: var(--radius-card);
     background: var(--color-bg-raised);
   }
@@ -128,7 +128,7 @@
 /* The possible conditions as an evidence board. */
 .conditions__eyebrow {
   margin: 0;
-  color: var(--color-accent);
+  color: var(--accent-cyan);
   font-family: var(--font-mono);
   font-size: var(--text-label);
   line-height: var(--leading-label);
