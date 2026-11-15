@@ -31,6 +31,8 @@ import {
   statusText,
   type BadgeKind,
 } from '../components/attentionText'
+import { BodySilhouette, BODY_ZONES } from '../components/body'
+import type { BodySystem } from '../components/body/zones'
 import Disclosure from '../components/Disclosure'
 import ErrorBoundary from '../components/ErrorBoundary'
 import IndicatorDetails from '../components/IndicatorDetails'
@@ -54,7 +56,13 @@ const Planetarium = lazy(() =>
 )
 const Instrument = lazy(() => import('../components/instruments'))
 // The body is a chunk of its own: three.js never reaches the first load.
-const Body3D = lazy(() => import('../components/body3d/Body3D'))
+// One more try when the chunk does not arrive: a tab opened before a deploy
+// asks for a file name that is gone, and a weak link drops a request.
+const Body3D = lazy(() =>
+  import('../components/body3d/Body3D').catch(
+    () => import('../components/body3d/Body3D'),
+  ),
+)
 
 // One indicator with everything the screen draws from: its readings, its rules,
 // and the one status the planetarium, the notice and the card all read.
@@ -184,6 +192,15 @@ export default function Home({
   const selected = rows.find((row) => row.indicator.id === selectedId)
   const selectedSystem = selected ? systemOf(selected.indicator.id) : null
 
+  // The flat body: what the centre of the orbits shows before the 3D figure
+  // arrives and whenever it cannot be drawn.
+  const flatBody = (
+    <BodySilhouette
+      system={flatSystem(selectedSystem)}
+      label={strings.board.planetarium.center}
+    />
+  )
+
   return (
     <section aria-labelledby="home-heading">
       <h2 id="home-heading" className="home__heading">
@@ -260,6 +277,33 @@ export default function Home({
                 onSelect={setChosenId}
                 reducedMotion={motionReduced}
                 initialView={initialView}
+                center={
+                  wide ? (
+                    // The body stands in the centre of the orbits and lights
+                    // the zone of the selected indicator. It is never an empty
+                    // space: while the 3D chunk loads, or when it cannot be
+                    // loaded or drawn, the flat body takes its place.
+                    <ErrorBoundary fallback={flatBody}>
+                      <Suspense fallback={flatBody}>
+                        <Body3D
+                          bare
+                          mode="status"
+                          system={selectedSystem}
+                          state={selected ? statusBadgeKind(selected.status) : null}
+                          reducedMotion={motionReduced}
+                        />
+                      </Suspense>
+                    </ErrorBoundary>
+                  ) : undefined
+                }
+                centerText={
+                  selected && selectedSystem
+                    ? strings.board.bodyLabel(
+                        strings.board.systemNames[selectedSystem],
+                        selected.indicator.name,
+                      )
+                    : undefined
+                }
               />
             </Suspense>
             </ErrorBoundary>
@@ -287,32 +331,6 @@ export default function Home({
               motionReduced={motionReduced}
             />
           </ul>
-          <div className="detail__body">
-            {wide && <p className="detail__eyebrow">{strings.board.twin}</p>}
-            {/* The body is an extra: when it cannot be drawn its column stays
-                empty and the card beside it keeps every fact. */}
-            <ErrorBoundary fallback={null}>
-            <Suspense
-              fallback={<div className="body3d-slot" aria-hidden="true" />}
-            >
-              {wide && (
-                <Body3D
-                  mode="status"
-                  system={selectedSystem}
-                  state={statusBadgeKind(selected.status)}
-                  label={
-                    selectedSystem
-                      ? strings.board.bodyLabel(
-                          strings.board.systemNames[selectedSystem],
-                          selected.indicator.name,
-                        )
-                      : strings.board.bodyNone
-                  }
-                />
-              )}
-            </Suspense>
-            </ErrorBoundary>
-          </div>
         </div>
         </>
       )}
@@ -346,6 +364,14 @@ function SystemStrip({ rows }: { rows: Row[] }) {
       ))}
     </ul>
   )
+}
+
+// The system of the selected indicator as the flat body names its zones, or
+// null when it has no zone there.
+function flatSystem(system: string | null): BodySystem | null {
+  return system !== null && (BODY_ZONES as readonly string[]).includes(system)
+    ? (system as BodySystem)
+    : null
 }
 
 // True from 900 px up, the width at which the body column appears (phases.css).
