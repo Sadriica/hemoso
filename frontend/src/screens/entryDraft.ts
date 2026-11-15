@@ -1,6 +1,7 @@
 import { isClockTime, isMissionDay } from '../domain/clock'
 import type { Indicator } from '../domain/types'
 import { systemOf, type BodySystemId } from '../icons/meta'
+import { isReactionIndicator } from '../reaction/ids'
 import { SCALE_UNIT, strings } from '../strings'
 
 // What the report screen accepts, as pure functions: the same rules and the
@@ -110,6 +111,9 @@ export function readingRows(indicators: Indicator[]): ReadingRow[] {
   const rows: ReadingRow[] = []
 
   for (const indicator of indicators) {
+    // The reaction check measures these two itself (reaction/ids.ts): no field
+    // asks the crew to type a value the app already knows.
+    if (isReactionIndicator(indicator.id)) continue
     if (indicator.id === BP_SYSTOLIC) {
       const diastolic = indicators.find(
         (item) => item.id === BP_DIASTOLIC,
