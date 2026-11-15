@@ -153,7 +153,7 @@ export function Planetarium({ items, labels, selectedId, onSelect, reducedMotion
       toggle.current?.focus()
       return
     }
-    if (!orbits || !items.length) return
+    if (!items.length) return
     const at = Math.max(0, items.findIndex((it) => it.id === active))
     const last = items.length - 1
     const to =

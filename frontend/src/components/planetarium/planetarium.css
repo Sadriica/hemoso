@@ -9,6 +9,8 @@
   --planet-stage-ratio: 16 / 10;
   /* Ring around a body, the selected ring and the row edge: 3 px. */
   --planet-ring: 3px;
+  /* Row edge of a state that is not in range: twice the ring. */
+  --planet-edge-strong: 6px;
   /* Orbit lines: 1 px, thinner than the tag text. */
   --planet-line: 1px;
   /* Gap between a body and its selected ring. */
@@ -28,20 +30,31 @@
 .planetarium button:focus-visible { outline: var(--planet-ring) solid var(--color-accent); outline-offset: var(--planet-focus-offset); }
 
 .planetarium__list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); }
+/* From 600 px the list is two columns, so a tablet shows all nine without
+   scrolling. The order in the file is the reading order, row by row. */
+@media (min-width: 600px) { .planetarium__list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* One compact block: the icon, the name with the value at the end of the same
+   line, and the state under the name. About 64 px tall, never under 44 px. */
 .planetarium__row {
-  display: grid; grid-template-columns: auto 1fr; gap: var(--space-1) var(--space-3); align-items: center;
-  width: 100%; min-height: var(--planet-target); padding: var(--space-3); text-align: left; cursor: pointer;
-  overflow-wrap: anywhere; border: var(--border-subtle); border-inline-start: var(--planet-ring) solid var(--ring); border-radius: var(--radius-card);
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--space-1) var(--space-2); align-items: center;
+  width: 100%; height: 100%; min-height: var(--planet-target); padding: var(--space-2) var(--space-3) var(--space-2) var(--space-2);
+  text-align: left; cursor: pointer;
+  overflow-wrap: anywhere; border: var(--border-subtle); border-inline-start: var(--planet-edge, var(--planet-ring)) solid var(--ring); border-radius: var(--radius-card);
   background: var(--color-surface); color: var(--color-text); font-family: var(--font-body); font-size: var(--text-body);
 }
 .planetarium__row[aria-pressed='true'] { border-color: var(--color-accent); box-shadow: 0 0 0 var(--planet-ring) var(--color-accent); }
-.planetarium__row-icon { grid-row: span 3; display: inline-flex; }
+/* A row that is not in range has a stronger edge and bold state words, so it
+   stands out at a glance while the order stays that of the file. */
+.planetarium__row--outside, .planetarium__row--review { --planet-edge: var(--planet-edge-strong); }
+.planetarium__row--outside .planetarium__row-state, .planetarium__row--review .planetarium__row-state { font-weight: 700; }
+.planetarium__row-icon { grid-row: span 2; display: inline-flex; }
 .planetarium__row-name { min-width: 0; font-weight: 600; }
 .planetarium__row-state, .planetarium__tag-state {
   display: inline-flex; align-items: flex-start; min-width: 0; gap: var(--space-1);
   font-family: var(--font-mono); font-size: var(--text-label);
 }
-.planetarium__row-value { font-family: var(--font-mono); font-size: var(--text-small); color: var(--color-text-muted); }
+.planetarium__row-state { grid-column: 2 / -1; }
+.planetarium__row-value { grid-row: 1; grid-column: 3; justify-self: end; white-space: nowrap; font-family: var(--font-mono); font-size: var(--text-small); color: var(--color-text-muted); }
 .planetarium__row--in-range .planetarium__row-state, .planetarium__body--in-range { --ring: var(--status-in-range-text); }
 .planetarium__row--outside .planetarium__row-state, .planetarium__body--outside { --ring: var(--status-attention-text); }
 .planetarium__row--review .planetarium__row-state, .planetarium__body--review { --ring: var(--status-review-text); }

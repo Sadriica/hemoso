@@ -83,6 +83,18 @@ describe('Planetarium', () => {
     expect(onSelect).toHaveBeenCalledTimes(2)
   })
 
+  it('moves through the list in file order with the up and down arrows', async () => {
+    setup(false)
+    const [a, b, c] = ['Heart rate', 'Sleep', 'Mood'].map((n) => screen.getByRole('button', { name: new RegExp(n) }))
+    a.focus()
+    await userEvent.keyboard('{ArrowDown}')
+    expect(b).toHaveFocus()
+    await userEvent.keyboard('{ArrowDown}{ArrowDown}')
+    expect(c).toHaveFocus()
+    await userEvent.keyboard('{ArrowUp}')
+    expect(b).toHaveFocus()
+  })
+
   it('returns focus to the toggle on Escape', async () => {
     setup(true)
     await userEvent.click(toggle())
@@ -167,12 +179,17 @@ describe('Planetarium', () => {
     it('reserves the final stage size from the first paint', () => {
       expect(css).toMatch(/\.planetarium__stage \{[^}]*aspect-ratio: var\(--planet-stage-ratio\)/)
     })
+    it('lists in two columns from 600 px and marks rows that are not in range', () => {
+      expect(css).toMatch(/@media \(min-width: 600px\) \{ \.planetarium__list \{ grid-template-columns: repeat\(2/)
+      expect(css).toMatch(/\.planetarium__row--review \{ --planet-edge: var\(--planet-edge-strong\)/)
+      expect(css).toMatch(/font-weight: 700/)
+    })
     it('never cuts or hides text (tags are one line each and the stage is wide enough)', () => {
       expect(css).not.toMatch(/text-overflow|line-clamp/)
     })
     it('keeps raw pixel sizes inside the named custom properties', () => {
       const body = css.replace(/\.planetarium \{[^}]*--planet-target[^}]*\}/, '')
-      expect(body.match(/\d+px/g)?.filter((v) => v !== '899px') ?? []).toEqual([])
+      expect(body.match(/\d+px/g)?.filter((v) => v !== '899px' && v !== '600px') ?? []).toEqual([])
     })
     it('colours ring, tag edge and state text with the state colour', () => {
       expect(css).toMatch(/\.planetarium__tag \{[^}]*border: var\(--planet-line\) solid var\(--ring\)/)
