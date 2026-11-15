@@ -33,6 +33,7 @@ function entry(id: string, personId = 'demo_astronaut_1'): Entry {
     unit: 'example_unit',
     missionDay: 1,
     time: '08:00',
+    context: 'rest',
   }
 }
 
@@ -47,6 +48,7 @@ function newEntry(
     unit: 'example_unit',
     missionDay: 2,
     time: '09:15',
+    context: 'rest',
   }
 }
 

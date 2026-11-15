@@ -1,5 +1,9 @@
 import { isClockTime, isMissionDay } from '../domain/clock'
-import type { Entry, Indicator } from '../domain/types'
+import {
+  DEFAULT_CONTEXT,
+  isMeasurementContext,
+} from '../domain/context'
+import type { Entry, Indicator, MeasurementContext } from '../domain/types'
 import { parseCsvFile, parseNumber } from './csv'
 
 const REQUIRED_COLUMNS = [
@@ -70,6 +74,8 @@ export function parseEntries(
       problems.push(`Duplicate demo entry '${entryId}'.`)
       continue
     }
+    const context = parseContext(row.context, indicatorId, problems)
+    if (context === null) continue
     seen.add(entryId)
     entries.push({
       id: entryId,
@@ -79,7 +85,25 @@ export function parseEntries(
       unit,
       missionDay,
       time,
+      context,
     })
   }
   return entries
+}
+
+// The `context` cell of FORMATS.md section 3. A file from before the column
+// existed, and an empty cell, read as 'rest', so the old demo data still loads.
+// Any other word is a content problem like an invalid time, and the row is not
+// loaded: a reading without a known context cannot be compared.
+function parseContext(
+  cell: string | undefined,
+  indicatorId: string,
+  problems: string[],
+): MeasurementContext | null {
+  if (cell === undefined) return DEFAULT_CONTEXT
+  const text = cell.trim()
+  if (text === '') return DEFAULT_CONTEXT
+  if (isMeasurementContext(text)) return text
+  problems.push(`Entry for '${indicatorId}' has an invalid context '${text}'.`)
+  return null
 }

@@ -32,3 +32,4 @@ Names in `backend/.env.example`, values only in host settings and a local
 | `SUPABASE_KEY` | The Supabase service role key |
 | `ALLOWED_ORIGINS` | Comma-separated origins the API accepts; it must list the Vercel URL |
 | `RATE_LIMIT_PER_MINUTE` | Requests per minute per client address; empty means 120, `0` turns it off (`docs/API.md`) |
+| `SESSION_SECRET` | Key the API signs session tokens with; empty means one random key per start, so tokens end at a restart (`docs/API.md`) |

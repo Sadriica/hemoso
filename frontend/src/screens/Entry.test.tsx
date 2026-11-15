@@ -1,6 +1,6 @@
-import { fireEvent, render, screen } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import Entry from './Entry'
 import { LocalEntryStore } from '../data/entryStore'
 import { isClockTime } from '../domain/clock'
@@ -15,6 +15,7 @@ const sleepQuality: Indicator = {
   direction: 'lower',
   measuredOnBoard: 'Questionnaire after waking',
   hazards: ['isolation_and_confinement'],
+  minSpread: 1,
   sources: ['Assumption'],
 }
 
@@ -25,6 +26,7 @@ const mood: Indicator = {
   direction: 'lower',
   measuredOnBoard: 'Questionnaire before sleep and journaling',
   hazards: ['isolation_and_confinement'],
+  minSpread: 1,
   sources: ['Assumption'],
 }
 
@@ -35,6 +37,7 @@ const heartRate: Indicator = {
   direction: 'both',
   measuredOnBoard: 'Bio-Monitor smart shirt or ECG',
   hazards: ['gravity_fields'],
+  minSpread: 4,
   sources: ['Assumption'],
 }
 
@@ -47,6 +50,7 @@ function entry(missionDay: number, value: number): EntryRecord {
     unit: 'bpm',
     missionDay,
     time: '13:30',
+    context: 'rest',
   }
 }
 
@@ -152,6 +156,10 @@ describe('Entry', () => {
     await user.tab()
     expect(screen.getByLabelText('Time')).toHaveFocus()
     await user.tab()
+    // One tab stop for the checked context, then the button.
+    const context = screen.getByRole('group', { name: 'Context' })
+    expect(within(context).getByRole('radio', { checked: true })).toHaveFocus()
+    await user.tab()
 
     const save = screen.getByRole('button', { name: 'Save entry' })
     expect(save).toHaveFocus()
@@ -202,11 +210,10 @@ describe('Entry', () => {
     'shows a 1 to 5 radio group for $name',
     (scaleIndicator) => {
       renderEntry([scaleIndicator])
+      const value = screen.getByRole('group', { name: 'Value (1 to 5)' })
+      expect(value).toBeInTheDocument()
       expect(
-        screen.getByRole('group', { name: 'Value (1 to 5)' }),
-      ).toBeInTheDocument()
-      expect(
-        screen
+        within(value)
           .getAllByRole('radio')
           .map((radio) => (radio as HTMLInputElement).value),
       ).toEqual(['1', '2', '3', '4', '5'])
@@ -216,7 +223,7 @@ describe('Entry', () => {
 
   it('keeps the number input for an indicator with a measured unit', () => {
     renderEntry([heartRate])
-    expect(screen.queryByRole('radio')).toBeNull()
+    expect(screen.queryByRole('group', { name: 'Value (bpm)' })).toBeNull()
     expect(screen.getByLabelText('Value')).toHaveAttribute('type', 'number')
   })
 
@@ -260,6 +267,9 @@ describe('Entry', () => {
     await user.tab()
     expect(screen.getByLabelText('Time')).toHaveFocus()
     await user.tab()
+    const context = screen.getByRole('group', { name: 'Context' })
+    expect(within(context).getByRole('radio', { checked: true })).toHaveFocus()
+    await user.tab()
     const save = screen.getByRole('button', { name: 'Save entry' })
     expect(save).toHaveFocus()
     await user.keyboard('{Enter}')
@@ -289,6 +299,49 @@ describe('Entry', () => {
       value: 57,
       time: '15:44',
     })
+  })
+
+  it('offers the four contexts as radios in the words of the app', () => {
+    renderEntry()
+    const context = screen.getByRole('group', { name: 'Context' })
+    expect(
+      within(context)
+        .getAllByRole('radio')
+        .map((radio) => (radio as HTMLInputElement).value),
+    ).toEqual(['rest', 'after_exercise', 'on_waking', 'before_sleep'])
+    expect(
+      within(context).getByRole('radio', { name: 'At rest' }),
+    ).toBeInTheDocument()
+    expect(
+      within(context).getByRole('radio', { name: 'Before sleep' }),
+    ).toBeInTheDocument()
+  })
+
+  it('picks the context that fits the clock time the form opens with', () => {
+    vi.spyOn(Date.prototype, 'getHours').mockReturnValue(7)
+    vi.spyOn(Date.prototype, 'getMinutes').mockReturnValue(30)
+    renderEntry()
+    const context = screen.getByRole('group', { name: 'Context' })
+    expect(
+      within(context).getByRole('radio', { name: 'On waking' }),
+    ).toBeChecked()
+    vi.restoreAllMocks()
+  })
+
+  it('saves the chosen context with the reading', async () => {
+    const user = userEvent.setup()
+    const store = renderEntry()
+    typeValue('57')
+    await user.click(screen.getByRole('radio', { name: 'After exercise' }))
+    await submit()
+
+    expect(store.list()[seedEntries.length]).toMatchObject({
+      value: 57,
+      context: 'after_exercise',
+    })
+    expect(
+      screen.getByRole('radio', { name: 'After exercise' }),
+    ).toBeChecked()
   })
 
   it('says when there are no indicators to enter', () => {

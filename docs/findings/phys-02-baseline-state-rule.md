@@ -95,6 +95,10 @@ rule.
 ## Limits and open questions- The window length is a choice. Fourteen readings covers two weeks of daily entries,
   so a short demo needs three readings before anything is shown, which is honest but
   must be explained in the pitch.
+- The window is counted in readings, not in calendar days. A crew member who records
+  twice on one day moves the window twice. The interval is capped at one reading per
+  day and indicator, which is what makes the 14 readings of this rule the same thing
+  as the 14 days written in `FORMATS.md`.
 - A real change may be a slow drift, not a jump. A moving window follows the drift
   after a few readings; it does not forecast, and the app must not pretend to.
 - The window hides a change that lasts longer than 14 readings: if a value settles at

@@ -1,19 +1,14 @@
-import type { Attention } from '../domain/types'
-import { attentionText } from './attentionText'
+import { type BadgeKind } from './attentionText'
 
 // Status badge: icon plus always-visible text. Colour only reinforces the
 // text, it never carries the meaning alone (REQ-15).
 export default function AttentionBadge({
-  attention,
+  kind,
+  text,
 }: {
-  attention: Attention
+  kind: BadgeKind
+  text: string
 }) {
-  return <Badge kind={attention.kind} text={attentionText(attention)} />
-}
-
-type BadgeKind = 'in_range' | 'attention' | 'no_rules' | 'no_data'
-
-function Badge({ kind, text }: { kind: BadgeKind; text: string }) {
   return (
     <span className={`attention-badge attention-badge--${kind}`}>
       <svg
@@ -43,27 +38,6 @@ function BadgeIcon({ kind }: { kind: BadgeKind }) {
           strokeWidth="2.5"
           strokeLinecap="round"
           strokeLinejoin="round"
-        />
-      </>
-    )
-  }
-  if (kind === 'no_rules') {
-    return (
-      <>
-        <circle
-          cx="12"
-          cy="12"
-          r="9.5"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.8"
-        />
-        <path
-          d="M8.5 12h7"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          strokeLinecap="round"
         />
       </>
     )

@@ -42,11 +42,16 @@ export function compareToOwnHistory(entries: Entry[]): HistoryComparison | null 
   if (entries.length < 2) return null
   const latest = latestEntry(entries)
   if (latest === null) return null
-  // The latest reading is one of the entries, so identity is enough to leave it
-  // out: a tie on the same day is an earlier reading.
-  const earlierValues = entries
-    .filter((entry) => entry !== latest)
-    .map((entry) => entry.value)
+  // A reading is only compared with readings in the same context: heart rate
+  // after exercise sits in another population than the same value at rest
+  // (FORMATS.md section 3). The latest reading is one of the entries, so
+  // identity is enough to leave it out: a tie on the same day is an earlier
+  // reading.
+  const earlier = entries.filter(
+    (entry) => entry !== latest && entry.context === latest.context,
+  )
+  if (earlier.length === 0) return null
+  const earlierValues = earlier.map((entry) => entry.value)
   const decimals = entries.reduce(
     (most, entry) => Math.max(most, decimalsOf(entry.value)),
     0,
@@ -55,6 +60,25 @@ export function compareToOwnHistory(entries: Entry[]): HistoryComparison | null 
   return {
     latest,
     earlierCount: earlierValues.length,
+    earlierMedian,
+    difference: roundTo(latest.value - earlierMedian, decimals),
+  }
+}
+
+// The history sentence with the baseline the backend computed: its median and
+// the count of readings in its window (the last 14 in the same context, from
+// docs/API.md). The difference keeps the precision the readings carry
+// (STANDARDS.md section 3), the same way compareToOwnHistory does.
+export function comparisonFromBaseline(
+  latest: Entry,
+  median: number,
+  count: number,
+): HistoryComparison {
+  const decimals = Math.max(decimalsOf(latest.value), decimalsOf(median))
+  const earlierMedian = roundTo(median, decimals)
+  return {
+    latest,
+    earlierCount: count,
     earlierMedian,
     difference: roundTo(latest.value - earlierMedian, decimals),
   }

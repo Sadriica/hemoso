@@ -24,6 +24,7 @@ function entry(id: string, value: number): Entry {
     unit: 'example_unit',
     missionDay: 1,
     time: '08:00',
+    context: 'rest',
   }
 }
 
@@ -46,6 +47,7 @@ describe('useEntries', () => {
         unit: 'example_unit',
         missionDay: 2,
         time: '09:15',
+        context: 'rest',
       })
     })
     expect(screen.getAllByRole('listitem')).toHaveLength(2)

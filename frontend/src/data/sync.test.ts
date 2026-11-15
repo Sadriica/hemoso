@@ -19,6 +19,7 @@ interface SentBody {
   unit: string
   mission_day: number
   time: string
+  context: string
 }
 
 interface Call {
@@ -62,6 +63,7 @@ function newEntry(
     unit: 'bpm',
     missionDay,
     time,
+    context: 'rest',
   }
 }
 
@@ -91,7 +93,19 @@ describe('HttpSync', () => {
       unit: 'bpm',
       mission_day: 2,
       time: '09:15',
+      context: 'rest',
     })
+  })
+
+  it('sends the context of a reading that is not at rest', async () => {
+    const { calls, fetchFn } = fakeFetch([201])
+    const client = new HttpSync('https://api.example.test', fetchFn)
+    await client.send({
+      ...newEntry(140, 2, '18:00'),
+      context: 'after_exercise',
+      id: 'a',
+    })
+    expect(calls[0].body.context).toBe('after_exercise')
   })
 
   it('drops a trailing slash from the base URL', async () => {
