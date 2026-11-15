@@ -6,6 +6,7 @@ import type { Entry } from '../domain/types'
 import Notice from '../components/Notice'
 import Disclosure from '../components/Disclosure'
 import Home from '../screens/Home'
+import PsychologicalState from '../reaction/PsychologicalState'
 import { strings } from '../strings'
 
 // The history (chart and the full table) is a chunk of its own: it loads when
@@ -50,6 +51,7 @@ export default function StatusPhase({
           entries={entries}
           motionReduced={motionReduced}
         />
+        <PsychologicalState personId={personId} indicators={data.indicators} />
         <div className="status__history">
           <Disclosure label={copy.historyToggle}>
             <Suspense fallback={<Notice tone="info">{strings.board.loading}</Notice>}>
