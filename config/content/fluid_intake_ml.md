@@ -17,7 +17,7 @@ much you drink. https://www.nasa.gov/hrp/hazards/
 1. Fill your bottle at the galley and note the amount.
 2. Count the water you drink and the water you use for food.
 3. Add both at the end of the day.
-4. Write the total in HeMoSo.
+4. Write the total in HeMoSo by hand.
 
 ## Status and next steps
 

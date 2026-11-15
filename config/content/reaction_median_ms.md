@@ -4,7 +4,8 @@
 
 Reaction time is how fast you answer when a light or a sound appears. NASA uses
 a 3-minute version of this test on the space station, and it stays sensitive to
-sleep loss. https://www.med.upenn.edu/uep/astronaut.html
+sleep loss. HeMoSo uses a 90-second adaptation of that test.
+https://www.med.upenn.edu/uep/astronaut.html
 
 ## How spaceflight affects it
 
