@@ -18,7 +18,7 @@ export default defineConfig({
     baseURL: BASE_URL,
     // English interface and English axe messages on any machine.
     locale: 'en-US',
-    // The intro plays on every load and its first tap or key only skips it, so
+    // The intro plays on every load and covers the page for a few seconds, so
     // the specs run with reduced motion: no intro, no entrance, the same page.
     reducedMotion: 'reduce',
     trace: 'retain-on-failure',

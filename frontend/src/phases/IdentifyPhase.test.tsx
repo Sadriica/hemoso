@@ -142,7 +142,7 @@ describe('Identify', () => {
     ).toBeEnabled()
   })
 
-  it('offers to add a face after a PIN sign-in, consent first, or to go on', async () => {
+  it('goes straight on to the report after a PIN sign-in, with no face step', async () => {
     fakeCamera()
     const onDone = vi.fn()
     const user = userEvent.setup()
@@ -152,19 +152,10 @@ describe('Identify', () => {
     await user.type(screen.getByLabelText(strings.signIn.pin, { exact: true }), '4821')
     await user.click(screen.getByRole('button', { name: strings.signIn.action }))
 
+    await waitFor(() => expect(onDone).toHaveBeenCalledTimes(1))
     expect(
-      await screen.findByRole('heading', { name: strings.signIn.faceOfferHeading }),
-    ).toBeInTheDocument()
-    expect(onDone).not.toHaveBeenCalled()
-
-    await user.click(
-      screen.getByRole('button', { name: strings.signIn.faceOfferAction }),
-    )
-    expect(await screen.findByText(strings.face.consent)).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: strings.face.cancelLabel }))
-
-    await user.click(screen.getByRole('button', { name: strings.signIn.faceOfferSkip }))
-    expect(onDone).toHaveBeenCalledTimes(1)
+      screen.queryByRole('button', { name: strings.signIn.faceOfferAction }),
+    ).toBeNull()
   })
 
   it('shows a face first when one is saved on this device', () => {
@@ -344,7 +335,7 @@ describe('Identify', () => {
     await waitFor(() => expect(sent.create).toEqual(['wambi']))
   })
 
-  it('offers to add a face right after the account is created', async () => {
+  it('goes straight on to the report right after the account is created', async () => {
     fakeCamera()
     const onDone = vi.fn()
     const user = userEvent.setup()
@@ -356,13 +347,7 @@ describe('Identify', () => {
     await user.type(screen.getByLabelText(strings.signIn.confirmPin), '4821')
     await user.click(screen.getByRole('button', { name: strings.signIn.createAction }))
 
-    expect(
-      await screen.findByRole('heading', { name: strings.signIn.faceOfferHeading }),
-    ).toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: strings.signIn.faceOfferAction }),
-    ).toBeEnabled()
-    expect(onDone).not.toHaveBeenCalled()
+    await waitFor(() => expect(onDone).toHaveBeenCalledTimes(1))
   })
 
   it('shows no preview for a name that is already an id', async () => {
