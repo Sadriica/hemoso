@@ -15,6 +15,9 @@ person's history and with fixed limits that cite their source or are marked
 Assumption, and says in plain words what
 to do next and who should know.
 
+HeMoSo helps you assess your own health. Your CMO and the flight surgeon confirm
+every decision.
+
 ## The problem
 
 A crew member on a long mission cannot walk into a clinic. Care today depends
@@ -38,7 +41,7 @@ an astronaut records health indicators and understands the result.
   outside your usual range, or needs review, and names who acts: the crew, the
   crew medical officer on board, or the flight surgeon on the ground.
 - Shows the next step for that state, written for someone who is not a doctor,
-  for each of the twelve indicators.
+  for all twelve indicators.
 - Suggests possible conditions as an evidence score with the signals behind it,
   never as a percentage and never as a certainty. The crew medical officer or
   the flight surgeon confirms.
@@ -99,6 +102,17 @@ both as Assumption, and so does every threshold with no source.
 
 The same daily check works wherever the doctor is far away: Antarctic stations, offshore rigs, rural clinics.
 
+## Tools and stack
+
+- **Frontend:** React 19, TypeScript, Vite 8, three.js for the 3D body, plain CSS.
+- **Backend:** Python 3.13, FastAPI, Pydantic, uvicorn; PostgreSQL on Supabase for
+  storage; the API runs on a container host; the frontend on Vercel.
+- **Tests and checks:** Vitest and Playwright for the interface, pytest and ruff
+  for the API, and a content check (`scripts/check_content.py`) that validates
+  every CSV and every page of text before a merge.
+- **Data files:** plain CSV and Markdown files in `config/` that a biologist can
+  edit without touching code; no external AI service runs inside the product.
+
 ## What is not in the demo yet
 
 Each of these is designed and written in the repository, and none of them is
@@ -117,7 +131,7 @@ biologist can change the content without touching code:
 | File | What it holds |
 | --- | --- |
 | `config/data/indicators.csv` | the indicators, unit, direction, how each is measured in flight, and the instrument |
-| `config/rules/attention.csv` | the clinical limits: indicator, side, threshold, level, who is notified, source |
+| `config/rules/attention.csv` | the clinical or assumed limits: indicator, side, threshold, level, who is notified, source |
 | `config/rules/conditions.csv` | the possible conditions and the signals each rests on (with their side) |
 | `config/data/symptoms.csv` | the symptoms the astronaut can report, which are red flags, and their sources |
 | `config/data/symptom_log.csv` | the symptoms reported by the demo astronaut |
@@ -171,7 +185,7 @@ Every library is listed with its licence and the reason it is there in
 generated with AI, so none carries a watermark, and no NASA logo, flag or
 mission identifier appears in the interface.
 
-The app, repository and team URLs are under Links.
+All four links are in the Links section below.
 
 ## AI (SI) use
 
@@ -206,7 +220,8 @@ finding with test vectors.
 
 **Relevance.** The indicators are the six the challenge names plus six more that
 matter in flight, twelve in all. Each measured one uses an instrument documented
-for the ISS; mood and appetite are daily questions. The rules answer the five questions the statement asks per indicator:
+for the ISS; mood and appetite are daily questions. The rules answer the five
+questions the statement asks per indicator:
 how it is measured, why it matters, how spaceflight affects it, when it needs
 attention and what prevents a problem.
 
@@ -219,7 +234,7 @@ repository, the app and the demo are in English.
 
 - Repository: https://github.com/Sadriica/hemoso
 - Live app: https://www.hemoso.space/
-- Demo video (30 s): **TODO:** demo video link
+- Demo (video 30 s): https://youtu.be/MsjzAZ2Txwc · length 0:29, checked Sun 15 Nov 12:10
 - Team: https://www.spaceappschallenge.org/2026/find-a-team/tardis2/
 
 ## Team

@@ -8,7 +8,7 @@ Team ReTardis · NASA Space Apps Challenge 2026 · Medellín
 (`docs/CHALLENGE.md`).
 
 - **Live app:** https://www.hemoso.space/ (synthetic data only, no login for the demo)
-- **Demo video:** link coming (placeholder until the team publishes it)
+- **Demo video:** https://youtu.be/MsjzAZ2Txwc (30 s)
 
 <p align="center">
   <img src="docs/images/status-orbit.png" alt="The Status screen for the demo astronaut on flight day 31: twelve indicators around a body figure, one reading that needs review and the rest in or outside the usual range." width="900">
