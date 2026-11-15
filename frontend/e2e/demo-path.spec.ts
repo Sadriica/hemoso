@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import { SCALE_UNIT, hazardName, strings } from '../src/strings'
 import { isReactionIndicator } from '../src/reaction/ids'
+import { isEyeIndicator } from '../src/eye/ids'
 import { expectNoBlockingA11yIssues } from './axe'
 import { readIndicatorRows } from './config'
 
@@ -16,10 +17,12 @@ import { readIndicatorRows } from './config'
 const { ids, names, units, measuredOnBoard, hazards, scaleIndex } =
   readIndicatorRows()
 
-// The reaction check measures its two indicators itself (reaction/ids.ts), so
-// the Entry screen has no row for them: the count below leaves them out.
+// The reaction check and the eye check measure their indicators themselves
+// (reaction/ids.ts, eye/ids.ts), so the Entry screen has no row for them: the
+// count below leaves them out.
 const typedNames = names.filter(
-  (_, index) => !isReactionIndicator(ids[index] ?? ''),
+  (_, index) =>
+    !isReactionIndicator(ids[index] ?? '') && !isEyeIndicator(ids[index] ?? ''),
 )
 
 const FIRST_VALUE = '72'

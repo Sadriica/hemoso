@@ -9,7 +9,7 @@
  * The single switch. While false nothing of the eye check renders and no route,
  * text or indicator of the app changes.
  */
-export const EYE_CHECK_ENABLED = false
+export const EYE_CHECK_ENABLED = true
 
 /** Length of one check, in ms: 60 s, a team choice (phys-07, Assumption). */
 export const CHECK_MS = 60_000
