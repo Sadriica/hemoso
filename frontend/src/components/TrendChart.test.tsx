@@ -110,7 +110,7 @@ describe('TrendChart', () => {
   it('says so when the band has no baseline yet', () => {
     const { container } = renderChart([single({ band: null })])
     expect(container.querySelectorAll('.tc__band')).toHaveLength(0)
-    expect(screen.getByText(/needs 3 earlier readings/)).toBeInTheDocument()
+    expect(screen.getByText(/needs 3 earlier days with a reading/)).toBeInTheDocument()
   })
 
   it('shows a reading in the readout on a tap, outside the plot', async () => {

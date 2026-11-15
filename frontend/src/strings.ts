@@ -162,10 +162,12 @@ export const strings = {
   // The first-load intro (skippable with any key or tap).
   intro: { skip: 'Skip intro' },
   // The trend row of a card: the latest value against the person's own earlier
-  // readings. Comparison words only, no health wording.
+  // days with a reading, each day counted once (the baseline window counts
+  // mission days, FORMATS.md section 3, point 1). Comparison words only, no
+  // health wording.
   trend: {
     title: (count: number): string =>
-      `Compared with your last ${count} ${count === 1 ? 'reading' : 'readings'}`,
+      `Compared with your last ${count} ${count === 1 ? 'day' : 'days'} with a reading`,
     above: 'Higher than usual',
     below: 'Lower than usual',
     within: 'Close to usual',
@@ -179,8 +181,9 @@ export const strings = {
       on_waking: 'on waking',
       before_sleep: 'before sleep',
     },
+    // `count` and `needed` are mission days with a reading, not readings.
     notEnough: (count: number, needed: number, context?: string): string =>
-      `Not enough earlier readings${context ? ` ${context}` : ''} to compare yet (${count} of ${needed}).`,
+      `Not enough earlier days with a reading${context ? ` ${context}` : ''} to compare yet (${count} of ${needed}).`,
   },
   // The bar along the top of every phase: the mark, the mission line, the sync
   // chip and the motion switch, all on one row.
@@ -354,7 +357,8 @@ export const strings = {
       readingsIn: (contexts: string): string => `Readings are in: ${contexts}.`,
       usualBand: (series: string | null): string =>
         series === null ? 'Usual band' : `${series} usual band`,
-      noBand: 'The usual band needs 3 earlier readings in this context.',
+      // The band is null under 3 mission days with a reading (domain/trend.ts).
+      noBand: 'The usual band needs 3 earlier days with a reading in this context.',
       thresholdLabel: (series: string | null, level: string): string =>
         series === null ? level : `${series}: ${level}`,
       markLegend: 'Marks',
