@@ -64,6 +64,7 @@ function entry(missionDay: number, value: number): Entry {
 
 const data: LoadedContent = {
   indicators: [indicator],
+  conditions: [],
   rules: [rule],
   contents: { example_indicator: content },
   demoEntries: [entry(1, 1), entry(10, 10)],
