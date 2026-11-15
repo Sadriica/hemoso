@@ -10,11 +10,12 @@ import { bodyRegionName } from '../components/body3d/regions'
 import { bodyWords, injuryWords } from '../components/body3d/words'
 import type { LoadedContent } from '../content/load'
 import { missionNow } from '../domain/clock'
-import { readPainReports } from '../data/painStore'
+import { readPainReports, removePainReport } from '../data/painStore'
 import type { EntryStore } from '../data/entryStore'
 import type { Entry } from '../domain/types'
 import Notice from '../components/Notice'
 import Disclosure from '../components/Disclosure'
+import './status.css'
 import Home from '../screens/Home'
 import PsychologicalState from '../reaction/PsychologicalState'
 import { strings } from '../strings'
@@ -55,6 +56,8 @@ export default function StatusPhase({
   const copy = strings.phases.status
   const clock = missionNow(entries)
   const [painOpen, setPainOpen] = useState(false)
+  // The indicator the card shows; the History panel follows it.
+  const [selectedId, setSelectedId] = useState<string | null>(null)
   // The reports of the person on duty, newest first (data/painStore.ts). The
   // read is local and small, so the list is read from the store on every
   // render: no second copy of it to keep in step. A saved report bumps the
@@ -76,12 +79,19 @@ export default function StatusPhase({
           data={data}
           entries={entries}
           motionReduced={motionReduced}
+          selectedId={selectedId}
+          onSelect={setSelectedId}
         />
         <PsychologicalState personId={personId} indicators={data.indicators} />
         <div className="status__history">
           <Disclosure label={copy.historyToggle}>
             <Suspense fallback={<Notice tone="info">{strings.board.loading}</Notice>}>
-              <History store={store} personId={personId} data={data} />
+              <History
+                store={store}
+                personId={personId}
+                data={data}
+                indicatorId={selectedId ?? undefined}
+              />
             </Suspense>
           </Disclosure>
         </div>
@@ -137,6 +147,19 @@ export default function StatusPhase({
                   {report.note !== '' && (
                     <p className="pain-reports__note">{report.note}</p>
                   )}
+                  <button
+                    type="button"
+                    className="text-link pain-reports__remove"
+                    aria-label={injuryWords.removeReport(
+                      injuryWords.reportWhen(report.missionDay, report.time),
+                    )}
+                    onClick={() => {
+                      removePainReport(report.id)
+                      refreshReports()
+                    }}
+                  >
+                    {injuryWords.removeReportShort}
+                  </button>
                 </li>
               ))}
             </ul>

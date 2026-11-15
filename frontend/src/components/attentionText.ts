@@ -42,5 +42,9 @@ export function statusText(status: Status): string {
   if (status.state === 'no_data') return strings.badge.noData
   if (status.state === 'in_range') return strings.badge.inRange
   if (status.state === 'outside_range') return strings.badge.outsideRange
-  return status.level ?? strings.badge.needsReview
+  if (status.level === null) return strings.badge.needsReview
+  // A row for the crew is drawn as outside (amber) and keeps the level name
+  // alone: "Needs review" belongs to the rows the CMO or flight surgeon reads.
+  if (status.notify === 'crew') return status.level
+  return strings.badge.needsReviewLevel(status.level)
 }

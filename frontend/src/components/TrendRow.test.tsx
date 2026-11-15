@@ -34,4 +34,27 @@ describe('TrendRow', () => {
     render(<TrendRow value={70} unit="bpm" baseline={{ median: null, spread: null, n: 2 }} />)
     expect(screen.getByText(strings.trend.notEnough(2, 3))).toBeInTheDocument()
   })
+
+  it('names the context of the missing readings', () => {
+    render(
+      <TrendRow
+        value={70}
+        unit="bpm"
+        baseline={{ median: null, spread: null, n: 0 }}
+        context="before_sleep"
+      />,
+    )
+    expect(
+      screen.getByText(
+        'Not enough earlier readings before sleep to compare yet (0 of 3).',
+      ),
+    ).toBeInTheDocument()
+  })
+
+  it('keeps the unit in a span that CSS leaves in its case', () => {
+    const { container } = render(
+      <TrendRow value={71} unit="mmHg" baseline={baseline} />,
+    )
+    expect(container.querySelector('.trend__unit')).toHaveTextContent('70 mmHg')
+  })
 })

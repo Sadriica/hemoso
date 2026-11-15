@@ -1,0 +1,26 @@
+/* Status phase: the headline block is compact so the first indicator states
+   are in the first view (DESIGN.md 4.2: display step instead of hero). */
+.phase--status {
+  gap: var(--space-4);
+}
+
+.phase--status .headline {
+  margin-top: var(--space-2);
+  font-size: var(--text-display);
+  line-height: var(--leading-display);
+}
+
+/* The three lines read as one sentence on one line. */
+.phase--status .headline__line {
+  display: inline;
+}
+
+.phase--status .phase-heading {
+  padding-block: var(--space-2);
+}
+
+.phase--status .phase-heading__intro {
+  margin-top: var(--space-2);
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+}

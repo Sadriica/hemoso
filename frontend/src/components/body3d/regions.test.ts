@@ -5,6 +5,7 @@ import {
   BODY_REGIONS,
   bodyRegion,
   bodyRegionName,
+  bodyRegionGroups,
   bodyRegionSystem,
   regionsOfSystem,
 } from './regions'
@@ -123,5 +124,36 @@ describe('body regions', () => {
     expect(bodyRegionName('made_up')).toBe('made_up')
     expect(bodyRegion('left_knee')?.name).toBe('Left knee')
     expect(bodyRegion('made_up')).toBeNull()
+  })
+})
+
+describe('body region groups', () => {
+  it('lists every region once, under head and trunk or one limb', () => {
+    const groups = bodyRegionGroups()
+    expect(groups.map((group) => group.id)).toEqual([
+      'head_trunk',
+      'left_arm',
+      'right_arm',
+      'left_leg',
+      'right_leg',
+    ])
+    expect(groups.flatMap((group) => group.regions)).toHaveLength(BODY_REGIONS.length)
+    const byId = Object.fromEntries(
+      groups.map((group) => [group.id, group.regions.map((region) => region.id)]),
+    )
+    expect(byId.head_trunk).toHaveLength(7)
+    expect(byId.left_arm).toEqual([
+      'left_shoulder',
+      'left_upper_arm',
+      'left_elbow',
+      'left_forearm',
+      'left_hand',
+    ])
+    expect(byId.right_leg).toEqual([
+      'right_thigh',
+      'right_knee',
+      'right_shin',
+      'right_foot',
+    ])
   })
 })

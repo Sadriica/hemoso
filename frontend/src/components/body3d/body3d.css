@@ -118,10 +118,32 @@
   color: var(--color-accent);
 }
 
-/* The keyboard path: every region is a button in this list. It sits in the
-   page next to the canvas, and it is hidden with the clip technique while the
-   canvas can be tapped (the list stays reachable by Tab). Without WebGL the
-   list is the figure instead, so it shows. */
+/* The list of body parts is a way to choose, next to tapping the figure: on a
+   phone an elbow is a few pixels wide, so every place is also a button of at
+   least 44 px, under a small heading for its part of the body. A chosen place
+   shows a check mark and a thicker edge as well as the colour. */
+.body3d__parts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.body3d__group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.body3d__group-name {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  font-weight: 400;
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
 .body3d__regions {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -131,18 +153,10 @@
   list-style: none;
 }
 
-.body3d__regions--sr {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  padding: 0;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
 .body3d__region {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
   width: 100%;
   min-height: var(--tap-min);
   padding: 0 var(--space-2);
@@ -165,16 +179,22 @@
 
 .body3d__region[aria-pressed='true'] {
   border-color: var(--color-accent);
+  box-shadow: inset 0 0 0 1px var(--color-accent);
   background: color-mix(in srgb, var(--color-accent) 18%, transparent);
   color: var(--color-text);
 }
 
-.body3d__regions span {
-  display: inline-flex;
-  align-items: center;
-  min-height: var(--tap-min);
-  color: var(--color-text-muted);
-  font-size: var(--text-small);
+/* The check keeps its room when it is off, so choosing never moves the name. */
+.body3d__check {
+  flex: none;
+  width: 1em;
+  color: var(--color-accent);
+  font-weight: 700;
+  opacity: 0;
+}
+
+.body3d__region[aria-pressed='true'] .body3d__check {
+  opacity: 1;
 }
 
 /* Words for a screen reader only: never the visible text of the figure. */
@@ -216,6 +236,40 @@
 
 .body3d--flat .body-silhouette {
   margin-inline: auto;
+}
+
+/* On a phone the arms sit side by side and so do the legs; head and trunk keep
+   the full width. A place name that is too long for its half wraps on a second
+   line inside the 44 px button instead of being cut. */
+@media (max-width: 899px) {
+  .body3d__parts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: var(--space-2);
+  }
+
+  .body3d__group:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .body3d__group:not(:first-child) .body3d__regions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .body3d__region {
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+    padding-block: var(--space-1);
+  }
+
+  /* A shorter figure, so the first group of buttons shows with it in the first
+     screen. It keeps its own box, so nothing moves when the chunk arrives. */
+  .body3d[data-mode='pain'] .body3d__stage,
+  .body3d[data-mode='pain'] .body3d-slot {
+    aspect-ratio: auto;
+    height: 232px;
+    min-height: 0;
+  }
 }
 
 /* Pain picker ------------------------------------------------------------ */
@@ -332,7 +386,50 @@
 .pain-picker__field input[type='range'] {
   width: 100%;
   min-height: var(--tap-min);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
   accent-color: var(--color-accent);
+  appearance: none;
+  cursor: pointer;
+}
+
+/* The thumb is 44 px tall to grab with a glove; the track is a thick bar. */
+.pain-picker__field input[type='range']::-webkit-slider-runnable-track {
+  height: var(--space-2);
+  border-radius: var(--radius-round);
+  background: var(--color-border-control);
+}
+
+.pain-picker__field input[type='range']::-moz-range-track {
+  height: var(--space-2);
+  border-radius: var(--radius-round);
+  background: var(--color-border-control);
+}
+
+.pain-picker__field input[type='range']::-webkit-slider-thumb {
+  width: var(--tap-min);
+  height: var(--tap-min);
+  margin-top: calc((var(--space-2) - var(--tap-min)) / 2);
+  border: 3px solid var(--color-bg);
+  border-radius: var(--radius-round);
+  background: var(--color-accent);
+  appearance: none;
+}
+
+.pain-picker__field input[type='range']::-moz-range-thumb {
+  box-sizing: border-box;
+  width: var(--tap-min);
+  height: var(--tap-min);
+  border: 3px solid var(--color-bg);
+  border-radius: var(--radius-round);
+  background: var(--color-accent);
+}
+
+.pain-picker__field input[type='range']:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
 }
 
 .pain-picker__value {
@@ -359,12 +456,26 @@
 
 @media (min-width: 900px) {
   .pain-picker__body {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
     align-items: start;
   }
 
-  .body3d__regions {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+  /* The figure and its list side by side: the list is longer than the figure,
+     so it sits to its right and the figure stays at the top. */
+  .body3d[data-mode='pain'] {
+    display: grid;
+    grid-template-columns: minmax(0, 14rem) minmax(0, 1fr);
+    column-gap: var(--space-4);
+    align-items: start;
+  }
+
+  .body3d[data-mode='pain'] > :not(.body3d__parts) {
+    grid-column: 1;
+  }
+
+  .body3d[data-mode='pain'] > .body3d__parts {
+    grid-column: 2;
+    grid-row: 1 / span 6;
   }
 }
 
@@ -445,4 +556,14 @@
 .app--still .body3d__pulse {
   display: none;
   animation: none;
+}
+
+/* The outcome of Save sits right under the button, in view. */
+.pain-picker__outcome:not(:empty) {
+  color: var(--color-text);
+}
+
+.pain-reports__remove {
+  align-self: flex-start;
+  min-height: var(--tap-min);
 }
