@@ -1,10 +1,13 @@
-// Pain and injury reports in the browser, and nothing else: they never leave
-// this device (Wambi: the report is stored locally only). One localStorage key,
+// Pain and injury reports in the browser. One localStorage key,
 // `hemoso:pain:v1`, holds every report of every person on this device, and a
 // read that hits bad data gives back the rows it can read instead of throwing.
+// A report is saved here first and always stays here; for a person with an
+// account it also goes out through the outbox of data/painOutbox.ts, and the
+// reports the server holds come back into this store (mergeServerPainReports).
 
 import { isClockTime, isMissionDay } from '../domain/clock'
 import { newEntryId } from './entryId'
+import { dropPainReport, enqueuePainReport } from './painOutbox'
 
 export const PAIN_STORAGE_KEY = 'hemoso:pain:v1'
 const STORAGE_VERSION = 1
@@ -42,6 +45,21 @@ export interface PainReport {
 export interface PainStorage {
   getItem(key: string): string | null
   setItem(key: string, value: string): void
+}
+
+/**
+ * One report as GET /people/{person_id}/pain returns it, already mapped by
+ * data/painClient.ts: one region, where the device keeps a list of them under
+ * one report.
+ */
+export interface ServerPainReport {
+  personId: string
+  regionId: string
+  kind: InjuryKind
+  intensity: number
+  missionDay: number
+  time: string
+  note: string | null
 }
 
 interface StoredPayload {
@@ -172,7 +190,11 @@ export function savePainReport(
   // Every other report stays, whoever it belongs to: saving one never drops
   // the reports of another person on the same device.
   const others = readAllReports(storage).filter((kept) => kept.id !== report.id)
-  return { report, saved: writeReports([...others, report], storage) }
+  const saved = writeReports([...others, report], storage)
+  // The device copy is the record; the outbox is the copy the server gets when
+  // that person has an account, and it holds the report until a route takes it.
+  enqueuePainReport(report, storage)
+  return { report, saved }
 }
 
 /**
@@ -185,9 +207,72 @@ export function removePainReport(
 ): boolean {
   if (storage === null) return false
   const all = readAllReports(storage)
+  // What this report still owed the server goes with it: a report the person
+  // deleted is never sent later.
+  dropPainReport(id, storage)
   if (!all.some((report) => report.id === id)) return true
   return writeReports(
     all.filter((report) => report.id !== id),
     storage,
   )
+}
+
+/**
+ * Merges the reports the server holds into this device's store (REQ-37), so the
+ * phone and the PC show the same reports. The key is the route's: person,
+ * region, mission day and time. A day and time this device has nothing for
+ * becomes a new report with the regions the server holds for it; a region it
+ * has no mark for is added to the report it already has there. Nothing is
+ * deleted, and where both hold one, the device's own note and intensity stay.
+ * A row this app cannot read is skipped, never guessed. Returns true when the
+ * store changed.
+ */
+export function mergeServerPainReports(
+  rows: ServerPainReport[],
+  storage: PainStorage | null = browserStorage(),
+): boolean {
+  if (storage === null) return false
+  const reports = readAllReports(storage)
+  // One device report per person, day and time, which is where the server's
+  // regions of that moment are read into.
+  const byTime = new Map<string, PainReport>()
+  for (const report of reports) {
+    byTime.set(
+      `${report.personId}\u0000${report.missionDay}\u0000${report.time}`,
+      report,
+    )
+  }
+  let changed = false
+  for (const row of rows) {
+    const mark = readMark({
+      regionId: row.regionId,
+      kind: row.kind,
+      intensity: row.intensity,
+    })
+    if (mark === null) continue
+    if (typeof row.personId !== 'string' || row.personId === '') continue
+    if (!isMissionDay(row.missionDay)) continue
+    if (typeof row.time !== 'string' || !isClockTime(row.time)) continue
+    const key = `${row.personId}\u0000${row.missionDay}\u0000${row.time}`
+    const existing = byTime.get(key)
+    if (existing === undefined) {
+      const created: PainReport = {
+        id: newEntryId(),
+        personId: row.personId,
+        missionDay: row.missionDay,
+        time: row.time,
+        regions: [mark],
+        note: (row.note ?? '').trim().slice(0, 280),
+      }
+      reports.push(created)
+      byTime.set(key, created)
+      changed = true
+      continue
+    }
+    if (existing.regions.some((kept) => kept.regionId === mark.regionId)) continue
+    existing.regions = [...existing.regions, mark]
+    changed = true
+  }
+  if (changed) writeReports(reports, storage)
+  return changed
 }
