@@ -495,9 +495,15 @@ arranges the tokens of sections 2 to 7.
   reading order; nothing sits side by side inside a panel.
 - **Status.** The same grammar. A system strip over the overview counts the
   channels and how many are in each state (icon and words, from the statuses
-  on screen). The indicator card and the 3D body are two framed panels side by
-  side from 900 px: the card with its state on the top edge, the body wider
-  and named "Digital twin", lighting the zone of the selected indicator. The
+  on screen). From 900 px the 3D body stands in the centre of the orbits,
+  where the astronaut mark was: only the figure, no tile and no frame, sized
+  as a share of the stage (10 % wide, 50 % tall) so the nearest indicators
+  stay clear of it, lighting the zone of the selected indicator. It is
+  decoration there: hidden from assistive technology, taking no pointer
+  event, with the centre named in words for a screen reader. While the 3D
+  chunk loads, and whenever it cannot be loaded or drawn, the flat body
+  outline takes the same place, so the centre is never empty. The indicator
+  card is one framed panel under the orbits, its state on the top edge. The
   possible conditions are an evidence board: one framed tile per condition,
   its step on the top edge.
 
