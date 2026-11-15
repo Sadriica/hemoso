@@ -26,7 +26,11 @@ import {
   type Status,
 } from '../domain/state'
 import AttentionBadge from '../components/AttentionBadge'
-import { statusBadgeKind, statusText } from '../components/attentionText'
+import {
+  statusBadgeKind,
+  statusText,
+  type BadgeKind,
+} from '../components/attentionText'
 import Disclosure from '../components/Disclosure'
 import ErrorBoundary from '../components/ErrorBoundary'
 import IndicatorDetails from '../components/IndicatorDetails'
@@ -223,6 +227,7 @@ export default function Home({
         </Notice>
       )}
       <div ref={panelRef} className="status-panel panel panel--cut" data-enter="panel">
+      {rows.length > 0 && <SystemStrip rows={rows} />}
       {rows.length > 0 && (
         <div className="board">
           <div className="board__orbit">
@@ -283,6 +288,7 @@ export default function Home({
             />
           </ul>
           <div className="detail__body">
+            {wide && <p className="detail__eyebrow">{strings.board.twin}</p>}
             {/* The body is an extra: when it cannot be drawn its column stays
                 empty and the card beside it keeps every fact. */}
             <ErrorBoundary fallback={null}>
@@ -312,6 +318,33 @@ export default function Home({
       )}
       </div>
     </section>
+  )
+}
+
+// The system strip of the console: how many channels there are and how many
+// of them are in each state right now. Counted from the same statuses the
+// cards show; a state with no channel is left out.
+const STRIP_ORDER: BadgeKind[] = ['review', 'outside', 'in_range', 'no_data']
+
+function SystemStrip({ rows }: { rows: Row[] }) {
+  const copy = strings.board.strip
+  const counts = new Map<BadgeKind, number>()
+  for (const row of rows) {
+    const kind = statusBadgeKind(row.status)
+    counts.set(kind, (counts.get(kind) ?? 0) + 1)
+  }
+  return (
+    <ul className="sys-strip" aria-label={copy.label}>
+      <li className="sys-strip__item sys-strip__item--total">
+        {copy.channels(rows.length)}
+      </li>
+      {STRIP_ORDER.filter((kind) => counts.has(kind)).map((kind) => (
+        <li key={kind} className={`sys-strip__item sys-strip__item--${kind}`}>
+          <StatusIcon kind={kind} size={16} />
+          <span>{copy.count[kind](counts.get(kind) ?? 0)}</span>
+        </li>
+      ))}
+    </ul>
   )
 }
 
