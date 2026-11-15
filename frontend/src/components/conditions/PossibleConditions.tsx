@@ -123,6 +123,7 @@ export default function PossibleConditions({
 
   return (
     <section className="conditions panel" aria-labelledby={headingId}>
+      <p className="conditions__eyebrow">{copy.eyebrow}</p>
       <h2 id={headingId} className="conditions__heading">
         {copy.heading}
       </h2>
