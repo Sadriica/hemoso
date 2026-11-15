@@ -408,3 +408,42 @@ class names from this file and `styles.css` are the interface):
 | W5 report and status grammar | `screens/entry.css`, `screens/Entry.tsx` presentation, status card CSS, instruments; after W1 to W3 |
 
 Not ours: `reaction/**` and `screens/entryDraft.ts` (the reaction check).
+
+## 15. Console grammar (Sun 15 Nov)
+
+The Report reads as a telemetry console: the astronaut operates a physiological
+monitoring system, not a form. Nothing here adds a value to the palette; it
+arranges the tokens of sections 2 to 7.
+
+- **Panel.** One per indicator, on `--color-bg-raised` with a hairline frame, a
+  2 px top edge in the system colour (2.3) and two corner marks at the bottom.
+  Reading order inside: channel number (`01`, mono `label`) over the system
+  icon; the name in display uppercase (`h2`); the last reading in mono; the
+  context tag only when it differs from the header; the state of the last
+  reading as the state badge (2.2); the scope; the readout; the small history.
+  A filled or saved panel has a 4 px top edge and a check on its icon.
+- **Scope.** A window with the page grid behind it and one live figure in the
+  system colour, drawn only from the value in the readout, or from the last
+  reading while the readout is empty. Heart rate: a pulse trace that moves at
+  the pace of the value. Blood pressure: two bars on one scale, systolic over
+  diastolic. Core temperature: a ring. Blood glucose and any other measured
+  value: a level scale with one marker. Sleep: twelve hour cells. Mood: five
+  rising steps. The scales are drawing bounds (`instruments/scales.ts`), never
+  clinical ranges, and a figure never changes colour by value. Every figure is
+  `aria-hidden`: the value, the unit and the state are words beside it.
+- **Readout.** The typed value in mono at the `value` step on a single 2 px
+  rule, the unit in mono beside it. It is still one labelled text field; the
+  rule turns `--color-accent` on focus and attention on an error. No box.
+- **History.** A small line of the person's own earlier readings in the panel's
+  context (at most 14, the baseline window), the newest as a dot and a typed
+  value as an open dot joined by a dashed line. Under it, in mono `label`, the
+  count and the lowest and highest in words. It updates when a reading is saved.
+- **Real data only.** Every number and every mark comes from the person's
+  entries or from `config/`. No decorative readout, no invented sensor, no
+  status text that is not computed.
+- **Motion.** The pulse trace is the one loop, at most 220 beats a minute on
+  screen; everything else is a 250 ms settle on `transform`, `opacity` or a
+  stroke offset. All of it stops under `prefers-reduced-motion`, with the top
+  bar switch, and while the tab is hidden.
+- **Phone.** At 390 px the console is one column of panels, each in the same
+  reading order; nothing sits side by side inside a panel.
