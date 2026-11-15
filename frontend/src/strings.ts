@@ -223,6 +223,20 @@ export const strings = {
     scaleWords: ['Very low', 'Low', 'Neutral', 'Good', 'Very good'],
     // The last reading of that indicator, under its field.
     lastValue: (reading: string): string => `last ${reading}`,
+    // The state of that last reading, read before its badge by a screen reader.
+    lastState: 'Last reading:',
+    // The small history of a panel in words: how many earlier readings it
+    // draws and the lowest and highest of them.
+    history: (
+      label: string | null,
+      count: number,
+      low: number,
+      high: number,
+      unit: string,
+    ): string =>
+      `${label === null ? '' : `${label}: `}${count} earlier ${count === 1 ? 'reading' : 'readings'} · ${low} to ${high} ${unit}`,
+    // The console the report is: its name and the tag every screen keeps.
+    console: 'Physiology telemetry',
     save: 'Save readings',
     // Progress through the rows of the report, and why Save waits.
     progress: (filled: number, total: number): string => `${filled} of ${total} filled`,
