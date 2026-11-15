@@ -6,3 +6,5 @@ temp_core_c,36.0,37.5,Assumption,Our synthetic placeholder and not a range taken
 sleep_h,5.5,8.5,Assumption,Synthetic sleep duration with a weekday-like rhythm; seed 20261114; rounded to 1 decimal
 mood_1_5,2,5,Assumption,Synthetic answer on a 1 to 5 scale with a slow drift toward lower values in the last week; seed 20261114; integer
 glucose_mgdl,75,130,Assumption,Synthetic fasting value; no in-flight device exists so the range is a placeholder until a source is chosen; seed 20261114; rounded to 0 decimals
+reaction_median_ms,220,520,Assumption,Synthetic median of a 3-minute test; slow drift upward in the last week of the demo; seed 20261115; rounded to 0 decimals
+reaction_lapses,0,8,Assumption,Synthetic count of trials above 500 ms in a 3-minute test; more lapses in the last week; seed 20261115; integer
