@@ -167,6 +167,10 @@ interface SyncClient {
   older `hemoso-*` caches; on fetch of a same-origin GET: navigations are
   network-first with the cached `index.html` as fallback, other files are
   cache-first and stored on first fetch.
+- Never precache `./models/` (6.5 MB of face models): the public demo must
+  not download them. Cache a `/models/` file at runtime only after a
+  `?face=1` visit has fetched it, so `e2e/face-off.spec.ts` ("no /models/
+  request") keeps passing.
 - Register in `src/main.tsx` only when `import.meta.env.PROD` and
   `'serviceWorker' in navigator`, with the relative path `./sw.js`.
 - `frontend/vercel.json`: add a header `Cache-Control: no-cache` for `/sw.js`.
