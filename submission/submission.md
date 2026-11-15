@@ -80,7 +80,7 @@ Two rules make the result reproducible and explainable:
 - Assessment of a portable clinical blood analyzer during space flight,
   Clinical Chemistry 1997: https://pubmed.ncbi.nlm.nih.gov/9191561/
 - NASA HRP Nutrition Evidence Report 2020 (fluid intake, renal stone risk):
-  https://humanresearchroadmap.nasa.gov/Evidence/other/Nutrition%20ER_human_adaptation_2020_final.pdf
+  https://nasa.gov/wp-content/uploads/2023/03/human-adaptation-2020-final.pdf
 
 Other sources, each one opened before use, are listed with the value taken and
 the file where it is used in `docs/sources.md`: WHO (hypertension), American
