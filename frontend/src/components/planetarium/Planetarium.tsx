@@ -60,11 +60,18 @@ const WIDE = '(min-width: 900px)'
 const mq = (q: string) =>
   typeof window !== 'undefined' && typeof window.matchMedia === 'function' ? window.matchMedia(q) : null
 
-/** Position of body i of n, in percent of the square. Deterministic. */
+/**
+ * Position of body i of n, in percent of the square. Deterministic: bodies
+ * alternate right and left of the astronaut, spread evenly from top to bottom
+ * on each side, so every tag has its own band and sits on the outer side.
+ */
 function place(i: number, n: number) {
-  const r = n < 2 ? 32 : 20 + (i * 22) / (n - 1)
-  const a = ((i * 137.5 - 90) * Math.PI) / 180
-  return { r, x: 50 + r * Math.cos(a), y: 50 + r * Math.sin(a) }
+  const left = i % 2 === 1
+  const k = Math.floor(i / 2)
+  const m = Math.ceil((n - (left ? 1 : 0)) / 2)
+  const dy = m < 2 ? 0 : -36 + (k * 72) / (m - 1)
+  const dx = 18 + (k % 2) * 6
+  return { r: Math.hypot(dx, dy), x: 50 + (left ? -dx : dx), y: 50 + dy, left }
 }
 
 /** Status view: a plain list by default, concentric orbits on wide screens. */
@@ -189,7 +196,7 @@ export function Planetarium({ items, labels, selectedId, onSelect, reducedMotion
             return (
               <div
                 key={it.id}
-                className={`planetarium__body planetarium__body--${STATE_CLASS[it.state]}`}
+                className={`planetarium__body planetarium__body--${STATE_CLASS[it.state]}${p.left ? ' planetarium__body--left' : ''}`}
                 style={{ left: `${p.x}%`, top: `${p.y}%` }}
               >
                 <button
