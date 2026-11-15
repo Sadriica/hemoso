@@ -217,9 +217,9 @@
 
 /* Round of Sun 06:55. */
 
-/* On a phone the status opens on the states: the scene of the phase is
-   decoration and it cost a fifth of the first screen. */
-@media (max-width: 599px) {
+/* On a phone and a tablet the status opens on the states: the scene of the
+   phase is decoration and it cost a fifth of the first screen. */
+@media (max-width: 899px) {
   .phase--status .scene-band {
     display: none;
   }
