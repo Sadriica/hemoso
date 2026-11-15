@@ -187,6 +187,7 @@ export default function App() {
             store={store}
             personId={personId}
             indicators={data.indicators}
+            rules={data.rules}
             entries={personEntries}
             serverConfigured={client.isConfigured()}
             onBack={() => setPhase('identify')}
