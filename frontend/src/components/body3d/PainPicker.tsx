@@ -15,6 +15,7 @@ import {
   type PainReport,
   type PainStorage,
 } from '../../data/painStore'
+import ErrorBoundary from '../ErrorBoundary'
 import { bodyRegionName } from './regions'
 import { bodyWords, injuryWords } from './words'
 
@@ -96,6 +97,9 @@ export default function PainPicker({
       </h3>
       <p className="pain-picker__intro">{injuryWords.intro}</p>
       <div className="pain-picker__body">
+        <ErrorBoundary
+          fallback={<p className="pain-picker__error" role="alert">{bodyWords.failed}</p>}
+        >
         <Suspense fallback={<div className="body3d-slot" aria-hidden="true" />}>
           <Body3D
             mode="pain"
@@ -106,6 +110,7 @@ export default function PainPicker({
             onSelect={toggleRegion}
           />
         </Suspense>
+        </ErrorBoundary>
         <div className="pain-picker__form">
           {marks.length === 0 ? (
             <p className="pain-picker__hint">{bodyWords.listHint}</p>
