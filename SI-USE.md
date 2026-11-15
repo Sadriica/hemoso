@@ -68,4 +68,5 @@ with `python scripts/si_use.py`. The table grows with each finished card.
 | Sat 19:35–19:45 | REQ-06 (#17), REQ-05 (#16), REQ-03 (#14) | scripts/check_content.py, scripts/test_check_content*.py, FORMATS.md, docs/DECISIONS.md | Assistant added the signal side to conditions.csv with its check and tests, and recorded Bio 2's pressure, evidence score and glucose findings | Wambi |
 | Sat 19:40–19:50 | T-07 (#7) | scripts/precheck.py, .opencode/agents/eng1.md, .opencode/agents/eng2.md, docs/requirements.md, docs/board/*.csv, README.md, docs/DECISIONS.md | Assistant applied the frontend and backend role swap to paths, owners and cards, and added cards T-66 and T-67 from Bio 2's findings | Wambi |
 | Sat 19:50 | REQ-01 (#11) | docs/DECISIONS.md | Assistant marked MUI and Emotion as rejected after Juli's three-phase frontend | Wambi |
+| Sat 19:55–20:10 | REQ-15 (#26), T-60 to T-64 | team/eng1/notes/frontend-visual-agent-prompt.md | Assistant read four saved posts and the design resources they link, and wrote the prompt for the frontend visual agent | Wambi |
 <!-- SI-USE-TABLE:END -->
