@@ -291,6 +291,7 @@ export const strings = {
     label: 'Sources',
     assumption: 'Assumption',
     empty: 'No sources listed.',
+    opensNewTab: '(opens in a new tab)',
   },
   // The panel behind "Details" on a Home card (REQ-01): the facts of
   // data/indicators.csv, then the sections of config/content/<id>.md.
@@ -305,9 +306,14 @@ export const strings = {
     sections: {
       why: 'Why it matters',
       spaceflight: 'How spaceflight affects it',
+      attention: 'When it needs attention',
       steps: 'Measurement steps',
       prevent: 'How to prevent problems',
     },
+    // One line of the attention section, built from one row of attention.csv.
+    ruleSide: { below: 'Below', above: 'Above' },
+    rule: (side: string, value: string, level: string): string =>
+      `${side} ${value}: ${level}.`,
   },
   problems: {
     label: 'Content problems (for the team)',

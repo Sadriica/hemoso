@@ -868,6 +868,26 @@ legend {
   margin-block: var(--space-1);
 }
 
+/* A source is a short label; the full address is in the title and the href.
+   Long labels wrap inside 320 px. */
+.sources__link {
+  overflow-wrap: anywhere;
+}
+
+/* The word Assumption reads as a mark, not as a sentence. */
+.sources__assumption {
+  display: inline-block;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--space-1);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
 .sources__empty {
   color: var(--color-text-muted);
 }
@@ -879,6 +899,40 @@ legend {
 .indicator-details {
   display: grid;
   gap: var(--space-3);
+}
+
+/* Facts and sections read as one list: no margin of their own, the grid gap
+   spaces them, and paragraphs stop at a readable line length. */
+.indicator-details__fact,
+.indicator-details__section p {
+  margin: 0;
+  max-width: 70ch;
+}
+
+.indicator-details__section {
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+}
+
+/* Sources close the panel, so their heading is the last one. */
+.indicator-details__section:last-child {
+  border-top-width: 2px;
+}
+
+/* Attention rows: one per line, the source under it. */
+.indicator-details__rules {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+  max-width: 70ch;
+}
+
+.indicator-details__rules > li {
+  margin-block: var(--space-2);
+}
+
+.indicator-details__rules .sources__list {
+  margin: var(--space-1) 0 0;
 }
 
 /* The prefix of a fact ("Measured on board"), in the technical label style and
