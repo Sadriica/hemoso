@@ -40,12 +40,13 @@ Request body:
 | --- | --- | --- |
 | `person_id` | string | at most 64 characters, lowercase `snake_case`, the same rule as everywhere else |
 | `pin` | string | 4 to 8 digits, nothing else |
+| `mission_start` | string, optional | the date Flight Day 1 is counted from: `YYYY-MM-DD`, a real calendar date, from `2000-01-01` up to tomorrow in UTC. Left out, the account starts without a date and `PUT /people/{person_id}/mission_start` sets it later |
 
 What the backend stores, and nothing more: `person_id`, a random 16-byte salt
-(hex) and the `hashlib.scrypt` digest of the PIN with that salt (`n` = 2**14,
-`r` = 8, `p` = 1), hex. The PIN itself is never stored, never logged and never
-returned. Two accounts with the same PIN get different hashes, because each has
-its own salt.
+(hex), the `hashlib.scrypt` digest of the PIN with that salt (`n` = 2**14,
+`r` = 8, `p` = 1), hex, and `mission_start` when the body carried one. The PIN
+itself is never stored, never logged and never returned. Two accounts with the
+same PIN get different hashes, because each has its own salt.
 
 Responses: `201` with `{"person_id": "..."}`; `409` when the name is taken
 (`detail` `this username is taken` for `smoke_test_1`, for any `person_id` of
@@ -117,6 +118,90 @@ if (response.status === 429) {
   // too many wrong PINs: wait ten minutes before trying again
 }
 const session = await response.json(); // keep session.token and session.expires_at
+```
+
+### GET /people/{person_id}/profile
+
+Returns one person's account settings. Today that is the mission start date,
+the date Flight Day 1 is counted from: each astronaut has their own, and the
+day shown is counted from it (docs/DECISIONS.md, Sat 23:08). It is stored with
+the account, so any device that reads this route gets the same date.
+
+Path parameter: `person_id` (same lowercase `snake_case` rule).
+
+Responses:
+
+| Code | Meaning |
+| --- | --- |
+| `200` | `{"person_id": "...", "mission_start": "YYYY-MM-DD"}`, or `mission_start` `null` while no date is set |
+| `404` | This person has no account; `detail` is `this person has no account`. The route reads the account, it does not create one |
+| `422` | `person_id` breaks the `snake_case` rule |
+| `401` / `403` | As in "Sessions and the Authorization header" below |
+| `502` | The upstream store (Supabase) is unreachable or returns an error |
+
+```bash
+curl "$VITE_API_BASE_URL/people/demo_crew_2/profile" \
+  -H "Authorization: Bearer $TOKEN"
+# 200 {"person_id":"demo_crew_2","mission_start":"2026-11-01"}
+```
+
+```js
+const response = await fetch(`${VITE_API_BASE_URL}/people/${personId}/profile`, {
+  headers: { Authorization: `Bearer ${session.token}` },
+});
+if (response.ok) {
+  const profile = await response.json(); // { person_id, mission_start }
+  // mission_start is null while the astronaut has not set the date: show no
+  // Flight Day, and never count one from today instead
+}
+```
+
+### PUT /people/{person_id}/mission_start
+
+Sets or changes the mission start of one account (REQ-37). The date belongs to
+the person, so a change here moves their Flight Day on every device that reads
+it; it changes no entry and no mission day already stored.
+
+Path parameter: `person_id` (same lowercase `snake_case` rule).
+
+Request body:
+
+| Field | Type | Rule |
+| --- | --- | --- |
+| `mission_start` | string | required; `YYYY-MM-DD`, a real calendar date, from `2000-01-01` up to tomorrow in UTC. A date further ahead is a typing mistake or a clock that is off |
+
+The answer is the same object as `GET /people/{person_id}/profile`, with the
+date the account now holds.
+
+Responses: `200`; `404` `this person has no account` (a person without an
+account has nothing to store a date on); `422` when `person_id` or
+`mission_start` breaks a rule; `401` / `403` as below; `502` when the upstream
+store (Supabase) is unreachable or returns an error.
+
+```bash
+curl -X PUT "$VITE_API_BASE_URL/people/demo_crew_2/mission_start" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"mission_start":"2026-11-01"}'
+# 200 {"person_id":"demo_crew_2","mission_start":"2026-11-01"}
+```
+
+```js
+const response = await fetch(
+  `${VITE_API_BASE_URL}/people/${personId}/mission_start`,
+  {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${session.token}`,
+    },
+    body: JSON.stringify({ mission_start: "2026-11-01" }),
+  }
+);
+if (response.status === 422) {
+  // not a real date, before 2000-01-01, or more than a day ahead: ask again
+}
+const profile = await response.json(); // { person_id, mission_start }
 ```
 
 ### POST /entries
@@ -577,6 +662,8 @@ Every route that names a person checks who is asking before it answers:
 | `GET /people/{person_id}/conditions` | the path |
 | `POST /people/{person_id}/pain` | the path |
 | `GET /people/{person_id}/pain` | the path |
+| `GET /people/{person_id}/profile` | the path |
+| `PUT /people/{person_id}/mission_start` | the path |
 
 The rule depends on whether that person has an account:
 
@@ -676,14 +763,19 @@ already holds another report. Both pain routes return `422` with a plain-string
 `detail` when `person_id`, or the `region_id` filter, breaks the `snake_case`
 rule, and the same `502` as the routes above.
 
-`POST /accounts` and `POST /sessions` return `422` with the field array when the
-body breaks a rule:
+`POST /accounts`, `POST /sessions` and `PUT /people/{person_id}/mission_start`
+return `422` with the field array when the body breaks a rule:
 
 | Cause | `msg` |
 | --- | --- |
 | `person_id` breaks the id rule | `Value error, must be lowercase snake_case` |
 | `pin` is not 4 to 8 digits | `Value error, pin must be 4 to 8 digits` |
 | `person_id` or `pin` is missing | `Field required` |
+| `mission_start` is not `YYYY-MM-DD` | `Value error, mission_start must be YYYY-MM-DD` |
+| `mission_start` is not a real calendar date (month 13, 30 February) | `Value error, mission_start must be a real calendar date` |
+| `mission_start` is before 2000-01-01 | `Value error, mission_start must be 2000-01-01 or later` |
+| `mission_start` is more than a day ahead | `Value error, mission_start cannot be more than one day ahead` |
+| `mission_start` is missing on the `PUT` | `Field required` |
 
 `POST /accounts` returns `409` with `detail` `this username is taken` when the
 name belongs to the demo data, the smoke test or a person with stored entries,
@@ -691,16 +783,19 @@ and with `detail` `this person already has an account` when the account exists.
 `POST /sessions` returns `401` with `detail` `wrong username or PIN`
 and `429` with `detail` `too many wrong PINs, try again later`.
 
-The seven routes that name a person return `401` with `detail` `missing or
+The nine routes that name a person return `401` with `detail` `missing or
 invalid token` and `403` with `detail` `this token belongs to another person`;
-both come from the rule above, before the route does its own work.
+both come from the rule above, before the route does its own work. The two that
+read or write account settings, `GET /people/{person_id}/profile` and
+`PUT /people/{person_id}/mission_start`, also return `404` with `detail`
+`this person has no account` when the person has none.
 
 ## CORS
 
 The backend reads `ALLOWED_ORIGINS`, a comma-separated list of origins. When it
 is unset or empty, the default is `http://localhost:5173` (the Vite dev server).
-Allowed methods are `GET` and `POST`; allowed headers are `Content-Type` and
-`Authorization`, so the frontend can send the bearer token. A preflight
+Allowed methods are `GET`, `POST` and `PUT`; allowed headers are `Content-Type`
+and `Authorization`, so the frontend can send the bearer token. A preflight
 `OPTIONS` request returns `200` with `access-control-allow-origin` set to the
 allowed origin.
 

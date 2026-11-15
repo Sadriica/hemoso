@@ -330,6 +330,52 @@
         "title": "IndicatorState",
         "type": "object"
       },
+      "MissionStartIn": {
+        "description": "The body of `PUT /people/{person_id}/mission_start`.",
+        "properties": {
+          "mission_start": {
+            "title": "Mission Start",
+            "type": "string"
+          }
+        },
+        "required": [
+          "mission_start"
+        ],
+        "title": "MissionStartIn",
+        "type": "object"
+      },
+      "NewAccount": {
+        "description": "The body of `POST /accounts`: the credentials and an optional mission start.\n\n`mission_start` follows the `YYYY-MM-DD` rule of `check_mission_start`;\nleaving it out is an account whose mission start is set later.",
+        "properties": {
+          "mission_start": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mission Start"
+          },
+          "person_id": {
+            "maxLength": 64,
+            "title": "Person Id",
+            "type": "string"
+          },
+          "pin": {
+            "maxLength": 8,
+            "title": "Pin",
+            "type": "string"
+          }
+        },
+        "required": [
+          "person_id",
+          "pin"
+        ],
+        "title": "NewAccount",
+        "type": "object"
+      },
       "PainReport": {
         "description": "One stored pain report: the fields above and whose report it is.",
         "properties": {
@@ -428,6 +474,32 @@
         "title": "PainReportIn",
         "type": "object"
       },
+      "ProfileOut": {
+        "description": "The body of `GET /people/{person_id}/profile`.\n\n`mission_start` is `YYYY-MM-DD`, or null while the astronaut has not set\nit; with null the frontend shows no Flight Day.",
+        "properties": {
+          "mission_start": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mission Start"
+          },
+          "person_id": {
+            "title": "Person Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "person_id",
+          "mission_start"
+        ],
+        "title": "ProfileOut",
+        "type": "object"
+      },
       "SessionOut": {
         "description": "The body of `POST /sessions`: the token and when it stops working.\n\n`expires_at` is ISO 8601 in UTC; the token is sent as\n`Authorization: Bearer <token>`.",
         "properties": {
@@ -508,7 +580,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Credentials"
+                "$ref": "#/components/schemas/NewAccount"
               }
             }
           },
@@ -910,6 +982,59 @@
         "summary": "Get State"
       }
     },
+    "/people/{person_id}/mission_start": {
+      "put": {
+        "description": "Set or change the mission start of an account (REQ-37).\n\nThe date is per person, so a change here moves the Flight Day of that\nperson on every device; nothing is stored for a person without an account.",
+        "operationId": "put_mission_start_people__person_id__mission_start_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "person_id",
+            "required": true,
+            "schema": {
+              "title": "Person Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MissionStartIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "This person has no account."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Put Mission Start"
+      }
+    },
     "/people/{person_id}/pain": {
       "get": {
         "description": "One person's pain reports, oldest first, optionally for one region.\n\n`region_id` filters; an unknown person is an empty list, not a 404.",
@@ -1022,6 +1147,49 @@
           }
         },
         "summary": "Create Pain"
+      }
+    },
+    "/people/{person_id}/profile": {
+      "get": {
+        "description": "The account's own settings (REQ-37): today only the mission start date.\n\nThe mission start is what the frontend counts Flight Day 1 from, so it\nfollows the person to another device instead of staying on one. A person\nwithout an account has no settings to read: 404, not an empty profile.",
+        "operationId": "get_profile_people__person_id__profile_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "person_id",
+            "required": true,
+            "schema": {
+              "title": "Person Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProfileOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "This person has no account."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Profile"
       }
     },
     "/sessions": {

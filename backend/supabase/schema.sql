@@ -70,3 +70,8 @@ create index if not exists pain_reports_person_idx
 -- As with the two tables above: no policy, so only the service role key reaches
 -- the rows and the anon key reads nothing.
 alter table pain_reports enable row level security;
+
+-- Mission start per account (REQ-37): each astronaut's date, the one Flight Day
+-- 1 is counted from. This block stands alone too, and only adds a column: the
+-- accounts already in the table keep their rows and read with a null date.
+alter table accounts add column if not exists mission_start date;
