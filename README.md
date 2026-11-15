@@ -26,6 +26,9 @@ replace them.
   with its context (post-sleep, pre-sleep, rest…), an optional symptom list, a
   3D body to mark pain or an injury, and an optional 90-second reaction check
   (light or sound).
+- **Eye check (optional, on the device):** a 60 s camera check of eye closure and
+  blinks, one more signal for "How you are today"; only the two numbers are
+  saved, never an image, and it never reads mood or stress (`docs/findings/phys-07-eye-closure-check.md`).
 - **Status:** each indicator in one of four states (no data yet, in your usual
   range, outside your usual range, needs review), the possible conditions with
   their evidence and signals, "Call your CMO now" before any score when a red-flag
