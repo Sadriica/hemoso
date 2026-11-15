@@ -30,6 +30,8 @@ from .models import (
     Credentials,
     Entry,
     IndicatorState,
+    PainReport,
+    PainReportIn,
     SessionOut,
     is_valid_id,
     is_valid_time,
@@ -410,3 +412,74 @@ def get_conditions(
             load_attention_rows(indicator_id),
         )
     return [condition_result(row, latest) for row in rows]
+
+
+@app.post(
+    "/people/{person_id}/pain",
+    status_code=201,
+    responses={
+        200: {"description": "The exact same pain report was already stored."},
+        409: {
+            "description": "A pain report for this person, region, day and "
+            "time exists with a different intensity or note."
+        },
+    },
+)
+def create_pain(
+    person_id: str,
+    body: PainReportIn,
+    store: Store,
+    request: Request,
+    response: Response,
+) -> PainReport:
+    """Store one pain report from the 3D body (B-3).
+
+    The person is in the path, so the same report sent twice from the
+    frontend's outbox answers 200 with the stored report and adds nothing; a
+    different intensity or note for the same person, region, day and time is a
+    409. The intensity is kept as the astronaut set it: this route does not
+    read it as a sign of anything.
+    """
+    check_id("person_id", person_id)
+    accounts.authorize(request, person_id, store)
+    report = PainReport(person_id=person_id, **body.model_dump())
+    try:
+        stored, created = store.add_pain(report)
+    except storage.PainConflict as error:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "a pain report for this person, region, day and time already"
+                " exists with a different intensity or note"
+            ),
+        ) from error
+    except httpx.HTTPError as error:
+        raise HTTPException(
+            status_code=502, detail="upstream storage error"
+        ) from error
+    if not created:
+        response.status_code = 200
+    return stored
+
+
+@app.get("/people/{person_id}/pain")
+def list_pain(
+    person_id: str,
+    store: Store,
+    request: Request,
+    region_id: str | None = None,
+) -> list[PainReport]:
+    """One person's pain reports, oldest first, optionally for one region.
+
+    `region_id` filters; an unknown person is an empty list, not a 404.
+    """
+    check_id("person_id", person_id)
+    accounts.authorize(request, person_id, store)
+    if region_id is not None:
+        check_id("region_id", region_id)
+    try:
+        return store.pain_reports(person_id, region_id)
+    except httpx.HTTPError as error:
+        raise HTTPException(
+            status_code=502, detail="upstream storage error"
+        ) from error

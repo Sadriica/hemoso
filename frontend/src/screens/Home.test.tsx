@@ -64,6 +64,7 @@ function entry(missionDay: number, value: number): Entry {
 
 const data: LoadedContent = {
   indicators: [indicator],
+  conditions: [],
   rules: [rule],
   contents: { example_indicator: content },
   demoEntries: [entry(1, 1), entry(10, 10)],
@@ -148,7 +149,7 @@ describe('Home', () => {
       screen.getByRole('heading', { name: 'Status for Demo astronaut 1' }),
     ).toBeInTheDocument()
     expect(
-      within(card()).getByText(/^DAY 10 · 13:30 · At rest$/),
+      within(card()).getByText(/^FD 10 · GMT 13:30 · At rest$/),
     ).toBeInTheDocument()
   })
 

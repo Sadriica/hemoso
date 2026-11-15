@@ -1,18 +1,18 @@
-/* The reaction check and the current-state block (REQ-38). Every value is a
-   token of DESIGN.md: no colour, size or duration of its own. */
+/* The reaction check (REQ-38) wears the panel grammar of the Report form:
+   `.panel` and `.panel--cut` give the surface, border, radius and cut corner;
+   the eyebrow, the capsules and the buttons are the shared ones. Every value is
+   a token of DESIGN.md: no colour, size or duration of its own. */
 
 .reaction {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  padding: var(--space-4);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-card);
-  background: var(--color-surface);
+  /* The report phase puts it under the form, so it keeps its own distance. */
+  margin-block: var(--space-4);
 }
 
 .reaction__heading {
-  font-size: 22px;
+  font-size: var(--text-h2);
   line-height: 30px;
   margin: 0;
 }
@@ -20,25 +20,46 @@
 .reaction__intro,
 .reaction__hint,
 .reaction__meta,
-.reaction__progress {
+.reaction__progress,
+.reaction__rule {
   margin: 0;
   color: var(--color-text-muted);
-  font-size: 14px;
+  font-size: var(--text-small);
   line-height: 20px;
 }
 
+.reaction__intro {
+  max-width: 60ch;
+}
+
+.reaction__top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+}
+
 .reaction__progress {
-  font-family: var(--font-mono, ui-monospace), monospace;
-  letter-spacing: 0.08em;
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  letter-spacing: var(--tracking-label);
   text-transform: uppercase;
 }
 
-/* The time left: a bar that shrinks, plus the trial number above it and the
-   seconds in its label, so the length never comes from colour alone. */
+/* The rule stays in view during the run, so the target is never a guess. */
+.reaction__rule {
+  color: var(--color-text);
+}
+
+/* The time left: a thin bar that shrinks. It moves by transform only; the trial
+   number above it and the seconds in its label keep the length from being a
+   matter of the bar alone. */
 .reaction__bar {
   width: 100%;
-  height: 8px;
-  border-radius: var(--radius-round, 9999px);
+  height: 4px;
+  border-radius: var(--radius-capsule);
   background: var(--color-border);
   overflow: hidden;
 }
@@ -46,16 +67,12 @@
 .reaction__bar-fill {
   height: 100%;
   background: var(--color-accent);
+  transform-origin: left center;
 }
 
-/* Nothing moves on its own under reduced motion: the bar only shrinks on a
-   redraw, which is a step, not an animation. */
-@media (prefers-reduced-motion: reduce) {
-  .reaction__bar-fill {
-    transition: none;
-  }
-}
-
+/* Light and Sound are capsules, like the context choice of the Report form. The
+   radio stays in the page for the keyboard and screen readers and is drawn by
+   its label. */
 .reaction__choice {
   display: flex;
   flex-wrap: wrap;
@@ -68,41 +85,67 @@
 .reaction__choice legend {
   padding: 0 0 var(--space-2);
   color: var(--color-text-muted);
-  font-size: 12px;
-  line-height: 16px;
-  letter-spacing: 0.08em;
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  letter-spacing: var(--tracking-label);
   text-transform: uppercase;
 }
 
 .reaction__choice label {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
+  justify-content: center;
+  min-width: 112px;
   min-height: var(--tap-min);
-  padding: 0 var(--space-3);
+  padding: 0 var(--space-4);
   border: 1px solid var(--color-border-control);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-capsule);
+  background: var(--color-bg);
   color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.reaction__choice input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
 }
 
 .reaction__choice label:has(input:checked) {
   border-color: var(--color-accent);
+  color: var(--color-accent);
+  background: var(--color-surface);
+}
+
+.reaction__choice label:has(input:focus-visible) {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
 }
 
 /* The test area: the whole surface is the answer target, so a tap anywhere
-   counts and the hand does not have to find a small button. */
+   counts, with or without gloves. It is large and calm: one shape, centred. */
 .reaction__area {
   position: relative;
   display: grid;
   place-items: center;
+  align-content: center;
   gap: var(--space-2);
-  min-height: 220px;
+  min-height: min(52vh, 360px);
   padding: var(--space-4);
   border: 1px solid var(--color-border-control);
   border-radius: var(--radius-card);
   background: var(--color-bg-raised);
   cursor: pointer;
   user-select: none;
+  touch-action: manipulation;
 }
 
 .reaction__area:focus-visible {
@@ -117,19 +160,51 @@
 .reaction__stimulus {
   display: grid;
   place-items: center;
+  gap: var(--space-2);
   width: 100%;
 }
 
-/* The light: a large filled shape. The tone: a large hollow ring, a different
-   shape and size, so the two modes never read the same without colour. */
-.reaction__light {
-  width: 160px;
-  height: 160px;
-  border-radius: 50%;
-  background: var(--color-accent);
+/* The light: one large shape, each with its own colour AND its own outline. Only
+   the green circle is a target after the first white one. The colours are the
+   state and system tokens, which hold 3:1 against the panel in both themes. */
+.reaction__shape {
+  display: block;
+  width: 168px;
+  height: 168px;
   animation: reaction-in var(--motion-fast) var(--ease-out, ease-out);
 }
 
+.reaction__shape svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.reaction__shape--plain svg {
+  fill: var(--color-text);
+}
+
+.reaction__shape--white svg {
+  fill: var(--color-text);
+}
+
+.reaction__shape--green svg {
+  fill: var(--status-in-range-text);
+}
+
+.reaction__shape--square svg {
+  fill: var(--status-attention-text);
+}
+
+.reaction__shape--triangle svg {
+  fill: var(--status-review-text);
+}
+
+.reaction__shape--diamond svg {
+  fill: var(--system-sleep);
+}
+
+/* The tone: a large hollow ring, a different shape from every light. */
 .reaction__ring {
   width: 120px;
   height: 120px;
@@ -140,10 +215,10 @@
 
 .reaction__cue {
   color: var(--color-text);
-  font-family: var(--font-mono, ui-monospace), monospace;
-  font-size: 12px;
-  line-height: 16px;
-  letter-spacing: 0.08em;
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  letter-spacing: var(--tracking-label);
   text-transform: uppercase;
 }
 
@@ -157,10 +232,45 @@
 
 .reaction__result {
   margin: 0;
-  font-family: var(--font-mono, ui-monospace), monospace;
-  font-size: 18px;
-  line-height: 28px;
   color: var(--color-text);
+  font-size: var(--text-body);
+  line-height: 24px;
+}
+
+/* The result: three small figures, a label over a value. */
+.reaction__figures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.reaction__figure {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 96px;
+  padding: var(--space-3);
+  border: var(--border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--color-bg-raised);
+}
+
+.reaction__figure dt {
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+.reaction__figure dd {
+  margin: 0;
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: var(--text-h2);
+  line-height: 30px;
 }
 
 .reaction__actions {
@@ -170,19 +280,26 @@
   gap: var(--space-3);
 }
 
-/* The light appears without animation when motion is off (system setting or the
-   top bar switch); the test works exactly the same. */
-.app--still .reaction__light,
+/* The stimulus appears without animation when motion is off (system setting or
+   the top bar switch); the test works exactly the same. */
+.app--still .reaction__shape,
 .app--still .reaction__ring,
-.reaction__area--still .reaction__light,
+.reaction__area--still .reaction__shape,
 .reaction__area--still .reaction__ring {
   animation: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .reaction__light,
+  .reaction__shape,
   .reaction__ring {
     animation: none;
+  }
+}
+
+@media (max-width: 599px) {
+  .reaction__shape {
+    width: 132px;
+    height: 132px;
   }
 }
 
@@ -195,57 +312,4 @@
     opacity: 1;
     transform: none;
   }
-}
-
-/* The current psychological state (REQ-06, REQ-38): one block, the words
-   first, the shape after. */
-.psych {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  margin-top: var(--space-4);
-  padding: var(--space-4);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-card);
-  background: var(--color-surface);
-}
-
-.psych__heading {
-  margin: 0;
-  font-size: 22px;
-  line-height: 30px;
-}
-
-.psych__name {
-  margin: 0;
-  color: var(--color-text);
-  font-size: 16px;
-  line-height: 24px;
-}
-
-.psych__bar {
-  width: 100%;
-  height: 8px;
-  border-radius: var(--radius-round, 9999px);
-  background: var(--color-border);
-  overflow: hidden;
-}
-
-.psych__fill {
-  height: 100%;
-  background: var(--color-accent);
-}
-
-.psych__text,
-.psych__signals,
-.psych__confirms,
-.psych__source {
-  margin: 0;
-  font-size: 14px;
-  line-height: 20px;
-  color: var(--color-text-muted);
-}
-
-.psych__signals {
-  padding-left: var(--space-4);
 }

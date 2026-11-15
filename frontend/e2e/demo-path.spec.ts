@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import { SCALE_UNIT, hazardName, strings } from '../src/strings'
 import { isReactionIndicator } from '../src/reaction/ids'
@@ -79,9 +80,19 @@ test('guided check by keyboard with axe on every phase', async ({ page }) => {
       page.getByRole('group', { name: strings.entry.bloodPressure }),
     ).toBeVisible()
     await expect(page.getByLabel(strings.entry.missionDay)).toBeVisible()
+    // The context of the check is said once, in the header; its four choices
+    // open with the "change" button.
+    const contextChip = page.getByRole('button', {
+      name: new RegExp(`^${strings.entry.context}(?! for)`),
+    })
+    await expect(contextChip).toBeVisible()
+    await contextChip.click()
     await expect(
-      page.getByRole('group', { name: strings.entry.applyToAll }),
+      page.getByRole('group', { name: strings.entry.context, exact: true }),
     ).toBeVisible()
+    await contextChip.click()
+    // The walk below starts from the heading, as the phase opens.
+    await page.getByRole('heading', { level: 1 }).focus()
   })
 
   await test.step('Report: fill a measured row and the scale, then save once', async () => {
@@ -147,7 +158,15 @@ test('guided check by keyboard with axe on every phase', async ({ page }) => {
   })
 
   await test.step('Report: go on to the status', async () => {
-    await focusByTab(page, page.getByRole('button', { name: copy.report.next }))
+    // After a save the way on is also offered inside the form panel, with a
+    // longer accessible name; the plain button below stays for this path.
+    await expect(
+      page.getByRole('button', { name: strings.entry.nextLabel }),
+    ).toBeVisible()
+    await focusByTab(
+      page,
+      page.getByRole('button', { name: copy.report.next, exact: true }),
+    )
     await page.keyboard.press('Enter')
     const heading = page.getByRole('heading', { level: 1 })
     await expect(heading).toContainText(copy.status.headline[0])
@@ -167,7 +186,7 @@ test('guided check by keyboard with axe on every phase', async ({ page }) => {
     await expect(statusRegion.getByRole('heading', { level: 3 })).toHaveCount(1)
     const measured = cardFor(statusRegion, names[0])
     await expect(measured.getByText(`${FIRST_VALUE} ${units[0]}`, { exact: true })).toBeVisible()
-    await expect(measured.getByText(new RegExp(`^DAY ${readingDay} · `))).toBeVisible()
+    await expect(measured.getByText(new RegExp(`^FD ${readingDay} · `))).toBeVisible()
 
     for (const name of names.slice(1)) {
       await selectIndicator(page, name)
@@ -182,7 +201,7 @@ test('guided check by keyboard with axe on every phase', async ({ page }) => {
         .locator('.indicator-card__value')
         .filter({ hasText: `${SCALE_VALUE} ${strings.cardUnit(SCALE_UNIT)}` }),
     ).toBeVisible()
-    await expect(scale.getByText(new RegExp(`^DAY ${scaleDay} · `))).toBeVisible()
+    await expect(scale.getByText(new RegExp(`^FD ${scaleDay} · `))).toBeVisible()
     await selectIndicator(page, names[0])
   })
 
@@ -209,6 +228,38 @@ test('guided check by keyboard with axe on every phase', async ({ page }) => {
     await expectNoBlockingA11yIssues(page, 'Status with Details open')
     await page.keyboard.press('Enter')
     await expect(details).toHaveAttribute('aria-expanded', 'false')
+  })
+
+  await test.step('Status: the possible conditions, with who confirms', async () => {
+    const copyConditions = strings.conditions
+    const panel = page.getByRole('region', { name: copyConditions.heading })
+    await expect(panel).toBeVisible()
+    await expect(panel.getByText(copyConditions.confirms)).toHaveCount(1)
+
+    // Every row of config/rules/conditions.csv is there: the scored ones in
+    // the list, the others behind one closed line that says how many.
+    const waiting = panel.getByRole('button', { name: /^Not enough data yet/ })
+    if ((await waiting.count()) > 0) {
+      await waiting.focus()
+      await page.keyboard.press('Enter')
+      await expect(waiting).toHaveAttribute('aria-expanded', 'true')
+    }
+    await expect(panel.getByRole('heading', { level: 3 })).toHaveCount(
+      conditionCount(),
+    )
+    // Evidence is a bar and a number from 0 to 1, never a percentage.
+    await expect(panel).not.toContainText('%')
+    await expectNoBlockingA11yIssues(page, 'Status with the conditions open')
+    await expectNoHorizontalScroll(page, 'Status with the conditions open')
+
+    // A signal opens the card of its indicator, by keyboard.
+    const signal = panel
+      .getByRole('button', { name: /^Show the reading\./ })
+      .first()
+    await signal.focus()
+    await page.keyboard.press('Enter')
+    await expect(statusRegion.getByRole('heading', { level: 3 })).toHaveCount(1)
+    await selectIndicator(page, names[0])
   })
 
   await test.step('Status: the history sentence, behind its disclosure', async () => {
@@ -294,6 +345,18 @@ test('no sideways scrolling at 320 px', async ({ page, isMobile }) => {
 
 // Chooses an indicator in the overview: the row of the list or the orb of the
 // orbit view, both named by the indicator. Enter on the focused control.
+// The rows of config/rules/conditions.csv, read from the team's file.
+function conditionCount(): number {
+  const text = readFileSync(
+    new URL('../../config/rules/conditions.csv', import.meta.url),
+    'utf8',
+  )
+  const rows = text
+    .split(/\r?\n/)
+    .filter((line) => line.trim() !== '' && !line.startsWith('#'))
+  return rows.length - 1
+}
+
 async function selectIndicator(page: Page, name: string): Promise<void> {
   const control = page
     .getByRole('button', { name: new RegExp(`^${name}\\b`) })

@@ -1,0 +1,177 @@
+/* The live figures of the report console. Drawn in the system colour of the
+   panel (currentColor); the tracks and ticks stay quiet. Motion is transform,
+   opacity and stroke offset only, and it all stops under reduced motion, with
+   the app switch, and while the tab is hidden (.rep--paused). */
+.tele {
+  display: block;
+  width: 100%;
+  color: var(--reading-system, var(--color-accent));
+  line-height: 0;
+}
+
+.tele svg {
+  display: block;
+  width: 100%;
+  height: calc(var(--space-7) + var(--space-3));
+  overflow: hidden;
+}
+
+.tele-grid,
+.tele-tick {
+  fill: none;
+  stroke: var(--color-border-control);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.tele-grid {
+  stroke-dasharray: 2 4;
+  opacity: 0.6;
+}
+
+.tele-track {
+  fill: color-mix(in srgb, var(--color-border-control) 28%, transparent);
+  stroke: none;
+}
+
+.tele-track--ring {
+  fill: none;
+  stroke: color-mix(in srgb, var(--color-border-control) 45%, transparent);
+  stroke-width: 5;
+}
+
+.tele-fill {
+  fill: currentColor;
+  transform-box: fill-box;
+  transition:
+    transform var(--motion-base) var(--ease-out),
+    opacity var(--motion-base) var(--ease-out);
+}
+
+.tele-arc {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 5;
+  stroke-linecap: round;
+  transition: stroke-dashoffset var(--motion-slow) var(--ease-out);
+}
+
+.tele-dot,
+.tele-pointer {
+  fill: currentColor;
+}
+
+.tele-line {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.tele-line--marker {
+  stroke-width: 4;
+}
+
+.tele-line--idle {
+  stroke: var(--color-border-control);
+  stroke-dasharray: 3 5;
+}
+
+.tele-marker {
+  transition: transform var(--motion-base) var(--ease-out);
+}
+
+.tele-tag {
+  fill: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.08em;
+}
+
+.tele-tag--end {
+  text-anchor: end;
+}
+
+/* The pulse trace moves left by exactly two beats per cycle, so the loop has
+   no seam. Its speed is the heart rate in the readout. */
+.tele-sweep {
+  animation: tele-sweep var(--tele-beat, 2s) linear infinite;
+}
+
+@keyframes tele-sweep {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-200px);
+  }
+}
+
+.tele-spark {
+  display: block;
+  width: 100%;
+  color: var(--reading-system, var(--color-accent));
+  line-height: 0;
+}
+
+.tele-spark svg {
+  display: block;
+  width: 100%;
+  height: var(--space-5);
+  overflow: visible;
+}
+
+.tele-spark__line,
+.tele-spark__link {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.tele-spark__line {
+  opacity: 0.75;
+}
+
+.tele-spark__link {
+  stroke-dasharray: 2 3;
+  opacity: 0.75;
+}
+
+.tele-spark__dot {
+  fill: currentColor;
+}
+
+.tele-spark__pending {
+  fill: var(--color-surface);
+  stroke: currentColor;
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+}
+
+.app--still .tele-sweep,
+.rep--paused .tele-sweep {
+  animation: none;
+}
+
+.app--still .tele-fill,
+.app--still .tele-arc,
+.app--still .tele-marker {
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tele-sweep {
+    animation: none;
+  }
+
+  .tele-fill,
+  .tele-arc,
+  .tele-marker {
+    transition: none;
+  }
+}

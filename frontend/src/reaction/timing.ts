@@ -1,7 +1,17 @@
 import {
+  REACTION_COLOUR_TARGETS,
   REACTION_DURATION_MS,
   REACTION_LAPSE_CUTOFF_MS,
+  REACTION_MIN_GAP_MS,
   REACTION_MIN_VALID_MS,
+  REACTION_NONTARGET_MS,
+  REACTION_NONTARGET_SHARE,
+  REACTION_SIZES,
+  REACTION_TONE_GAINS,
+  REACTION_TONE_HZ_MAX,
+  REACTION_TONE_HZ_MIN,
+  REACTION_TONE_MS_MAX,
+  REACTION_TONE_MS_MIN,
   REACTION_TRIAL_WINDOW_MS,
   REACTION_WAIT_MAX_MS,
   REACTION_WAIT_MIN_MS,
@@ -24,10 +34,45 @@ export type ReactionModality = 'light' | 'sound'
  */
 export type ReactionPhase = 'idle' | 'waiting' | 'stimulus' | 'finished'
 
+/**
+ * What a stimulus is. In a light run the first one is `white`; after it, only
+ * `green` is a target and the other three shapes are not (team decision,
+ * Sun 01:50, next to F-phys-06). The sound mode only has `tone`.
+ */
+export type StimulusKind =
+  | 'white'
+  | 'green'
+  | 'square'
+  | 'triangle'
+  | 'diamond'
+  | 'tone'
+
+/** The light stimuli that are not targets, each with a shape of its own. */
+export const NON_TARGET_KINDS: StimulusKind[] = ['square', 'triangle', 'diamond']
+
+/** The lights of the mode without colour targets: four shapes, all targets. */
+export const PLAIN_KINDS: StimulusKind[] = ['white', 'square', 'triangle', 'diamond']
+
+/** Whether an answer to this stimulus is a reaction (true) or an error (false). */
+export function isTarget(
+  kind: StimulusKind,
+  colourTargets: boolean = REACTION_COLOUR_TARGETS,
+): boolean {
+  // Without colour targets every stimulus is a target; the shapes only vary.
+  return !colourTargets || !NON_TARGET_KINDS.includes(kind)
+}
+
+/** One tone of the sound mode: pitch, loudness and length vary per trial. */
+export interface ToneParams {
+  hz: number
+  gain: number
+  ms: number
+}
+
 export interface ReactionState {
   modality: ReactionModality
   phase: ReactionPhase
-  /** The length of the run in ms: the 3 minutes, or the demo length. */
+  /** The length of the run in ms: the 90 seconds, or the demo length. */
   durationMs: number
   /** Clock times of the start and of the end, in the clock the caller passes. */
   startedAt: number | null
@@ -40,6 +85,19 @@ export interface ReactionState {
   reactions: number[]
   lapses: number
   falseStarts: number
+  /** Answers to a stimulus that was not a target. Shown, never stored. */
+  errors: number
+  /** Stimuli shown so far in this run; the first light one is white. */
+  shown: number
+  /** Whether only green is a target (set when the check is made). */
+  colourTargets: boolean
+  /** The scale of the light showing now (1 is the full size). */
+  size: number
+  /** The stimulus showing now, and the tone of it in the sound mode. */
+  kind: StimulusKind | null
+  tone: ToneParams | null
+  /** The last answer was to a non-target: the screen says so, quietly. */
+  wrong: boolean
   /** The person answered before the last stimulus: the screen says "Too early". */
   tooEarly: boolean
   /**
@@ -53,7 +111,13 @@ export interface ReactionState {
 
 export type ReactionEvent =
   | { type: 'start'; modality: ReactionModality; at: number; durationMs?: number }
-  | { type: 'stimulus'; at: number }
+  | {
+      type: 'stimulus'
+      at: number
+      kind?: StimulusKind
+      tone?: ToneParams
+      size?: number
+    }
   | { type: 'answer'; at: number }
   | { type: 'timeout'; at: number }
   | { type: 'tick'; at: number }
@@ -63,8 +127,11 @@ export type ReactionEvent =
 export function initialReactionState(
   modality: ReactionModality = 'light',
   durationMs: number = REACTION_DURATION_MS,
+  colourTargets: boolean = REACTION_COLOUR_TARGETS,
 ): ReactionState {
   return {
+    colourTargets,
+    size: 1,
     modality,
     phase: 'idle',
     durationMs,
@@ -75,6 +142,11 @@ export function initialReactionState(
     reactions: [],
     lapses: 0,
     falseStarts: 0,
+    errors: 0,
+    shown: 0,
+    kind: null,
+    tone: null,
+    wrong: false,
     tooEarly: false,
     waitToken: 0,
     stopped: false,
@@ -100,6 +172,11 @@ export function reactionReducer(
         reactions: [],
         lapses: 0,
         falseStarts: 0,
+        errors: 0,
+        shown: 0,
+        kind: null,
+        tone: null,
+        wrong: false,
         tooEarly: false,
         waitToken: state.waitToken + 1,
         stopped: false,
@@ -108,11 +185,27 @@ export function reactionReducer(
       // A stimulus only exists inside a pre-stimulus wait: the component's
       // timer may fire once more after a false start, and that one is ignored.
       if (state.phase !== 'waiting') return state
-      return { ...state, phase: 'stimulus', stimulusAt: event.at, tooEarly: false }
+      return {
+        ...state,
+        phase: 'stimulus',
+        stimulusAt: event.at,
+        kind: event.kind ?? (state.modality === 'sound' ? 'tone' : 'green'),
+        tone: event.tone ?? null,
+        size: event.size ?? 1,
+        shown: state.shown + 1,
+        tooEarly: false,
+        wrong: false,
+      }
     case 'answer':
       return answered(state, event.at)
     case 'timeout':
       if (state.phase !== 'stimulus' || state.stimulusAt === null) return state
+      // A non-target clears after a fixed short time. Not answering it is
+      // right: no lapse, and no trial is closed.
+      if (state.kind !== null && !isTarget(state.kind, state.colourTargets)) {
+        if (event.at < state.stimulusAt + REACTION_NONTARGET_MS) return state
+        return cleared(state, event.at)
+      }
       // Only the end of the response window closes the trial, and it closes it
       // as a lapse: nobody answered.
       if (event.at < state.stimulusAt + REACTION_TRIAL_WINDOW_MS) return state
@@ -123,20 +216,29 @@ export function reactionReducer(
       // as a reaction or as a lapse, and that close ends the run.
       if (state.phase !== 'waiting') return state
       if (state.endsAt === null || event.at < state.endsAt) return state
-      return { ...state, phase: 'finished', stimulusAt: null, tooEarly: false }
+      return {
+        ...state,
+        phase: 'finished',
+        stimulusAt: null,
+        kind: null,
+        tooEarly: false,
+      }
     case 'stop':
       if (state.phase !== 'waiting' && state.phase !== 'stimulus') return state
       return {
         ...state,
         phase: 'finished',
         stimulusAt: null,
+        kind: null,
         tooEarly: false,
+        wrong: false,
         stopped: true,
       }
     case 'reset':
       return initialReactionState(
         event.modality,
         event.durationMs ?? state.durationMs,
+        state.colourTargets,
       )
   }
 }
@@ -147,6 +249,10 @@ function answered(state: ReactionState, at: number): ReactionState {
   const latency = Math.max(0, at - state.stimulusAt)
   // Too fast to be a reaction: the press was already on its way.
   if (latency < REACTION_MIN_VALID_MS) return falseStart(state)
+  // A non-target answered: an error. It is not a reaction time and not a lapse.
+  if (state.kind !== null && !isTarget(state.kind, state.colourTargets)) {
+    return { ...cleared(state, at), errors: state.errors + 1, wrong: true }
+  }
   if (latency >= REACTION_LAPSE_CUTOFF_MS) return closed(state, at, state.lapses + 1)
   return closed(state, at, state.lapses, [...state.reactions, latency])
 }
@@ -158,8 +264,10 @@ function falseStart(state: ReactionState): ReactionState {
     ...state,
     phase: 'waiting',
     stimulusAt: null,
+    kind: null,
     falseStarts: state.falseStarts + 1,
     tooEarly: true,
+    wrong: false,
     waitToken: state.waitToken + 1,
   }
 }
@@ -179,7 +287,24 @@ function closed(
     reactions,
     phase: over ? 'finished' : 'waiting',
     stimulusAt: null,
+    kind: null,
     tooEarly: false,
+    wrong: false,
+    waitToken: over ? state.waitToken : state.waitToken + 1,
+  }
+}
+
+// A non-target is over (it cleared, or it was answered): the wait starts again.
+// No trial is counted, so the length of the run is the same.
+function cleared(state: ReactionState, at: number): ReactionState {
+  const over = state.endsAt !== null && at >= state.endsAt
+  return {
+    ...state,
+    phase: over ? 'finished' : 'waiting',
+    stimulusAt: null,
+    kind: null,
+    tooEarly: false,
+    wrong: false,
     waitToken: over ? state.waitToken : state.waitToken + 1,
   }
 }
@@ -189,6 +314,8 @@ export interface ReactionSummary {
   medianMs: number | null
   lapses: number
   falseStarts: number
+  /** Answers to a non-target; shown in the result, never stored. */
+  errors: number
   /** Trials that closed: the reactions plus the lapses. */
   trials: number
 }
@@ -198,6 +325,7 @@ export function summarize(state: ReactionState): ReactionSummary {
     medianMs: median(state.reactions),
     lapses: state.lapses,
     falseStarts: state.falseStarts,
+    errors: state.errors,
     trials: state.reactions.length + state.lapses,
   }
 }
@@ -217,7 +345,48 @@ export function median(values: number[]): number | null {
 /** The random wait before one stimulus, in ms, inside the range of constants.ts. */
 export function randomWait(random: () => number = Math.random): number {
   const span = REACTION_WAIT_MAX_MS - REACTION_WAIT_MIN_MS
-  return REACTION_WAIT_MIN_MS + Math.round(random() * span)
+  const wait = REACTION_WAIT_MIN_MS + Math.round(random() * span)
+  // Never closer than the gap that keeps the flashing under 3 per second.
+  return Math.max(REACTION_MIN_GAP_MS, wait)
+}
+
+/**
+ * The next light stimulus. The first of a run is white, a target. After it,
+ * the share of non-targets is REACTION_NONTARGET_SHARE: a draw in the top of
+ * the range picks one of the other shapes, any other draw is green.
+ */
+export function pickLightKind(
+  shown: number,
+  random: () => number = Math.random,
+  colourTargets: boolean = REACTION_COLOUR_TARGETS,
+): StimulusKind {
+  if (!colourTargets) {
+    // Every light is a target; only its shape changes (the circle is `white`).
+    const shapes = PLAIN_KINDS
+    return shapes[Math.min(shapes.length - 1, Math.floor(random() * shapes.length))]
+  }
+  if (shown === 0) return 'white'
+  if (random() < 1 - REACTION_NONTARGET_SHARE) return 'green'
+  const index = Math.min(
+    NON_TARGET_KINDS.length - 1,
+    Math.floor(random() * NON_TARGET_KINDS.length),
+  )
+  return NON_TARGET_KINDS[index]
+}
+
+/** One tone: pitch and length uniform in their ranges, loudness from a few steps. */
+export function randomTone(random: () => number = Math.random): ToneParams {
+  const hz =
+    REACTION_TONE_HZ_MIN +
+    Math.round(random() * (REACTION_TONE_HZ_MAX - REACTION_TONE_HZ_MIN))
+  const ms =
+    REACTION_TONE_MS_MIN +
+    Math.round(random() * (REACTION_TONE_MS_MAX - REACTION_TONE_MS_MIN))
+  const step = Math.min(
+    REACTION_TONE_GAINS.length - 1,
+    Math.floor(random() * REACTION_TONE_GAINS.length),
+  )
+  return { hz, ms, gain: REACTION_TONE_GAINS[step] }
 }
 
 /** How much of the run is left at `at`, in ms, never below zero. */
@@ -231,4 +400,13 @@ export function elapsedMs(state: ReactionState, at: number): number {
   if (state.startedAt === null) return 0
   const elapsed = at - state.startedAt
   return Math.min(state.durationMs, Math.max(0, elapsed))
+}
+
+/** The size of the next light when colour targets are off: one of a few scales. */
+export function randomSize(random: () => number = Math.random): number {
+  const index = Math.min(
+    REACTION_SIZES.length - 1,
+    Math.floor(random() * REACTION_SIZES.length),
+  )
+  return REACTION_SIZES[index]
 }

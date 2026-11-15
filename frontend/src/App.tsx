@@ -9,10 +9,12 @@ import { setMissionStart, useMissionStart } from './data/missionStart'
 import { useEntries } from './hooks/useEntries'
 import { useHistorySync } from './hooks/useHistorySync'
 import { isDemoPerson, useSession } from './hooks/useSession'
+import ErrorBoundary from './components/ErrorBoundary'
 import Notice from './components/Notice'
 import PhaseRail from './components/PhaseRail'
 import type { PhaseId } from './phases/phaseIds'
 import SkipLink from './components/SkipLink'
+import StageDepth from './components/StageDepth'
 import Starfield from './components/Starfield'
 import Topbar from './components/Topbar'
 import IdentifyPhase from './phases/IdentifyPhase'
@@ -117,6 +119,7 @@ export default function App() {
   return (
     <div className={`app${motionReduced ? ' app--still' : ''}`}>
       <Starfield still={motionReduced} />
+      <StageDepth still={motionReduced} />
       <SkipLink />
       {introOpen && (
         <Suspense fallback={<div className="intro-cover" aria-hidden="true" />}>
@@ -146,7 +149,30 @@ export default function App() {
         {storageWarnings.length > 0 && (
           <Notice tone="warning">{storageWarnings.join(' ')}</Notice>
         )}
+        {/* The transition stays mounted across phases, so it knows which way
+            the check moved; the boundary inside it is the one per phase. */}
         <PhaseTransition phase={phase} still={motionReduced}>
+        {/* One boundary per phase: a part that fails to draw shows a sentence
+            and a way back, never an empty page. A new phase starts clean. */}
+        <ErrorBoundary
+          key={phase}
+          fallback={
+            <Notice
+              tone="warning"
+              action={
+                <button
+                  type="button"
+                  className="button button--secondary"
+                  onClick={() => window.location.reload()}
+                >
+                  {strings.screenFailed.reload}
+                </button>
+              }
+            >
+              {strings.screenFailed.message}
+            </Notice>
+          }
+        >
         {phase === 'identify' && (
           <IdentifyPhase
             key={expiredFor ?? 'identify'}
@@ -165,6 +191,7 @@ export default function App() {
             store={store}
             personId={personId}
             indicators={data.indicators}
+            rules={data.rules}
             entries={personEntries}
             serverConfigured={client.isConfigured()}
             onBack={() => setPhase('identify')}
@@ -187,6 +214,7 @@ export default function App() {
             }}
           />
         )}
+        </ErrorBoundary>
         </PhaseTransition>
       </main>
       <PhaseRail current={phase} />

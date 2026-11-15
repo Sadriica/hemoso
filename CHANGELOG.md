@@ -2,6 +2,38 @@
 
 Written by Eng 1 at every merge into `main`. Newest entry first.
 
+## cp3 · Sunday 08:00 (draft, written Sun 05:00; final merges at 07:45)
+- phys: indicators with tier and system, glucose at tier A with the i-STAT,
+  `docs/nasa_data.md`, five findings, the baseline rule with cited limits first
+  (F-phys-02), and the two reaction indicators with the 3-minute PVT-B method
+  (F-phys-06).
+- bio2: 12 attention thresholds with their side, conditions with signal sides
+  and the current state condition (T-73), the evidence score (F-bio2-02), the
+  blood pressure rule (F-bio2-01), and a review of the seven content files.
+- bio1: the seven content files with the baseline states and attention levels,
+  the two-minute pitch script and the video script.
+- eng2: the condition evidence score route, the worse of the two blood
+  pressure states, the state window without the tested reading, accounts with
+  a PIN and session tokens, cited limits before the baseline (T-75), and the
+  pain reports route.
+- eng1, frontend: reading context and the backend state route; history read
+  from the backend; sign-in with the face, a username and PIN, or the open
+  demo; a mission start date per astronaut; the reaction check (REQ-38, a 90 s
+  run adapted from the PVT-B, colour targets off until Phys confirms); the 3D
+  body with the pain and injury picker and a 2D fallback when WebGL fails; the
+  possible conditions panel with evidence scores (REQ-06); NASA crew terms
+  (Flight Day, GMT, Post-sleep, Pre-sleep) from the STANDARDS glossary; the
+  visual layer in three rounds and the telemetry console for Report and Status;
+  self-hosted fonts. Live at hemoso.space.
+- eng1, docs: decisions for the 600 kB budget, accounts, face shown by
+  default, the per-astronaut day, the reaction changes and the console; the
+  STANDARDS glossary with NASA sources; the REQ-37 and REQ-38 rows; cards T-60
+  to T-81.
+- Open for submission: the two reaction content files (T-74, the only
+  `--strict` errors), the 90 s method text in `indicators.csv` (Phys), slides
+  and the submission page with the AI-use disclosure, the Supabase SQL and the
+  merge of PR #143 (pain kind and mission start) after cp3.
+
 ## cp2 · Saturday 17:00 (closed 17:30)
 - phys: the team's seven indicators with `min_spread`, `tier` and `system`, a
   NASA hazard page for each hazard named, demo data with `context` (218 rows,

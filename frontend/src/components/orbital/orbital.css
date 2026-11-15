@@ -55,3 +55,48 @@
   .orbital__orbit { stroke-opacity: 0.9; stroke-width: 3; }
   .orbital__tint { opacity: 0.16; }
 }
+
+/* On a phone the scene never sits behind text. Identify: a small stage in the
+   free corner beside the headline lines, above the intro. Report and Status:
+   the band keeps its own row, and its edges fade so no clipped glow shows. The
+   lines are stronger at this size (see the container rule above). It is
+   decoration, so it is dropped where the headline needs the whole width. */
+@media (max-width: 599px) {
+  .phase--identify .identify__scene {
+    top: calc(var(--space-5) + var(--space-3));
+    right: 0;
+    width: 140px;
+    height: 140px;
+    max-width: none;
+  }
+
+  /* Muted ink instead of the control border, so the small stage still reads. */
+  .phase--identify .identify__scene .orbital__orbit {
+    stroke: var(--color-text-muted);
+    stroke-opacity: 0.75;
+  }
+
+  .phase--identify .identify__scene .orbital__orbit--accent {
+    stroke: var(--color-accent);
+    stroke-opacity: 1;
+  }
+
+  .scene-band .orbital {
+    width: 240px;
+  }
+}
+
+@media (max-width: 359px) {
+  .phase--identify .identify__scene {
+    display: none;
+  }
+}
+
+/* Under 900 px the scene is a 96 px band: its top and bottom fade, so the glow
+   never ends on a hard edge. */
+@media (max-width: 899px) {
+  .scene-band .orbital {
+    mask-image: linear-gradient(to bottom, transparent calc(50% - 48px), #000 calc(50% - 28px), #000 calc(50% + 28px), transparent calc(50% + 48px));
+    -webkit-mask-image: linear-gradient(to bottom, transparent calc(50% - 48px), #000 calc(50% - 28px), #000 calc(50% + 28px), transparent calc(50% + 48px));
+  }
+}
