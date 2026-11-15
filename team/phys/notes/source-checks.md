@@ -33,3 +33,14 @@ and `config/content/reaction_median_ms.md`. It is the same record; dropping `www
 makes the checker verify it instead of skipping it.
 
 Nothing else needs changing. A 403 is not a broken source.
+
+## The two temperature lines, checked on the PDF (12:10)
+
+NASA-STD-3001 Volume 1 Rev C, glossary, says:
+
+> \"Hypothermia: A medical emergency ... Normal body temperature is around 98.6F (37C). Hypothermia occurs as your body temperature falls below 95F (35C).\"
+
+So the \	emp_core_c below 35, urgent, flight_surgeon\ row is supported by the standard, and the 37 C cited in \demo_ranges.csv\ is the same sentence. Both lines stand as written.
+
+What the standard does **not** contain: 38.0 C, and no fever line. Searches for \38.0\, \35 C\ as a decimal and \ever\ return nothing. That is why the fever row needs the NIH definition and not this document.
+
