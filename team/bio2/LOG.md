@@ -4,6 +4,9 @@ One entry per decision. Newest first.
 
 | Time | What | Why | Source | AI used |
 | --- | --- | --- | --- | --- |
+| Sat 18:25 | `attention.csv` now has 12 rows, one per indicator | The checker warned that sleep and mood had no state; each gets a `watch` row at the mildest level | Jones et al. 2022 for sleep, `Assumption` for mood | Yes |
+| Sat 18:20 | Adopted the hypothermia and hypoglycaemia rows with their sources | NASA-STD-3001 Appendix C sets hypothermia below 35 °C and the ADA sets low glucose below 70 mg/dL; both are stronger than my `Assumption` rows | NASA-STD-3001 Rev. C, ADA low blood glucose | Yes |
+| Sat 18:15 | `docs/findings/bio2-02` now requires a side for every signal | Without it a high glucose adds points to hypoglycaemia; the two conditions share the same indicator | `docs/findings/bio2-02` | Yes |
 | Sat 17:40 | Wrote `team/bio2/notes/condition-probability-proposal.md` | REQ-06 needs a method, not a fixed percentage; the proposal uses the person's baseline and `attention.csv`, and flags the condition pairs that share every input | `docs/findings/phys-02`, `FORMATS.md` section 3 | Yes |
 | Sat 17:30 | Filled `config/rules/attention.csv` with 12 rows, at least one per indicator | Without a row the app never shows "needs review" (REQ-05); sleep, mood and heart rate below 50 have no source and are marked Assumption | NASA-STD-3001 Rev. C App. C p. 63, JSC 22538 Rev. F, MedlinePlus, WHO, ADA | Yes |
 | Sat 17:25 | Corrected the hypothermia location in my notes to Appendix C, p. 63 of 86 | The definition is in Appendix C (Definitions), not Appendix A (References); the page number and the text are right | NASA-STD-3001 Vol. 1 Rev. C | Yes |

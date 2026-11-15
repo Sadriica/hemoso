@@ -57,6 +57,31 @@ The app always adds that the CMO or the flight surgeon confirms. A signal with
 no baseline yet is left out of the denominator, and with fewer than two signals
 the condition shows "not enough data", never a low score.
 
+## Every signal needs a side
+
+`hyperglycaemia` and `hypoglycaemia` both rest on `glucose_mgdl`. Without a side,
+a glucose of 180 mg/dL would add points to both, which is wrong: a high value
+cannot support a low-glucose condition. The same happens with the pairs that
+share all their inputs (`orthostatic_intolerance` and `dehydration`).
+
+The score needs the side of each signal, so the file should write `based_on` as
+`indicator_id:side`:
+
+```csv
+condition_id,name,based_on,source
+hyperglycaemia,Hyperglycaemia,glucose_mgdl:above,https://diabetes.org/about-diabetes/diagnosis
+hypoglycaemia,Hypoglycaemia,glucose_mgdl:below,https://diabetes.org/living-with-diabetes/hypoglycemia-low-blood-glucose
+```
+
+A value on the wrong side of the condition adds 0, whatever its distance from the
+baseline. This is a change to `config/rules/conditions.csv` and to
+`scripts/check_content.py`, so Eng 1 owns it; until then the file keeps the ids
+alone and the app cannot separate a high from a low glucose.
+
+Even with the side, two conditions that share every input score the same. The
+condition needs one distinguishing signal (thirst or urine colour for
+dehydration, a symptom for orthostatic intolerance) or the pair is merged.
+
 ## Test vectors
 
 Orthostatic intolerance (`based_on`: `hr_bpm bp_sys_mmhg bp_dia_mmhg`):
