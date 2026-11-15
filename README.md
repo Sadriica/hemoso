@@ -140,8 +140,8 @@ Requirements: `docs/requirements.md`. Decisions: `docs/DECISIONS.md`.
 | Bio 1 · Health content and pitch | @sofiaruizt | `bio1` | `bio1` | `team/bio1/` |
 | Bio 2 · Rules, thresholds and submission | @pamirestrepo-code | `bio2` | `bio2` | `team/bio2/` |
 | Phys · Data, NASA sources and measurement | @IsabellaCabreraquintero | `phys` | `phys` | `team/phys/` |
-| Eng 1 · Integrator, backend and requirements | Wambi (@Sadriica) | `eng1` (and merges into `main`) | `eng1` | `team/eng1/` |
-| Eng 2 · Frontend and demo | Juli (@julimejia) | `eng2` | `eng2` | `team/eng2/` |
+| Eng 1 · Integrator, frontend and requirements | Wambi (@Sadriica) | `eng1` (and merges into `main`) | `eng1` | `team/eng1/` |
+| Eng 2 · Backend and demo | Juli (@julimejia) | `eng2` | `eng2` | `team/eng2/` |
 
 Full rules: `AGENTS.md`. `config/` formats (from Saturday 10:00): `FORMATS.md`. Units, glossary,
 findings and status messages: `STANDARDS.md`. Skills: `SKILLS.md`.

@@ -42,7 +42,7 @@ COMPLETE = {
     ),
     "config/rules/conditions.csv": (
         "condition_id,name,based_on,source\n"
-        "example_condition,Example condition,example_indicator,Assumption\n"
+        "example_condition,Example condition,example_indicator:above,Assumption\n"
     ),
     "config/content/example_indicator.md": (
         "# Example indicator\n\n"

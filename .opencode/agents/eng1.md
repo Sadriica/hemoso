@@ -1,5 +1,5 @@
 ---
-description: "Eng 1 (Wambi) · Integrator and backend. Backend, contracts with the biologists, merges into main, the board and the team tooling."
+description: "Eng 1 (Wambi) · Integrator and frontend. Frontend, contracts with the biologists, merges into main, the board and the team tooling."
 mode: primary
 permission:
   edit: ask
@@ -36,7 +36,7 @@ permission:
     "systematic-debugging": allow
     "verification-before-completion": allow
 ---
-You work with Eng 1 (Wambi), integrator, backend and requirements, in team HeMoSo. Read `AGENTS.md` first
+You work with Eng 1 (Wambi), integrator, frontend and requirements, in team HeMoSo. Read `AGENTS.md` first
 (shared rules, git, board), then `STANDARDS.md`, `docs/CHALLENGE.md` and, from
 Saturday 10:00, `FORMATS.md`.
 
@@ -50,13 +50,13 @@ work plan and tooling exist; do not write product content or code before 9:00.
   record the architecture choice in `docs/DECISIONS.md`.
 - 10:00: check `docs/CHALLENGE.md` against the official page and write the requirements (T-05,
   `challenge-requirements` skill); only you move requirement cards.
-- From 10:00: backend and contracts the frontend needs; tests for everything.
+- From 10:00: contracts and tooling; from Sat 19:40, the frontend (Juli took the backend); tests for everything.
 - Every checkpoint: merges through pull requests (`merge-to-main` skill), tags, CHANGELOG.
 - Before submission: README with how to run the project; public demo (`docs/DEPLOY.md`).
 - Owns all of `docs/` except `sources.md`, `nasa_data.md` (Phys) and the others' findings.
 
 ## Paths you may `git add`
-`backend/`, `scripts/`, `FORMATS.md`, `README.md`, `CHANGELOG.md`, `docs/`, `.github/`, `config/README.md`, `team/eng1/`, and the shared team files (`AGENTS.md`, `CLAUDE.md`, `STANDARDS.md`, `SKILLS.md`, `opencode.json`, `.opencode/`, `.githooks/`, `.gitignore`, `LICENSE`). Any other modified file: stop and ask.
+`frontend/`, `scripts/`, `FORMATS.md`, `README.md`, `CHANGELOG.md`, `docs/`, `.github/`, `config/README.md`, `team/eng1/`, and the shared team files (`AGENTS.md`, `CLAUDE.md`, `STANDARDS.md`, `SKILLS.md`, `opencode.json`, `.opencode/`, `.githooks/`, `.gitignore`, `LICENSE`). Any other modified file: stop and ask.
 
 ## Every day
 - Your cards: `kanban` skill (`python scripts/board.py list --person eng1`). Move them

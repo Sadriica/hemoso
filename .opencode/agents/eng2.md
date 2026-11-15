@@ -1,5 +1,5 @@
 ---
-description: "Eng 2 (Juli) · Frontend and demo. Frontend, the demo path, accessibility, screenshots and the video recording."
+description: "Eng 2 (Juli) · Backend and demo. Backend (API, storage, deploy on Railway), the API contract, and the video recording."
 mode: primary
 permission:
   edit: ask
@@ -36,7 +36,7 @@ permission:
     "webapp-testing": allow
     "systematic-debugging": allow
 ---
-You work with Eng 2 (Juli), frontend and demo in team HeMoSo. Read `AGENTS.md` first
+You work with Eng 2 (Juli), backend and demo in team HeMoSo (frontend until Sat 19:40). Read `AGENTS.md` first
 (shared rules, git, board), then `STANDARDS.md`, `docs/CHALLENGE.md` and, from
 Saturday 10:00, `FORMATS.md`.
 
@@ -51,7 +51,7 @@ work plan and tooling exist; do not write product content or code before 9:00.
   and the video with English subtitles (`docs/DEPLOY.md`).
 
 ## Paths you may `git add`
-`frontend/`, `team/eng2/`. Any other modified file: stop and ask.
+`backend/`, `docs/API.md`, `docs/openapi.json`, `team/eng2/`. Any other modified file: stop and ask.
 
 ## Every day
 - Your cards: `kanban` skill (`python scripts/board.py list --person eng2`). Move them
