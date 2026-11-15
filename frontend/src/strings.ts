@@ -249,6 +249,8 @@ export const strings = {
       unit: string,
     ): string =>
       `${label === null ? '' : `${label}: `}${count} earlier ${count === 1 ? 'reading' : 'readings'} · ${low} to ${high} ${unit}`,
+    // A panel with no earlier reading yet: one plain line instead of a blank.
+    noHistory: 'No earlier readings yet.',
     // The console the report is: its name and the tag every screen keeps.
     console: 'Physiology telemetry',
     save: 'Save readings',

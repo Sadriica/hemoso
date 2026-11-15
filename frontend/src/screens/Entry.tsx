@@ -668,7 +668,11 @@ function ReadingRowField({
     </div>
   )
   const trend =
-    telemetry.history.length === 0 ? null : (
+    telemetry.history.length === 0 ? (
+      <p className="rep-row__history rep-row__history--empty">
+        {strings.entry.noHistory}
+      </p>
+    ) : (
       <div className="rep-row__trend">
         <Sparkline values={telemetry.history} pending={telemetry.pending} />
         <p className="rep-row__history">
