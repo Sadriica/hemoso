@@ -63,7 +63,6 @@ function Harness({
       headingRef={headingRef}
       personIds={personIds}
       session={session}
-      faceEnabled
       onDone={onDone}
     />
   )
@@ -107,6 +106,43 @@ afterEach(() => {
 })
 
 describe('Identify', () => {
+  it('shows the face option first even with no face saved, and says how to add one', () => {
+    render(<Harness onDone={vi.fn()} />)
+
+    const cards = screen.getAllByRole('heading', { level: 2 })
+    expect(cards[0]).toHaveTextContent(strings.signIn.faceHeading)
+    expect(screen.getByText(strings.signIn.faceNone)).toBeInTheDocument()
+    // Not a dead button: it opens the consent, the camera stays off.
+    expect(
+      screen.getByRole('button', { name: strings.face.buttonLabel }),
+    ).toBeEnabled()
+  })
+
+  it('offers to add a face after a PIN sign-in, consent first, or to go on', async () => {
+    fakeCamera()
+    const onDone = vi.fn()
+    const user = userEvent.setup()
+    render(<Harness onDone={onDone} />)
+
+    await user.type(screen.getByLabelText(strings.signIn.username), 'cadet_okoro')
+    await user.type(screen.getByLabelText(strings.signIn.pin, { exact: true }), '4821')
+    await user.click(screen.getByRole('button', { name: strings.signIn.action }))
+
+    expect(
+      await screen.findByRole('heading', { name: strings.signIn.faceOfferHeading }),
+    ).toBeInTheDocument()
+    expect(onDone).not.toHaveBeenCalled()
+
+    await user.click(
+      screen.getByRole('button', { name: strings.signIn.faceOfferAction }),
+    )
+    expect(await screen.findByText(strings.face.consent)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: strings.face.cancelLabel }))
+
+    await user.click(screen.getByRole('button', { name: strings.signIn.faceOfferSkip }))
+    expect(onDone).toHaveBeenCalledTimes(1)
+  })
+
   it('shows a face first when one is saved on this device', () => {
     saveFace({ personId: 'cadet_okoro', descriptor: [1, 1] })
     render(<Harness onDone={vi.fn()} />)

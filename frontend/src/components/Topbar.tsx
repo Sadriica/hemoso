@@ -62,14 +62,15 @@ export default function Topbar({
         )}
 
         {personId && (
-          <p className="topbar__duty">
-            <span className="topbar__dot" aria-hidden="true" />
-            {strings.topbar.onDuty(personId)}
-          </p>
-        )}
-
-        {personId && onChangeMissionStart && (
-          <MissionStart start={missionStart} onChange={onChangeMissionStart} />
+          <div className="topbar__who">
+            <p className="topbar__duty">
+              <span className="topbar__dot" aria-hidden="true" />
+              {strings.topbar.onDuty(personId)}
+            </p>
+            {onChangeMissionStart && (
+              <MissionStart start={missionStart} onChange={onChangeMissionStart} />
+            )}
+          </div>
         )}
 
         <div className="topbar__controls">
@@ -85,6 +86,7 @@ export default function Topbar({
             onClick={onToggleMotion}
           >
             <UtilityIcon kind={motionReduced ? 'still' : 'motion'} size={18} />
+            <span className="topbar__motion-label">{strings.topbar.reduceMotion}</span>
           </button>
         </div>
       </div>

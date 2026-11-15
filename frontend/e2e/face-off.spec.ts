@@ -1,15 +1,15 @@
 import { expect, test } from '@playwright/test'
 import { strings } from '../src/strings'
 
-// The gate of the face panel (REQ-14, REQ-36). On the page the public demo
-// serves, nothing face-related is on screen, no model is downloaded and nothing
-// is written to the face key: the feature is off until someone opens the page
-// with ?face=1, which is what gives Juli's demonstration its own URL.
+// The gate of the face panel (REQ-14, REQ-36). The face option is the first
+// way in on every page, but nothing is downloaded and nothing is written until
+// the person chooses it: no model file is asked for, no camera is opened and
+// the face key stays empty.
 //
 // The reverse side, a face actually registered, needs a real camera and a person
 // who agrees, so it is checked by hand and not here.
 
-test('without ?face=1 nothing face-related is on the page or requested', async ({
+test('the plain page shows the face option first and asks for no model', async ({
   page,
 }) => {
   const modelRequests: string[] = []
@@ -25,22 +25,35 @@ test('without ?face=1 nothing face-related is on the page or requested', async (
   await expect(page.getByRole('heading', { level: 1 })).toContainText(
     strings.phases.identify.headline[0],
   )
-  await expect(
-    page.getByRole('button', { name: strings.face.buttonLabel }),
-  ).toHaveCount(0)
-  await expect(
-    page.getByRole('region', { name: strings.face.heading }),
-  ).toHaveCount(0)
+
+  // The face option is the first card, a real button, closed, with one line on
+  // how to add a face when none is saved.
+  const cards = page.getByRole('heading', { level: 2 })
+  await expect(cards.first()).toHaveText(strings.signIn.faceHeading)
+  const faceButton = page.getByRole('button', { name: strings.face.buttonLabel })
+  await expect(faceButton).toBeEnabled()
+  await expect(faceButton).toHaveAttribute('aria-expanded', 'false')
+  await expect(page.getByText(strings.signIn.faceNone)).toBeVisible()
   await expect(page.locator('.face-panel')).toHaveCount(0)
+
+  // Keyboard: the button is reachable with Tab and Enter opens the consent.
+  for (let press = 0; press < 20; press += 1) {
+    if (await faceButton.evaluate((el) => el === document.activeElement)) break
+    await page.keyboard.press('Tab')
+  }
+  await expect(faceButton).toBeFocused()
+  await page.keyboard.press('Enter')
+  await expect(page.getByText(strings.face.consent)).toBeVisible()
+  await page.getByRole('button', { name: strings.face.cancelLabel }).click()
 
   // The way in that always works, with or without a camera.
   await expect(
     page.getByRole('group', { name: strings.phases.identify.crewLabel }),
   ).toBeVisible()
 
-  // The page may still be loading its own files; nothing may ask for a model.
+  // Opening the consent is not choosing the camera: still no model.
   await page.waitForLoadState('networkidle')
-  expect(modelRequests, 'model requests on the plain page').toEqual([])
+  expect(modelRequests, 'model requests before the camera is chosen').toEqual([])
   expect(
     await page.evaluate(() => window.localStorage.getItem('hemoso:face:v1')),
     'face data written by the plain page',

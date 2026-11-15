@@ -360,9 +360,7 @@
 .rep .rep-actions {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas:
-    'progress save'
-    'reason save';
+  grid-template-areas: 'reason save';
   align-items: center;
   column-gap: var(--space-3);
   row-gap: var(--space-1);
@@ -471,7 +469,6 @@
   .rep .rep-actions {
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
-      'progress'
       'save'
       'reason';
   }
@@ -486,3 +483,121 @@
   scroll-padding-bottom: calc(var(--rail-height) + var(--space-4));
 }
 
+
+/* Round 2 */
+.rep .rep-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-3);
+}
+
+.rep .rep-head .report-form__heading {
+  margin: 0;
+}
+
+/* Segmented control: a rounded track with the chosen segment inset in it. */
+.rep .rep-segment__legend {
+  display: block;
+  margin-bottom: var(--space-1);
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+.rep .rep-segment__track {
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border-radius: var(--radius-round);
+  overflow: visible;
+}
+
+.rep .rep-segment__option {
+  min-height: 48px;
+  border-radius: var(--radius-round);
+}
+
+.rep .rep-segment__option + .rep-segment__option {
+  border-left: 0;
+}
+
+.rep .rep-segment__option:has(input:focus-visible) {
+  outline-offset: 2px;
+}
+
+.rep .rep-pill {
+  min-height: 48px;
+}
+
+/* A field and its card tell, at a glance, that the row has a value. */
+.rep .rep-row:has(.rep-field input:not(:placeholder-shown)),
+.rep .rep-row:has(.rep-pill input:checked) {
+  background: color-mix(in srgb, var(--color-accent) 7%, var(--color-surface));
+}
+
+/* The whole 48 px field takes the tap: the input fills it. */
+.rep .rep-field {
+  padding: 0;
+  cursor: text;
+}
+
+.rep .rep-field__part {
+  align-self: stretch;
+  padding-left: var(--space-3);
+}
+
+.rep .rep-field--pair .rep-field__part:first-child {
+  padding-left: var(--space-3);
+}
+
+.rep .rep-field input.rep-field__input {
+  align-self: stretch;
+  min-height: 46px;
+}
+
+.rep .rep-field__unit {
+  align-self: center;
+  padding-right: var(--space-3);
+}
+
+/* Saved: the result is a finished message, not a loose line. */
+.rep .form__status:not(:empty) {
+  padding: var(--space-2) var(--space-3);
+  border-left: 3px solid var(--status-in-range-text);
+  border-radius: var(--radius-card);
+  background: var(--status-in-range-bg);
+  color: var(--status-in-range-text);
+}
+
+.rep .form__status:not(:empty)::before {
+  content: '\2713\00a0';
+  font-weight: 700;
+}
+
+.rep .form__status:empty {
+  margin-top: calc(-1 * var(--space-3));
+}
+
+@media (max-width: 599px) {
+  .rep .rep-segment__track {
+    border-radius: var(--radius-card);
+  }
+
+  .rep .rep-segment__option {
+    border-radius: var(--radius-card);
+  }
+
+  .rep .rep-segment__option:nth-child(n + 3) {
+    border-top: 0;
+  }
+}
+
+/* An empty field shows a quiet dash, so a blood pressure never reads as a
+   lone slash. */
+.rep .rep-field input.rep-field__input::placeholder {
+  color: var(--color-text-muted);
+  opacity: 1;
+}

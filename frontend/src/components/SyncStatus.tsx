@@ -1,5 +1,6 @@
 import type { EntryStore, Outbox } from '../data/entryStore'
 import type { SyncClient } from '../data/sync'
+import { UtilityIcon } from '../icons'
 import { useOutbox } from '../hooks/useOutbox'
 import { useSync } from '../hooks/useSync'
 import { strings } from '../strings'
@@ -53,9 +54,7 @@ export default function SyncStatus({
         title={strings.sync.chip(state, detail)}
       >
         <span className="sync-chip__icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" width="14" height="14" focusable="false">
-            {online ? <OnlineIcon /> : <OfflineIcon />}
-          </svg>
+          <UtilityIcon kind={online ? 'wifi' : 'wifi-off'} size={16} />
         </span>
         <span className="sync-chip__state">{state}</span>
         <span className="sync-chip__rest">
@@ -82,28 +81,5 @@ export default function SyncStatus({
         </button>
       )}
     </div>
-  )
-}
-
-// Two signal arcs and a dot: the browser is online.
-function OnlineIcon() {
-  return (
-    <g fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-      <path d="M5.8 11.6a9 9 0 0 1 12.4 0" />
-      <path d="M8.6 14.9a5.2 5.2 0 0 1 6.8 0" />
-      <circle cx="12" cy="18.4" r="1.3" fill="currentColor" stroke="none" />
-    </g>
-  )
-}
-
-// The same arcs, cut by a line: the browser is offline.
-function OfflineIcon() {
-  return (
-    <g fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-      <path d="M5.8 11.6a9 9 0 0 1 12.4 0" />
-      <path d="M8.6 14.9a5.2 5.2 0 0 1 6.8 0" />
-      <circle cx="12" cy="18.4" r="1.3" fill="currentColor" stroke="none" />
-      <path d="M4.5 4.5l15 15" />
-    </g>
   )
 }

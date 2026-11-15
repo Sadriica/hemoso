@@ -3,9 +3,11 @@
   /* Touch target and body diameter: 44 px (REQ-15). */
   --planet-target: 44px;
   /* Largest side of the square orbit stage. */
-  --planet-stage-max: 560px;
+  --planet-stage-max: 640px;
   /* Width of a body tag; names and states wrap inside it, never cut. */
-  --planet-tag-width: 112px;
+  --planet-tag-width: 156px;
+  /* The tag never takes more than this share of the stage width, so it stays inside the stage. */
+  --planet-tag-share: 23cqw;
   /* Ring around a body, the selected ring and the row edge: 3 px. */
   --planet-ring: 3px;
   /* Orbit lines: 1 px, thinner than the tag text. */
@@ -52,7 +54,7 @@
 .planetarium__row--no-data { --ring: var(--status-no-data-text); }
 
 .planetarium__stage {
-  position: relative; width: min(100%, var(--planet-stage-max)); aspect-ratio: 1 / 1; min-height: 0; justify-self: center;
+  position: relative; width: min(100%, var(--planet-stage-max)); aspect-ratio: 1 / 1; min-height: 0; container-type: inline-size; justify-self: center;
   border: var(--border-subtle); border-radius: var(--radius-card); background: var(--color-bg-raised);
 }
 .planetarium__lines { position: absolute; inset: 0; width: 100%; height: 100%; }
@@ -73,11 +75,12 @@
 .planetarium__orb[aria-pressed='true'] .planetarium__disc { box-shadow: 0 0 0 var(--planet-gap) var(--color-bg-raised), 0 0 0 calc(var(--planet-gap) + var(--planet-ring)) var(--color-accent); }
 .planetarium__tag {
   position: absolute; top: 50%; left: 100%; transform: translateY(-50%); margin-left: var(--space-1);
-  display: grid; width: var(--planet-tag-width); padding: var(--space-1);
+  display: grid; width: min(var(--planet-tag-width), var(--planet-tag-share)); padding: var(--space-1);
   border: var(--planet-line) solid var(--ring);
   background: var(--color-surface); color: var(--color-text); border-radius: var(--radius-small);
-  font-family: var(--font-mono); font-size: var(--text-label); overflow-wrap: anywhere; text-align: left;
+  font-family: var(--font-mono); font-size: var(--text-label); overflow-wrap: anywhere; text-align: left; justify-items: start;
 }
-.planetarium__body--left .planetarium__tag { left: auto; right: 100%; margin: 0 var(--space-1) 0 0; text-align: right; justify-items: end; }
+.planetarium__body--left .planetarium__tag { left: auto; right: 100%; margin: 0 var(--space-1) 0 0; }
 .planetarium__tag-state { color: var(--ring); }
+.planetarium__tag-name { font-weight: 600; }
 .planetarium__row-state svg, .planetarium__tag-state svg { flex: none; }
