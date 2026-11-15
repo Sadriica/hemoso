@@ -28,6 +28,9 @@ marked `Assumption` so every indicator has at least one state.
 | glucose_mgdl | below | 70 | consult | cmo | American Diabetes Association |
 | sleep_h | below | 6 | watch | crew | Assumption |
 | mood_1_5 | below | 2 | watch | crew | Assumption |
+| appetite_1_5 | below | 3 | watch | crew | Assumption |
+| fluid_intake_ml | below | 2500 | watch | crew | OCHMO-TB-027 Rev C |
+| body_mass_kg | below | 70 | watch | crew | Assumption |
 
 The two blood-pressure steps are written most severe first. The frontend
 returns the first matching rule, and `FORMATS.md` says the most severe rule
@@ -54,6 +57,20 @@ rule from the format.
   higher is diabetes. https://diabetes.org/about-diabetes/diagnosis
 - American Diabetes Association, Low blood glucose: below 70 mg/dL needs
   action. https://diabetes.org/living-with-diabetes/hypoglycemia-low-blood-glucose
+- OCHMO Technical Brief 027 Rev C, Water, page 4: potable water for hydration,
+  "Minimum 2.5 L (84.5 fl oz) per crewmember per day"; page 3: 2.5 L/day "for
+  direct consummation and for rehydration of food", and the average intake on
+  past programmes (2.0 to 2.3 L/day on ISS Expeditions).
+  https://www.nasa.gov/wp-content/uploads/2023/12/ochmo-tb-027-water.pdf
+- OCHMO Technical Brief 013 Rev E, Food and Nutrition, page 3: inadequate food
+  and nutrition "has led to weight loss, bone and muscle loss"; page 12: waste
+  system odours "caused a decrease in appetite" and "Control of SAS is
+  essential for a healthy appetite". No appetite scale and no normal band.
+  https://www.nasa.gov/wp-content/uploads/2023/12/ochmo-tb-013-food-and-nutrition.pdf
+- Zwart et al., Body mass changes during long-duration spaceflight, Aviat Space
+  Environ Med 85(9):897-904, 2014: mean loss of 2.8 % by SLAMMD and 4.4 % by
+  BMMD in 25 crew members, and constant mass after the first 30 days; no fixed
+  kg boundary. https://pubmed.ncbi.nlm.nih.gov/25197887/
 
 ## Why these choices
 
@@ -71,6 +88,28 @@ rule from the format.
 - **Hypothermia is a definition, not an in-flight rule.** NASA states the
   boundary, not an operational alert. The app uses it because it is published,
   and sends the case to the flight surgeon.
+- **Appetite below 3 is an Assumption.** The 1 to 5 scale is ours
+  (`FORMATS.md`, Sun 06:50); the food and nutrition brief gives no appetite
+  scale and no normal band. The row fires on the two lowest answers ("very low"
+  and "low") and asks the crew to repeat the question the next day and check
+  fluid intake. The baseline still catches a slow drift on its own.
+- **Fluid intake below 2500 mL is the requirement, not a clinical alert.**
+  NASA-STD-3001 Volume 2 requires at least 2.5 L (2500 mL) of potable water per
+  crew member per day for drinking and for rehydrating food, which is exactly
+  what `fluid_intake_ml` counts. The same brief records 2.0 to 2.3 L/day as the
+  average intake on ISS Expeditions, so the row fires on an ordinary day and
+  only asks the crew to drink and to keep logging. A CMO step below it has no
+  source, so it is not written.
+- **Body mass below 70 kg is a stand-in, not a limit.** No source gives a fixed
+  kg boundary. Zwart et al. report a mean in-flight loss of 2.8 % measured with
+  SLAMMD and 4.4 % with the BMMD, and body mass that stays constant after the
+  first 30 days. A percentage of the person's own pre-mission mass is what the
+  study supports, and `rules/attention.csv` can only hold an absolute value in
+  the indicator unit. 70 kg is about 3 % below the 72.3 kg the demo astronaut
+  starts at, inside the loss the study reports. The row needs a percentage of
+  the pre-mission mass once the app stores that value (code change, Eng 1), and
+  until then it fires too late for a small crew member and too early for a
+  heavy one.
 
 ## Open points for the team
 
