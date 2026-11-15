@@ -1,4 +1,4 @@
-"""The Entry model: one stored measurement (REQ-27)."""
+"""The stored models: one measurement (REQ-27), one pain report (B-3), accounts."""
 
 from __future__ import annotations
 
@@ -72,6 +72,64 @@ def entry_key(entry: Entry) -> tuple[str, str, int, str]:
     return (entry.person_id, entry.indicator_id, entry.mission_day, entry.time)
 
 
+PAIN_MIN = 0
+PAIN_MAX = 10
+NOTE_MAX = 280
+
+
+class PainFields(BaseModel):
+    """The fields of a pain report the astronaut chooses on the 3D body (B-3).
+
+    `region_id` is a lowercase `snake_case` id of up to 64 characters from the
+    frontend's region list; the API does not check it against a file because
+    `config/content/body_regions.csv` does not exist yet. `intensity` is the
+    0 to 10 the astronaut set, stored as it comes: the API does not read it as
+    a sign of anything. `note` is free text the astronaut may add.
+    """
+
+    region_id: str = Field(max_length=64)
+    intensity: int = Field(ge=PAIN_MIN, le=PAIN_MAX, strict=True)
+    mission_day: int = Field(gt=0, le=100000, strict=True)
+    time: str
+    note: str | None = Field(default=None, max_length=NOTE_MAX)
+
+    @field_validator("region_id")
+    @classmethod
+    def _check_region(cls, value: str) -> str:
+        if not is_valid_id(value):
+            raise ValueError("must be lowercase snake_case")
+        return value
+
+    @field_validator("time")
+    @classmethod
+    def _check_time(cls, value: str) -> str:
+        if not is_valid_time(value):
+            raise ValueError("time must be HH:MM (24-hour)")
+        return value
+
+
+class PainReportIn(PainFields):
+    """The body of `POST /people/{person_id}/pain`: the person is in the path."""
+
+
+class PainReport(PainFields):
+    """One stored pain report: the fields above and whose report it is."""
+
+    person_id: str = Field(max_length=64)
+
+    @field_validator("person_id")
+    @classmethod
+    def _check_person(cls, value: str) -> str:
+        if not is_valid_id(value):
+            raise ValueError("must be lowercase snake_case")
+        return value
+
+
+def pain_key(report: PainReport) -> tuple[str, str, int, str]:
+    """The natural key: one pain report per person, region, day and time."""
+    return (report.person_id, report.region_id, report.mission_day, report.time)
+
+
 class AttentionRow(BaseModel):
     """The attention.csv row a value crosses (REQ-05).
 
@@ -88,10 +146,9 @@ class AttentionRow(BaseModel):
 class IndicatorState(BaseModel):
     """One value against the person's own baseline (FORMATS.md section 3).
 
-    The baseline is taken over the person's last 14 mission days, one value per
-    day: the change `app.state` proposes to point 1 of that section, which
-    counts the last 14 readings today, pending Phys and Eng 1. `n` counts the
-    days and `readings` counts the stored readings behind them. While the state
+    The baseline is taken over the person's last 14 mission days that hold a
+    reading, one value per day (point 1 of that section). `n` counts the days
+    and `readings` counts the stored readings behind them. While the state
     is `no_data` with fewer than 3 days, `median` and `spread` are null;
     `attention` is the row that made the state `needs_review`, and null
     otherwise.

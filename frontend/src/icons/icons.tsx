@@ -15,16 +15,18 @@ const BP_NEEDLE = 'M12 15l3.4-4.2';
 
 const SHAPES: Record<string, () => ReactNode> = {
   hr_bpm: () => paths('M12 20.5C5 15.5 3 11.5 3 8.5a4.5 4.5 0 0 1 9-2 4.5 4.5 0 0 1 9 2c0 3-2 7-9 12z', 'M6 12h3l1.5-3 2 6 1.5-3h3'),
-  // Blood pressure is one gauge; the systolic and the diastolic one carry an
-  // arrow up and an arrow down so they are never the same drawing.
+  // Blood pressure: the pair of readings is one gauge. The systolic reading is
+  // a hill under a ceiling bar (the peak of each beat) and the diastolic one is
+  // its mirror, a trough over a floor bar (the rest between beats), so the two
+  // differ by silhouette and not by a small mark in a corner.
   bp: () => [...paths(BP_DIAL, BP_NEEDLE), <circle key="c" cx="12" cy="15" r="1" />],
   bp_sys_mmhg: () => [
-    ...paths(BP_DIAL, BP_NEEDLE, 'M16.5 9.5l2.5-2.5 2.5 2.5'),
-    <circle key="c" cx="12" cy="15" r="1" />,
+    ...paths('M4 4h16', 'M3 20.5c4 0 4.5-12.5 9-12.5s5 12.5 9 12.5'),
+    <circle key="c" cx="12" cy="8.5" r="1.4" fill="currentColor" />,
   ],
   bp_dia_mmhg: () => [
-    ...paths(BP_DIAL, BP_NEEDLE, 'M16.5 7l2.5 2.5 2.5-2.5'),
-    <circle key="c" cx="12" cy="15" r="1" />,
+    ...paths('M4 20h16', 'M3 3.5c4 0 4.5 12.5 9 12.5s5-12.5 9-12.5'),
+    <circle key="c" cx="12" cy="15.5" r="1.4" fill="currentColor" />,
   ],
   temp_core_c: () => paths('M10 14V5a2 2 0 0 1 4 0v9a4 4 0 1 1-4 0z', 'M12 10v6'),
   sleep_h: () => paths('M19 14.5A8 8 0 1 1 9.5 5a6.5 6.5 0 0 0 9.5 9.5z', 'M17 3v3M15.5 4.5h3', 'M21 9v2M20 10h2'),
@@ -52,6 +54,8 @@ export type UtilityKind =
   | 'check' // a step already walked
   | 'chevron' // a disclosure is closed
   | 'info' // something to read, nothing to fix
+  | 'wifi' // the browser is online
+  | 'wifi-off' // the browser is offline
   | 'motion' // motion is running
   | 'still'; // motion is off
 
@@ -63,6 +67,8 @@ const UTILITY: Record<UtilityKind, () => ReactNode> = {
     P('M12 11v5.5', 'p'),
     <circle key="d" cx="12" cy="7.8" r="1.1" fill="currentColor" stroke="none" />,
   ],
+  wifi: () => [...paths('M5.8 11.6a9 9 0 0 1 12.4 0', 'M8.6 14.9a5.2 5.2 0 0 1 6.8 0'), <circle key="d" cx="12" cy="18.4" r="1.1" fill="currentColor" stroke="none" />],
+  'wifi-off': () => [...paths('M5.8 11.6a9 9 0 0 1 12.4 0', 'M8.6 14.9a5.2 5.2 0 0 1 6.8 0', 'M4.5 4.5l15 15'), <circle key="d" cx="12" cy="18.4" r="1.1" fill="currentColor" stroke="none" />],
   motion: () => paths('M3.5 13.5c2.4 0 2.4-5 4.6-5s2.4 8 4.6 8 2.4-6.5 4.6-6.5 1.6 2.2 3.2 2.2', 'M14.5 5.5l4 2-3 2.6'),
   still: () => paths('M9 6.5v11', 'M15 6.5v11'),
 };
@@ -110,4 +116,19 @@ export function StatusIcon({ kind, size = ICON_SIZES.card }: { kind: StatusKind;
 /** Control and navigation glyph, on the same grid as every other icon. */
 export function UtilityIcon({ kind, size = ICON_SIZES.inline }: { kind: UtilityKind; size?: number }) {
   return <Svg size={size} kind={kind}>{UTILITY[kind]()}</Svg>;
+}
+
+/** Trend of a reading over its last entries: up, down, steady (two bars), or none when there is no trend yet. */
+export type TrendKind = 'up' | 'down' | 'steady' | 'none';
+
+const TREND: Record<TrendKind, string[]> = {
+  up: ['M12 19V5M6 11l6-6 6 6'],
+  down: ['M12 5v14M6 13l6 6 6-6'],
+  steady: ['M5 9h14M5 15h14'],
+  none: ['M8 12h8'],
+};
+
+/** Trend glyph for the card trend row: shape only, no colour of its own. `size` in px (default 16). */
+export function TrendIcon({ kind, size = ICON_SIZES.inline }: { kind: TrendKind; size?: number }) {
+  return <Svg size={size} kind={`trend-${kind}`}>{paths(...TREND[kind])}</Svg>;
 }

@@ -139,6 +139,31 @@ describe('IndicatorChart', () => {
     expect(screen.getByText('low_level')).toBeInTheDocument()
   })
 
+  it('puts each label at the right end, above an above line and below a below line', () => {
+    const container = renderChart({
+      rules: [
+        rule,
+        { ...rule, side: 'below', threshold: 5, attentionLevel: 'low_level' },
+      ],
+    })
+    const labels = [...container.querySelectorAll('.chart__threshold-label')]
+    const lines = [...container.querySelectorAll('.chart__threshold')]
+    const byText = (text: string): number =>
+      labels.findIndex((label) => label.textContent === text)
+    for (const label of labels) {
+      expect(label.getAttribute('text-anchor')).toBe('end')
+    }
+    const lineY = (text: string): number => {
+      const g = labels[byText(text)].parentElement
+      return Number(g?.querySelector('.chart__threshold')?.getAttribute('y1'))
+    }
+    const labelY = (text: string): number =>
+      Number(labels[byText(text)].getAttribute('y'))
+    expect(labelY('example_level')).toBeLessThan(lineY('example_level'))
+    expect(labelY('low_level')).toBeGreaterThan(lineY('low_level'))
+    expect(lines).toHaveLength(2)
+  })
+
   it('draws no threshold line for an indicator without attention rules', () => {
     const container = renderChart({ rules: [] })
     expect(container.querySelectorAll('.chart__threshold')).toHaveLength(0)

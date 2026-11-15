@@ -11,6 +11,20 @@ export async function expectNoBlockingA11yIssues(
   page: Page,
   screen: string,
 ): Promise<void> {
+  // A phase entrance fades its elements in: axe reads the colour of a half
+  // transparent element, so wait until every finite animation has ended.
+  await page.waitForFunction(
+    () =>
+      document
+        .getAnimations()
+        .every(
+          (animation) =>
+            animation.playState === 'finished' ||
+            animation.effect?.getTiming().iterations === Infinity,
+        ),
+    undefined,
+    { timeout: 8000 },
+  )
   const results = await new AxeBuilder({ page }).analyze()
   const blocking = results.violations.filter((violation) =>
     BLOCKING_IMPACT.has(violation.impact ?? ''),

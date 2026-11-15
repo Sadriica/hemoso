@@ -1,5 +1,7 @@
+import { readFileSync } from 'node:fs'
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import { SCALE_UNIT, hazardName, strings } from '../src/strings'
+import { isReactionIndicator } from '../src/reaction/ids'
 import { expectNoBlockingA11yIssues } from './axe'
 import { readIndicatorRows } from './config'
 
@@ -11,8 +13,14 @@ import { readIndicatorRows } from './config'
 //
 // Keyboard only on purpose: if a step needs a mouse, an astronaut on a laptop
 // with a broken trackpad cannot do it either.
-const { names, units, measuredOnBoard, hazards, scaleIndex } =
+const { ids, names, units, measuredOnBoard, hazards, scaleIndex } =
   readIndicatorRows()
+
+// The reaction check measures its two indicators itself (reaction/ids.ts), so
+// the Entry screen has no row for them: the count below leaves them out.
+const typedNames = names.filter(
+  (_, index) => !isReactionIndicator(ids[index] ?? ''),
+)
 
 const FIRST_VALUE = '72'
 const SCALE_VALUE = 3
@@ -63,18 +71,28 @@ test('guided check by keyboard with axe on every phase', async ({ page }) => {
   await test.step('Report: one row per indicator, with its icon and its unit', async () => {
     // Every indicator of the file has a row; the two blood pressures share one.
     const rows = page.getByRole('listitem').filter({
-      has: page.locator('.reading__body'),
+      has: page.locator('.rep-row__body'),
     })
     const paired = names.filter((name) => /systolic|diastolic/i.test(name)).length
-    await expect(rows).toHaveCount(names.length - (paired === 2 ? 1 : 0))
-    await expect(page.getByLabel(names[0])).toBeVisible()
+    await expect(rows).toHaveCount(typedNames.length - (paired === 2 ? 1 : 0))
+    await expect(page.getByLabel(typedNames[0], { exact: true })).toBeVisible()
     await expect(
       page.getByRole('group', { name: strings.entry.bloodPressure }),
     ).toBeVisible()
     await expect(page.getByLabel(strings.entry.missionDay)).toBeVisible()
+    // The context of the check is said once, in the header; its four choices
+    // open with the "change" button.
+    const contextChip = page.getByRole('button', {
+      name: new RegExp(`^${strings.entry.context}(?! for)`),
+    })
+    await expect(contextChip).toBeVisible()
+    await contextChip.click()
     await expect(
-      page.getByRole('group', { name: strings.entry.context }),
+      page.getByRole('group', { name: strings.entry.context, exact: true }),
     ).toBeVisible()
+    await contextChip.click()
+    // The walk below starts from the heading, as the phase opens.
+    await page.getByRole('heading', { level: 1 }).focus()
   })
 
   await test.step('Report: fill a measured row and the scale, then save once', async () => {
@@ -94,10 +112,10 @@ test('guided check by keyboard with axe on every phase', async ({ page }) => {
     scaleDay = readingDay
 
     await page.keyboard.press('Tab')
-    await expect(page.getByLabel(strings.entry.time)).toBeFocused()
+    await expect(page.getByLabel(strings.entry.time, { exact: true })).toBeFocused()
 
     // The measured row, typed with the keyboard only.
-    await focusByTab(page, page.getByLabel(names[0]))
+    await focusByTab(page, page.getByLabel(names[0], { exact: true }))
     await page.keyboard.type(FIRST_VALUE)
 
     // The mood row is five choices: two arrow presses reach the third one.
@@ -140,7 +158,15 @@ test('guided check by keyboard with axe on every phase', async ({ page }) => {
   })
 
   await test.step('Report: go on to the status', async () => {
-    await focusByTab(page, page.getByRole('button', { name: copy.report.next }))
+    // After a save the way on is also offered inside the form panel, with a
+    // longer accessible name; the plain button below stays for this path.
+    await expect(
+      page.getByRole('button', { name: strings.entry.nextLabel }),
+    ).toBeVisible()
+    await focusByTab(
+      page,
+      page.getByRole('button', { name: copy.report.next, exact: true }),
+    )
     await page.keyboard.press('Enter')
     const heading = page.getByRole('heading', { level: 1 })
     await expect(heading).toContainText(copy.status.headline[0])
@@ -159,8 +185,8 @@ test('guided check by keyboard with axe on every phase', async ({ page }) => {
     ).toBeVisible()
     await expect(statusRegion.getByRole('heading', { level: 3 })).toHaveCount(1)
     const measured = cardFor(statusRegion, names[0])
-    await expect(measured.getByText(`${FIRST_VALUE} ${units[0]}`)).toBeVisible()
-    await expect(measured.getByText(new RegExp(`^DAY ${readingDay} · `))).toBeVisible()
+    await expect(measured.getByText(`${FIRST_VALUE} ${units[0]}`, { exact: true })).toBeVisible()
+    await expect(measured.getByText(new RegExp(`^FD ${readingDay} · `))).toBeVisible()
 
     for (const name of names.slice(1)) {
       await selectIndicator(page, name)
@@ -171,9 +197,11 @@ test('guided check by keyboard with axe on every phase', async ({ page }) => {
     await selectIndicator(page, names[scaleIndex])
     const scale = cardFor(statusRegion, names[scaleIndex])
     await expect(
-      scale.getByText(`${SCALE_VALUE} ${strings.cardUnit(SCALE_UNIT)}`),
+      scale
+        .locator('.indicator-card__value')
+        .filter({ hasText: `${SCALE_VALUE} ${strings.cardUnit(SCALE_UNIT)}` }),
     ).toBeVisible()
-    await expect(scale.getByText(new RegExp(`^DAY ${scaleDay} · `))).toBeVisible()
+    await expect(scale.getByText(new RegExp(`^FD ${scaleDay} · `))).toBeVisible()
     await selectIndicator(page, names[0])
   })
 
@@ -200,6 +228,38 @@ test('guided check by keyboard with axe on every phase', async ({ page }) => {
     await expectNoBlockingA11yIssues(page, 'Status with Details open')
     await page.keyboard.press('Enter')
     await expect(details).toHaveAttribute('aria-expanded', 'false')
+  })
+
+  await test.step('Status: the possible conditions, with who confirms', async () => {
+    const copyConditions = strings.conditions
+    const panel = page.getByRole('region', { name: copyConditions.heading })
+    await expect(panel).toBeVisible()
+    await expect(panel.getByText(copyConditions.confirms)).toHaveCount(1)
+
+    // Every row of config/rules/conditions.csv is there: the scored ones in
+    // the list, the others behind one closed line that says how many.
+    const waiting = panel.getByRole('button', { name: /^Not enough data yet/ })
+    if ((await waiting.count()) > 0) {
+      await waiting.focus()
+      await page.keyboard.press('Enter')
+      await expect(waiting).toHaveAttribute('aria-expanded', 'true')
+    }
+    await expect(panel.getByRole('heading', { level: 3 })).toHaveCount(
+      conditionCount(),
+    )
+    // Evidence is a bar and a number from 0 to 1, never a percentage.
+    await expect(panel).not.toContainText('%')
+    await expectNoBlockingA11yIssues(page, 'Status with the conditions open')
+    await expectNoHorizontalScroll(page, 'Status with the conditions open')
+
+    // A signal opens the card of its indicator, by keyboard.
+    const signal = panel
+      .getByRole('button', { name: /^Show the reading\./ })
+      .first()
+    await signal.focus()
+    await page.keyboard.press('Enter')
+    await expect(statusRegion.getByRole('heading', { level: 3 })).toHaveCount(1)
+    await selectIndicator(page, names[0])
   })
 
   await test.step('Status: the history sentence, behind its disclosure', async () => {
@@ -247,7 +307,7 @@ test('status: one indicator history, its table and the comparison sentence', asy
       name: strings.history.tableCaption(chosenName),
     })
     await expect(table).toBeVisible()
-    await expect(table.getByRole('columnheader')).toHaveCount(4)
+    await expect(table.getByRole('columnheader')).toHaveCount(5)
     await expect(table.locator('tbody tr').first()).toBeVisible()
   })
 
@@ -285,6 +345,18 @@ test('no sideways scrolling at 320 px', async ({ page, isMobile }) => {
 
 // Chooses an indicator in the overview: the row of the list or the orb of the
 // orbit view, both named by the indicator. Enter on the focused control.
+// The rows of config/rules/conditions.csv, read from the team's file.
+function conditionCount(): number {
+  const text = readFileSync(
+    new URL('../../config/rules/conditions.csv', import.meta.url),
+    'utf8',
+  )
+  const rows = text
+    .split(/\r?\n/)
+    .filter((line) => line.trim() !== '' && !line.startsWith('#'))
+  return rows.length - 1
+}
+
 async function selectIndicator(page: Page, name: string): Promise<void> {
   const control = page
     .getByRole('button', { name: new RegExp(`^${name}\\b`) })

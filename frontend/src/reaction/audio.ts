@@ -1,13 +1,14 @@
-import { REACTION_TONE_HZ, REACTION_TONE_MS } from './constants'
+import type { ToneParams } from './timing'
 
-// The sound of the check: one short tone from an oscillator. No audio file, so
+// The sound of the check: one short tone from an oscillator, with the pitch,
+// loudness and length of each trial (team decision, Sun 01:50). No audio file, so
 // nothing is downloaded and nothing needs the network (REQ-28).
 //
 // A browser only starts audio inside a person's gesture, so the context is
 // created on the Start button's click and never before (see ReactionCheck).
 
 export interface TonePlayer {
-  play(): void
+  play(tone: ToneParams): void
   close(): void
 }
 
@@ -17,7 +18,7 @@ type AudioContextCtor = new () => AudioContext
  * A tone player, or null when this browser has no Web Audio: the check then
  * runs on the visible cue alone, which the screen says in words.
  */
-export function createTonePlayer(hz = REACTION_TONE_HZ, ms = REACTION_TONE_MS): TonePlayer | null {
+export function createTonePlayer(): TonePlayer | null {
   const browser = globalThis as unknown as {
     AudioContext?: AudioContextCtor
     webkitAudioContext?: AudioContextCtor
@@ -34,7 +35,7 @@ export function createTonePlayer(hz = REACTION_TONE_HZ, ms = REACTION_TONE_MS): 
 
   let closed = false
   return {
-    play() {
+    play({ hz, gain: peak, ms }) {
       if (closed) return
       // A context created before the gesture, or resumed after the tab slept,
       // starts suspended: asking again inside the click is what makes it sound.
@@ -48,7 +49,7 @@ export function createTonePlayer(hz = REACTION_TONE_HZ, ms = REACTION_TONE_MS): 
       // A short ramp at each end: a square click at the start would be a
       // second, sharper sound the person did not ask for.
       gain.gain.setValueAtTime(0, start)
-      gain.gain.linearRampToValueAtTime(0.25, start + 0.01)
+      gain.gain.linearRampToValueAtTime(peak, start + 0.01)
       gain.gain.linearRampToValueAtTime(0, end)
       oscillator.connect(gain)
       gain.connect(context.destination)

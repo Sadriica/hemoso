@@ -223,14 +223,10 @@ Query parameters:
 | `mission_day` | integer | optional; the mission day of the value being tested, greater than 0; given with `time` or not at all |
 | `time` | string | optional; the `HH:MM` clock time of the value being tested; given with `mission_day` or not at all |
 
-The rule today is FORMATS.md section 3, "How each value is compared", point 1
-(team decision Sat 18:45), and `docs/findings/phys-02-baseline-state-rule.md`:
-the last 14 readings in a moving window, with fewer than 3 readings giving
-`no_data`.
-
-This route proposes a change to that rule, pending Phys and Eng 1: daily
-averages over the last 14 mission days. Until they accept it, the files above
-still say 14 readings. As built:
+The rule is FORMATS.md section 3, "How each value is compared", point 1 (team
+decision Sun 05:54, replacing "the last 14 readings" of Sat 18:45), and
+`docs/findings/phys-02-baseline-state-rule.md`: daily averages over the last 14
+mission days that hold a reading, with fewer than 3 days giving `no_data`:
 
 - The window is the last 14 mission days that hold a reading for the person and
   indicator in the same context. With `mission_day` and `time`, only the entries
@@ -472,6 +468,119 @@ for (const condition of conditions) {
 
 The values above are placeholders in a synthetic history (REQ-14).
 
+### POST /people/{person_id}/pain
+
+Stores one pain report from the 3D body (B-3): the region the astronaut
+selected, the intensity from 0 to 10, the mission day and the time, with an
+optional note. The intensity is kept as the astronaut set it. This route does
+not read it, does not compare it with anything and adds no text about it: what
+it means is for the CMO or the flight surgeon to say, not for the API.
+
+The same report can be re-sent (the frontend re-sends what waits in its outbox,
+REQ-13) without adding a second row: one report is kept per `person_id`,
+`region_id`, `mission_day` and `time`.
+
+Path parameter: `person_id`, a string (same lowercase `snake_case` rule).
+
+Request body: one report. Every field is required except `note`.
+
+| Field | Type | Rule |
+| --- | --- | --- |
+| `region_id` | string | at most 64 characters, lowercase `snake_case`: letters, digits and underscores, starts with a letter; the id from the frontend's region list. The API does not check it against a file, because `config/content/body_regions.csv` does not exist yet. |
+| `intensity` | integer | 0 to 10; booleans, decimals and strings are rejected |
+| `mission_day` | integer | greater than 0, at most 100000, "day N"; booleans and strings are rejected |
+| `time` | string | `HH:MM`, 24-hour clock |
+| `note` | string | optional, at most 280 characters |
+
+Responses:
+
+| Code | Meaning |
+| --- | --- |
+| `201` | A new report was stored; the stored report is returned, with `person_id` taken from the path and `note` null when it was not given. |
+| `200` | A report with the same `person_id`, `region_id`, `mission_day` and `time` already exists with the same `intensity` and `note`; that stored report is returned and nothing is added. |
+| `409` | A report with that key already exists with a different `intensity` or `note`; `detail` is a short plain message. |
+| `422` | A field breaks a rule, or `person_id` in the path breaks the id rule. |
+| `401` / `403` | The token rule below, when that person has an account. |
+| `502` | The upstream store (Supabase) is unreachable or returns an error. |
+
+```bash
+curl -X POST "$VITE_API_BASE_URL/people/demo_astronaut_1/pain" \
+  -H "Content-Type: application/json" \
+  -d '{"region_id":"left_knee","intensity":4,"mission_day":1,"time":"13:30","note":"After the treadmill run"}'
+# 201 {"region_id":"left_knee","intensity":4,"mission_day":1,"time":"13:30","note":"After the treadmill run","person_id":"demo_astronaut_1"}
+# re-sending the same body returns 200 with the same stored report
+```
+
+```js
+const response = await fetch(
+  `${VITE_API_BASE_URL}/people/demo_astronaut_1/pain`,
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${session.token}`, // only when that person has an account
+    },
+    body: JSON.stringify({
+      region_id: "left_knee",
+      intensity: 4,
+      mission_day: 1,
+      time: "13:30",
+      note: "After the treadmill run",
+    }),
+  }
+);
+if (response.status === 201 || response.status === 200) {
+  // stored: the report waits no more in the outbox
+}
+if (response.status === 409) {
+  // this person, region, day and time already hold another report: do not
+  // retry, ask the astronaut which one is right
+}
+const report = await response.json(); // {"region_id":"left_knee","intensity":4,"mission_day":1,"time":"13:30","note":"After the treadmill run","person_id":"demo_astronaut_1"}
+```
+
+### GET /people/{person_id}/pain
+
+Returns one person's pain reports, ordered by `mission_day` then `time`, oldest
+first. A person with no report gets an empty array, never a `404`: the route
+does not look the person up.
+
+Path parameter: `person_id` (same lowercase `snake_case` rule).
+
+Query parameters:
+
+| Name | Type | Rule |
+| --- | --- | --- |
+| `region_id` | string | optional; only the reports of that region, same id rule as in the body. An id with no report gives an empty array. |
+
+Each object has the fields of the body above plus `person_id`. The API does not
+add a state, a threshold or a text about the intensity.
+
+Responses: `200` (a JSON array, empty when there is no report); `422` when
+`person_id` or `region_id` breaks the `snake_case` rule; `401` / `403` as below
+when that person has an account; `502` when the upstream store (Supabase) is
+unreachable or returns an error.
+
+```bash
+curl "$VITE_API_BASE_URL/people/demo_astronaut_1/pain?region_id=left_knee"
+# 200 [{"region_id":"left_knee","intensity":4,"mission_day":1,"time":"13:30","note":"After the treadmill run","person_id":"demo_astronaut_1"}]
+```
+
+```js
+const params = new URLSearchParams({ region_id: "left_knee" });
+const response = await fetch(
+  `${VITE_API_BASE_URL}/people/demo_astronaut_1/pain?${params}`
+);
+const reports = await response.json(); // array, oldest report first
+for (const report of reports) {
+  // show report.region_id on the 3D body and report.intensity as the number
+  // the astronaut chose; nothing else is attached to it
+}
+```
+
+The reports above are in a synthetic history (REQ-14); no real crew data is
+stored in this endpoint.
+
 ## Sessions and the Authorization header
 
 Every route that names a person checks who is asking before it answers:
@@ -483,6 +592,8 @@ Every route that names a person checks who is asking before it answers:
 | `GET /people/{person_id}/indicators/{indicator_id}/state` | the path |
 | `GET /people/{person_id}/blood_pressure/state` | the path |
 | `GET /people/{person_id}/conditions` | the path |
+| `POST /people/{person_id}/pain` | the path |
+| `GET /people/{person_id}/pain` | the path |
 
 The rule depends on whether that person has an account:
 
@@ -562,6 +673,26 @@ is unreachable or returns an error.
 `detail` `person_id must be lowercase snake_case`, and the same `502` with the
 same `detail` as the routes above.
 
+`POST /people/{person_id}/pain` returns `422` with the field array when the body
+breaks a rule:
+
+| Cause | `msg` |
+| --- | --- |
+| `intensity` is below 0 or above 10 | `Input should be greater than or equal to 0` / `Input should be less than or equal to 10` |
+| `intensity` is a boolean, a decimal or a string | `Input should be a valid integer` |
+| `mission_day` is 0 or negative, or above 100000 | `Input should be greater than 0` / `Input should be less than or equal to 100000` |
+| `region_id` is longer than 64 characters | `String should have at most 64 characters` |
+| `note` is longer than 280 characters | `String should have at most 280 characters` |
+| `region_id` breaks the id rule | `Value error, must be lowercase snake_case` |
+| `time` is not `HH:MM` 24-hour | `Value error, time must be HH:MM (24-hour)` |
+| a field is missing | `Field required` |
+
+It returns `409` with the plain string `a pain report for this person, region,
+day and time already exists with a different intensity or note` when that key
+already holds another report. Both pain routes return `422` with a plain-string
+`detail` when `person_id`, or the `region_id` filter, breaks the `snake_case`
+rule, and the same `502` as the routes above.
+
 `POST /accounts` and `POST /sessions` return `422` with the field array when the
 body breaks a rule:
 
@@ -577,7 +708,7 @@ and with `detail` `this person already has an account` when the account exists.
 `POST /sessions` returns `401` with `detail` `wrong username or PIN`
 and `429` with `detail` `too many wrong PINs, try again later`.
 
-The five routes that name a person return `401` with `detail` `missing or
+The seven routes that name a person return `401` with `detail` `missing or
 invalid token` and `403` with `detail` `this token belongs to another person`;
 both come from the rule above, before the route does its own work.
 
@@ -634,7 +765,7 @@ and a restart clears every window.
 - No endpoint lists indicators.
 - No change of PIN, no sign-out and no refresh of a token: a token works until
   `expires_at`.
-- No update or delete of entries.
+- No update or delete of entries or pain reports.
 
 These are facts about the current code, not proposals.
 

@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { parseDraft, parseReport, readingRows } from './entryDraft'
-import type { Indicator } from '../domain/types'
+import { parseDraft, parseReport, readingRows, rowContexts, usualContext } from './entryDraft'
+import type { Entry, Indicator, MeasurementContext } from '../domain/types'
+import {
+  REACTION_INDICATOR_IDS,
+  REACTION_LAPSES_ID,
+  REACTION_MEDIAN_ID,
+} from '../reaction/ids'
 import { strings } from '../strings'
 
 // The rules behind the Entry form, away from the DOM: the browser's own number
@@ -38,7 +43,7 @@ describe('parseDraft', () => {
       const draft = parseDraft({ ...measured, value: '1', missionDay })
       expect(draft, missionDay).toEqual({
         ok: false,
-        errors: { missionDay: 'Enter a whole mission day, 1 or more.' },
+        errors: { missionDay: strings.entry.errors.missionDay },
       })
     }
   })
@@ -48,7 +53,7 @@ describe('parseDraft', () => {
       const draft = parseDraft({ ...measured, value: '1', time })
       expect(draft, time).toEqual({
         ok: false,
-        errors: { time: 'Enter a time as HH:MM.' },
+        errors: { time: strings.entry.errors.time },
       })
     }
   })
@@ -59,8 +64,8 @@ describe('parseDraft', () => {
         ok: false,
         errors: {
           value: 'Enter a value.',
-          missionDay: 'Enter a whole mission day, 1 or more.',
-          time: 'Enter a time as HH:MM.',
+          missionDay: strings.entry.errors.missionDay,
+          time: strings.entry.errors.time,
         },
       },
     )
@@ -270,5 +275,60 @@ describe('readingRows', () => {
     expect(rows[0].scale).toBe(true)
     expect(rows[0].system).toBe('neuro')
   })
+
+  it('leaves out the two ids the reaction check measures itself', () => {
+    const rows = readingRows([
+      indicator('hr_bpm', 'Heart rate', 'bpm'),
+      indicator(REACTION_MEDIAN_ID, 'Reaction time median', 'ms'),
+      indicator('temp_core_c', 'Core temperature', '°C'),
+      indicator(REACTION_LAPSES_ID, 'Reaction lapses', 'count'),
+    ])
+    expect(rows.map((row) => row.key)).toEqual(['hr_bpm', 'temp_core_c'])
+    // The one list the check writes and this screen skips stay the same list.
+    expect([REACTION_MEDIAN_ID, REACTION_LAPSES_ID]).toEqual(REACTION_INDICATOR_IDS)
+  })
 })
 
+
+const log = (indicatorId: string, context: MeasurementContext, day = 1): Entry => ({
+  id: `p:${indicatorId}:${day}:${context}`,
+  personId: 'p',
+  indicatorId,
+  value: 1,
+  unit: 'u',
+  missionDay: day,
+  time: '08:00',
+  context,
+})
+
+describe('usualContext', () => {
+  it('is the context of most of the entries for the indicator', () => {
+    const entries = [log('hr_bpm', 'rest', 1), log('hr_bpm', 'rest', 2), log('hr_bpm', 'on_waking', 3)]
+    expect(usualContext(entries, ['hr_bpm'], 'before_sleep')).toBe('rest')
+  })
+
+  it('ignores the entries of other indicators', () => {
+    const entries = [log('glucose_mgdl', 'on_waking'), log('hr_bpm', 'rest')]
+    expect(usualContext(entries, ['hr_bpm'], 'before_sleep')).toBe('rest')
+  })
+
+  it('falls back to the clock context when there are no entries', () => {
+    expect(usualContext([], ['hr_bpm'], 'on_waking')).toBe('on_waking')
+    expect(usualContext([log('glucose_mgdl', 'rest')], ['hr_bpm'], 'before_sleep')).toBe('before_sleep')
+  })
+
+  it('on a tie keeps the fallback when it leads, else follows the order of the four', () => {
+    const tie = [log('hr_bpm', 'before_sleep', 1), log('hr_bpm', 'rest', 2)]
+    expect(usualContext(tie, ['hr_bpm'], 'before_sleep')).toBe('before_sleep')
+    expect(usualContext(tie, ['hr_bpm'], 'on_waking')).toBe('rest')
+  })
+
+  it('gives the blood pressure pair one context from both of its ids', () => {
+    const indicators = ['bp_sys_mmhg', 'bp_dia_mmhg'].map(
+      (id) => ({ id, name: id, unit: 'mmHg', direction: 'both', measuredOnBoard: '', hazards: [], minSpread: 1, sources: [] }) as Indicator,
+    )
+    const rows = readingRows(indicators)
+    const entries = [log('bp_sys_mmhg', 'rest'), log('bp_dia_mmhg', 'rest'), log('bp_sys_mmhg', 'after_exercise')]
+    expect(rowContexts(rows, entries, 'before_sleep')).toEqual({ bp: 'rest' })
+  })
+})

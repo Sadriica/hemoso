@@ -1,22 +1,15 @@
 """The state of one value against a person's own baseline (FORMATS.md section 3).
 
-The rule today is "How each value is compared", point 1 (team decision Sat 14
-Nov 18:45): the median and spread of the person's entries for the indicator in
-the same context, over the last 14 readings (moving window). The spread is
-`max(1.4826 x median absolute deviation, min_spread)`; fewer than 3 entries is
-"no data yet", and a value more than 3 spreads from the median is "outside
-your usual range". `docs/findings/phys-02-baseline-state-rule.md` counts the
-same way: the last 14 readings before this one, three readings enough, at most
-one per day.
-
-This module proposes a change to that rule: daily averages over the last 14
-mission days. A day counts once, as the arithmetic mean of its readings in the
-context, and the median and spread are taken over those daily values; fewer
-than 3 days gives `no_data`, a value more than 3 spreads from the median gives
-`outside_range`, and a matching row of `rules/attention.csv` whose source is a
-link gives `needs_review`. The change is pending Phys and Eng 1; until they
-accept it, FORMATS.md and phys-02 still say 14 readings. The derivation and
-the test vectors are in `docs/findings/phys-02-baseline-state-rule.md`.
+The rule is "How each value is compared", point 1 (team decision Sun 15 Nov
+05:54, replacing "the last 14 readings" of Sat 18:45): the median and spread of
+the person's entries for the indicator in the same context, over the last 14
+mission days that hold a reading. A day counts once, as the arithmetic mean of
+its readings in the context, and the median and spread are taken over those
+daily values; `spread = max(1.4826 x median absolute deviation, min_spread)`;
+fewer than 3 days gives `no_data`, a value more than 3 spreads from the median
+gives `outside_range`, and a matching row of `rules/attention.csv` whose source
+is a link gives `needs_review`, checked first. The derivation and the test
+vectors are in `docs/findings/phys-02-baseline-state-rule.md`.
 
 The arithmetic is pure: no file, network or clock access. The route reads the
 rows with `app.indicators` and the history with the store, so the same
@@ -26,9 +19,8 @@ functions can be checked against the team's shared vectors
 
 Where the decision leaves room, this module resolves it as follows:
 
-- The window is the last 14 mission days that hold a reading, as proposed
-  above, so a day with six readings counts once and a busy day cannot push out
-  a quiet week.
+- The window is the last 14 mission days that hold a reading, so a day with
+  six readings counts once and a busy day cannot push out a quiet week.
 - A day's value is the arithmetic mean of that day's readings in the context,
   and the median and the spread are taken over those daily values. The mean
   keeps every reading of the day in the baseline; the median over the days
@@ -62,8 +54,8 @@ from collections.abc import Iterable, Sequence
 
 from .models import Entry
 
-# Mission days in the proposed window. FORMATS.md section 3, point 1, counts
-# the last 14 readings today; Phys and Eng 1 decide whether that changes.
+# Mission days in the window (FORMATS.md section 3, point 1: "the last 14
+# mission days that hold a reading").
 WINDOW = 14
 # Fewer than this many days gives no_data.
 MIN_DAYS = 3

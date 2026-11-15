@@ -85,6 +85,24 @@ planetarium orbit. Always next to the indicator name in words.
 The respiratory, musculoskeletal and radiation systems have no indicator in the
 demo. They have no colour until one exists; propose it to Eng 1 first.
 
+### 2.4 Console accents (Sun 15 Nov)
+
+Two accents for decoration only. They draw the scene behind the phases, the
+orbit arcs, the scope grid, the channel numbers, the console eyebrows, the
+focus glow under a readout and the scan line of a phase change. They never
+carry a state (2.2 does), never colour a figure by value, and are never the
+only carrier of a meaning. The state, text and surface tokens above are
+unchanged.
+
+| Token | Role | Dark | Light |
+| --- | --- | --- | --- |
+| `--accent-cyan` | Electric cyan: grid, scan line, channel numbers, eyebrows, glow | `#5EE6FF` | `#0E7490` |
+| `--accent-violet` | Violet: the far orbit arc and the glow behind the active panel | `#B49CFF` | `#6D28D9` |
+
+Cyan is used for small mono text in two places (the channel number and the
+console eyebrow), so those pairs are in the contrast grid and in
+`theme.test.ts` at 4.5:1. Violet draws lines and glows only.
+
 ## 3. Contrast grid
 
 Computed from the hex values above with the WCAG 2.2 formula. Text needs 4.5:1,
@@ -126,6 +144,10 @@ re-checks them on each test run.
 | In range | card | 9.38 | 9.11 | 3:1 |
 | Attention | card | 10.68 | 9.40 | 3:1 |
 | Needs review | card | 7.53 | 7.73 | 3:1 |
+| Cyan accent | page | 13.38 | 4.85 | 4.5:1 |
+| Cyan accent | card | 11.75 | 5.36 | 4.5:1 |
+| Cyan accent | raised band | 12.64 | 5.36 | 4.5:1 |
+| Violet accent (lines) | page | 8.59 | 6.43 | 3:1 |
 Any new pair must be added here and to `theme.test.ts` before it is used.
 
 ## 4. Type
@@ -138,10 +160,11 @@ Any new pair must be added here and to `theme.test.ts` before it is used.
 | Body | `--font-body` | Inter, SIL OFL | system-ui, Segoe UI, Roboto |
 | Mono (telemetry, values, labels) | `--font-mono` | JetBrains Mono, SIL OFL | ui-monospace, Cascadia Mono, Consolas |
 
-Font gate: the three families are named in the tokens but no file is bundled
-yet. Files are self-hosted from `frontend/public/fonts/` with their licence
-file, after Eng 1 says yes and `docs/DECISIONS.md` has a row. No CDN, ever.
-Until then the fallbacks show, and the scale below holds with them.
+Font gate: the files are bundled (Sun 15 Nov, `docs/DECISIONS.md` has the row).
+They are self-hosted from `frontend/public/fonts/` with their licence file
+(`OFL.txt`): Barlow Condensed 600 and 700, Inter and JetBrains Mono as one
+variable file each (400 to 700), Latin subset, woff2. No CDN, ever. The
+fallbacks only show while a file loads (`font-display: swap`).
 
 ### 4.2 Scale (locked)
 
@@ -172,13 +195,51 @@ Content stops at 1200 px (`--container-width`). Side gutter: 16 px under
 horizontal scroll. Every target is at least 44 px (`--tap-min`). The page has
 at most one primary action per screen.
 
-## 6. Shape and elevation
+## 6. Shape, depth and layers
 
-`--radius-small` 2 px for buttons and badges, `--radius-card` 4 px for cards
-and inputs, `--radius-round` for orbit bodies and dots. Depth comes from
-surface steps (`bg` to `bg-raised` to `surface`) and 1 px borders; only an open
-panel over content uses `--shadow-raised`. Where text sits on the Starfield it
-sits on a solid `--color-surface` or `--color-bg-raised`, never on the stars.
+### 6.1 Shape grammar (round 3)
+
+The screen is a mission scene with a control panel in it, not a form with a
+space theme. One shape grammar, five parts:
+
+| Part | Token | Use |
+| --- | --- | --- |
+| Main panel | `--radius-panel` 24 px, optional cut corner `--cut` 18 px | The one wide surface a phase asks something on; at most one per screen |
+| Capsule | `--radius-capsule` | State, telemetry, chips, the segmented control, the rail nodes' labels |
+| Card | `--radius-card` 4 px | Inner blocks inside a panel (rows, indicator cards); smaller than the panel, never the dominant shape |
+| Arc and line | 1 px `--color-border` or accent at low alpha | Orbits, connection lines and rings replace extra boxes |
+| Button | `--radius-small` 2 px or `--radius-capsule` | One primary per screen |
+
+Rules: a cut corner is a decorative clip of the panel and never clips a focus
+ring or a field edge (keep controls inside the safe area, outline inside the
+offset). Nesting stops at two levels (panel, then card): no card in a card in a
+card. Keep `--radius-small` and `--radius-card` for dense data screens (report
+rows, tables).
+
+### 6.2 Depth and layers
+
+Depth comes from three layers and a local glow, not from more borders:
+`--layer-scene` (the stage: horizon, orbital object, stars in a near, a far and
+a dust layer), `--layer-panel` (the main panel, which may overlap the scene by
+up to a third of its height) and `--layer-telemetry` (mono telemetry, rail).
+`--shadow-float` lifts a floating panel; `--glow-accent` at `--glow-radius`
+sits around the protagonist object only, never as a uniform halo. Text always
+sits on a solid or near-solid surface (a panel, a capsule, or the plain page
+colour with a soft fade), never directly on stars. Under 600 px the scene
+shrinks to a band above the panel; it never pushes the primary action below the
+first screen.
+
+### 6.3 Stage depth (Sun 15 Nov)
+
+Behind every phase, over the star field and under everything else
+(`components/StageDepth.tsx`): a scientific grid in `--accent-cyan` (a fine
+line every 24 px, a stronger one every 120 px, fading toward the edges), one
+dotted orbit arc in `--accent-violet` with a small body that takes four minutes
+a lap, a fainter outer arc, and a soft pool of violet and cyan light where the
+active panel sits. All of it is `aria-hidden` and takes no pointer event. The
+three layers shift with the scroll by 12 px at most, the nearest one the most.
+Under `prefers-reduced-motion`, with the top bar switch, or while the tab is
+hidden, nothing moves. CSS gradients and one inline SVG: no image, no library.
 
 ## 7. Motion
 
@@ -198,12 +259,45 @@ Rules:
   block input, last at most 1.2 s, and skip with any key or tap. The intro is
   the one exception: it runs about 3.4 s (`--motion-intro`), and any key or tap
   ends it at once.
-- The Starfield drifts slowly and is the only ambient motion.
+- Ambient motion is allowed only in the stage (scene layers drifting, orbits
+  turning slowly, the object answering the pointer), never in the panel, and
+  stops under reduced motion. It is a few degrees or pixels, never a loop that
+  draws the eye away from the one action.
 - Everything stops under `prefers-reduced-motion` and with the top bar switch
   (class `app--still`); the app is complete without motion. Animate only
   `transform`, `opacity` and SVG stroke offsets.
 - The 30-second demo path never waits on an animation.
 - No sound.
+
+### 7.2 Choreography (round 3)
+
+One phase entrance, in order, all skippable by any key or tap and replaced by
+the final state under reduced motion (same hierarchy, no motion):
+
+1. Horizon and protagonist object appear (`--motion-horizon`, 700 to 900 ms).
+2. Orbits draw with `stroke-dashoffset` (`--motion-draw`).
+3. The headline enters line by line, `--motion-stagger` between lines.
+4. The panel rises from the object (`--motion-rise`, `--ease-settle`).
+5. Picking a crew member closes the ring; the avatar then carries into Report.
+6. Hover and press move the element `--move-hover` (2 to 6 px) and
+   `--move-press`, with an arrow that answers; transform and opacity only.
+
+The sequence may last up to `--motion-cinematic` plus the intro on first load;
+the demo path never waits on it. The pointer response of the object uses a
+throttled `pointermove` and one transform; it is off on touch and under reduced
+motion.
+
+### 7.3 Channel switch (Sun 15 Nov)
+
+A change of phase reads as a channel switch (`motion/PhaseTransition.tsx`).
+One scan line in `--accent-cyan` sweeps the stage and the content of the new
+phase settles by 16 px from the side the line came from: top to bottom on a
+step forward (identify to report to status), bottom to top on a step back. It
+lasts `--motion-slow` (400 ms), uses `transform` and `opacity` only, sits under
+the top bar and the rail, and never blocks input. The first load has no
+switch. With motion off nothing of it is rendered: the new phase is simply
+there. In both cases the focus lands on the heading of the new phase, and the
+phase inside is never remounted by the switch.
 
 ## 8. Components
 
@@ -329,4 +423,80 @@ Accepted deviations, so a later change does not "fix" them by accident:
 - The heartbeat figure plays three beats and stops; it is not an ambient loop.
 - With no attention rule filled in `config/rules`, every state is "no data"
   and the demo shows no state colour; this is a content gap, not a style bug.
-- Fonts are fallbacks until the files are approved (section 4.1).
+- Fonts are self-hosted in `public/fonts/` (section 4.1); the fallbacks show only while a file loads.
+
+## 15. Mission scene (round 3, Sat 14 Nov 23:50)
+
+Decision (Wambi): the interface works and is clear, but it reads as an
+administrative form with a space theme. The next round changes the visual
+structure, not the technical base (React, the existing Three.js body stay; no
+new dependency, no imported background, icon or image, no generated image; the
+scene is our own CSS, Canvas and SVG).
+
+Keep: the headline hierarchy, the palette and contrast, the path identify ->
+report -> status, accessibility with colour never alone, the technical look.
+
+Identify composition (two zones): telemetry and headline on the left; a
+protagonist object (orbital scanner or body silhouette with orbits, slow depth,
+pointer response) on the right; the main panel carries one primary action,
+"Open the demo", visible at once; username and PIN sit in a secondary panel
+behind a disclosure; the face option stays first among sign-in methods.
+
+Ownership of files by slice (nobody edits another slice's files; tokens and
+class names from this file and `styles.css` are the interface):
+
+| Slice | Files |
+| --- | --- |
+| W1 composition | `phases/identify.css`, `phases/IdentifyPhase.tsx` (structure), `phases.css` panel and capsule rules |
+| W2 scene | `components/orbital/*` (new), `components/Starfield.tsx` |
+| W3 choreography | `motion/*`, the phase entrance |
+| W4 Identify to Report transition | the phase switch only, after W2 and W3 |
+| W5 report and status grammar | `screens/entry.css`, `screens/Entry.tsx` presentation, status card CSS, instruments; after W1 to W3 |
+
+Not ours: `reaction/**` and `screens/entryDraft.ts` (the reaction check).
+
+## 16. Console grammar (Sun 15 Nov)
+
+The Report reads as a telemetry console: the astronaut operates a physiological
+monitoring system, not a form. Nothing here adds a value to the palette; it
+arranges the tokens of sections 2 to 7.
+
+- **Panel.** One per indicator, on `--color-bg-raised` with a hairline frame, a
+  2 px top edge in the system colour (2.3) and two corner marks at the bottom.
+  Reading order inside: channel number (`01`, mono `label`) over the system
+  icon; the name in display uppercase (`h2`); the last reading in mono; the
+  context tag only when it differs from the header; the state of the last
+  reading as the state badge (2.2); the scope; the readout; the small history.
+  A filled or saved panel has a 4 px top edge and a check on its icon.
+- **Scope.** A window with the page grid behind it and one live figure in the
+  system colour, drawn only from the value in the readout, or from the last
+  reading while the readout is empty. Heart rate: a pulse trace that moves at
+  the pace of the value. Blood pressure: two bars on one scale, systolic over
+  diastolic. Core temperature: a ring. Blood glucose and any other measured
+  value: a level scale with one marker. Sleep: twelve hour cells. Mood: five
+  rising steps. The scales are drawing bounds (`instruments/scales.ts`), never
+  clinical ranges, and a figure never changes colour by value. Every figure is
+  `aria-hidden`: the value, the unit and the state are words beside it.
+- **Readout.** The typed value in mono at the `value` step on a single 2 px
+  rule, the unit in mono beside it. It is still one labelled text field; the
+  rule turns `--color-accent` on focus and attention on an error. No box.
+- **History.** A small line of the person's own earlier readings in the panel's
+  context (at most 14, the baseline window), the newest as a dot and a typed
+  value as an open dot joined by a dashed line. Under it, in mono `label`, the
+  count and the lowest and highest in words. It updates when a reading is saved.
+- **Real data only.** Every number and every mark comes from the person's
+  entries or from `config/`. No decorative readout, no invented sensor, no
+  status text that is not computed.
+- **Motion.** The pulse trace is the one loop, at most 220 beats a minute on
+  screen; everything else is a 250 ms settle on `transform`, `opacity` or a
+  stroke offset. All of it stops under `prefers-reduced-motion`, with the top
+  bar switch, and while the tab is hidden.
+- **Phone.** At 390 px the console is one column of panels, each in the same
+  reading order; nothing sits side by side inside a panel.
+- **Status.** The same grammar. A system strip over the overview counts the
+  channels and how many are in each state (icon and words, from the statuses
+  on screen). The indicator card and the 3D body are two framed panels side by
+  side from 900 px: the card with its state on the top edge, the body wider
+  and named "Digital twin", lighting the zone of the selected indicator. The
+  possible conditions are an evidence board: one framed tile per condition,
+  its step on the top edge.

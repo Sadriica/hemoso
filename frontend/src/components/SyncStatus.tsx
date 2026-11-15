@@ -4,13 +4,13 @@ import { useOutbox } from '../hooks/useOutbox'
 import { useSync } from '../hooks/useSync'
 import { strings } from '../strings'
 
-// The sending state of the outbox (REQ-28) as one chip: the connection, then
-// the one thing that matters about it, which is the readings waiting or the
-// last send that went wrong. "Send now" appears only while something waits and
-// a server is set up; a button that can never work would only add noise. The
-// icon draws the same state as the words, so the chip is never colour alone
-// (REQ-15), and its title is the whole sentence, which is what a narrow screen
-// keeps after it drops the word "waiting".
+// The sending state of the outbox (REQ-28) as one line of quiet text: a small
+// dot, the connection, then the one thing that matters about it, which is the
+// readings waiting or the last send that went wrong. "Send now" is a text link
+// that appears only while something waits and a server is set up; a button
+// that can never work would only add noise. The dot repeats the words, so the
+// state is never colour alone (REQ-15), and the title is the whole sentence,
+// which is what a narrow screen keeps after it drops the word "waiting".
 export default function SyncStatus({
   store,
   client,
@@ -52,11 +52,7 @@ export default function SyncStatus({
         className={`sync-chip sync-chip--${tone}`}
         title={strings.sync.chip(state, detail)}
       >
-        <span className="sync-chip__icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" width="14" height="14" focusable="false">
-            {online ? <OnlineIcon /> : <OfflineIcon />}
-          </svg>
-        </span>
+        <span className="sync-chip__dot" aria-hidden="true" />
         <span className="sync-chip__state">{state}</span>
         <span className="sync-chip__rest">
           <span className="sync-chip__separator">{' · '}</span>
@@ -82,28 +78,5 @@ export default function SyncStatus({
         </button>
       )}
     </div>
-  )
-}
-
-// Two signal arcs and a dot: the browser is online.
-function OnlineIcon() {
-  return (
-    <g fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-      <path d="M5.8 11.6a9 9 0 0 1 12.4 0" />
-      <path d="M8.6 14.9a5.2 5.2 0 0 1 6.8 0" />
-      <circle cx="12" cy="18.4" r="1.3" fill="currentColor" stroke="none" />
-    </g>
-  )
-}
-
-// The same arcs, cut by a line: the browser is offline.
-function OfflineIcon() {
-  return (
-    <g fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-      <path d="M5.8 11.6a9 9 0 0 1 12.4 0" />
-      <path d="M8.6 14.9a5.2 5.2 0 0 1 6.8 0" />
-      <circle cx="12" cy="18.4" r="1.3" fill="currentColor" stroke="none" />
-      <path d="M4.5 4.5l15 15" />
-    </g>
   )
 }

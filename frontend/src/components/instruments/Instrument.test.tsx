@@ -78,4 +78,37 @@ describe('Instrument', () => {
     expect(fraction('unknown', 5)).toBe(0)
     expect(fraction('sleep_h', 6)).toBe(0.5)
   })
+
+  it.each([
+    ['in_range', '--status-in-range-text'],
+    ['outside', '--status-attention-text'],
+    ['review', '--status-review-text'],
+    ['no_data', '--status-no-data-text'],
+  ] as const)('draws the whole figure in the %s colour, outline included', (state, token) => {
+    const { container } = render(<Instrument indicatorId="glucose_mgdl" value={100} state={state} />)
+    const root = container.firstElementChild as HTMLElement
+    expect(root.style.color).toBe(`var(${token})`)
+    expect(root.style.color).not.toContain('--system-')
+    expect(root.className).toContain('instrument--state')
+    expect(root).toHaveAttribute('data-state', state)
+  })
+
+  it('draws the same shapes in every state and without one', () => {
+    const shape = (state?: 'review' | 'in_range') =>
+      render(<Instrument indicatorId="mood_1_5" value={2} state={state} />).container.querySelector('svg')!.innerHTML
+    expect(shape('review')).toBe(shape('in_range'))
+    expect(shape('review')).toBe(shape())
+  })
+
+  it('keeps today\'s look without a state', () => {
+    const root = draw('sleep_h', 6).firstElementChild as HTMLElement
+    expect(root.style.color).toBe('var(--system-sleep)')
+    expect(root.className).not.toContain('instrument--state')
+  })
+
+  it('keeps reduced motion with a state', () => {
+    const root = render(<Instrument indicatorId="hr_bpm" value={70} state="review" reducedMotion />).container.firstElementChild!
+    expect(root.className).toContain('instrument--still')
+    expect(root.className).not.toContain('instrument--anim')
+  })
 })

@@ -1,0 +1,870 @@
+/* The report screen (phase 2). Every value is a token from DESIGN.md. Rules sit
+   under .rep so they win over the shared label and input rules in styles.css. */
+
+.phase--report .report__panel {
+  max-width: 760px;
+  padding: var(--space-4);
+}
+
+.rep {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.rep .rep-meta {
+  display: grid;
+  gap: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-border) 45%, transparent);
+}
+
+/* Day and time: two chips on one header line, each a text field. */
+.rep .rep-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.rep .rep-chipwrap {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.rep .rep-chiperrors {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.rep .rep-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--tap-min);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-round);
+  background: var(--color-surface);
+  cursor: text;
+}
+
+.rep .rep-chip:focus-within {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.rep .rep-chip:has([aria-invalid='true']) {
+  border-color: var(--status-attention-text);
+}
+
+.rep .rep-chip__label {
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+.rep .rep-chip input.rep-chip__input {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: var(--text-body-l);
+  line-height: var(--leading-body-l);
+}
+
+.rep .rep-chip input.rep-chip__input:focus-visible {
+  outline: none;
+}
+
+.rep .rep-chip__input--day {
+  width: 4ch;
+}
+
+.rep .rep-chip__input--time {
+  width: 5.5ch;
+}
+
+/* The four contexts as one rounded track; the chosen segment is filled and
+   carries a check, so it is not colour alone. */
+.rep .rep-segment__track {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+.rep .rep-segment__option {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  min-height: var(--tap-min);
+  padding: var(--space-1) var(--space-2);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+  letter-spacing: normal;
+  text-align: center;
+  text-transform: none;
+  cursor: pointer;
+}
+
+.rep .rep-segment__option + .rep-segment__option {
+  border-left: 1px solid color-mix(in srgb, var(--color-border-control) 60%, transparent);
+}
+
+.rep .rep-segment__option input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.rep .rep-segment__mark {
+  display: none;
+  font-weight: 700;
+}
+
+.rep .rep-segment__option:has(input:checked) {
+  background: var(--color-interactive);
+  color: var(--color-on-interactive);
+  font-weight: 600;
+}
+
+.rep .rep-segment__option:has(input:checked) .rep-segment__mark {
+  display: inline;
+}
+
+.rep .rep-segment__option:has(input:focus-visible) {
+  outline: 3px solid var(--color-accent);
+  outline-offset: -3px;
+}
+
+/* One card per indicator: the icon in a soft circle of its system colour, the
+   name and last reading, and the field on one aligned right column. */
+.rep .rep-rows {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rep .rep-row {
+  display: grid;
+  grid-template-columns: var(--tap-min) minmax(0, 1fr);
+  align-items: center;
+  column-gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid color-mix(in srgb, var(--color-border) 70%, transparent);
+  border-left: 3px solid var(--reading-system, var(--color-border));
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.rep .rep-row__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--tap-min);
+  height: var(--tap-min);
+  border-radius: var(--radius-round);
+  background: color-mix(in srgb, var(--reading-system, var(--color-border)) 16%, transparent);
+}
+
+.rep .rep-row__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 240px;
+  align-items: center;
+  column-gap: var(--space-3);
+  row-gap: var(--space-1);
+}
+
+.rep .rep-row__body > .field__error {
+  grid-column: 1 / -1;
+}
+
+.rep .rep-row--scale .rep-row__body {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.rep .rep-row__name {
+  display: block;
+  margin: 0;
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.rep .rep-row__last {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+}
+
+/* One field: one border, the value large on the left, the unit inside on the
+   right in muted mono, no inner box and no spin buttons. */
+.rep .rep-field {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 48px;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-card);
+  background: var(--color-bg);
+}
+
+.rep .rep-field:focus-within {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.rep .rep-field--invalid {
+  border-color: var(--status-attention-text);
+}
+
+.rep .rep-field__part {
+  display: flex;
+  flex: 1 1 0;
+  justify-content: flex-start;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.rep .rep-field input.rep-field__input {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: var(--text-h2);
+  line-height: var(--leading-h2);
+}
+
+.rep .rep-field--pair .rep-field__part:first-child input.rep-field__input {
+  text-align: right;
+}
+
+/* A field with a value gets the accent edge: filled or not, at a glance. */
+.rep .rep-field:has(input:not(:placeholder-shown)) {
+  border-color: var(--color-accent);
+}
+
+.rep .rep-field input.rep-field__input:focus-visible {
+  outline: none;
+}
+
+.rep .rep-field__slash {
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-h2);
+}
+
+.rep .rep-field__unit {
+  flex: none;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+/* The 1 to 5 scale: five small pills, the number then its word. The chosen
+   one is filled and carries a check. */
+.rep .rep-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+}
+
+.rep .rep-pill {
+  display: inline-flex;
+  flex: 1 1 auto;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  min-height: var(--tap-min);
+  padding: 0 var(--space-2);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-round);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+  letter-spacing: normal;
+  text-transform: none;
+  cursor: pointer;
+}
+
+.rep .rep-pill input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.rep .rep-pill b {
+  font-family: var(--font-mono);
+  font-size: var(--text-body);
+  font-weight: 600;
+}
+
+.rep .rep-pill span {
+  color: var(--color-text-muted);
+}
+
+.rep .rep-pill:has(input:checked) {
+  border-color: var(--color-interactive);
+  background: var(--color-interactive);
+  color: var(--color-on-interactive);
+}
+
+.rep .rep-pill:has(input:checked) span {
+  color: var(--color-on-interactive);
+}
+
+.rep .rep-pill:has(input:checked)::before {
+  content: '✓';
+  font-weight: 700;
+}
+
+.rep .rep-pill:has(input:focus-visible) {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* Progress and the one primary action of the form. */
+.rep .rep-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: 'reason save';
+  align-items: center;
+  column-gap: var(--space-3);
+  row-gap: var(--space-1);
+  margin-top: var(--space-2);
+}
+
+.rep .rep-progress {
+  display: flex;
+  grid-area: progress;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: var(--text-small);
+}
+
+.rep .rep-progress__dots {
+  display: inline-flex;
+  gap: var(--space-1);
+}
+
+.rep .rep-progress__dot {
+  box-sizing: border-box;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--color-border-control);
+  border-radius: var(--radius-round);
+}
+
+.rep .rep-progress__dot--on {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+}
+
+.rep .rep-actions__reason {
+  grid-area: reason;
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+}
+
+.rep .rep-save {
+  grid-area: save;
+  min-height: 48px;
+  min-width: 200px;
+}
+
+/* Not ready: still focusable, says why, and looks quiet. */
+.rep .rep-save[aria-disabled='true'] {
+  border-color: var(--color-border-control);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+.rep .form__status {
+  min-height: 0;
+  margin: 0;
+}
+
+@media (max-width: 599px) {
+  .phase--report .report__panel {
+    padding: var(--space-3);
+  }
+
+  /* Both chips fit one line at 360 px. */
+  .rep .rep-chip {
+    gap: var(--space-1);
+    padding: 0 var(--space-2);
+  }
+
+  .rep .rep-segment__track {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .rep .rep-segment__option:nth-child(3) {
+    border-left: 0;
+  }
+
+  .rep .rep-segment__option:nth-child(n + 3) {
+    border-top: 1px solid color-mix(in srgb, var(--color-border-control) 60%, transparent);
+  }
+
+  /* The icon and name share the first line; the field takes the full width. */
+  .rep .rep-row {
+    grid-template-columns: var(--tap-min) minmax(0, 1fr);
+    padding: var(--space-3) var(--space-2);
+  }
+
+  .rep .rep-row__body {
+    display: contents;
+  }
+
+  .rep .rep-row__head {
+    grid-column: 2;
+  }
+
+  .rep .rep-field,
+  .rep .rep-pills,
+  .rep .rep-row__body > .field__error {
+    grid-column: 1 / -1;
+    margin-top: var(--space-2);
+  }
+
+  .rep .rep-actions {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'save'
+      'reason';
+  }
+
+  .rep .rep-save {
+    width: 100%;
+  }
+}
+
+/* The last card must clear the fixed phase rail. */
+.phase--report {
+  scroll-padding-bottom: calc(var(--rail-height) + var(--space-4));
+}
+
+
+/* Round 2 */
+.rep .rep-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-3);
+}
+
+.rep .rep-head .report-form__heading {
+  margin: 0;
+}
+
+/* Segmented control: a rounded track with the chosen segment inset in it. */
+.rep .rep-segment__legend {
+  display: block;
+  margin-bottom: var(--space-1);
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+.rep .rep-segment__track {
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border-radius: var(--radius-round);
+  overflow: visible;
+}
+
+.rep .rep-segment__option {
+  min-height: 48px;
+  border-radius: var(--radius-round);
+}
+
+.rep .rep-segment__option + .rep-segment__option {
+  border-left: 0;
+}
+
+.rep .rep-segment__option:has(input:focus-visible) {
+  outline-offset: 2px;
+}
+
+.rep .rep-pill {
+  min-height: 48px;
+}
+
+/* A field and its card tell, at a glance, that the row has a value. */
+.rep .rep-row:has(.rep-field input:not(:placeholder-shown)),
+.rep .rep-row:has(.rep-pill input:checked) {
+  background: color-mix(in srgb, var(--color-accent) 7%, var(--color-surface));
+}
+
+/* The whole 48 px field takes the tap: the input fills it. */
+.rep .rep-field {
+  padding: 0;
+  cursor: text;
+}
+
+.rep .rep-field__part {
+  align-self: stretch;
+  padding-left: var(--space-3);
+}
+
+.rep .rep-field--pair .rep-field__part:first-child {
+  padding-left: var(--space-3);
+}
+
+.rep .rep-field input.rep-field__input {
+  align-self: stretch;
+  min-height: 46px;
+}
+
+.rep .rep-field__unit {
+  align-self: center;
+  padding-right: var(--space-3);
+}
+
+/* Saved: the result is a finished message, not a loose line. */
+.rep .form__status:not(:empty) {
+  padding: var(--space-2) var(--space-3);
+  border-left: 3px solid var(--status-in-range-text);
+  border-radius: var(--radius-card);
+  background: var(--status-in-range-bg);
+  color: var(--status-in-range-text);
+}
+
+.rep .form__status:not(:empty)::before {
+  content: '\2713\00a0';
+  font-weight: 700;
+}
+
+.rep .form__status:empty {
+  margin-top: calc(-1 * var(--space-3));
+}
+
+@media (max-width: 599px) {
+  .rep .rep-segment__track {
+    border-radius: var(--radius-card);
+  }
+
+  .rep .rep-segment__option {
+    border-radius: var(--radius-card);
+  }
+
+  .rep .rep-segment__option:nth-child(n + 3) {
+    border-top: 0;
+  }
+}
+
+/* An empty field shows a quiet dash, so a blood pressure never reads as a
+   lone slash. */
+.rep .rep-field input.rep-field__input::placeholder {
+  color: var(--color-text-muted);
+  opacity: 1;
+}
+
+/* Round 4: each row has its own context, a small capsule choice under the name
+   (a native select: it opens the system picker, which is easy with gloves). */
+.rep .rep-row__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: var(--space-3);
+  row-gap: 0;
+}
+
+.rep .rep-row__head > .rep-row__name {
+  flex: 1 0 100%;
+}
+
+.rep .rep-ctx {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--tap-min);
+  margin-left: calc(var(--space-1) * -1);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-capsule);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.rep .rep-ctx__change,
+.rep .rep-chip__change {
+  color: var(--color-text-muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-transform: lowercase;
+}
+
+/* A row that matches the header: no words, only a quiet way to change it. */
+.rep .rep-ctx--quiet {
+  justify-content: center;
+  /* The button keeps its 44 px target but adds no height to the row. */
+  margin-block: calc(var(--space-3) * -1);
+  font-size: var(--text-body);
+  min-width: var(--tap-min);
+  padding: 0;
+  border-color: transparent;
+  background: transparent;
+  color: var(--color-text-muted);
+}
+
+.rep .rep-ctx:hover {
+  border-color: var(--color-accent);
+}
+
+.rep .rep-ctx:focus-visible,
+.rep .rep-chip--button:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.rep .rep-chip--button {
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.rep .rep-chip__value {
+  font-family: var(--font-mono);
+  font-size: var(--text-body);
+}
+
+.rep .rep-chip--button[aria-expanded='true'] {
+  border-color: var(--color-accent);
+}
+
+.rep .rep-keep {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+}
+
+/* The four choices of one row open under it, across the card. */
+.rep .rep-segment--row {
+  grid-column: 1 / -1;
+  margin: var(--space-2) 0 0;
+}
+
+.rep .rep-segment {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+/* The pair field: two values, a slash and the unit. Each value keeps room for
+   three digits and the field never clips what is typed. */
+.rep .rep-row--pair .rep-row__body {
+  grid-template-columns: minmax(0, 1fr) 240px;
+}
+
+.rep .rep-field--pair .rep-field__part {
+  flex: 1 1 0;
+  min-width: calc(4ch + var(--space-3));
+}
+
+.rep .rep-field--pair input.rep-field__input {
+  min-width: 4ch;
+}
+
+.rep .rep-field--pair .rep-field__unit {
+  padding-right: var(--space-2);
+}
+
+.rep .rep-segment__track {
+  border-color: color-mix(in srgb, var(--color-accent) 55%, var(--color-border-control));
+}
+
+.rep .rep-segment__option:not(:has(input:checked)):hover {
+  background: color-mix(in srgb, var(--color-accent) 16%, transparent);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .app:not(.app--still) .rep .rep-segment__option {
+    transition:
+      background-color var(--motion-fast) var(--ease-out),
+      transform var(--motion-fast) var(--ease-out);
+  }
+
+  .app:not(.app--still) .rep .rep-segment__option:active {
+    transform: translateY(var(--move-press));
+  }
+}
+
+/* Round 5: the footer, the saved message with the way on, and rows that read
+   as done. */
+.rep .rep-footer {
+  position: sticky;
+  bottom: calc(var(--rail-height) + var(--space-2));
+  z-index: 1;
+  display: grid;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+  padding: var(--space-2) 0;
+  border-top: 1px solid color-mix(in srgb, var(--color-border) 45%, transparent);
+  background: var(--color-bg-raised);
+}
+
+/* On a phone the footer with the saved message and two buttons is a third of
+   the screen: it stays in the flow there, so the rows are never covered. */
+@media (max-width: 599px) {
+  .rep .rep-footer {
+    position: static;
+  }
+}
+
+/* Once saved, the footer is the confirmation and the way on: it holds the
+   message and drops the reason line to stay short. */
+.rep .rep-footer--saved .rep-actions__reason {
+  display: none;
+}
+
+.rep .rep-footer--saved .rep-actions {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: 'save';
+  justify-items: end;
+}
+
+.rep .rep-actions {
+  margin-top: 0;
+}
+
+.rep .rep-saved {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+
+.rep .rep-saved .form__status {
+  flex: 1 1 16rem;
+}
+
+.rep .rep-saved .form__status:empty {
+  display: none;
+}
+
+.rep .rep-next {
+  flex: none;
+  min-height: 48px;
+}
+
+/* A done row: a check on its icon and a thicker system edge. */
+.rep .rep-row {
+  position: relative;
+}
+
+.rep .rep-row__icon {
+  position: relative;
+}
+
+.rep .rep-row__check {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--radius-round);
+  background: var(--color-accent);
+  color: var(--color-on-interactive);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.rep .rep-row--done {
+  border-left-width: 6px;
+  border-color: color-mix(in srgb, var(--color-accent) 60%, var(--color-border));
+  border-left-color: var(--reading-system, var(--color-border));
+}
+
+/* Plain rows on a phone keep the field beside the name when there is room, so
+   the form is shorter. The blood pressure pair and the scale keep their own
+   line. */
+@media (min-width: 380px) and (max-width: 599px) {
+  .rep .rep-row:not(.rep-row--pair):not(.rep-row--scale) {
+    grid-template-columns: var(--tap-min) minmax(0, 1fr) 132px;
+  }
+
+  .rep .rep-row:not(.rep-row--pair):not(.rep-row--scale) .rep-field {
+    grid-column: 3;
+    margin-top: 0;
+  }
+
+  .rep .rep-row:not(.rep-row--pair):not(.rep-row--scale) .rep-row__body > .field__error {
+    grid-column: 2 / -1;
+  }
+}
+
+.report__reaction {
+  max-width: 760px;
+}
+
+/* Beside the field there is no room for the word "change": the tag keeps it in
+   its name, and the capsule and its caret say it can be opened. */
+@media (min-width: 380px) and (max-width: 599px) {
+  .rep .rep-row:not(.rep-row--pair):not(.rep-row--scale) .rep-ctx__change {
+    display: none;
+  }
+
+  .rep .rep-row:not(.rep-row--pair):not(.rep-row--scale) .rep-ctx--tag::after {
+    content: '\25BE';
+    color: var(--color-text-muted);
+  }
+}
+
+.rep .rep-next__arrow {
+  margin-left: var(--space-2);
+}

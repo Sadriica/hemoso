@@ -271,7 +271,7 @@
         "type": "object"
       },
       "IndicatorState": {
-        "description": "One value against the person's own baseline (FORMATS.md section 3).\n\nThe baseline is taken over the person's last 14 mission days, one value per\nday: the change `app.state` proposes to point 1 of that section, which\ncounts the last 14 readings today, pending Phys and Eng 1. `n` counts the\ndays and `readings` counts the stored readings behind them. While the state\nis `no_data` with fewer than 3 days, `median` and `spread` are null;\n`attention` is the row that made the state `needs_review`, and null\notherwise.",
+        "description": "One value against the person's own baseline (FORMATS.md section 3).\n\nThe baseline is taken over the person's last 14 mission days that hold a\nreading, one value per day (point 1 of that section). `n` counts the days\nand `readings` counts the stored readings behind them. While the state\nis `no_data` with fewer than 3 days, `median` and `spread` are null;\n`attention` is the row that made the state `needs_review`, and null\notherwise.",
         "properties": {
           "attention": {
             "anyOf": [
@@ -333,6 +333,104 @@
           "attention"
         ],
         "title": "IndicatorState",
+        "type": "object"
+      },
+      "PainReport": {
+        "description": "One stored pain report: the fields above and whose report it is.",
+        "properties": {
+          "intensity": {
+            "maximum": 10.0,
+            "minimum": 0.0,
+            "title": "Intensity",
+            "type": "integer"
+          },
+          "mission_day": {
+            "exclusiveMinimum": 0.0,
+            "maximum": 100000.0,
+            "title": "Mission Day",
+            "type": "integer"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 280,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "person_id": {
+            "maxLength": 64,
+            "title": "Person Id",
+            "type": "string"
+          },
+          "region_id": {
+            "maxLength": 64,
+            "title": "Region Id",
+            "type": "string"
+          },
+          "time": {
+            "title": "Time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "region_id",
+          "intensity",
+          "mission_day",
+          "time",
+          "person_id"
+        ],
+        "title": "PainReport",
+        "type": "object"
+      },
+      "PainReportIn": {
+        "description": "The body of `POST /people/{person_id}/pain`: the person is in the path.",
+        "properties": {
+          "intensity": {
+            "maximum": 10.0,
+            "minimum": 0.0,
+            "title": "Intensity",
+            "type": "integer"
+          },
+          "mission_day": {
+            "exclusiveMinimum": 0.0,
+            "maximum": 100000.0,
+            "title": "Mission Day",
+            "type": "integer"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "maxLength": 280,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "region_id": {
+            "maxLength": 64,
+            "title": "Region Id",
+            "type": "string"
+          },
+          "time": {
+            "title": "Time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "region_id",
+          "intensity",
+          "mission_day",
+          "time"
+        ],
+        "title": "PainReportIn",
         "type": "object"
       },
       "SessionOut": {
@@ -815,6 +913,120 @@
           }
         },
         "summary": "Get State"
+      }
+    },
+    "/people/{person_id}/pain": {
+      "get": {
+        "description": "One person's pain reports, oldest first, optionally for one region.\n\n`region_id` filters; an unknown person is an empty list, not a 404.",
+        "operationId": "list_pain_people__person_id__pain_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "person_id",
+            "required": true,
+            "schema": {
+              "title": "Person Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "region_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Region Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PainReport"
+                  },
+                  "title": "Response List Pain People  Person Id  Pain Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Pain"
+      },
+      "post": {
+        "description": "Store one pain report from the 3D body (B-3).\n\nThe person is in the path, so the same report sent twice from the\nfrontend's outbox answers 200 with the stored report and adds nothing; a\ndifferent intensity or note for the same person, region, day and time is a\n409. The intensity is kept as the astronaut set it: this route does not\nread it as a sign of anything.",
+        "operationId": "create_pain_people__person_id__pain_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "person_id",
+            "required": true,
+            "schema": {
+              "title": "Person Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PainReportIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The exact same pain report was already stored."
+          },
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PainReport"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "409": {
+            "description": "A pain report for this person, region, day and time exists with a different intensity or note."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Pain"
       }
     },
     "/sessions": {

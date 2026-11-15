@@ -1,29 +1,60 @@
-.planetarium { display: grid; gap: var(--space-3); }
+/* Named sizes. Everything below uses these or a design token (DESIGN.md 5 and 9). */
+.planetarium {
+  /* Touch target and body diameter: 44 px (REQ-15). */
+  --planet-target: 44px;
+  /* Widest the orbit stage grows. It is wider than tall so the two columns of
+     tags sit on the outer sides, one line for the name and one for the state. */
+  --planet-stage-max: 1000px;
+  /* Stage shape: 16 wide to 10 tall gives each row of tags about 90 px at 900 px. */
+  --planet-stage-ratio: 16 / 10;
+  /* Ring around a body, the selected ring and the row edge: 3 px. */
+  --planet-ring: 3px;
+  /* Row edge of a state that is not in range: twice the ring. */
+  --planet-edge-strong: 6px;
+  /* Orbit lines: 1 px, thinner than the tag text. */
+  --planet-line: 1px;
+  /* Gap between a body and its selected ring. */
+  --planet-gap: 3px;
+  /* Space between an element and its focus ring (DESIGN.md 8). */
+  --planet-focus-offset: 2px;
+}
+.planetarium { display: grid; gap: var(--space-3); min-width: 0; }
 .planetarium__toggle {
-  justify-self: start; min-height: 44px; min-width: 44px; padding: 0 var(--space-4);
-  border: 1px solid var(--color-border-control); border-radius: var(--radius-small);
+  justify-self: start; min-height: var(--planet-target); min-width: var(--planet-target); padding: 0 var(--space-4);
+  border: var(--planet-line) solid var(--color-border-control); border-radius: var(--radius-small);
   background: transparent; color: var(--color-text);
   font-family: var(--font-mono); font-size: var(--text-label); text-transform: uppercase; cursor: pointer;
 }
 .planetarium__toggle[aria-pressed='true'] { border-color: var(--color-accent); color: var(--color-accent); }
 @media (max-width: 899px) { .planetarium__toggle { display: none; } }
-.planetarium button:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 2px; }
+.planetarium button:focus-visible { outline: var(--planet-ring) solid var(--color-accent); outline-offset: var(--planet-focus-offset); }
 
 .planetarium__list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); }
+/* From 600 px the list is two columns, so a tablet shows all nine without
+   scrolling. The order in the file is the reading order, row by row. */
+@media (min-width: 600px) { .planetarium__list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* One compact block: the icon, the name with the value at the end of the same
+   line, and the state under the name. About 64 px tall, never under 44 px. */
 .planetarium__row {
-  display: grid; grid-template-columns: auto 1fr; gap: var(--space-1) var(--space-3); align-items: center;
-  width: 100%; min-height: 44px; padding: var(--space-3); text-align: left; cursor: pointer;
-  border: var(--border-subtle); border-radius: var(--radius-card);
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--space-1) var(--space-2); align-items: center;
+  width: 100%; height: 100%; min-height: var(--planet-target); padding: var(--space-2) var(--space-3) var(--space-2) var(--space-2);
+  text-align: left; cursor: pointer;
+  overflow-wrap: anywhere; border: var(--border-subtle); border-inline-start: var(--planet-edge, var(--planet-ring)) solid var(--ring); border-radius: var(--radius-card);
   background: var(--color-surface); color: var(--color-text); font-family: var(--font-body); font-size: var(--text-body);
 }
-.planetarium__row[aria-pressed='true'] { border-color: var(--color-accent); box-shadow: 0 0 0 3px var(--color-accent); }
-.planetarium__row-icon { grid-row: span 3; display: inline-flex; }
-.planetarium__row-name { font-weight: 600; }
+.planetarium__row[aria-pressed='true'] { border-color: var(--color-accent); box-shadow: 0 0 0 var(--planet-ring) var(--color-accent); }
+/* A row that is not in range has a stronger edge and bold state words, so it
+   stands out at a glance while the order stays that of the file. */
+.planetarium__row--outside, .planetarium__row--review { --planet-edge: var(--planet-edge-strong); }
+.planetarium__row--outside .planetarium__row-state, .planetarium__row--review .planetarium__row-state { font-weight: 700; }
+.planetarium__row-icon { grid-row: span 2; display: inline-flex; }
+.planetarium__row-name { min-width: 0; font-weight: 600; }
 .planetarium__row-state, .planetarium__tag-state {
-  display: inline-flex; align-items: center; gap: var(--space-1);
+  display: inline-flex; align-items: flex-start; min-width: 0; gap: var(--space-1);
   font-family: var(--font-mono); font-size: var(--text-label);
 }
-.planetarium__row-value { font-family: var(--font-mono); font-size: var(--text-small); color: var(--color-text-muted); }
+.planetarium__row-state { grid-column: 2 / -1; }
+.planetarium__row-value { grid-row: 1; grid-column: 3; justify-self: end; white-space: nowrap; font-family: var(--font-mono); font-size: var(--text-small); color: var(--color-text-muted); }
 .planetarium__row--in-range .planetarium__row-state, .planetarium__body--in-range { --ring: var(--status-in-range-text); }
 .planetarium__row--outside .planetarium__row-state, .planetarium__body--outside { --ring: var(--status-attention-text); }
 .planetarium__row--review .planetarium__row-state, .planetarium__body--review { --ring: var(--status-review-text); }
@@ -35,30 +66,34 @@
 .planetarium__row--no-data { --ring: var(--status-no-data-text); }
 
 .planetarium__stage {
-  position: relative; width: 100%; max-width: 560px; aspect-ratio: 1; justify-self: center;
+  position: relative; width: min(100%, var(--planet-stage-max)); aspect-ratio: var(--planet-stage-ratio); min-height: 0; justify-self: center;
   border: var(--border-subtle); border-radius: var(--radius-card); background: var(--color-bg-raised);
 }
 .planetarium__lines { position: absolute; inset: 0; width: 100%; height: 100%; }
-.planetarium__lines circle { fill: none; stroke: var(--color-border); stroke-width: 1px; }
+.planetarium__lines circle { fill: none; stroke: var(--color-border); stroke-width: var(--planet-line); }
 .planetarium__center {
   position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
   display: grid; justify-items: center; gap: var(--space-1); padding: var(--space-1) var(--space-2);
   background: var(--color-surface); color: var(--color-text); border-radius: var(--radius-card);
   font-family: var(--font-mono); font-size: var(--text-label);
 }
-.planetarium__body { position: absolute; width: 44px; height: 44px; transform: translate(-50%, -50%); }
-.planetarium__orb { display: grid; place-items: center; min-width: 44px; min-height: 44px; padding: 0; border: 0; border-radius: var(--radius-round); background: none; cursor: pointer; }
+.planetarium__body { position: absolute; width: var(--planet-target); height: var(--planet-target); transform: translate(-50%, -50%); }
+.planetarium__orb { display: grid; place-items: center; min-width: var(--planet-target); min-height: var(--planet-target); padding: 0; border: 0; border-radius: var(--radius-round); background: none; cursor: pointer; }
 .planetarium__disc {
-  display: inline-grid; place-items: center; width: 44px; height: 44px; border-radius: var(--radius-round);
-  background: var(--color-surface); border: 3px solid var(--ring);
+  display: inline-grid; place-items: center; width: var(--planet-target); height: var(--planet-target); border-radius: var(--radius-round);
+  background: var(--color-surface); border: var(--planet-ring) solid var(--ring);
 }
 .planetarium__body--no-data .planetarium__disc { border-style: dashed; }
-.planetarium__orb[aria-pressed='true'] .planetarium__disc { box-shadow: 0 0 0 3px var(--color-bg-raised), 0 0 0 6px var(--color-accent); }
+.planetarium__orb[aria-pressed='true'] .planetarium__disc { box-shadow: 0 0 0 var(--planet-gap) var(--color-bg-raised), 0 0 0 calc(var(--planet-gap) + var(--planet-ring)) var(--color-accent); }
 .planetarium__tag {
   position: absolute; top: 50%; left: 100%; transform: translateY(-50%); margin-left: var(--space-1);
-  display: grid; width: var(--tag-width); padding: var(--space-1);
+  display: grid; gap: 0; width: max-content; padding: var(--space-1) var(--space-2);
+  border: var(--planet-line) solid var(--ring);
   background: var(--color-surface); color: var(--color-text); border-radius: var(--radius-small);
-  font-family: var(--font-mono); font-size: var(--text-label); overflow-wrap: anywhere; text-align: left;
+  font-family: var(--font-mono); font-size: var(--text-label); text-align: left; white-space: nowrap; line-height: 1.3;
 }
-.planetarium__body--left .planetarium__tag { left: auto; right: 100%; margin: 0 var(--space-1) 0 0; text-align: right; justify-items: end; }
-.planetarium__tag-state { color: var(--ring); }
+.planetarium__body--left .planetarium__tag { left: auto; right: 100%; margin: 0 var(--space-1) 0 0; }
+.planetarium__tag-name { font-weight: 600; }
+.planetarium__tag-state { color: var(--ring); align-items: center; }
+.planetarium__tag-value { color: var(--color-text-muted); margin-inline-start: var(--space-1); }
+.planetarium__row-state svg, .planetarium__tag-state svg { flex: none; }

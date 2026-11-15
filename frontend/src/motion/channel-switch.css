@@ -1,0 +1,112 @@
+/* A phase change reads as a channel switch (DESIGN.md 7.3): one scan line
+   sweeps the stage while the panels settle. Forward it runs top to bottom,
+   back it runs bottom to top. Transform and opacity only, about 400 ms, and it
+   is not rendered at all when motion is off. */
+.channel {
+  position: relative;
+}
+
+.channel-switch {
+  position: fixed;
+  inset: 0;
+  z-index: 3;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.channel-switch__line {
+  position: absolute;
+  inset: 0 0 auto;
+  height: var(--space-6);
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    color-mix(in srgb, var(--accent-cyan) 22%, transparent) 70%,
+    var(--accent-cyan) 98%,
+    transparent
+  );
+  opacity: 0;
+  animation: channel-sweep var(--motion-slow) var(--ease-out) both;
+}
+
+.channel-switch--back .channel-switch__line {
+  inset: auto 0 0;
+  transform: scaleY(-1);
+  animation-name: channel-sweep-back;
+}
+
+@keyframes channel-sweep {
+  0% {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+  15% {
+    opacity: 0.9;
+  }
+  85% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(100vh);
+  }
+}
+
+@keyframes channel-sweep-back {
+  0% {
+    opacity: 0;
+    transform: translateY(100%) scaleY(-1);
+  }
+  15% {
+    opacity: 0.9;
+  }
+  85% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-100vh) scaleY(-1);
+  }
+}
+
+/* The content of the new phase settles from the side the line came from. */
+.channel--forward > .channel__content {
+  animation: channel-settle var(--motion-slow) var(--ease-settle) both;
+}
+
+.channel--back > .channel__content {
+  animation: channel-settle-back var(--motion-slow) var(--ease-settle) both;
+}
+
+@keyframes channel-settle {
+  from {
+    opacity: 0.4;
+    transform: translateY(calc(var(--space-3) * -1));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes channel-settle-back {
+  from {
+    opacity: 0.4;
+    transform: translateY(var(--space-3));
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .channel-switch {
+    display: none;
+  }
+
+  .channel--forward > .channel__content,
+  .channel--back > .channel__content {
+    animation: none;
+  }
+}
