@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { parseDraft } from './entryDraft'
+import { parseDraft, parseReport, readingRows } from './entryDraft'
+import type { Indicator } from '../domain/types'
+import { strings } from '../strings'
 
 // The rules behind the Entry form, away from the DOM: the browser's own number
 // input refuses a value it cannot read, so these cases are checked here.
@@ -84,3 +86,189 @@ describe('parseDraft', () => {
     }
   })
 })
+
+// One row of the screen: the indicator, its unit and what the person typed.
+const heart = { indicatorId: 'hr_bpm', label: 'Heart rate', unit: 'bpm' }
+const moodField = { indicatorId: 'mood_1_5', label: 'Mood', unit: '1 to 5' }
+const systolic = {
+  indicatorId: 'bp_sys_mmhg',
+  label: 'Systolic',
+  unit: 'mmHg',
+  pair: 'bp',
+}
+const diastolic = {
+  indicatorId: 'bp_dia_mmhg',
+  label: 'Diastolic',
+  unit: 'mmHg',
+  pair: 'bp',
+}
+
+describe('parseReport', () => {
+  it('saves every filled row with the one day and time', () => {
+    expect(
+      parseReport(
+        [
+          { ...heart, value: '57' },
+          { ...heart, indicatorId: 'temp_core_c', unit: '°C', value: '36.7' },
+        ],
+        '41',
+        '13:30',
+      ),
+    ).toEqual({
+      ok: true,
+      readings: [
+        { indicatorId: 'hr_bpm', unit: 'bpm', value: 57 },
+        { indicatorId: 'temp_core_c', unit: '°C', value: 36.7 },
+      ],
+      missionDay: 41,
+      time: '13:30',
+    })
+  })
+
+  it('reads an empty row as a reading that was not taken', () => {
+    expect(
+      parseReport([{ ...heart, value: '  ' }, { ...moodField, value: '' }], '41', '13:30'),
+    ).toEqual({ ok: true, readings: [], missionDay: 41, time: '13:30' })
+  })
+
+  it('refuses the whole report when one filled row is wrong', () => {
+    const draft = parseReport(
+      [
+        { ...heart, value: '57' },
+        { ...heart, indicatorId: 'temp_core_c', value: 'warm' },
+      ],
+      '41',
+      '13:30',
+    )
+    expect(draft).toEqual({
+      ok: false,
+      valueErrors: { temp_core_c: strings.entry.errors.valueNumber },
+      missionDay: undefined,
+      time: undefined,
+    })
+  })
+
+  it('refuses a value that is not a number at all', () => {
+    const draft = parseReport([{ ...heart, value: '1e400' }], '41', '13:30')
+    expect(draft).toEqual({
+      ok: false,
+      valueErrors: { hr_bpm: strings.entry.errors.valueNumber },
+      missionDay: undefined,
+      time: undefined,
+    })
+  })
+
+  it('accepts only 1 to 5 on a scale row', () => {
+    const draft = parseReport([{ ...moodField, value: '7' }], '41', '13:30')
+    expect(draft).toEqual({
+      ok: false,
+      valueErrors: { mood_1_5: strings.entry.errors.valueScale },
+      missionDay: undefined,
+      time: undefined,
+    })
+  })
+
+  it('asks for both blood pressures when one of them is written', () => {
+    expect(
+      parseReport(
+        [
+          { ...systolic, value: '120' },
+          { ...diastolic, value: '' },
+        ],
+        '41',
+        '13:30',
+      ),
+    ).toEqual({
+      ok: false,
+      valueErrors: { bp_dia_mmhg: strings.entry.errors.valueRequired },
+      missionDay: undefined,
+      time: undefined,
+    })
+  })
+
+  it('keeps both blood pressures as one row of two readings', () => {
+    expect(
+      parseReport(
+        [
+          { ...systolic, value: '120' },
+          { ...diastolic, value: '80' },
+        ],
+        '41',
+        '13:30',
+      ),
+    ).toEqual({
+      ok: true,
+      readings: [
+        { indicatorId: 'bp_sys_mmhg', unit: 'mmHg', value: 120 },
+        { indicatorId: 'bp_dia_mmhg', unit: 'mmHg', value: 80 },
+      ],
+      missionDay: 41,
+      time: '13:30',
+    })
+  })
+
+  it('keeps the day and time rules of the single entry form', () => {
+    expect(parseReport([{ ...heart, value: '57' }], '0', 'late')).toEqual({
+      ok: false,
+      valueErrors: {},
+      missionDay: strings.entry.errors.missionDay,
+      time: strings.entry.errors.time,
+    })
+  })
+})
+
+// The rows the screen draws, from the indicators file.
+function indicator(
+  id: string,
+  name: string,
+  unit: string,
+): Indicator {
+  return {
+    id,
+    name,
+    unit,
+    direction: 'both',
+    measuredOnBoard: 'On board',
+    hazards: [],
+    minSpread: 1,
+    sources: ['Assumption'],
+  }
+}
+
+describe('readingRows', () => {
+  it('follows the order of the file and gives every unit its own row', () => {
+    const rows = readingRows([
+      indicator('hr_bpm', 'Heart rate', 'bpm'),
+      indicator('temp_core_c', 'Core temperature', '°C'),
+    ])
+    expect(rows.map((row) => row.name)).toEqual(['Heart rate', 'Core temperature'])
+    expect(rows.map((row) => row.fields.length)).toEqual([1, 1])
+    expect(rows[0].system).toBe('cardiovascular')
+    expect(rows[1].system).toBe('thermoregulation')
+  })
+
+  it('puts the two blood pressures in one row with one icon and one unit', () => {
+    const rows = readingRows([
+      indicator('bp_sys_mmhg', 'Systolic blood pressure', 'mmHg'),
+      indicator('bp_dia_mmhg', 'Diastolic blood pressure', 'mmHg'),
+    ])
+    expect(rows).toHaveLength(1)
+    expect(rows[0].name).toBe(strings.entry.bloodPressure)
+    expect(rows[0].unit).toBe('mmHg')
+    expect(rows[0].fields.map((field) => field.indicatorId)).toEqual([
+      'bp_sys_mmhg',
+      'bp_dia_mmhg',
+    ])
+    expect(rows[0].fields.map((field) => field.label)).toEqual([
+      strings.entry.systolic,
+      strings.entry.diastolic,
+    ])
+  })
+
+  it('draws a 1 to 5 unit as a scale row', () => {
+    const rows = readingRows([indicator('mood_1_5', 'Mood', '1 to 5')])
+    expect(rows[0].scale).toBe(true)
+    expect(rows[0].system).toBe('neuro')
+  })
+})
+
