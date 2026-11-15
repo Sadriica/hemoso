@@ -80,10 +80,11 @@ planetarium orbit. Always next to the indicator name in words.
 | `--system-thermoregulation` | thermoregulation (amber) | `temp_core_c` | `#F5A524` | `#A85D00` |
 | `--system-sleep` | sleep (indigo) | `sleep_h` | `#9AA5FF` | `#4F46E5` |
 | `--system-neuro` | neuro-behavioural (violet) | `mood_1_5` | `#C39BFF` | `#7C3AED` |
-| `--system-metabolic` | metabolic (teal) | `glucose_mgdl` | `#3ED1C0` | `#0F766E` |
+| `--system-metabolic` | metabolic (teal) | `glucose_mgdl`, `appetite_1_5`, `fluid_intake_ml` | `#3ED1C0` | `#0F766E` |
+| `--system-musculoskeletal` | musculoskeletal (rose; decoration, as every system colour) | `body_mass_kg` | `#F28CC8` | `#B4237A` |
 
-The respiratory, musculoskeletal and radiation systems have no indicator in the
-demo. They have no colour until one exists; propose it to Eng 1 first.
+The respiratory and radiation systems have no indicator in the demo. They have
+no colour until one exists; propose it to Eng 1 first.
 
 ### 2.4 Console accents (Sun 15 Nov)
 
@@ -141,6 +142,8 @@ re-checks them on each test run.
 | Neuro-behavioural | card | 7.80 | 5.70 | 3:1 |
 | Metabolic | page | 10.42 | 4.95 | 3:1 |
 | Metabolic | card | 9.15 | 5.47 | 3:1 |
+| Musculoskeletal | page | 8.79 | 5.49 | 3:1 |
+| Musculoskeletal | card | 7.72 | 6.07 | 3:1 |
 | In range | card | 9.38 | 9.11 | 3:1 |
 | Attention | card | 10.68 | 9.40 | 3:1 |
 | Needs review | card | 7.53 | 7.73 | 3:1 |

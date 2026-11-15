@@ -19,11 +19,10 @@ describe('icons', () => {
     expect(systemOf('toString')).toBeNull();
     expect(systemOf('x')).toBeNull();
     expect(systemColor('neuro')).toBe('var(--system-neuro)');
-    // The indicators added later take the system their row names; a system
-    // with no colour token yet gives none.
+    // The indicators added later take the system their row names.
     expect(systemOf('appetite_1_5')).toBe('metabolic');
     expect(systemOf('fluid_intake_ml')).toBe('metabolic');
-    expect(systemOf('body_mass_kg')).toBeNull();
+    expect(systemOf('body_mass_kg')).toBe('musculoskeletal');
   });
 
   it('draws a different glyph for each indicator, and one for the unknown id', () => {

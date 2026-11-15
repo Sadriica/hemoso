@@ -69,6 +69,8 @@ const UI_PAIRS: ColorPair[] = [
   { name: 'neuro icon on a card', front: 'system-neuro', back: 'color-surface' },
   { name: 'metabolic icon on the page', front: 'system-metabolic', back: 'color-bg' },
   { name: 'metabolic icon on a card', front: 'system-metabolic', back: 'color-surface' },
+  { name: 'musculoskeletal icon on the page', front: 'system-musculoskeletal', back: 'color-bg' },
+  { name: 'musculoskeletal icon on a card', front: 'system-musculoskeletal', back: 'color-surface' },
   { name: 'state icon in range on a card', front: 'status-in-range-text', back: 'color-surface' },
   { name: 'state icon attention on a card', front: 'status-attention-text', back: 'color-surface' },
   { name: 'state icon review on a card', front: 'status-review-text', back: 'color-surface' },

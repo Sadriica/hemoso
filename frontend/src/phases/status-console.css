@@ -409,3 +409,16 @@
     width: 100%;
   }
 }
+
+/* Round of Sun 08:00. The line from the selected indicator to its card ran
+   over the other indicators on its way down. The overview now paints above
+   it, so the line passes behind every disc and tag and still lands on the
+   card. */
+.phase--status .status-panel .board {
+  position: relative;
+  z-index: 1;
+}
+
+.phase--status .status-path {
+  z-index: 0;
+}
