@@ -193,6 +193,14 @@ export default function TrendChart({
       ? null
       : readoutText(activeSeries, activePoint)
 
+  const first = series[0]
+  const newestPoint =
+    first === undefined ? undefined : first.points[first.points.length - 1]
+  const newest =
+    first === undefined || newestPoint === undefined
+      ? null
+      : readoutText(first, newestPoint)
+
   return (
     <div
       className={`tc${hidden ? ' tc--hidden' : ''}`}
@@ -201,9 +209,20 @@ export default function TrendChart({
     >
       <p className="tc__readout" id={readoutId} aria-live="polite">
         {readout === null ? (
-          <span className="tc__readout-idle">
-            {strings.history.trend.pickReading}
-          </span>
+          newest === null ? (
+            <span className="tc__readout-idle">
+              {strings.history.trend.pickReading}
+            </span>
+          ) : (
+            // Nothing selected yet: the newest reading, named as such, so the
+            // block always holds real values.
+            <>
+              <span className="tc__readout-main">{newest}</span>
+              <span className="tc__readout-count">
+                {strings.history.trend.newest}
+              </span>
+            </>
+          )
         ) : (
           <>
             <span className="tc__readout-main">{readout}</span>
