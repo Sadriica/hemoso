@@ -1,4 +1,4 @@
-/* The report as a telemetry console (DESIGN.md section 15). Each indicator is
+/* The report as a telemetry console (DESIGN.md section 16). Each indicator is
    one panel: a channel number and the system icon, the name with the state of
    the last reading, a live figure, the readout with its unit, and the small
    history. Tokens only; the selectors carry the console class so they win over
@@ -11,7 +11,7 @@
 
 .rep.rep--console .rep-eyebrow {
   margin: 0;
-  color: var(--color-accent);
+  color: var(--accent-cyan);
   font-family: var(--font-mono);
   font-size: var(--text-label);
   line-height: var(--leading-label);
@@ -74,7 +74,7 @@
   grid-column: 1;
   grid-row: 1;
   justify-self: center;
-  color: var(--color-text-muted);
+  color: var(--accent-cyan);
   font-family: var(--font-mono);
   font-size: var(--text-label);
   line-height: var(--leading-label);
@@ -145,8 +145,8 @@
   border-radius: var(--radius-small);
   background-color: color-mix(in srgb, var(--color-bg) 70%, transparent);
   background-image:
-    linear-gradient(to right, var(--color-grid) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--color-grid) 1px, transparent 1px);
+    linear-gradient(to right, color-mix(in srgb, var(--accent-cyan) 10%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--accent-cyan) 10%, transparent) 1px, transparent 1px);
   background-size: var(--space-3) var(--space-3);
 }
 
@@ -164,6 +164,9 @@
 
 .rep.rep--console .rep-rows .rep-row .rep-field:focus-within {
   border-bottom-color: var(--color-accent);
+  /* A glow under the rule, on top of the focus ring the field already has. */
+  box-shadow: 0 var(--space-2) var(--space-3) calc(var(--space-2) * -1)
+    color-mix(in srgb, var(--accent-cyan) 60%, transparent);
 }
 
 .rep.rep--console .rep-rows .rep-row .rep-field--invalid {
