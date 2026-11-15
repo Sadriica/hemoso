@@ -65,4 +65,5 @@ with `python scripts/si_use.py`. The table grows with each finished card.
 | Sat 18:50–19:10 | T-65, REQ-14 (#25) | backend/app/ratelimit.py, backend/app/main.py, backend/tests/test_ratelimit.py, backend/tests/conftest.py, backend/.env.example, docs/API.md | Assistant added a per-address rate limit; review changed it to trust only the address the proxy appends | Wambi |
 | Sat 18:45–18:50 | T-07 (#7) | docs/board/seed-tasks.csv | Assistant wrote six cards to build the REQ-09 decisions and the rate limit | Wambi |
 | Sat 19:05–19:10 | REQ-01 (#11) | docs/DECISIONS.md | Assistant reviewed Juli's MUI branch and added the MUI and Emotion licence rows | Wambi |
+| Sat 19:35–19:45 | REQ-06 (#17), REQ-05 (#16), REQ-03 (#14) | scripts/check_content.py, scripts/test_check_content*.py, FORMATS.md, docs/DECISIONS.md | Assistant added the signal side to conditions.csv with its check and tests, and recorded Bio 2's pressure, evidence score and glucose findings | Wambi |
 <!-- SI-USE-TABLE:END -->
