@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { attentionFor } from '../domain/attention'
 import { latestEntry } from '../domain/entries'
 import type {
@@ -55,6 +55,10 @@ export default function Home({
 }) {
   const personEntries = entries.filter((entry) => entry.personId === personId)
   const waitingFor = waitingForFrom(data)
+  // On a wide screen the overview opens in its orbit view, under 900 px as a list.
+  const [initialView] = useState<'list' | 'orbits'>(() =>
+    window.matchMedia?.('(min-width: 900px)').matches ? 'orbits' : 'list',
+  )
   const [chosenId, setChosenId] = useState<string | null>(null)
   const selectedId =
     data.indicators.find((item) => item.id === chosenId)?.id ??
@@ -139,8 +143,8 @@ export default function Home({
                 selectedId={selectedId}
                 onSelect={setChosenId}
                 reducedMotion={motionReduced}
+                initialView={initialView}
               />
-              <OrbitFirst />
             </Suspense>
           </div>
         </div>
@@ -173,21 +177,6 @@ export default function Home({
       )}
     </section>
   )
-}
-
-// On a wide screen the overview opens in its orbit view. The planetarium keeps
-// its view in its own state, so this presses its toggle once, after it mounts.
-// Under 900 px, and with the list already chosen, it does nothing.
-function OrbitFirst() {
-  const done = useRef(false)
-  useEffect(() => {
-    if (done.current) return
-    done.current = true
-    if (!window.matchMedia?.('(min-width: 900px)').matches) return
-    const toggle = document.querySelector<HTMLButtonElement>('.planetarium__toggle')
-    if (toggle && toggle.getAttribute('aria-pressed') === 'false') toggle.click()
-  }, [])
-  return null
 }
 
 // A box where the planetarium will be, in words, so the area is never blank.
@@ -273,7 +262,6 @@ function IndicatorRow({
                 value={latest.value}
                 reducedMotion={motionReduced}
               />
-              <OrbitFirst />
             </Suspense>
           )}
         </div>
