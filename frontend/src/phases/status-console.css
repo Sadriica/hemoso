@@ -422,3 +422,145 @@
 .phase--status .status-path {
   z-index: 0;
 }
+
+/* Review of Sun 09:40, point 2. On a 900 px tall screen the phase rail cut
+   through the body and hid the lower indicators. From 1100 px the stage is
+   flatter (16 to 7 instead of 16 to 10) and the blocks above it sit closer,
+   so every indicator of the overview is above the rail on the first screen. */
+@media (min-width: 1100px) {
+  .phase--status .planetarium {
+    --planet-stage-ratio: 16 / 7;
+  }
+
+  .phase--status {
+    gap: var(--space-3);
+  }
+
+  .phase--status .phase-heading {
+    padding-block: 0;
+  }
+
+  .stage:has(.phase--status) {
+    padding-top: var(--space-4);
+  }
+
+  .phase--status .home__heading {
+    margin-block: 0 var(--space-2);
+  }
+
+  .phase--status .notice--review {
+    margin-bottom: var(--space-2);
+    padding-block: var(--space-2);
+  }
+}
+
+/* Review of Sun 09:40, point 10. On a phone the four counts wrapped into a
+   ragged block: they are a grid of two columns, each count the width of its
+   cell. */
+@media (max-width: 599px) {
+  .phase--status .sys-strip {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .phase--status .sys-strip__item {
+    min-width: 0;
+    min-height: var(--space-5);
+    overflow-wrap: anywhere;
+  }
+}
+
+/* Review of Sun 09:40, point 11. A condition the readings do not point to
+   keeps its name, its score and its signals, in less room: the cards that ask
+   for a look stand out against them. */
+.phase--status .condition--low {
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  background: transparent;
+}
+
+.phase--status .condition--low .condition__meter {
+  height: var(--space-1);
+}
+
+.phase--status .condition--low .condition__name {
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+}
+
+.phase--status .condition--low .condition__signals {
+  gap: var(--space-1);
+}
+
+.phase--status .condition--low .condition__signal {
+  padding: 0 var(--space-2);
+  border-color: color-mix(in srgb, var(--color-border-control) 55%, transparent);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+}
+
+.phase--status .condition--low .condition__sentence {
+  color: var(--color-text-muted);
+}
+
+/* The low cards take three columns on a wide screen, so the board is shorter. */
+@media (min-width: 1100px) {
+  .phase--status .conditions__list {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .phase--status .conditions__list > .condition {
+    grid-column: span 3;
+  }
+
+  .phase--status .conditions__list > .condition--low {
+    grid-column: span 2;
+  }
+
+  .phase--status .conditions__list > .condition:last-child:nth-child(odd) {
+    grid-column: span 3;
+  }
+
+  .phase--status .conditions__list > .condition--low:last-child:nth-child(odd) {
+    grid-column: span 2;
+  }
+
+  /* The first low card finishes a row a wider card left half empty. */
+  .phase--status .conditions__list > .condition:not(.condition--low):nth-child(odd) + .condition--low {
+    grid-column: span 3;
+  }
+}
+
+/* Review of Sun 09:40, point 13. The sources at the end of Details: two
+   columns from a tablet up, closer rows on a phone, and less room under the
+   panel, so the evidence board stays near. */
+.phase--status .indicator-details > .indicator-details__section:last-child .sources__list {
+  margin: 0;
+}
+
+@media (min-width: 600px) {
+  .phase--status .indicator-details > .indicator-details__section:last-child .sources__list {
+    columns: 2;
+    column-gap: var(--space-5);
+  }
+
+  .phase--status .indicator-details > .indicator-details__section:last-child .sources__list li {
+    break-inside: avoid;
+    margin-block: 0 var(--space-1);
+  }
+}
+
+@media (max-width: 599px) {
+  .phase--status .indicator-details > .indicator-details__section:last-child .sources__list li {
+    margin-block: 0;
+  }
+
+  .phase--status .indicator-details__section {
+    margin-bottom: var(--space-2);
+  }
+}
+
+.phase--status .indicator-card__actions .disclosure__panel {
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
