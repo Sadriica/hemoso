@@ -4,6 +4,7 @@ One entry per decision. Newest first.
 
 | Time | What | Why | Source | AI used |
 | --- | --- | --- | --- | --- |
+| Sun 00:30 | Reviewed `bio1-03`: its cited link returns HTTP 500; the 2020 report opens at `nasa.gov/wp-content/uploads/2023/03/human-adaptation-2020-final.pdf` | REQ-10 asks for a source the reader can open; a dead link counts as no source | HTTP check of both URLs, Sat 14 | Yes |
 | Sun 00:05 | Sleep shift B (4:30–8:00), awake until 4:30 | Cami works through the night; the 7:45 checkpoint needs a cover | team README template | No |
 | Sun 00:03 | The video says "flags it for the CMO on board", never "alerts the CMO" | The app shows the level and the instruction "Tell the CMO"; it has no notification channel, so "alerts" promises something the demo does not do | `frontend/src/strings.ts`, `config/rules/attention.csv` | Yes |
 | Sat 23:40 | T-04 answered by the mentors: no cut earlier than 23:59 local; the mentor presentation is not scored, it is feedback; the demo is 7 slides in English or a 30 s video in English or with English subtitles, not one second more | These answers fix the deadline and the demo format; the pitch rehearsal stays useful but is not a judged item | Answers from the Medellín mentors, Sat 14 Nov | No |
