@@ -1,50 +1,64 @@
-/* HeMoSo app shell. Implements frontend/sdd/style-guide.md version 1.0
-   (Sat 14 Nov 2026).
+/* HeMoSo app shell. The contract is frontend/DESIGN.md (Observatory, locked
+   Sat 14 Nov 2026); src/theme/tokens.ts carries the same colour values and
+   src/theme.test.ts checks that the two agree.
 
    Dark is the default theme; the light theme comes from the operating system.
-   Every colour, size and space on a screen comes from a token here.
+   Every colour, size, space and duration on a screen comes from a token here:
+   a value that is not in this block is a bug.
 
-   The guide's three families (Inter, Public Sans, DM Mono) are not downloaded
-   yet: no font is loaded from a CDN and the packages wait for Eng 1's approval
-   (3.1), so the fallback stacks of the guide apply. */
+   Font files are not bundled yet (a licence row in docs/DECISIONS.md is the
+   gate), so the stacks below name the planned families first and fall back to
+   system fonts. No font is ever loaded from a CDN. */
 
 :root {
   color-scheme: dark;
 
-  /* Colour (2.1) */
-  --color-bg: #080b12;
-  --color-bg-raised: #101827;
-  --color-surface: #182333;
-  --color-border: #536273;
+  /* Colour roles. Contrast grid: DESIGN.md section 3. */
+  --color-bg: #070b10;
+  --color-bg-raised: #0c131d;
+  --color-surface: #121b27;
+  --color-border: #3a4a5e;
   /* Edge of a control (input, select, secondary button): 3:1 or more against
      the page and the card, which the decorative --color-border does not meet. */
-  --color-border-control: #6b7a8c;
-  --color-text: #ffffff;
-  --color-text-muted: #a7b0be;
-  --color-accent: #a9d6ff;
+  --color-border-control: #6f8197;
+  --color-text: #f2f1e9;
+  --color-text-muted: #a9b3c1;
+  --color-accent: #8ec5ff;
   --color-interactive: #2563eb;
   --color-on-interactive: #ffffff;
-  /* Reserved for the most urgent attention level and destructive actions
-     (2.3). No screen uses it yet. */
-  --color-signal: #ff5a42;
-  /* Technical grid on the page background (5), dark theme only. */
+  /* Reserved for the most urgent attention level and destructive actions. */
+  --color-signal: #ff6a4d;
+  /* Technical grid on the page background, dark theme only. */
   --color-grid: rgb(255 255 255 / 4%);
 
-  /* Status colours (2.2) */
-  --status-in-range-text: #4ade80;
-  --status-in-range-bg: #0f2a1c;
-  --status-attention-text: #facc15;
-  --status-attention-bg: #2e2606;
-  --status-no-data-text: #a7b0be;
-  --status-no-data-bg: #1c2635;
+  /* State colours: always shown with their own icon shape and words. */
+  --status-in-range-text: #5fd49a;
+  --status-in-range-bg: #0d2a1f;
+  --status-outside-text: #8ec5ff;
+  --status-outside-bg: #0f2339;
+  --status-attention-text: #f5c542;
+  --status-attention-bg: #2c2407;
+  --status-review-text: #ff8a70;
+  --status-review-bg: #33140e;
+  --status-no-data-text: #a9b3c1;
+  --status-no-data-bg: #18222f;
 
-  /* Type families (3.1) */
-  --font-display: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --font-body: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  /* One colour per body system, for icons and orbits (DESIGN.md 2.3). */
+  --system-cardiovascular: #ff7a70;
+  --system-thermoregulation: #f5a524;
+  --system-sleep: #9aa5ff;
+  --system-neuro: #c39bff;
+  --system-metabolic: #3ed1c0;
 
-  /* Type scale (3.2) */
-  --text-display: 32px;
+  /* Type families (DESIGN.md 4.1) */
+  --font-display: 'Barlow Condensed', 'Arial Narrow', 'Roboto Condensed', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+
+  /* Type scale (DESIGN.md 4.2) */
+  --text-hero: 64px;
+  --leading-hero: 60px;
+  --text-display: 40px;
   --leading-display: 40px;
   --text-h1: 28px;
   --leading-h1: 36px;
@@ -60,9 +74,10 @@
   --leading-small: 20px;
   --text-label: 12px;
   --leading-label: 16px;
-  --tracking-label: 0.06em;
+  --tracking-label: 0.08em;
+  --tracking-display: 0.01em;
 
-  /* Spacing (4.2) */
+  /* Spacing, 4 px base (DESIGN.md 5) */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 16px;
@@ -71,40 +86,62 @@
   --space-6: 48px;
   --space-7: 64px;
 
-  /* Shape (4.3) */
+  /* Shape and elevation (DESIGN.md 6) */
   --radius-small: 2px;
   --radius-card: 4px;
+  --radius-round: 999px;
   --border-subtle: 1px solid var(--color-border);
   --shadow-soft: none;
+  --shadow-raised: 0 0 0 1px var(--color-border), 0 8px 24px rgb(0 0 0 / 35%);
   --container-width: 1200px;
   --tap-min: 44px;
+
+  /* Motion (DESIGN.md 7). State changes stay under 600 ms; only the intro,
+     the phase change and the planetarium settling may use --motion-cinematic. */
+  --motion-fast: 150ms;
+  --motion-base: 250ms;
+  --motion-slow: 400ms;
+  --motion-cinematic: 1200ms;
+  --ease-standard: cubic-bezier(0.2, 0.7, 0.1, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
 }
 
 @media (prefers-color-scheme: light) {
   :root {
     color-scheme: light;
 
-    --color-bg: #f4f6f9;
+    --color-bg: #f3f4f0;
     --color-bg-raised: #ffffff;
     --color-surface: #ffffff;
     --color-border: #c5cdd8;
-    --color-border-control: #78859a;
+    --color-border-control: #6b7a8f;
     --color-text: #0b1220;
-    --color-text-muted: #4a5568;
-    --color-accent: #0b3d91;
+    --color-text-muted: #475266;
+    --color-accent: #0b4aa8;
     --color-interactive: #1d4ed8;
     --color-on-interactive: #ffffff;
-    --color-signal: #c42d17;
+    --color-signal: #b82a14;
     --color-grid: transparent;
 
     --status-in-range-text: #14532d;
     --status-in-range-bg: #dcfce7;
-    --status-attention-text: #713f12;
+    --status-outside-text: #0b4aa8;
+    --status-outside-bg: #dbeafe;
+    --status-attention-text: #6b3a06;
     --status-attention-bg: #fef3c7;
+    --status-review-text: #9a2a14;
+    --status-review-bg: #fde4de;
     --status-no-data-text: #374151;
     --status-no-data-bg: #e5e7eb;
 
+    --system-cardiovascular: #c7352b;
+    --system-thermoregulation: #a85d00;
+    --system-sleep: #4f46e5;
+    --system-neuro: #7c3aed;
+    --system-metabolic: #0f766e;
+
     --shadow-soft: 0 1px 2px rgb(8 11 18 / 12%);
+    --shadow-raised: 0 0 0 1px var(--color-border), 0 8px 24px rgb(8 11 18 / 12%);
   }
 }
 
@@ -218,12 +255,14 @@ legend {
   border-radius: var(--radius-small);
   background: transparent;
   color: var(--color-text);
-  font-family: var(--font-body);
-  font-size: var(--text-body);
+  /* The same label style as .journey-button: one button style per screen. */
+  font-family: var(--font-mono);
+  font-size: var(--text-small);
   font-weight: 600;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   cursor: pointer;
-  transition: filter 150ms ease-out, border-color 150ms ease-out;
+  transition: filter var(--motion-fast) var(--ease-out), border-color var(--motion-fast) var(--ease-out);
 }
 
 .button:hover {
@@ -330,6 +369,30 @@ legend {
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  min-height: 56px;
+  padding-right: var(--space-3);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.field__control:focus-within {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* The unit sits inside the field, after the number (DESIGN.md 8). */
+.field__control input.field__input {
+  min-height: 54px;
+  border: 0;
+  background: transparent;
+  font-family: var(--font-mono);
+  font-size: var(--text-value);
+  line-height: var(--leading-value);
+}
+
+.field__control input.field__input:focus-visible {
+  outline: none;
 }
 
 .field__input,
@@ -337,7 +400,7 @@ legend {
   width: 100%;
 }
 
-.field__control .field__input {
+.field__control input.field__input {
   flex: 1 1 auto;
   min-width: 0;
 }
@@ -352,6 +415,12 @@ legend {
   color: var(--color-text-muted);
 }
 
+/* The save button is a secondary action: the one primary of the screen is the
+   way on to the status. */
+.button--save {
+  min-height: 56px;
+}
+
 /* A 1 to 5 scale is answered with one choice per value (7.6). */
 .field__choices {
   display: flex;
@@ -362,8 +431,9 @@ legend {
 .field__choice {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1);
-  min-height: var(--tap-min);
+  gap: var(--space-2);
+  min-width: 56px;
+  min-height: 56px;
   padding: 0 var(--space-3);
   border: 1px solid var(--color-border-control);
   border-radius: var(--radius-small);
@@ -431,6 +501,27 @@ legend {
   border-left-color: var(--status-attention-text);
 }
 
+.notice--review {
+  border-left-color: var(--status-review-text);
+}
+
+.notice--review .notice__icon {
+  color: var(--status-review-text);
+}
+
+/* The one action of a notice sits on its own line on a phone. */
+.notice {
+  flex-wrap: wrap;
+}
+
+.notice__body {
+  flex: 1 1 200px;
+}
+
+.notice__action {
+  flex: 0 0 auto;
+}
+
 .notice--warning .notice__icon {
   color: var(--status-attention-text);
 }
@@ -470,8 +561,16 @@ legend {
   border-left-color: var(--status-in-range-text);
 }
 
-.indicator-card--attention {
-  border-left-color: var(--status-attention-text);
+.indicator-card--outside {
+  border-left-color: var(--status-outside-text);
+}
+
+.indicator-card--review {
+  border-left-color: var(--status-review-text);
+}
+
+.indicator-card--selected {
+  box-shadow: 0 0 0 1px var(--color-accent);
 }
 
 /* Title and badge: the badge always takes its own row under the name, so every
@@ -479,9 +578,17 @@ legend {
    the name. */
 .indicator-card__top {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   gap: var(--space-2);
+}
+
+.indicator-card__icon {
+  display: inline-flex;
+  flex: none;
+}
+
+.indicator-card__state {
+  display: flex;
 }
 
 .indicator-card__name {
@@ -494,10 +601,18 @@ legend {
 
 .indicator-card__reading {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
   padding-bottom: var(--space-2);
   border-bottom: var(--border-subtle);
+}
+
+.indicator-card__figures {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
 }
 
 .indicator-card__value {
@@ -578,9 +693,14 @@ legend {
   background: var(--status-in-range-bg);
 }
 
-.attention-badge--attention {
-  color: var(--status-attention-text);
-  background: var(--status-attention-bg);
+.attention-badge--outside {
+  color: var(--status-outside-text);
+  background: var(--status-outside-bg);
+}
+
+.attention-badge--review {
+  color: var(--status-review-text);
+  background: var(--status-review-bg);
 }
 
 .attention-badge--no_data {
@@ -606,7 +726,7 @@ legend {
   text-transform: uppercase;
   font-weight: 500;
   cursor: pointer;
-  transition: color 150ms ease-out, border-color 150ms ease-out;
+  transition: color var(--motion-fast) var(--ease-out), border-color var(--motion-fast) var(--ease-out);
 }
 
 .disclosure__toggle:hover {
@@ -616,7 +736,7 @@ legend {
 
 .disclosure__chevron {
   display: inline-flex;
-  transition: transform 150ms ease-out;
+  transition: transform var(--motion-fast) var(--ease-out);
 }
 
 .disclosure__toggle[aria-expanded='true'] .disclosure__chevron {
@@ -704,10 +824,16 @@ legend {
 /* Phone: four columns, one card per row, smaller display steps (4.1). */
 @media (max-width: 599px) {
   :root {
-    --text-display: 26px;
+    --text-hero: 44px;
+    --leading-hero: 42px;
+    --text-display: 32px;
+    --leading-display: 34px;
     --text-h1: 24px;
+    --leading-h1: 32px;
     --text-h2: 20px;
+    --leading-h2: 28px;
     --text-value: 30px;
+    --leading-value: 36px;
   }
 
   .indicator-list {

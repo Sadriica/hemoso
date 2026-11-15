@@ -134,21 +134,30 @@ test('guided check by keyboard with axe on every phase', async ({ page }) => {
     name: strings.personHeading(person),
   })
 
-  await test.step('Status: one card per indicator, both readings the latest', async () => {
-    for (const name of names) {
-      await expect(
-        statusRegion.getByRole('heading', { level: 3, name, exact: true }),
-      ).toBeVisible()
-    }
+  await test.step('Status: one card at a time, both readings the latest', async () => {
+    // The first indicator is selected by default; the others are chosen from
+    // the overview (a list on a phone, orbits on a wide screen).
+    await expect(
+      statusRegion.getByRole('heading', { level: 3, name: names[0], exact: true }),
+    ).toBeVisible()
+    await expect(statusRegion.getByRole('heading', { level: 3 })).toHaveCount(1)
     const measured = cardFor(statusRegion, names[0])
     await expect(measured.getByText(`${FIRST_VALUE} ${units[0]}`)).toBeVisible()
     await expect(measured.getByText(new RegExp(`^DAY ${readingDay} · `))).toBeVisible()
 
+    for (const name of names.slice(1)) {
+      await selectIndicator(page, name)
+      await expect(
+        statusRegion.getByRole('heading', { level: 3, name, exact: true }),
+      ).toBeVisible()
+    }
+    await selectIndicator(page, names[scaleIndex])
     const scale = cardFor(statusRegion, names[scaleIndex])
     await expect(
       scale.getByText(`${SCALE_VALUE} ${strings.cardUnit(SCALE_UNIT)}`),
     ).toBeVisible()
     await expect(scale.getByText(new RegExp(`^DAY ${scaleDay} · `))).toBeVisible()
+    await selectIndicator(page, names[0])
   })
 
   await test.step('Status: the Details of a card, by keyboard', async () => {
@@ -176,7 +185,8 @@ test('guided check by keyboard with axe on every phase', async ({ page }) => {
     await expect(details).toHaveAttribute('aria-expanded', 'false')
   })
 
-  await test.step('Status: the history sentence', async () => {
+  await test.step('Status: the history sentence, behind its disclosure', async () => {
+    await openHistory(page)
     const sentence = page
       .getByText(/^Latest:/)
       .or(page.getByText(strings.history.notEnough))
@@ -209,6 +219,7 @@ test('status: one indicator history, its table and the comparison sentence', asy
   await walkToStatus(page)
 
   await test.step('History: pick the second indicator', async () => {
+    await openHistory(page)
     const select = page.getByLabel(strings.history.indicator)
     await focusByTab(page, select)
     await page.keyboard.press('ArrowDown')
@@ -254,6 +265,27 @@ test('no sideways scrolling at 320 px', async ({ page, isMobile }) => {
   await expect(page.getByRole('heading', { level: 1 })).toContainText(copy.status.headline[0])
   await expectNoHorizontalScroll(page, 'Status at 320 px')
 })
+
+// Chooses an indicator in the overview: the row of the list or the orb of the
+// orbit view, both named by the indicator. Enter on the focused control.
+async function selectIndicator(page: Page, name: string): Promise<void> {
+  const control = page
+    .getByRole('button', { name: new RegExp(`^${name}\\b`) })
+    .first()
+  await expect(control).toBeVisible()
+  await control.focus()
+  await page.keyboard.press('Enter')
+  await expect(control).toHaveAttribute('aria-pressed', 'true')
+}
+
+// The history and its table wait behind a closed disclosure on the status
+// phase; open it with the keyboard.
+async function openHistory(page: Page): Promise<void> {
+  const toggle = page.getByRole('button', { name: copy.status.historyToggle })
+  await focusByTab(page, toggle)
+  await page.keyboard.press('Enter')
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true')
+}
 
 // Phase 1 by keyboard: the first crew member, checked with Space.
 async function pickFirstPerson(page: Page): Promise<void> {

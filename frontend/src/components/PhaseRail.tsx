@@ -6,6 +6,7 @@ import { strings } from '../strings'
 // forward or back is the button inside the phase itself.
 export default function PhaseRail({ current }: { current: PhaseId }) {
   const index = PHASES.indexOf(current)
+  const next = PHASES[index + 1]
   const progress = ((index + 1) / PHASES.length) * 100
 
   return (
@@ -31,6 +32,11 @@ export default function PhaseRail({ current }: { current: PhaseId }) {
           )
         })}
       </ol>
+      <p className="phase-rail__next">
+        {next === undefined
+          ? strings.phases.last
+          : strings.phases.next(strings.phases[next].name)}
+      </p>
     </nav>
   )
 }

@@ -13,6 +13,10 @@ Example hazard effect, written by Bio 1 from Phys's findings (question 3, REQ-07
 2. Example step two.
 
 ## Status and next steps
+### in_range
+Example text for a value in the usual range, and its next step. Assumption.
+### outside_range
+Example text for a value outside the usual range, and its next step. Assumption.
 ### example_level
 Example status text and example next step. Assumption.
 
