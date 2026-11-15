@@ -15,16 +15,18 @@ const BP_NEEDLE = 'M12 15l3.4-4.2';
 
 const SHAPES: Record<string, () => ReactNode> = {
   hr_bpm: () => paths('M12 20.5C5 15.5 3 11.5 3 8.5a4.5 4.5 0 0 1 9-2 4.5 4.5 0 0 1 9 2c0 3-2 7-9 12z', 'M6 12h3l1.5-3 2 6 1.5-3h3'),
-  // Blood pressure is one gauge; the systolic and the diastolic one carry an
-  // arrow up and an arrow down so they are never the same drawing.
+  // Blood pressure: the pair of readings is one gauge. The systolic reading is
+  // a hill under a ceiling bar (the peak of each beat) and the diastolic one is
+  // its mirror, a trough over a floor bar (the rest between beats), so the two
+  // differ by silhouette and not by a small mark in a corner.
   bp: () => [...paths(BP_DIAL, BP_NEEDLE), <circle key="c" cx="12" cy="15" r="1" />],
   bp_sys_mmhg: () => [
-    ...paths(BP_DIAL, BP_NEEDLE, 'M16.5 9.5l2.5-2.5 2.5 2.5'),
-    <circle key="c" cx="12" cy="15" r="1" />,
+    ...paths('M4 4h16', 'M3 20.5c4 0 4.5-12.5 9-12.5s5 12.5 9 12.5'),
+    <circle key="c" cx="12" cy="8.5" r="1.4" fill="currentColor" />,
   ],
   bp_dia_mmhg: () => [
-    ...paths(BP_DIAL, BP_NEEDLE, 'M16.5 7l2.5 2.5 2.5-2.5'),
-    <circle key="c" cx="12" cy="15" r="1" />,
+    ...paths('M4 20h16', 'M3 3.5c4 0 4.5 12.5 9 12.5s5-12.5 9-12.5'),
+    <circle key="c" cx="12" cy="15.5" r="1.4" fill="currentColor" />,
   ],
   temp_core_c: () => paths('M10 14V5a2 2 0 0 1 4 0v9a4 4 0 1 1-4 0z', 'M12 10v6'),
   sleep_h: () => paths('M19 14.5A8 8 0 1 1 9.5 5a6.5 6.5 0 0 0 9.5 9.5z', 'M17 3v3M15.5 4.5h3', 'M21 9v2M20 10h2'),
