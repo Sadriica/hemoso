@@ -2,6 +2,14 @@
 
 Written by Eng 1 at every merge into `main`. Newest entry first.
 
+## Final polish · Sunday 13:45 (merges the review branches)
+- eng1: the app no longer raises "needs review" for a crossed Assumption row
+  when a baseline exists, as the API and F-phys-02 say; the baseline texts
+  count days with a reading; a lone half-width Report row spans its line on
+  desktop; the page has a description, link preview tags and a no-script line;
+  README and docs say what the app does (face sign-in on the Identify screen,
+  the offline limit, the SQLite path, deploy).
+
 ## Pre-submission · Sunday 12:40 (merges #158 to #206 and #186)
 - eng1: the README as a product page with screenshots and the award story on
   the submission page (#186); urgent symptoms lead the evidence board and
