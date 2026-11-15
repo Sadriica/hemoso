@@ -1,9 +1,1 @@
 person_id,mission_day,time,symptom_id,severity
-demo_astronaut_1,3,21:10,fatigue,1
-demo_astronaut_1,6,16:40,thirst,1
-demo_astronaut_1,12,15:20,thirst,2
-demo_astronaut_1,12,15:25,frequent_urination,2
-demo_astronaut_1,18,21:20,fatigue,2
-demo_astronaut_1,22,10:15,hunger,1
-demo_astronaut_1,26,13:05,shakiness,1
-demo_astronaut_1,29,20:40,sweating,1
