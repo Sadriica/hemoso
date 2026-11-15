@@ -49,8 +49,8 @@ No one is notified for now.
 
 ### consult
 
-Your systolic blood pressure is far outside your usual range. A top number of
-140 mmHg or more is also above the line your CMO uses.
+Your systolic blood pressure is outside your usual range, or past the line your
+CMO uses: a top number of 140 mmHg or more.
 
 Sit down and tell your CMO today. Drink fluids and measure again in 1 hour.
 Assumption.
@@ -59,8 +59,8 @@ Your CMO checks you in person.
 
 ### urgent
 
-Your systolic blood pressure is well above your usual range. A top number of
-180 mmHg or more is the emergency line your CMO uses.
+Your systolic blood pressure is past the emergency line your CMO uses: a top
+number of 180 mmHg or more.
 
 Sit down now and call your CMO. Do not exercise. Assumption.
 

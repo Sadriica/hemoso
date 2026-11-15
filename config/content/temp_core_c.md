@@ -48,8 +48,8 @@ No one is notified for now.
 
 ### consult
 
-Your temperature is far outside your usual range. A reading of 38.0 °C or more
-also crosses the fever line your CMO uses; your own usual range comes first.
+Your temperature is outside your usual range, or a reading crossed the 38.0 °C
+fever line your CMO uses. HeMoSo asks for review when either happens.
 
 Tell your CMO today. Rest, drink fluids and measure again in 2 hours.
 Assumption.
@@ -58,8 +58,7 @@ Your CMO checks you in person.
 
 ### urgent
 
-Your temperature is well below your usual range. A temperature below 35.0 °C is
-the emergency line your CMO uses.
+Your temperature is below 35.0 °C, the emergency line your CMO uses.
 
 Tell your CMO now. Rest and drink fluids. Assumption.
 
