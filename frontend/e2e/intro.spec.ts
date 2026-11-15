@@ -37,3 +37,16 @@ test('the skip button and any key still end the intro', async ({ page }) => {
     strings.phases.identify.headline[0],
   )
 })
+
+test('the title sits below the orbits, centred', async ({ page }) => {
+  await page.goto('/')
+  await expect(page.locator('.intro__layer')).toBeVisible()
+  const orbits = await page.locator('.intro__orbits').boundingBox()
+  const mark = await page.locator('.intro__mark').boundingBox()
+  const name = await page.locator('.intro__name').boundingBox()
+  expect(orbits && mark && name).toBeTruthy()
+  if (!orbits || !mark || !name) return
+  expect(name.y).toBeGreaterThan(mark.y + mark.height)
+  const width = page.viewportSize()?.width ?? 0
+  expect(Math.abs(name.x + name.width / 2 - width / 2)).toBeLessThan(2)
+})
