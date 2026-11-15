@@ -5,17 +5,26 @@
   python scripts/check_sources.py --add        # append missing links to docs/sources.md
 
 Reports:
-  - links that do not open (HTTP error, timeout) with the files that use them;
+  - FAIL: links the site says are gone (404, 410, a server error twice),
+    with the files that use them; only these make the script exit with 1;
+  - WARN: links the script cannot verify (the site blocks scripts or robots,
+    TLS or a proxy refuses the connection, a timeout): open them in a browser;
   - links used in the product or in findings that are not in docs/sources.md;
   - content files and findings with no link at all.
-Exits with code 1 when there is a broken link.
+Exits with code 1 only when a link is gone; a link the script cannot verify is
+a warning, because a page that opens in a browser is not broken (Sun 15 Nov:
+spaceappschallenge.org blocks robots and the CSA page rejects scripts, both open
+fine in a browser).
 """
 
 from __future__ import annotations
 
 import argparse
 import re
+import socket
+import ssl
 import sys
+import time
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -36,16 +45,75 @@ def collect() -> dict[str, set[str]]:
     return used
 
 
+# Headers of a desktop browser: many publishers answer a bare script with 403.
+HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+        "(KHTML, like Gecko) Chrome/124.0 Safari/537.36"
+    ),
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,application/pdf,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9",
+}
+# The site answered, but it refuses scripts or needs a person: not proof of a dead link.
+BLOCKED = {401, 403, 405, 406, 418, 429, 451, 999}
+# The page is gone.
+GONE = {404, 410}
+
+OK, WARN, FAIL = "ok", "warn", "fail"
+
+
+def classify(error: BaseException) -> tuple[str, str]:
+    """(level, reason) for an error raised while opening a link."""
+    if isinstance(error, urllib.error.HTTPError):
+        code = error.code
+        if code in GONE:
+            return FAIL, f"HTTP {code}"
+        if code in BLOCKED:
+            return WARN, f"HTTP {code}, the site refuses scripts; open it in a browser"
+        return FAIL, f"HTTP {code}"  # 5xx counts only after the retry in check_link
+    reason = getattr(error, "reason", error)
+    if isinstance(reason, socket.gaierror):
+        # A sandbox or a proxy without DNS cannot resolve real hosts either.
+        return WARN, "host not resolved here; open it in a browser"
+    if isinstance(reason, (ssl.SSLError, ssl.CertificateError)):
+        return WARN, "TLS handshake failed here; open it in a browser"
+    if isinstance(reason, (TimeoutError, socket.timeout)) or isinstance(error, (TimeoutError, socket.timeout)):
+        return WARN, "timeout; open it in a browser"
+    text = str(reason)
+    if "Tunnel connection failed" in text or "403" in text:
+        return WARN, "a proxy refused the connection; open it in a browser"
+    if isinstance(reason, ConnectionError) or isinstance(error, ConnectionError):
+        return WARN, f"{type(reason).__name__}; open it in a browser"
+    return WARN, f"{type(error).__name__}: {text[:80]}; open it in a browser"
+
+
+def fetch(url: str) -> None:
+    """Open the link like a browser (redirects followed); raises on failure."""
+    req = urllib.request.Request(url, headers=HEADERS, method="GET")
+    with urllib.request.urlopen(req, timeout=15) as r:
+        r.read(1)
+
+
+def check_link(url: str, opener=fetch, pause: float = 1.0) -> tuple[str, str]:
+    """(level, reason) for one link; a failure is retried once before it counts."""
+    result = (OK, "")
+    for attempt in range(2):
+        try:
+            opener(url)
+            return OK, ""
+        except Exception as error:  # noqa: BLE001
+            result = classify(error)
+            if result[0] == WARN and "refuses scripts" in result[1]:
+                return result  # the site answered; a retry will not change it
+        if attempt == 0 and pause:
+            time.sleep(pause)
+    return result
+
+
 def opens(url: str) -> str:
-    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (link check)"}, method="GET")
-    try:
-        with urllib.request.urlopen(req, timeout=12) as r:
-            return "" if r.status < 400 else f"HTTP {r.status}"
-    except urllib.error.HTTPError as e:
-        # Some publishers block scripts (403) but open fine in a browser.
-        return "" if e.code in (401, 403, 429) else f"HTTP {e.code}"
-    except Exception as e:  # noqa: BLE001
-        return type(e).__name__
+    """Kept for callers of the old API: '' when the link is not a FAIL."""
+    level, reason = check_link(url)
+    return reason if level == FAIL else ""
 
 
 def main() -> int:
@@ -72,12 +140,20 @@ def main() -> int:
                 fh.write(f"| TODO title | {u} | TODO | {', '.join(sorted(used[u]))} | |\n")
         print(f"Appended {len(missing)} rows to {SOURCES}; fill the TODO cells.")
 
+    unverified = 0
     if not a.offline:
         for u in sorted(used):
-            err = opens(u)
-            if err:
-                print(f"FAIL  {err}: {u}  (used in {', '.join(sorted(used[u]))})")
+            level, reason = check_link(u)
+            where = ", ".join(sorted(used[u]))
+            if level == FAIL:
+                print(f"FAIL  {reason}: {u}  (used in {where})")
                 fail = True
+            elif level == WARN:
+                print(f"WARN  not verified ({reason}): {u}  (used in {where})")
+                unverified += 1
+    if unverified:
+        print(f"{unverified} link(s) could not be verified from here: open each in a browser "
+              "and note in the review that it opens.")
     print("Done." if not fail else "Fix the FAIL lines.")
     return 1 if fail else 0
 

@@ -542,3 +542,18 @@
     width: 100%;
   }
 }
+
+/* A phone: the crew card and the way on take the full width, one under the
+   other, so neither is a small island in the panel. */
+@media (max-width: 599px) {
+  .identify__who .crew-picker,
+  .identify__who .signin__begin {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+
+  .identify__who .crew-picker__options {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
