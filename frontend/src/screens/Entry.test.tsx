@@ -178,8 +178,12 @@ describe('Entry', () => {
     expect(rowButton('Heart rate')).toHaveAccessibleName(
       `${strings.entry.rowContext('Heart rate')}: ${strings.entry.contextLabels.rest} ${strings.entry.change}`,
     )
-    // Mood has no entries, so it follows the header: no words on the row.
-    expect(rowButton('Mood')).not.toHaveTextContent(/\w/)
+    // Mood has no entries, so it follows the header: only the word "Context" and
+    // a caret on the row, with the context in its name.
+    expect(rowButton('Mood')).toHaveTextContent(strings.entry.context)
+    expect(rowButton('Mood')).toHaveAccessibleName(
+      `${strings.entry.rowContext('Mood')}: ${strings.entry.contextLabels.on_waking}`,
+    )
     expect(screen.getByText(strings.entry.keepOwn(1))).toBeInTheDocument()
     vi.restoreAllMocks()
   })
@@ -188,8 +192,8 @@ describe('Entry', () => {
     vi.spyOn(Date.prototype, 'getUTCHours').mockReturnValue(13)
     vi.spyOn(Date.prototype, 'getUTCMinutes').mockReturnValue(0)
     renderEntry([heartRate, mood])
-    expect(rowButton('Heart rate')).not.toHaveTextContent(/\w/)
-    expect(rowButton('Mood')).not.toHaveTextContent(/\w/)
+    expect(rowButton('Heart rate')).not.toHaveTextContent(strings.entry.contextLabels.rest)
+    expect(rowButton('Mood')).toHaveTextContent(strings.entry.context)
     expect(screen.queryByText(/keeps? (their|its) own context/)).toBeNull()
     vi.restoreAllMocks()
   })
@@ -209,7 +213,7 @@ describe('Entry', () => {
     await user.click(within(group).getByRole('radio', { name: strings.entry.contextLabels.before_sleep }))
     // Heart rate followed the header, so it still shows no tag; mood kept its
     // own context and is tagged.
-    expect(rowButton('Heart rate')).not.toHaveTextContent(/\w/)
+    expect(rowButton('Heart rate')).toHaveTextContent(/^Context.$/)
     expect(rowButton('Mood')).toHaveTextContent(strings.entry.contextLabels.after_exercise)
     expect(screen.getByText(strings.entry.keepOwn(1))).toBeInTheDocument()
     vi.restoreAllMocks()

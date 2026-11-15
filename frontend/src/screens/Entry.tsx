@@ -605,7 +605,7 @@ function ReadingRowField({
       aria-label={
         differs
           ? `${strings.entry.rowContext(row.name)}: ${contextLabel} ${strings.entry.change}`
-          : strings.entry.rowContext(row.name)
+          : `${strings.entry.rowContext(row.name)}: ${contextLabel}`
       }
       onClick={onToggleMenu}
     >
@@ -615,7 +615,10 @@ function ReadingRowField({
           <span className="rep-ctx__change">{strings.entry.change}</span>
         </>
       ) : (
-        <span aria-hidden="true">▾</span>
+        <>
+          <span>{strings.entry.context}</span>
+          <span aria-hidden="true">▾</span>
+        </>
       )}
     </button>
   )
