@@ -7,9 +7,10 @@ import { readIndicatorRows } from './config'
 
 // The reaction check (REQ-38, T-71) on the real build, by keyboard only: the
 // step sits in the report phase, it is started and answered with keys, and the
-// two results reach the outbox. The run uses `?reaction=demo`, the 30-second
-// length, because the real one is three minutes; that parameter is the only
-// difference between this run and the one the crew takes.
+// result reads in words. The run uses `?reaction=demo`, the 30-second length,
+// because the real one is three minutes and cannot be taken here; a run of that
+// length saves nothing, so the outbox stays empty and the status screen keeps
+// the readings the demo data gives it (T-76).
 const rows = readIndicatorRows()
 const hasReaction =
   rows.ids.includes(REACTION_MEDIAN_ID) && rows.ids.includes(REACTION_LAPSES_ID)
@@ -97,15 +98,17 @@ test('reaction check by keyboard, at the demo length', async ({ page }) => {
     expect(sawLight, 'the visible cue of the stimulus').toBe(true)
   })
 
-  await test.step('The result in words, and the two entries in the outbox', async () => {
+  await test.step('The result in words, and nothing in the outbox', async () => {
     const result = page.locator('[data-reaction-result="median"]')
     await expect(result).toBeVisible({ timeout: 20_000 })
     await expect(result).toContainText('Median reaction:')
     await expect(result).toContainText(/Lapses: \d+/)
-    // No server in the demo: the two entries wait on this device (REQ-28).
+    // A demo run is a demonstration of the screen, not a check the crew took:
+    // it says so, and no entry reaches the outbox (REQ-28, T-76).
+    await expect(page.getByText(reactionStrings.demoNotSaved)).toBeVisible()
     await expect(
       page.getByTitle(
-        strings.sync.chip(strings.sync.noServer, strings.sync.waiting(2)),
+        strings.sync.chip(strings.sync.noServer, strings.sync.savedHere),
       ),
     ).toBeVisible()
     await expectNoBlockingA11yIssues(page, 'Report with the reaction result')
@@ -129,11 +132,10 @@ test('reaction check by keyboard, at the demo length', async ({ page }) => {
     await expect(page.getByText(reactionStrings.cue.sound)).toBeVisible()
     await page.keyboard.press('Escape')
     await expect(page.getByText(reactionStrings.stopped)).toBeVisible()
-    // Nothing else was stored: the first run's two entries are still the only
-    // ones waiting for the outbox.
+    // Neither run stored anything: the outbox is as empty as it was.
     await expect(
       page.getByTitle(
-        strings.sync.chip(strings.sync.noServer, strings.sync.waiting(2)),
+        strings.sync.chip(strings.sync.noServer, strings.sync.savedHere),
       ),
     ).toBeVisible()
   })

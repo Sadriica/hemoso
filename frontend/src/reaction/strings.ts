@@ -37,6 +37,9 @@ export const reactionStrings = {
       ? 'Saved. Waiting to be sent.'
       : 'Saved on this device.'
   },
+  // A run of the demo length shows the screen, it does not measure: the result
+  // says so instead of claiming a save that never happened (T-76).
+  demoNotSaved: 'Demo run: not saved.',
   again: 'Take it again',
   done: 'Done',
   stopped: 'Stopped. Nothing was saved.',
