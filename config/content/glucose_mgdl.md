@@ -2,16 +2,20 @@
 
 ## Why it matters
 
-Blood glucose is the sugar your body uses for energy. Crews often eat less than
-they need in flight, and diet, sleep and stress change how the body handles
-sugar. The challenge statement names blood sugar as an indicator to monitor.
+Blood glucose is the sugar your body uses for energy. Astronauts often do not eat
+enough to keep their body weight, and the body can respond less well to insulin
+in flight and in bed rest. That makes blood sugar a useful signal to follow.
+https://humanresearchroadmap.nasa.gov/Evidence/other/Nutrition%20ER_human_adaptation_2020_final.pdf
 
 ## How spaceflight affects it
 
-The NASA nutrition report says the body handles sugar differently in flight, and
-that crews are thought to need about the same carbohydrates as on Earth. Studies
-are few and do not agree. How blood sugar is measured on board is still open in
-this project. Assumption.
+The NASA nutrition report says carbohydrate needs in flight are thought to be
+similar to those on Earth. Few studies look at how microgravity changes
+carbohydrate use, and they do not agree.
+https://humanresearchroadmap.nasa.gov/Evidence/other/Nutrition%20ER_human_adaptation_2020_final.pdf
+
+No in-flight device is confirmed in the sources we read, so HeMoSo takes this
+value by hand. Assumption.
 
 ## Measurement steps
 

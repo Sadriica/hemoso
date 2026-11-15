@@ -48,7 +48,8 @@ No one is notified for now.
 
 ### consult
 
-Your temperature is far outside your usual range.
+Your temperature is far outside your usual range. A reading of 38.0 °C or more
+also counts as above the fever line; your own usual range comes first.
 
 Tell your CMO today. Rest, drink fluids and measure again in 2 hours.
 Assumption.

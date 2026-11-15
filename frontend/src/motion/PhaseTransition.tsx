@@ -1,10 +1,11 @@
 import { useEffect, useRef, type ReactNode } from 'react'
-import { animateIn, tokenMs } from './motion'
+import { animateIn, tokenMs, useMotionAllowed } from './motion'
 
 /**
- * Wraps one phase. When `phase` changes, the children fade and lift in
- * (opacity and transform only, no layout shift). A new change cancels the
- * running one. With `still` it only renders the children.
+ * Wraps one phase and is the only fade of its content. When `phase` changes,
+ * the children fade and lift in (opacity and transform only, no layout shift).
+ * A new change cancels the running one, and so does motion turning off
+ * (`still` or the system setting). With `still` it only renders the children.
  */
 export default function PhaseTransition({
   phase,
@@ -15,6 +16,7 @@ export default function PhaseTransition({
   still: boolean
   children: ReactNode
 }) {
+  const allowed = useMotionAllowed(still)
   const el = useRef<HTMLDivElement>(null)
   const prev = useRef(phase)
   const anim = useRef<Animation | undefined>(undefined)
@@ -28,8 +30,11 @@ export default function PhaseTransition({
     if (prev.current === phase) return
     prev.current = phase
     anim.current?.cancel()
-    if (!still) anim.current = animateIn(el.current, tokenMs(el.current, '--motion-slow', 400))
-  }, [phase, still])
+    anim.current = allowed ? animateIn(el.current, tokenMs(el.current, '--motion-slow', 400)) : undefined
+  }, [phase, allowed])
+  useEffect(() => {
+    if (!allowed) anim.current?.cancel()
+  }, [allowed])
   useEffect(() => () => anim.current?.cancel(), [])
   return <div ref={el}>{children}</div>
 }

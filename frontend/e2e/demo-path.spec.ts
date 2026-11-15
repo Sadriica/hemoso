@@ -68,7 +68,7 @@ test('guided check by keyboard with axe on every phase', async ({ page }) => {
   await test.step('Report: one row per indicator, with its icon and its unit', async () => {
     // Every indicator of the file has a row; the two blood pressures share one.
     const rows = page.getByRole('listitem').filter({
-      has: page.locator('.reading__body'),
+      has: page.locator('.rep-row__body'),
     })
     const paired = names.filter((name) => /systolic|diastolic/i.test(name)).length
     await expect(rows).toHaveCount(typedNames.length - (paired === 2 ? 1 : 0))
@@ -164,7 +164,7 @@ test('guided check by keyboard with axe on every phase', async ({ page }) => {
     ).toBeVisible()
     await expect(statusRegion.getByRole('heading', { level: 3 })).toHaveCount(1)
     const measured = cardFor(statusRegion, names[0])
-    await expect(measured.getByText(`${FIRST_VALUE} ${units[0]}`)).toBeVisible()
+    await expect(measured.getByText(`${FIRST_VALUE} ${units[0]}`, { exact: true })).toBeVisible()
     await expect(measured.getByText(new RegExp(`^DAY ${readingDay} · `))).toBeVisible()
 
     for (const name of names.slice(1)) {
@@ -176,7 +176,7 @@ test('guided check by keyboard with axe on every phase', async ({ page }) => {
     await selectIndicator(page, names[scaleIndex])
     const scale = cardFor(statusRegion, names[scaleIndex])
     await expect(
-      scale.getByText(`${SCALE_VALUE} ${strings.cardUnit(SCALE_UNIT)}`),
+      scale.getByText(`${SCALE_VALUE} ${strings.cardUnit(SCALE_UNIT)}`, { exact: true }),
     ).toBeVisible()
     await expect(scale.getByText(new RegExp(`^DAY ${scaleDay} · `))).toBeVisible()
     await selectIndicator(page, names[0])
