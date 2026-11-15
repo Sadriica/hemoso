@@ -19,6 +19,15 @@ import { strings } from './strings'
 // The intro is a chunk of its own; it shows once per tab, on the first load.
 const Intro = lazy(() => import('./motion/Intro'))
 
+// The key Intro writes once it has run in this tab (src/motion/Intro.tsx).
+function introSeen(): boolean {
+  try {
+    return !!sessionStorage.getItem('hemoso-intro-seen')
+  } catch {
+    return false
+  }
+}
+
 function prefersReducedMotion(): boolean {
   return (
     typeof window.matchMedia === 'function' &&
@@ -47,7 +56,10 @@ export default function App() {
   )
   const [motionReduced, setMotionReduced] = useState(prefersReducedMotion)
 
-  const [introOpen, setIntroOpen] = useState(true)
+  // The intro opens on the first load of a tab, unless motion is off. Until
+  // its chunk arrives, a solid page-colour layer of the same size covers the
+  // screen, so the first phase never flashes under it.
+  const [introOpen, setIntroOpen] = useState(() => !motionReduced && !introSeen())
   const [phase, setPhase] = useState<PhaseId>('identify')
   const [personId, setPersonId] = useState<string | null>(null)
 
@@ -91,7 +103,7 @@ export default function App() {
       <Starfield still={motionReduced} />
       <SkipLink />
       {introOpen && (
-        <Suspense fallback={null}>
+        <Suspense fallback={<div className="intro-cover" aria-hidden="true" />}>
           <Intro
             still={motionReduced}
             onDone={() => setIntroOpen(false)}
