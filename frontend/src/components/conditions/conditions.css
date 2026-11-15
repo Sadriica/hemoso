@@ -202,3 +202,77 @@ button.condition__signal:hover {
   align-items: center;
   min-height: var(--tap-min);
 }
+
+/* Urgent symptoms lead the board (the rule that makes a row urgent is the
+   score's, unchanged). The block is words and an icon, not colour alone. */
+.conditions__urgent-block {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  border: var(--border-subtle);
+  border-left: 6px solid var(--status-review-text);
+  border-radius: var(--radius-card);
+  background: var(--color-bg-raised);
+}
+
+.conditions__urgent-heading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  color: var(--status-review-text);
+  font-family: var(--font-display);
+  font-size: var(--text-h2);
+  line-height: var(--leading-h2);
+}
+
+.conditions__urgent-action {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-h1);
+  line-height: var(--leading-h1);
+}
+
+.conditions__urgent-why,
+.conditions__overlap {
+  margin: 0;
+  max-width: 70ch;
+}
+
+/* An urgent row whose readings go the other way: still labelled urgent and
+   still showing the symptom, but without the heavy edge. */
+.condition--quiet {
+  --step: var(--color-text-muted);
+  border-left-width: 3px;
+}
+
+/* Phone only: the action stays at the bottom while something needs it, above
+   the phase rail, and the page keeps room under it. */
+.urgent-bar {
+  display: none;
+}
+
+@media (max-width: 599px) {
+  .urgent-bar {
+    position: fixed;
+    right: 0;
+    bottom: var(--rail-height);
+    left: 0;
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    box-sizing: border-box;
+    min-height: 48px;
+    margin: 0;
+    padding: var(--space-2) var(--space-3);
+    border-top: 3px solid var(--status-review-text);
+    background: var(--color-bg-raised);
+    color: var(--status-review-text);
+    font-weight: 600;
+  }
+
+  .stage:has(.urgent-bar) {
+    padding-bottom: calc(var(--rail-height) + var(--space-3) + 56px);
+  }
+}

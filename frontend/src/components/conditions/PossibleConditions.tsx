@@ -20,6 +20,8 @@ import { StatusIcon } from '../../icons'
 import type { StatusKind } from '../../icons/meta'
 import { strings } from '../../strings'
 import Disclosure from '../Disclosure'
+import { usePhone } from '../../hooks/usePhone'
+import { agreementOf, orderUrgent, reportedRedFlags } from './urgentBoard'
 import './conditions.css'
 
 // The possible conditions of config/rules/conditions.csv (REQ-06). Each row is
@@ -73,6 +75,8 @@ export default function PossibleConditions({
 }: PossibleConditionsProps) {
   const copy = strings.conditions
   const headingId = useId()
+  const urgentId = useId()
+  const phone = usePhone()
   const [http] = useState(() => client ?? createConditionsClient())
   // The server's answer and the person it belongs to: a new person never reads
   // the previous one's answer while their own request is in flight.
@@ -116,17 +120,34 @@ export default function PossibleConditions({
       ? answer.list
       : local
   const ordered = orderConditions(shown)
-  const scored = ordered.filter((condition) => condition.label !== 'no_data')
-  const waiting = ordered.filter((condition) => condition.label === 'no_data')
+  const urgentRows = orderUrgent(ordered)
+  const others = ordered.filter((condition) => condition.label !== 'urgent')
+  const scored = others.filter((condition) => condition.label !== 'no_data')
+  const waiting = others.filter((condition) => condition.label === 'no_data')
+  // On a phone only what needs action stays open; the quieter groups wait
+  // behind one line with their count.
+  const open = phone
+    ? scored.filter((condition) => condition.label === 'review')
+    : scored
+  const folded = phone
+    ? [
+        ...scored.filter((condition) => condition.label !== 'review'),
+        ...waiting,
+      ]
+    : waiting
+  const needsAction =
+    urgentRows.length > 0 || scored.some((item) => item.label === 'review')
   const nameOf = (indicatorId: string): string =>
     indicators.find((item) => item.id === indicatorId)?.name ?? indicatorId
   const symptomName = (symptomId: string): string =>
     (symptoms ?? []).find((item) => item.id === symptomId)?.name ?? symptomId
 
+  const flagged = reportedRedFlags(urgentRows, symptoms ?? [])
   const row = (condition: Condition) => (
     <ConditionRow
       key={condition.id}
       condition={condition}
+      quiet={condition.label === 'urgent' && agreementOf(condition) === 2}
       nameOf={nameOf}
       symptomName={symptomName}
       onSelectIndicator={onSelectIndicator}
@@ -140,11 +161,41 @@ export default function PossibleConditions({
         {copy.heading}
       </h2>
       <p className="conditions__intro">{copy.intro}</p>
-      {scored.length > 0 && <ul className="conditions__list">{scored.map(row)}</ul>}
-      {waiting.length > 0 && (
-        <Disclosure label={copy.notEnough(waiting.length)}>
-          <ul className="conditions__list">{waiting.map(row)}</ul>
+      {urgentRows.length > 0 && (
+        <div className="conditions__urgent-block" aria-labelledby={urgentId} role="group">
+          <h3 id={urgentId} className="conditions__urgent-heading">
+            <StatusIcon kind="review" size={20} />
+            <span>{copy.urgentHeading}</span>
+          </h3>
+          <p className="conditions__urgent-action">{copy.sentence.urgent}</p>
+          {flagged.length > 0 && (
+            <p className="conditions__urgent-why">
+              {strings.symptoms.callCmoWhy(flagged.join(', '))}
+            </p>
+          )}
+          <p className="conditions__overlap">{copy.overlap}</p>
+        </div>
+      )}
+      {urgentRows.length > 0 && (
+        <ul className="conditions__list conditions__list--urgent">
+          {urgentRows.map(row)}
+        </ul>
+      )}
+      {open.length > 0 && <ul className="conditions__list">{open.map(row)}</ul>}
+      {folded.length > 0 && (
+        <Disclosure
+          label={phone ? copy.showMore(folded.length) : copy.notEnough(folded.length)}
+        >
+          <ul className="conditions__list">{folded.map(row)}</ul>
         </Disclosure>
+      )}
+      {phone && needsAction && (
+        <p className="urgent-bar" role="note">
+          <StatusIcon kind="review" size={20} />
+          <span>
+            {urgentRows.length > 0 ? copy.sentence.urgent : copy.sentence.review}
+          </span>
+        </p>
       )}
       <p className="conditions__confirms">{copy.confirms}</p>
     </section>
@@ -198,11 +249,14 @@ function scoreText(score: number): string {
 
 function ConditionRow({
   condition,
+  quiet = false,
   nameOf,
   symptomName,
   onSelectIndicator,
 }: {
   condition: Condition
+  /** An urgent row whose measured readings go the other way. */
+  quiet?: boolean
   nameOf: (indicatorId: string) => string
   symptomName: (symptomId: string) => string
   onSelectIndicator?: (indicatorId: string) => void
@@ -215,8 +269,10 @@ function ConditionRow({
     condition.score === null || urgent ? null : scoreText(condition.score)
 
   return (
-    <li className={`condition condition--${condition.label}`}>
-      {urgent && (
+    <li
+      className={`condition condition--${condition.label}${quiet ? ' condition--quiet' : ''}`}
+    >
+      {urgent && !quiet && (
         <p className="condition__urgent">{copy.sentence.urgent}</p>
       )}
       <div className="condition__head">
@@ -245,6 +301,7 @@ function ConditionRow({
           <p className="condition__score">{copy.evidence(text)}</p>
         </div>
       )}
+      {quiet && <p className="condition__sentence">{copy.bySymptom}</p>}
       {!urgent && (
         <p className="condition__sentence">{copy.sentence[condition.label]}</p>
       )}
