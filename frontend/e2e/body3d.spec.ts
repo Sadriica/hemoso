@@ -9,6 +9,10 @@ import { expectNoBlockingA11yIssues } from './axe'
 // this device, so the assertion is the list beside the picker.
 const copy = strings.phases
 
+// The 3D body is a 554 kB chunk of its own: the test waits for it, turns the
+// figure and runs axe. On a loaded machine that is more than the 30 s default.
+test.describe.configure({ timeout: 60_000 })
+
 test('the body: choose a place, a strength and a kind, and save the report', async ({
   page,
 }) => {
