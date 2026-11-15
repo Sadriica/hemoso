@@ -71,6 +71,30 @@ create index if not exists pain_reports_person_idx
 -- the rows and the anon key reads nothing.
 alter table pain_reports enable row level security;
 
+-- Symptom reports (T-79). This block stands alone too: it does not touch the
+-- tables above, so a project that already ran those blocks can run only this
+-- one. `severity` is 1 (mild), 2 (moderate) or 3 (severe); the API stores it and
+-- the evidence score reads only whether the symptom was reported, never how
+-- strong it was.
+create table if not exists symptom_reports (
+    person_id text not null,
+    symptom_id text not null,
+    severity integer not null check (severity between 1 and 3),
+    mission_day integer not null,
+    time text not null,
+    created_at timestamptz not null default now()
+);
+
+-- Natural key: one report per person, day, time and symptom, so the frontend's
+-- outbox can re-send a report without adding a second row.
+create unique index if not exists symptom_reports_natural_key_idx
+    on symptom_reports (person_id, mission_day, time, symptom_id);
+
+create index if not exists symptom_reports_person_idx
+    on symptom_reports (person_id, mission_day, time);
+
+-- As above: no policy, so only the service role key reaches these rows.
+alter table symptom_reports enable row level security;
 -- The kind the astronaut marked (B-3): pain, swelling, bruise, cut_or_scrape,
 -- burn or sprain_or_strain. This block stands alone and is additive: a project
 -- that already ran the block above gets the column, and a report stored before
