@@ -4,8 +4,8 @@
 
 A lapse is an answer that comes too late, or does not come. NASA ran a reaction
 self test on the space station as a brief, objective way to see the effects of
-sleep loss and workload on performance.
-https://www.ntrs.nasa.gov/citations/20090029851
+sleep loss and workload on performance. HeMoSo uses a 90-second adaptation of
+that test. https://www.ntrs.nasa.gov/citations/20090029851
 
 ## How spaceflight affects it
 
