@@ -7,6 +7,42 @@ import pytest
 from app import seed, storage
 
 
+def write_symptoms(tmp_path, rows=None) -> None:
+    """config/data/symptoms.csv in the temporary CONFIG_DIR."""
+    data = tmp_path / "data"
+    data.mkdir(exist_ok=True)
+    lines = rows or [
+        "shaky,Shaky,no,no,Assumption",
+        "sweating,Sweating or clammy skin,no,no,Assumption",
+    ]
+    (data / "symptoms.csv").write_text(
+        "symptom_id,name,red_flag,shared,source\n" + "\n".join(lines) + "\n",
+        encoding="utf-8",
+    )
+
+
+def write_demo_in_data(tmp_path, rows) -> None:
+    """config/data/demo_data.csv in the temporary CONFIG_DIR, as the command reads it."""
+    data = tmp_path / "data"
+    data.mkdir(exist_ok=True)
+    header = "person_id,indicator_id,value,unit,mission_day,time,context\n"
+    (data / "demo_data.csv").write_text(
+        header + "\n".join(rows) + "\n", encoding="utf-8"
+    )
+
+
+def write_symptom_log(tmp_path, rows, bom=False):
+    """config/data/symptom_log.csv in the temporary CONFIG_DIR."""
+    data = tmp_path / "data"
+    data.mkdir(exist_ok=True)
+    content = (
+        "person_id,mission_day,time,symptom_id,severity\n" + "\n".join(rows) + "\n"
+    )
+    path = data / "symptom_log.csv"
+    path.write_text(content, encoding="utf-8-sig" if bom else "utf-8")
+    return path
+
+
 def write_indicators(tmp_path, unit="example_unit") -> None:
     data = tmp_path / "data"
     data.mkdir(exist_ok=True)
@@ -321,3 +357,201 @@ def test_line_num_after_multiline_quoted_row(tmp_path, monkeypatch):
     assert added == 0
     assert skipped == 2
     assert reasons == ["line 3: invalid value", "line 4: invalid time"]
+
+
+# The symptom log (T-78): config/data/symptom_log.csv in the same CONFIG_DIR.
+
+
+def test_symptom_log_loads_valid_rows(tmp_path, monkeypatch):
+    monkeypatch.setenv("CONFIG_DIR", str(tmp_path))
+    write_symptoms(tmp_path)
+    path = write_symptom_log(
+        tmp_path,
+        [
+            "demo_astronaut_1,12,14:10,shaky,2",
+            "demo_astronaut_1,12,18:00,sweating,1",
+        ],
+    )
+    store = storage.MemoryStorage()
+
+    added, skipped, reasons = seed.load_symptom_log(store, path)
+
+    assert added == 2
+    assert skipped == 0
+    assert reasons == []
+    assert [row.symptom_id for row in store.symptom_reports("demo_astronaut_1")] == [
+        "shaky",
+        "sweating",
+    ]
+
+
+def test_symptom_log_second_run_adds_nothing(tmp_path, monkeypatch):
+    monkeypatch.setenv("CONFIG_DIR", str(tmp_path))
+    write_symptoms(tmp_path)
+    path = write_symptom_log(tmp_path, ["demo_astronaut_1,12,14:10,shaky,2"])
+    store = storage.MemoryStorage()
+
+    first = seed.load_symptom_log(store, path)
+    second = seed.load_symptom_log(store, path)
+
+    assert first == (1, 0, [])
+    assert second[0] == 0
+    assert second[1] == 1
+    assert "duplicate" in second[2][0]
+    assert len(store.symptom_reports("demo_astronaut_1")) == 1
+
+
+@pytest.mark.parametrize(
+    "row",
+    [
+        "demo_astronaut_1,0,14:10,shaky,2",
+        "demo_astronaut_1,12,24:00,shaky,2",
+        "demo_astronaut_1,12,14:10,shaky,4",
+        "demo_astronaut_1,12,14:10,shaky,0",
+        "demo_astronaut_1,12,14:10,Shaky,2",
+    ],
+)
+def test_symptom_log_bad_row_skipped(tmp_path, monkeypatch, row):
+    monkeypatch.setenv("CONFIG_DIR", str(tmp_path))
+    write_symptoms(tmp_path)
+    path = write_symptom_log(tmp_path, ["demo_astronaut_1,12,14:10,sweating,2", row])
+    store = storage.MemoryStorage()
+
+    added, skipped, reasons = seed.load_symptom_log(store, path)
+
+    assert added == 1
+    assert skipped == 1
+    assert reasons and reasons[0].startswith("line 3")
+
+
+def test_symptom_log_unknown_symptom_skipped(tmp_path, monkeypatch):
+    monkeypatch.setenv("CONFIG_DIR", str(tmp_path))
+    write_symptoms(tmp_path)
+    path = write_symptom_log(tmp_path, ["demo_astronaut_1,12,14:10,not_a_symptom,2"])
+    store = storage.MemoryStorage()
+
+    added, skipped, reasons = seed.load_symptom_log(store, path)
+
+    assert added == 0
+    assert skipped == 1
+    assert reasons == ["line 2: unknown symptom"]
+
+
+def test_symptom_log_any_id_without_symptoms_csv(tmp_path, monkeypatch):
+    monkeypatch.setenv("CONFIG_DIR", str(tmp_path))
+    path = write_symptom_log(tmp_path, ["demo_astronaut_1,12,14:10,not_defined,2"])
+    store = storage.MemoryStorage()
+
+    added, skipped, reasons = seed.load_symptom_log(store, path)
+
+    assert added == 1
+    assert skipped == 0
+    assert reasons == []
+
+
+def test_symptom_log_wrong_number_of_columns_skipped(tmp_path, monkeypatch):
+    monkeypatch.setenv("CONFIG_DIR", str(tmp_path))
+    write_symptoms(tmp_path)
+    path = write_symptom_log(
+        tmp_path,
+        ["demo_astronaut_1,12,14:10,shaky,2", "demo_astronaut_1,12,14:10,shaky"],
+    )
+    store = storage.MemoryStorage()
+
+    added, skipped, reasons = seed.load_symptom_log(store, path)
+
+    assert added == 1
+    assert skipped == 1
+    assert reasons == ["line 3: wrong number of columns"]
+
+
+def test_symptom_log_bom_and_blank_line(tmp_path, monkeypatch):
+    monkeypatch.setenv("CONFIG_DIR", str(tmp_path))
+    write_symptoms(tmp_path)
+    path = write_symptom_log(
+        tmp_path,
+        ["demo_astronaut_1,12,14:10,shaky,2", "", "demo_astronaut_1,12,15:00,shaky,3"],
+        bom=True,
+    )
+    store = storage.MemoryStorage()
+
+    added, skipped, reasons = seed.load_symptom_log(store, path)
+
+    assert added == 2
+    assert skipped == 0
+    assert reasons == []
+
+
+def test_symptom_log_wrong_header_raises(tmp_path, monkeypatch):
+    monkeypatch.setenv("CONFIG_DIR", str(tmp_path))
+    path = tmp_path / "data" / "symptom_log.csv"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        "person_id,mission_day,symptom_id,severity\n"
+        "demo_astronaut_1,12,shaky,2\n",
+        encoding="utf-8",
+    )
+    store = storage.MemoryStorage()
+
+    with pytest.raises(ValueError):
+        seed.load_symptom_log(store, path)
+
+
+def test_command_loads_both_files(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("CONFIG_DIR", str(tmp_path))
+    monkeypatch.setenv("STORAGE", "memory")
+    monkeypatch.setattr(storage, "_storage", None)
+    monkeypatch.setattr(storage, "_storage_kind", None)
+    write_indicators(tmp_path)
+    write_symptoms(tmp_path)
+    write_demo_in_data(
+        tmp_path, ["demo_astronaut_1,example_indicator,1,example_unit,1,13:30,rest"]
+    )
+    write_symptom_log(tmp_path, ["demo_astronaut_1,1,13:40,shaky,2"])
+
+    rc = seed.main([])
+
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "demo data: added 1, skipped 0" in out
+    assert "symptom log: added 1, skipped 0" in out
+    store = storage.get_storage()
+    assert len(store.history("demo_astronaut_1", "example_indicator")) == 1
+    assert len(store.symptom_reports("demo_astronaut_1")) == 1
+
+
+def test_command_without_a_symptom_log_exits_zero(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("CONFIG_DIR", str(tmp_path))
+    monkeypatch.setenv("STORAGE", "memory")
+    monkeypatch.setattr(storage, "_storage", None)
+    monkeypatch.setattr(storage, "_storage_kind", None)
+    write_indicators(tmp_path)
+    write_demo_in_data(
+        tmp_path, ["demo_astronaut_1,example_indicator,1,example_unit,1,13:30,rest"]
+    )
+
+    rc = seed.main([])
+
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "symptom log file not found" in out
+    assert "demo data: added 1, skipped 0" in out
+
+
+def test_command_with_a_bad_symptom_log_exits_one(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("CONFIG_DIR", str(tmp_path))
+    monkeypatch.setenv("STORAGE", "memory")
+    monkeypatch.setattr(storage, "_storage", None)
+    monkeypatch.setattr(storage, "_storage_kind", None)
+    write_indicators(tmp_path)
+    write_demo_in_data(
+        tmp_path, ["demo_astronaut_1,example_indicator,1,example_unit,1,13:30,rest"]
+    )
+    path = tmp_path / "data" / "symptom_log.csv"
+    path.write_text("person_id,severity\n", encoding="utf-8")
+
+    rc = seed.main([])
+
+    out = capsys.readouterr().out
+    assert rc == 1
+    assert "person_id,mission_day,time,symptom_id,severity" in out

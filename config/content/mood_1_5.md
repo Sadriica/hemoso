@@ -6,7 +6,7 @@ The scale: 1 very low, 2 low, 3 neutral, 4 good, 5 very good.
 
 ## Why it matters
 
-A change in mood is an early sign of a mental health problem. Isolation,
+A change in mood can be an early sign of a mental health problem. Isolation,
 confinement and distance from Earth wear it down over weeks, and NASA uses
 questionnaires and journaling to catch the change early, while it is still easy
 to treat.
@@ -35,7 +35,7 @@ Answer again before you sleep. No one is notified for now.
 
 ### in_range
 
-Your mood is in your usual range this week.
+Your mood is in your usual range today.
 
 No action today. Answer again before you sleep.
 
@@ -51,7 +51,7 @@ No one is notified for now.
 
 ### watch
 
-Your mood has been below your usual range for a week.
+Your mood is below your usual range today.
 
 Write two lines about your day. Talk to someone on the crew today.
 

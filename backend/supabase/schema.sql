@@ -70,3 +70,51 @@ create index if not exists pain_reports_person_idx
 -- As with the two tables above: no policy, so only the service role key reaches
 -- the rows and the anon key reads nothing.
 alter table pain_reports enable row level security;
+
+-- Symptom reports (T-79). This block stands alone too: it does not touch the
+-- tables above, so a project that already ran those blocks can run only this
+-- one. `severity` is 1 (mild), 2 (moderate) or 3 (severe); the API stores it and
+-- the evidence score reads only whether the symptom was reported, never how
+-- strong it was.
+create table if not exists symptom_reports (
+    person_id text not null,
+    symptom_id text not null,
+    severity integer not null check (severity between 1 and 3),
+    mission_day integer not null,
+    time text not null,
+    created_at timestamptz not null default now()
+);
+
+-- Natural key: one report per person, day, time and symptom, so the frontend's
+-- outbox can re-send a report without adding a second row.
+create unique index if not exists symptom_reports_natural_key_idx
+    on symptom_reports (person_id, mission_day, time, symptom_id);
+
+create index if not exists symptom_reports_person_idx
+    on symptom_reports (person_id, mission_day, time);
+
+-- As above: no policy, so only the service role key reaches these rows.
+alter table symptom_reports enable row level security;
+-- The kind the astronaut marked (B-3): pain, swelling, bruise, cut_or_scrape,
+-- burn or sprain_or_strain. This block stands alone and is additive: a project
+-- that already ran the block above gets the column, and a report stored before
+-- it existed reads as 'pain'. The API validates the same list, so a bad value is
+-- a 422 before it reaches this table.
+alter table pain_reports add column if not exists kind text not null default 'pain';
+
+-- The constraint is added once: Postgres has no "add constraint if not exists".
+do $$
+begin
+    if not exists (
+        select 1 from pg_constraint where conname = 'pain_reports_kind_check'
+    ) then
+        alter table pain_reports add constraint pain_reports_kind_check
+            check (kind in ('pain', 'swelling', 'bruise', 'cut_or_scrape',
+                            'burn', 'sprain_or_strain'));
+    end if;
+end $$;
+
+-- Mission start per account (REQ-37): each astronaut's date, the one Flight Day
+-- 1 is counted from. This block stands alone too, and only adds a column: the
+-- accounts already in the table keep their rows and read with a null date.
+alter table accounts add column if not exists mission_start date;

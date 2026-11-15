@@ -20,7 +20,7 @@ Heat, sleep loss and low fluid intake also change the reading.
 4. Measure once. Assumption.
 5. Wait one minute.
 6. Measure again. Assumption.
-7. Write the bottom number.
+7. Add the two bottom numbers and divide by two. Write that average.
 
 ## Status and next steps
 
@@ -48,7 +48,8 @@ No one is notified for now.
 
 ### consult
 
-Your diastolic blood pressure is far outside your usual range.
+Your diastolic blood pressure is far outside your usual range. A bottom number
+of 90 mmHg or more is also above the line your CMO uses.
 
 Sit down and tell your CMO today. Drink fluids and measure again in 1 hour.
 Assumption.
@@ -57,7 +58,8 @@ Your CMO checks you in person.
 
 ### urgent
 
-Your diastolic blood pressure is well above your usual range.
+Your diastolic blood pressure is well above your usual range. A bottom number
+of 120 mmHg or more is the emergency line your CMO uses.
 
 Sit down now and call your CMO. Do not exercise. Assumption.
 
