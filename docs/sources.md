@@ -32,3 +32,4 @@ Sat 14 at 16:30; the page opened normally earlier the same day from this machine
 | American Diabetes Association, diagnosis | https://diabetes.org/about-diabetes/diagnosis | Cited by Bio 2 for the glucose action levels; not verified by Phys | `config/rules/conditions.csv` | Bio 2 |
 | Sleep (Oxford Academic, 2022) | https://academic.oup.com/sleep/article/45/3/zsac006/6505235 | Cited by Bio 2 for the conditions table; not verified by Phys | `config/rules/conditions.csv` | Bio 2 |
 | ORTHO.pdf | http://humanresearchroadmap.nasa.gov/Evidence/reports/ORTHO.pdf | Cited in config/rules/conditions.csv; not verified by Phys | `config/rules/conditions.csv` | Bio 2 |
+| Military Medicine 2004, portable clinical blood analyser on ISS | https://academic.oup.com/milmed/article-pdf/169/8/631/21977888/milmed.169.8.631.pdf | i-STAT use on the ISS since the early 2000s; glucose read by amperometry from a fingerstick cartridge | `config/data/indicators.csv` (`glucose_mgdl`) | Bio 2 |
