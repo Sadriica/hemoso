@@ -43,5 +43,6 @@ _Update before every checkpoint and at every shift change._
   Wambi has to move the cards.
 
 ## Shift
-- Sleep shift: _(A: 1:00–4:30 · B: 4:30–8:00)_
+- Sleep shift: B (4:30–8:00). Awake until 4:30; the 7:45 checkpoint needs a
+  cover from someone else.
 - If someone else continues my work: use the `bio2` agent and read this file and `LOG.md`.
