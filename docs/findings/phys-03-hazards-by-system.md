@@ -23,6 +23,8 @@ value at which the effect becomes a problem.
 | Neuro-behavioural | `isolation_and_confinement` | Behavioural responses appear in isolated groups; journaling is used to assess mental and emotional state; light therapy is a countermeasure | https://www.nasa.gov/hrp/hazard-isolation-and-confinement/ |
 | Metabolic | `hostile_closed_environments` | Stress hormones can rise and the immune system can change in a closed habitat; microbes behave differently in space | https://www.nasa.gov/hrp/hazard-hostile-closed-environments/ |
 | Metabolic | `gravity_fields` | Diet and body mass change with weightlessness; the nutrition report records typical losses of 1 % to 5 % of preflight mass | https://humanresearchroadmap.nasa.gov/Evidence/other/Nutrition%20ER_human_adaptation_2020_final.pdf (p. 22) |
+| Immune (context, no indicator) | `radiation` + `gravity_fields` + `isolation_and_confinement` | "Radiation, microgravity, poor sleep and other spaceflight stressors can alter the immune system"; crews report cold sores, rashes, atypical allergies and infections | https://www.nasa.gov/reference/risk-of-altered-immune-system-responses/ |
+| Immune (context, no indicator) | `hostile_closed_environments` | Microbes behave differently in a closed habitat and pass more easily between crew members; stress hormones rise and immunity changes | https://www.nasa.gov/hrp/hazard-hostile-closed-environments/ |
 
 ## Evidence, and why the immune risk page matters
 
