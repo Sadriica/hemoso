@@ -8,17 +8,19 @@
 ## Current status
 _Update before every checkpoint and at every shift change._
 
-- **Time:** Sun 05:40
+- **Time:** Sun 06:00
 - **Done:** `attention.csv` has the two reaction rows; `conditions.csv` has
-  `current_state`; the symptoms, symptom-log, profile and labs formats are in
-  `FORMATS.md`; the symptom test vectors are in
-  `team/bio2/notes/symptom-test-vectors.md`; the five decisions of the night
-  block are in `docs/DECISIONS.md` with the 06:00 cutoff.
-- **In progress:** the work is written but uncommitted. T-78 waits for
-  Juli/Wambi to accept the optional fifth column and the test vectors; T-81
-  waits for Phys's `premission_profile.csv` and `labs.csv`.
-- **Next:** Wambi adds the two shared paths or commits them; then push this
-  branch before the 06:00 cutoff and hand it over.
+  `current_state`; the symptom formats and the five decisions of the night
+  block are pushed in `1f0b88c`; the symptom test vectors are in
+  `team/bio2/notes/symptom-test-vectors.md`; `submission/submission.md` is
+  drafted with every page field, the five judging criteria and the five names;
+  the seven content files of Bio 1 are reviewed in
+  `team/bio2/notes/content-review.md`.
+- **In progress:** T-78 is pushed and waits for Wambi's checker (optional fifth
+  column) and Phys's `symptoms.csv`; T-81 waits for Phys's profile and labs.
+- **Next:** sleep, shift B (4:30-8:00, already late). On waking: fill the three
+  links in `submission.md` (app, demo, team), confirm with Juli that every
+  "what it does" line is in `main`, then T-15.
 - **T-04 answered** Sat 23:40: the official close is 23:59 local with no earlier
   cut; the mentor presentation is feedback, not scored; the demo is 7 slides in
   English or a 30 s video in English or with English subtitles, not one second
@@ -27,11 +29,8 @@ _Update before every checkpoint and at every shift change._
   #114 (T-73, ready for review), #123 (T-78), #130 (T-81).
 
 ## Blockers
-- `python scripts/precheck.py` fails on `FORMATS.md` and `docs/DECISIONS.md`
-  because they are outside Bio 2's paths. Wambi asked for those edits; he has to
-  add the paths or commit the files.
-- Four untracked frontend files in the tree block `precheck` too; they belong to
-  Wambi and Juli.
+- Four untracked frontend files in the tree keep `precheck` red; they belong to
+  Juli (`AppHeader.tsx`, `ScreenTabs.tsx`, `tabs.ts`, `theme.ts`).
 - Phys has not added `symptoms.csv`, `symptom_log.csv`,
   `premission_profile.csv`, `labs.csv` or the three nutrition rows.
 - Bio 1 has not added `content/reaction_median_ms.md` or
