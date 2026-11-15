@@ -71,6 +71,8 @@ export default function History({
           indicatorId: indicator.id,
           value: latest.value,
           context: latest.context,
+          missionDay: latest.missionDay,
+          time: latest.time,
         },
   )
   const comparison =

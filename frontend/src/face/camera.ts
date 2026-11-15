@@ -22,6 +22,15 @@ export interface CameraSession {
   stop(): void
 }
 
+// HAVE_CURRENT_DATA: the element holds the first frame, which is what the model
+// needs. Below it, a picture has no size yet and the detection waits for a
+// frame that never reaches it, so the panel stays busy with no sentence.
+const FIRST_FRAME_READY_STATE = 2
+
+// Five seconds is a camera that will not deliver a frame at all, not a slow one:
+// the cheap webcams on a laptop start in under two.
+export const FIRST_FRAME_TIMEOUT_MS = 5000
+
 export async function startCamera(
   video: HTMLVideoElement,
 ): Promise<CameraSession> {
@@ -39,6 +48,19 @@ export async function startCamera(
   }
 
   video.srcObject = stream
+  try {
+    // The second time the panel opens the camera, the element starts from an
+    // empty stream: without this wait the model is handed a video with no
+    // frame and the check never finishes.
+    await waitForFirstFrame(video)
+  } catch (error) {
+    // Nothing to show, so nothing stays on: the person is told there is no
+    // camera and picks a name instead.
+    for (const track of stream.getTracks()) track.stop()
+    video.srcObject = null
+    throw error
+  }
+
   let stopped = false
 
   return {
@@ -51,6 +73,25 @@ export async function startCamera(
       video.srcObject = null
     },
   }
+}
+
+// Resolves when the element has a frame, or rejects as a missing camera after
+// FIRST_FRAME_TIMEOUT_MS. The sentence the panel already has for a missing
+// camera is the honest one: there is nothing to look at, so pick a name.
+function waitForFirstFrame(video: HTMLVideoElement): Promise<void> {
+  if (video.readyState >= FIRST_FRAME_READY_STATE) return Promise.resolve()
+
+  return new Promise((resolve, reject) => {
+    const onLoaded = (): void => {
+      clearTimeout(timer)
+      resolve()
+    }
+    const timer = setTimeout(() => {
+      video.removeEventListener('loadeddata', onLoaded)
+      reject(new CameraError('missing'))
+    }, FIRST_FRAME_TIMEOUT_MS)
+    video.addEventListener('loadeddata', onLoaded, { once: true })
+  })
 }
 
 export function problemFor(error: unknown): CameraProblem {

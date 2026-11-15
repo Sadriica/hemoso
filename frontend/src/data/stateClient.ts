@@ -18,6 +18,11 @@ export interface StateQuery {
   indicatorId: string
   value: number
   context: MeasurementContext
+  // The reading being asked about, when the caller knows its day and time: the
+  // backend leaves that reading out of the window it computes. Both are
+  // optional, and a backend that does not know them ignores them.
+  missionDay?: number
+  time?: string
 }
 
 export interface StateClient {
@@ -54,6 +59,13 @@ class HttpState implements StateClient {
       value: String(query.value),
       context: query.context,
     })
+    // The reading's own day and time, so the backend leaves that reading out of
+    // the window instead of counting it twice: it is already the value asked
+    // about.
+    if (query.missionDay !== undefined) {
+      params.set('mission_day', String(query.missionDay))
+    }
+    if (query.time !== undefined) params.set('time', query.time)
     const url =
       `${this.baseUrl}/people/${encodeURIComponent(query.personId)}` +
       `/indicators/${encodeURIComponent(query.indicatorId)}/state?${params.toString()}`
