@@ -17,7 +17,7 @@ import Notice from '../components/Notice'
 import Disclosure from '../components/Disclosure'
 import './status.css'
 import Home from '../screens/Home'
-import PsychologicalState from '../reaction/PsychologicalState'
+import PossibleConditions from '../components/conditions/PossibleConditions'
 import { strings } from '../strings'
 import '../screens/scene-grammar.css'
 
@@ -61,6 +61,21 @@ export default function StatusPhase({
   const [painOpen, setPainOpen] = useState(false)
   // The indicator the card shows; the History panel follows it.
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  // A signal of a possible condition opens the card of its indicator: the same
+  // selection the overview makes, and the card is brought into view because
+  // the panel sits below it.
+  const showIndicator = useCallback(
+    (indicatorId: string) => {
+      setSelectedId(indicatorId)
+      requestAnimationFrame(() => {
+        document.querySelector('.home__detail')?.scrollIntoView?.({
+          block: 'center',
+          behavior: motionReduced ? 'auto' : 'smooth',
+        })
+      })
+    },
+    [motionReduced],
+  )
   // The reports of the person on duty, newest first (data/painStore.ts). The
   // read is local and small, so the list is read from the store on every
   // render: no second copy of it to keep in step. A saved report bumps the
@@ -91,7 +106,14 @@ export default function StatusPhase({
           selectedId={selectedId}
           onSelect={setSelectedId}
         />
-        <PsychologicalState personId={personId} indicators={data.indicators} />
+        <PossibleConditions
+          personId={personId}
+          conditions={data.conditions}
+          indicators={data.indicators}
+          rules={data.rules}
+          entries={entries}
+          onSelectIndicator={showIndicator}
+        />
         <div className="status__history">
           <Disclosure label={copy.historyToggle}>
             <Suspense fallback={<Notice tone="info">{strings.board.loading}</Notice>}>

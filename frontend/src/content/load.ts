@@ -1,5 +1,6 @@
 import type {
   AttentionRule,
+  ConditionRule,
   Entry,
   Indicator,
   IndicatorContent,
@@ -8,6 +9,7 @@ import { BASELINE_STATES } from '../domain/state'
 import { parseIndicatorMarkdown } from './markdown'
 import { parseIndicators } from './indicators'
 import { parseRules } from './rules'
+import { parseConditions } from './conditions'
 import { parseEntries } from './entries'
 
 import indicatorsPlaceholder from './placeholder/indicators.csv?raw'
@@ -18,6 +20,9 @@ import exampleContentPlaceholder from './placeholder/example_indicator.md?raw'
 export interface LoadedContent {
   indicators: Indicator[]
   rules: AttentionRule[]
+  // The possible conditions of config/rules/conditions.csv (REQ-06); empty
+  // while the file is not there.
+  conditions: ConditionRule[]
   contents: Record<string, IndicatorContent>
   demoEntries: Entry[]
   usingPlaceholders: boolean
@@ -38,6 +43,7 @@ const placeholderContent: Record<string, string> = {
 const INDICATORS_FILE = 'config/data/indicators.csv'
 const ATTENTION_FILE = 'config/rules/attention.csv'
 const DEMO_DATA_FILE = 'config/data/demo_data.csv'
+const CONDITIONS_FILE = 'config/rules/conditions.csv'
 
 export function loadContent(
   files: Record<string, string> = defaultFiles,
@@ -65,6 +71,13 @@ export function loadContent(
     },
   )
   if (attentionFile.usedPlaceholder) usingPlaceholders = true
+
+  // The conditions file has no placeholder: without it the panel is not shown.
+  const conditionsText = configText(files, CONDITIONS_FILE)
+  const conditions =
+    conditionsText === undefined
+      ? []
+      : parseConditions(CONDITIONS_FILE, conditionsText, indicatorIds, problems)
 
   const demoFile = readConfigFile(files, DEMO_DATA_FILE, demoDataPlaceholder)
   const demoEntries = parseEntries(
@@ -109,6 +122,7 @@ export function loadContent(
   return {
     indicators,
     rules,
+    conditions,
     contents,
     demoEntries,
     usingPlaceholders,

@@ -1,36 +1,21 @@
-import { bearerToken, expireSession } from '../data/session'
-import { defaultFetch, type FetchLike } from '../data/sync'
-import { PSYCHOLOGICAL_CONDITION_ID } from './ids'
+import type {
+  Condition,
+  ConditionLabel,
+  ConditionSignal,
+} from '../domain/conditions'
+import { bearerToken, expireSession } from './session'
+import { defaultFetch, type FetchLike } from './sync'
 
 // GET /people/{person_id}/conditions of docs/API.md: the evidence score of
 // every possible condition of config/rules/conditions.csv, computed by the
-// backend from what the person recorded. The route is not deployed yet (the
-// backend is paused): an answer other than 200 is no answer, and the status
-// phase then shows no state at all instead of an invented one.
+// backend from what the person recorded. An answer other than 200 is no
+// answer: the panel then shows the same score computed on this device
+// (domain/conditions.ts), never an invented one.
 
-export type ConditionLabel = 'no_data' | 'low' | 'possible' | 'review'
-
-export interface ConditionSignal {
-  indicatorId: string
-  /** The side of the person's range that counts for this condition. */
-  side: 'above' | 'below' | null
-  /** 1, 0.5 or 0; null while the signal cannot be scored. */
-  contribution: number | null
-  value: number | null
-}
-
-export interface Condition {
-  id: string
-  name: string
-  /** The mean of the usable signals, 0 to 1; null with fewer than 2. */
-  score: number | null
-  label: ConditionLabel
-  signals: ConditionSignal[]
-  source: string
-}
+export type { Condition, ConditionLabel, ConditionSignal }
 
 export interface ConditionsClient {
-  /** false when the demo has no server: nothing is asked and nothing shows. */
+  /** false when the demo has no server: nothing is asked. */
   isConfigured(): boolean
   fetchConditions(personId: string): Promise<Condition[] | null>
 }
@@ -147,13 +132,4 @@ function parseSignals(value: unknown): ConditionSignal[] | null {
 
 function isNumberOrNull(value: unknown): value is number | null {
   return value === null || (typeof value === 'number' && Number.isFinite(value))
-}
-
-/** The condition the status phase shows, out of a whole answer. */
-export function psychologicalCondition(
-  conditions: Condition[],
-): Condition | null {
-  return (
-    conditions.find((item) => item.id === PSYCHOLOGICAL_CONDITION_ID) ?? null
-  )
 }

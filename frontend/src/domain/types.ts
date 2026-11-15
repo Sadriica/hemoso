@@ -78,3 +78,20 @@ export type Attention =
   // a value is in range.
   | { kind: 'no_rules' }
   | { kind: 'no_data' }
+
+// One signal of a possible condition: an indicator and the side of the
+// person's range that counts for that condition (FORMATS.md section 3,
+// `based_on`). A token with no side keeps its id and carries null.
+export interface ConditionSignalRule {
+  indicatorId: string
+  side: 'above' | 'below' | null
+}
+
+export interface ConditionRule {
+  // config/rules/conditions.csv
+  id: string
+  name: string
+  signals: ConditionSignalRule[]
+  // The row's `source` cell as written: a link or the word Assumption.
+  source: string
+}

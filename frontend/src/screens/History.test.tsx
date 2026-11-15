@@ -37,6 +37,7 @@ const scale: Indicator = {
 
 const data: LoadedContent = {
   indicators: [indicator, scale],
+  conditions: [],
   rules: [
     {
       indicatorId: 'example_indicator',
