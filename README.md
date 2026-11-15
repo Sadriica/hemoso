@@ -67,7 +67,8 @@ A plausible system that uses what actually flies, with rules you can check.
   cited row is above 38.0 °C). A row marked `Assumption` never raises an alarm
   on its own ([`FORMATS.md`](FORMATS.md) section 3,
   [`phys-02`](docs/findings/phys-02-baseline-state-rule.md)).
-- **Instruments that fly today**, from the sourced rows of
+- **Instruments documented for the ISS** (the values are typed in; the app does
+  not connect to the devices), from the sourced rows of
   [`config/data/indicators.csv`](config/data/indicators.csv): the Bio-Monitor
   smart shirt (heart rate, blood pressure), the T-Mini headband (core
   temperature), the Actiwatch (sleep), the i-STAT blood analyser (glucose, one
