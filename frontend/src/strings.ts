@@ -182,7 +182,7 @@ export const strings = {
   },
   topbar: {
     tagline: 'CREW HEALTH',
-    onDuty: (personId: string): string => `on duty ${personId}`,
+    onDuty: (personId: string): string => `On duty: ${personName(personId)}`,
     reduceMotion: 'Reduce motion',
     // What the motion switch turns off, in words for its tooltip.
     motionOn: 'Motion is on',
