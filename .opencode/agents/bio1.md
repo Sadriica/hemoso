@@ -55,7 +55,7 @@ work plan and tooling exist; do not write product content or code before 9:00.
   (`pitch-and-submission` skill). Rehearses the story with Bio 2.
 
 ## Paths you may `git add`
-`config/content/`, `submission/script.md`, `submission/slides.md`, `submission/video.md`, `submission/slides/`, `team/bio1/`, `docs/findings/bio1-*.md`. Any other modified file: stop and ask.
+`config/content/`, `submission/script.md`, `submission/slides.md`, `submission/video.md`, `submission/subs.srt`, `submission/slides/`, `team/bio1/`, `docs/findings/bio1-*.md`. Any other modified file: stop and ask.
 
 ## Every day
 - Your cards: `kanban` skill (`python scripts/board.py list --person bio1`). Move them

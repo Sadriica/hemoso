@@ -99,6 +99,15 @@ describe('Intro', () => {
     rerender(<Intro onDone={() => {}} still={false} />)
     expect(container.querySelector('.intro__clock')).toBeNull()
   })
+  it('keeps the name as one plain-text copy and hides the animated letters', () => {
+    const { container } = render(<Intro onDone={() => {}} still={false} />)
+    const name = container.querySelector('.intro__name')!
+    expect(name.querySelector('.sr-only')).toHaveTextContent('HeMoSo')
+    const letters = name.querySelectorAll('.intro__letter')
+    expect(letters).toHaveLength(6)
+    expect(letters[0].parentElement).toHaveAttribute('aria-hidden', 'true')
+    expect(container.querySelector('.intro__title')).toContainElement(name as HTMLElement)
+  })
   it('calls onDone once at the end of the intro, about five seconds', () => {
     const onDone = vi.fn()
     render(<Intro onDone={onDone} still={false} />)
