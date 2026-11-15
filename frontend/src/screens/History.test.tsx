@@ -104,7 +104,7 @@ describe('History', () => {
     ).toBeInTheDocument()
     expect(
       screen.getAllByRole('columnheader').map((cell) => cell.textContent),
-    ).toEqual(['Day', 'Time', 'Value', 'Status'])
+    ).toEqual(['Day', 'Time', 'Context', 'Value', 'Status'])
   })
 
   it('lists the readings newest first', () => {
@@ -114,25 +114,78 @@ describe('History', () => {
     expect(rows.map((row) => rowCells(row)[1])).toEqual(['15:44', '09:00', '08:00'])
   })
 
-  it('writes the status of each reading in words', () => {
+  it('writes the status of each reading with the card rule', () => {
     renderHistory([
       entry(1, '08:00', 50),
-      entry(2, '08:00', 101),
-      entry(3, '08:00', 60),
+      entry(2, '08:00', 52),
+      entry(3, '08:00', 51),
+      entry(4, '08:00', 50),
+      entry(5, '08:00', 101),
+      entry(6, '08:00', 52),
     ])
-    const table = screen.getByRole('table')
-    expect(within(table).getByText('example_level')).toBeInTheDocument()
-    expect(within(table).getAllByText('In your usual range')).toHaveLength(2)
+    const rows = screen.getAllByRole('row').slice(1)
+    const status = rows.map((row) => rowCells(row)[4])
+    // Newest first: day 6 and 4 sit near their baseline, day 5 crossed the
+    // threshold, and the first three days have too few earlier readings.
+    expect(status).toEqual([
+      'In your usual range',
+      'example_level',
+      'In your usual range',
+      'No data yet',
+      'No data yet',
+      'No data yet',
+    ])
   })
 
-  it('says no threshold yet for an indicator without attention rules', async () => {
+  it('never says in your usual range without a baseline', () => {
+    renderHistory([entry(1, '08:00', 50), entry(2, '08:00', 51)])
+    expect(screen.queryByText('In your usual range')).toBeNull()
+    expect(screen.getAllByText('No data yet')).toHaveLength(2)
+  })
+
+  it('shows the context of each reading', () => {
+    renderHistory([
+      entry(1, '07:00', 50),
+      entry(1, '18:00', 90, { context: 'after_exercise' }),
+    ])
+    const rows = screen.getAllByRole('row').slice(1)
+    expect(rows.map((row) => rowCells(row)[2])).toEqual(['After exercise', 'At rest'])
+  })
+
+  it('shows the newest 14 readings and a button for all of them', async () => {
+    const user = userEvent.setup()
+    renderHistory(Array.from({ length: 20 }, (_, i) => entry(i + 1, '08:00', 50)))
+    expect(screen.getAllByRole('row')).toHaveLength(15)
+    const more = screen.getByRole('button', { name: 'Show all 20 readings' })
+    expect(more).toHaveAttribute('aria-expanded', 'false')
+    await user.click(more)
+    expect(screen.getAllByRole('row')).toHaveLength(21)
+    const fewer = screen.getByRole('button', { name: 'Show fewer' })
+    expect(fewer).toHaveAttribute('aria-expanded', 'true')
+    await user.click(fewer)
+    expect(screen.getAllByRole('row')).toHaveLength(15)
+  })
+
+  it('has no show-all button for a short list', () => {
+    renderHistory(readings)
+    expect(screen.queryByRole('button', { name: /readings/ })).toBeNull()
+  })
+
+  it('gives the scrolling table box a name and a keyboard stop', () => {
+    renderHistory(readings)
+    const region = screen.getByRole('region', {
+      name: 'Readings table for Example indicator',
+    })
+    expect(region).toHaveAttribute('tabindex', '0')
+  })
+
+  it('says no data yet for an indicator without attention rules and no baseline', async () => {
     const user = userEvent.setup()
     renderHistory([
       { ...entry(1, '08:00', 4), indicatorId: 'sleep_quality_1_5', unit: '1 to 5' },
     ])
     await user.selectOptions(screen.getByLabelText('Indicator'), 'sleep_quality_1_5')
-    expect(screen.getByText('No threshold yet')).toBeInTheDocument()
-    expect(screen.queryByText('In your usual range')).toBeNull()
+    expect(screen.getByText('No data yet')).toBeInTheDocument()
   })
 
   it('shows a 1 to 5 reading as the value over 5', async () => {
@@ -141,16 +194,53 @@ describe('History', () => {
       { ...entry(1, '08:00', 4), indicatorId: 'sleep_quality_1_5', unit: '1 to 5' },
     ])
     await user.selectOptions(screen.getByLabelText('Indicator'), 'sleep_quality_1_5')
-    expect(rowCells(screen.getAllByRole('row')[1])[2]).toBe('4 / 5')
+    expect(rowCells(screen.getAllByRole('row')[1])[3]).toBe('4 / 5')
   })
 
-  it('compares the latest reading with the earlier median', () => {
-    renderHistory(readings)
+  it('compares the latest reading with the usual value of the same context', () => {
+    renderHistory([
+      entry(1, '08:00', 4),
+      entry(2, '08:00', 5),
+      entry(3, '08:00', 6),
+      entry(10, '15:44', 42),
+    ])
     expect(
       screen.getByText(
         'Latest: 42 example_unit on Day 10 15:44. ' +
-          'Your earlier median: 5 example_unit (2 entries). ' +
+          'Your usual at rest: 5 example_unit (last 3 readings). ' +
           'Difference: +37 example_unit.',
+      ),
+    ).toBeInTheDocument()
+  })
+
+  it('ignores earlier readings of another context, like the card does', () => {
+    renderHistory([
+      entry(1, '08:00', 100, { context: 'after_exercise' }),
+      entry(2, '08:00', 4),
+      entry(3, '08:00', 5),
+      entry(4, '08:00', 6),
+      entry(5, '08:00', 8),
+    ])
+    expect(
+      screen.getByText(
+        'Latest: 8 example_unit on Day 5 08:00. ' +
+          'Your usual at rest: 5 example_unit (last 3 readings). ' +
+          'Difference: +3 example_unit.',
+      ),
+    ).toBeInTheDocument()
+  })
+
+  it('says there is not enough when the context has fewer than three earlier readings', () => {
+    renderHistory([
+      entry(1, '08:00', 100, { context: 'after_exercise' }),
+      entry(2, '08:00', 101, { context: 'after_exercise' }),
+      entry(3, '08:00', 102, { context: 'after_exercise' }),
+      entry(4, '08:00', 5),
+      entry(5, '08:00', 6),
+    ])
+    expect(
+      screen.getByText(
+        'Latest: 6 example_unit on Day 5 08:00. Not enough earlier entries to compare yet.',
       ),
     ).toBeInTheDocument()
   })
@@ -159,24 +249,14 @@ describe('History', () => {
     renderHistory([
       entry(1, '08:00', 10),
       entry(2, '08:00', 12),
-      entry(3, '08:00', 8),
+      entry(3, '08:00', 11),
+      entry(4, '08:00', 8),
     ])
     expect(
       screen.getByText(
-        'Latest: 8 example_unit on Day 3 08:00. ' +
-          'Your earlier median: 11 example_unit (2 entries). ' +
+        'Latest: 8 example_unit on Day 4 08:00. ' +
+          'Your usual at rest: 11 example_unit (last 3 readings). ' +
           'Difference: -3 example_unit.',
-      ),
-    ).toBeInTheDocument()
-  })
-
-  it('says one entry instead of entries for a single earlier reading', () => {
-    renderHistory([entry(1, '08:00', 10), entry(2, '08:00', 14)])
-    expect(
-      screen.getByText(
-        'Latest: 14 example_unit on Day 2 08:00. ' +
-          'Your earlier median: 10 example_unit (1 entry). ' +
-          'Difference: +4 example_unit.',
       ),
     ).toBeInTheDocument()
   })
@@ -185,12 +265,13 @@ describe('History', () => {
     renderHistory([
       entry(1, '08:00', 36.4),
       entry(2, '08:00', 36.7),
-      entry(3, '08:00', 36.7),
+      entry(3, '08:00', 36.6),
+      entry(4, '08:00', 36.7),
     ])
     expect(
       screen.getByText(
-        'Latest: 36.7 example_unit on Day 3 08:00. ' +
-          'Your earlier median: 36.6 example_unit (2 entries). ' +
+        'Latest: 36.7 example_unit on Day 4 08:00. ' +
+          'Your usual at rest: 36.6 example_unit (last 3 readings). ' +
           'Difference: +0.1 example_unit.',
       ),
     ).toBeInTheDocument()
@@ -218,7 +299,7 @@ describe('History', () => {
 
     expect(
       await screen.findByText(
-        /Your earlier median: 30 example_unit \(7 entries\)/,
+        /Your usual at rest: 30 example_unit \(last 7 readings\)/,
       ),
     ).toBeInTheDocument()
     expect(
@@ -232,10 +313,15 @@ describe('History', () => {
       'fetch',
       vi.fn(() => Promise.reject(new Error('offline'))),
     )
-    renderHistory([entry(1, '08:00', 10), entry(10, '15:44', 42)])
+    renderHistory([
+      entry(1, '08:00', 10),
+      entry(2, '08:00', 10),
+      entry(3, '08:00', 10),
+      entry(10, '15:44', 42),
+    ])
 
     expect(
-      await screen.findByText(/Your earlier median: 10 example_unit/),
+      await screen.findByText(/Your usual at rest: 10 example_unit/),
     ).toBeInTheDocument()
   })
 
@@ -258,7 +344,7 @@ describe('History', () => {
     renderHistory([entry(1, '08:00', 10)])
     expect(
       screen.getByRole('img', {
-        name: 'Not enough earlier entries to compare yet.',
+        name: 'Latest: 10 example_unit on Day 1 08:00. Not enough earlier entries to compare yet.',
       }),
     ).toBeInTheDocument()
   })
@@ -287,7 +373,9 @@ describe('History', () => {
   it('says there is not enough with one entry', () => {
     renderHistory([entry(1, '08:00', 10)])
     expect(
-      screen.getByText('Not enough earlier entries to compare yet.'),
+      screen.getByText(
+        'Latest: 10 example_unit on Day 1 08:00. Not enough earlier entries to compare yet.',
+      ),
     ).toBeInTheDocument()
     expect(screen.getAllByRole('row')).toHaveLength(2)
   })
@@ -301,16 +389,18 @@ describe('History', () => {
   it('never counts another person readings', () => {
     renderHistory([
       entry(1, '08:00', 10),
-      entry(2, '08:00', 12),
-      entry(3, '08:00', 1000, { personId: 'demo_astronaut_2' }),
-      entry(4, '08:00', 2000, { personId: 'demo_astronaut_2' }),
+      entry(2, '08:00', 10),
+      entry(3, '08:00', 10),
+      entry(4, '08:00', 12),
+      entry(5, '08:00', 1000, { personId: 'demo_astronaut_2' }),
+      entry(6, '08:00', 2000, { personId: 'demo_astronaut_2' }),
     ])
-    expect(screen.getAllByRole('row')).toHaveLength(3)
+    expect(screen.getAllByRole('row')).toHaveLength(5)
     expect(screen.queryByText(/2000/)).toBeNull()
     expect(
       screen.getByText(
-        'Latest: 12 example_unit on Day 2 08:00. ' +
-          'Your earlier median: 10 example_unit (1 entry). ' +
+        'Latest: 12 example_unit on Day 4 08:00. ' +
+          'Your usual at rest: 10 example_unit (last 3 readings). ' +
           'Difference: +2 example_unit.',
       ),
     ).toBeInTheDocument()
@@ -326,24 +416,71 @@ describe('History', () => {
     const valueCells = screen
       .getAllByRole('row')
       .slice(1)
-      .map((row) => rowCells(row)[2])
+      .map((row) => rowCells(row)[3])
     expect(valueCells).toEqual(['12 example_unit', '10 example_unit'])
   })
 
   it('shows a reading added after the first render', () => {
-    const store = renderHistory([entry(1, '08:00', 10)])
+    const store = renderHistory([
+      entry(1, '08:00', 10),
+      entry(2, '08:00', 10),
+      entry(3, '08:00', 10),
+    ])
     act(() => {
       store.add({
         personId: 'demo_astronaut_1',
         indicatorId: 'example_indicator',
         value: 20,
         unit: 'example_unit',
-        missionDay: 2,
+        missionDay: 4,
         time: '09:00',
         context: 'rest',
       })
     })
-    expect(screen.getAllByRole('row')).toHaveLength(3)
-    expect(screen.getByText(/Your earlier median: 10 example_unit/)).toBeInTheDocument()
+    expect(screen.getAllByRole('row')).toHaveLength(5)
+    expect(screen.getByText(/Your usual at rest: 10 example_unit/)).toBeInTheDocument()
+  })
+
+  it('opens on the indicator of the card and follows a new card selection', () => {
+    const store = new LocalEntryStore({
+      storage: null,
+      seedEntries: [
+        entry(1, '08:00', 10),
+        { ...entry(1, '08:00', 4), indicatorId: 'sleep_quality_1_5', unit: '1 to 5' },
+      ],
+    })
+    const { rerender } = render(
+      <History
+        store={store}
+        personId="demo_astronaut_1"
+        data={data}
+        indicatorId="sleep_quality_1_5"
+      />,
+    )
+    expect(screen.getByLabelText('Indicator')).toHaveValue('sleep_quality_1_5')
+    rerender(
+      <History
+        store={store}
+        personId="demo_astronaut_1"
+        data={data}
+        indicatorId="example_indicator"
+      />,
+    )
+    expect(screen.getByLabelText('Indicator')).toHaveValue('example_indicator')
+  })
+
+  it('lets the person pick another indicator without moving the card', async () => {
+    const user = userEvent.setup()
+    const store = new LocalEntryStore({ storage: null, seedEntries: [] })
+    render(
+      <History
+        store={store}
+        personId="demo_astronaut_1"
+        data={data}
+        indicatorId="example_indicator"
+      />,
+    )
+    await user.selectOptions(screen.getByLabelText('Indicator'), 'sleep_quality_1_5')
+    expect(screen.getByLabelText('Indicator')).toHaveValue('sleep_quality_1_5')
   })
 })

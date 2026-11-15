@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import IndicatorDetails from './IndicatorDetails'
-import type { Indicator, IndicatorContent } from '../domain/types'
+import type { AttentionRule, Indicator, IndicatorContent } from '../domain/types'
 
 const indicator: Indicator = {
   id: 'example_indicator',
@@ -129,5 +129,69 @@ describe('IndicatorDetails', () => {
       <IndicatorDetails indicator={indicator} content={content} sources={[]} />,
     )
     expect(screen.getByText('No sources listed.')).toBeInTheDocument()
+  })
+
+  const rules: AttentionRule[] = [
+    {
+      indicatorId: 'example_indicator',
+      side: 'above',
+      threshold: 140,
+      attentionLevel: 'consult',
+      notify: 'cmo',
+      sources: [
+        { title: 'https://example.org/a', url: 'https://example.org/a' },
+      ],
+    },
+    {
+      indicatorId: 'example_indicator',
+      side: 'above',
+      threshold: 120,
+      attentionLevel: 'watch',
+      notify: 'crew',
+      sources: ['Assumption'],
+    },
+    {
+      indicatorId: 'example_indicator',
+      side: 'below',
+      threshold: 50,
+      attentionLevel: 'urgent',
+      notify: 'flight_surgeon',
+      sources: ['Assumption'],
+    },
+  ]
+
+  it('lists the attention rows, below first, each with its source', () => {
+    render(
+      <IndicatorDetails
+        indicator={indicator}
+        content={content}
+        sources={sources}
+        rules={rules}
+      />,
+    )
+    expect(
+      screen.getByRole('heading', { level: 4, name: 'When it needs attention' }),
+    ).toBeInTheDocument()
+    const lines = screen
+      .getAllByRole('listitem')
+      .filter((li) => /^(Below|Above)/.test(li.textContent ?? ''))
+    expect(lines.map((li) => li.textContent)).toEqual([
+      expect.stringContaining(
+        'Below 50 example_unit: urgent. Tell the flight surgeon.',
+      ),
+      expect.stringContaining('Above 120 example_unit: watch. Tell the crew.'),
+      expect.stringContaining('Above 140 example_unit: consult. Tell the CMO.'),
+    ])
+    expect(screen.getAllByText('Assumption')).toHaveLength(2)
+    expect(
+      screen.getByRole('link', { name: 'example.org · a' }),
+    ).toHaveAttribute('href', 'https://example.org/a')
+  })
+
+  it('leaves out the attention section without rows', () => {
+    render(
+      <IndicatorDetails indicator={indicator} content={content} sources={sources} />,
+    )
+    expect(screen.queryByText('When it needs attention')).toBeNull()
   })
 })

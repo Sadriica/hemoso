@@ -22,8 +22,12 @@ _Update before every checkpoint and at every shift change._
   Bio 1 needs `### watch` headings for sleep and mood.
 - **Done today, outside the code:** the five members are on the Members tab of
   ReTardis (REQ-24, checked at 19:35).
-- **Next:** review Bio 1's status texts (REQ-10); ask the four questions of T-04
-  to the organiser; start the submission page.
+- **Next:** review Bio 1's status texts (REQ-10); start the submission page on
+  Sunday.
+- **T-04 answered** Sat 23:40: the official close is 23:59 local with no earlier
+  cut; the mentor presentation is feedback, not scored; the demo is 7 slides in
+  English or a 30 s video in English or with English subtitles, not one second
+  more. Card #4 waits for Wambi to move it to Review.
 - **Board:** open cards #4, #16, #17, #21, #27, #31, #34, #35, #36, #38, #41, #50.
 
 ## Blockers
@@ -33,9 +37,12 @@ _Update before every checkpoint and at every shift change._
 - `config/data/indicators.csv` still says glucose has no in-flight device and
   `docs/DECISIONS.md` still lists it as tier C. Phys and Eng 1 own those files;
   the source is in `team/bio2/notes/indicators-review.md`.
-- T-04 is still open: the local deadline and the pitch length and language are
-  not confirmed.
+- T-04 is answered (Sat 23:40); card #4 waits for Wambi.
+- The board is read-only for this account: `board.py move` fails with "does not
+  have the correct permissions to execute UpdateProjectV2ItemFieldValue", so
+  Wambi has to move the cards.
 
 ## Shift
-- Sleep shift: _(A: 1:00–4:30 · B: 4:30–8:00)_
+- Sleep shift: B (4:30–8:00). Awake until 4:30; the 7:45 checkpoint needs a
+  cover from someone else.
 - If someone else continues my work: use the `bio2` agent and read this file and `LOG.md`.

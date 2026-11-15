@@ -4,17 +4,16 @@ import type { Indicator } from '../domain/types'
 import { LocalEntryStore } from '../data/entryStore'
 import ReactionCheck from './ReactionCheck'
 import {
-  REACTION_TRIALS,
+  REACTION_DEMO_DURATION_MS,
+  REACTION_DURATION_MS,
+  REACTION_MIN_VALID_MS,
   REACTION_WAIT_MIN_MS,
+  reactionLength,
 } from './constants'
 import { REACTION_LAPSES_ID, REACTION_MEDIAN_ID } from './ids'
 import { reactionStrings } from './strings'
 
-const indicator = (
-  id: string,
-  name: string,
-  unit: string,
-): Indicator => ({
+const indicator = (id: string, name: string, unit: string): Indicator => ({
   id,
   name,
   unit,
@@ -44,6 +43,14 @@ function memoryStore(): LocalEntryStore {
   })
 }
 
+describe('reactionLength', () => {
+  it('is 3 minutes, and the demo length only on the demo path', () => {
+    expect(reactionLength('')).toBe(REACTION_DURATION_MS)
+    expect(reactionLength('?team=1')).toBe(REACTION_DURATION_MS)
+    expect(reactionLength('?reaction=demo')).toBe(REACTION_DEMO_DURATION_MS)
+  })
+})
+
 describe('ReactionCheck', () => {
   beforeEach(() => {
     vi.useFakeTimers()
@@ -70,7 +77,10 @@ describe('ReactionCheck', () => {
     })
   }
 
-  function draw(store: LocalEntryStore, serverConfigured = false) {
+  function draw(
+    store: LocalEntryStore,
+    { serverConfigured = false, search = '?reaction=demo' } = {},
+  ) {
     return render(
       <ReactionCheck
         store={store}
@@ -79,12 +89,12 @@ describe('ReactionCheck', () => {
         entries={[]}
         serverConfigured={serverConfigured}
         clock={clock}
+        search={search}
       />,
     )
   }
 
-  const area = () =>
-    screen.getByRole('group', { name: reactionStrings.areaLabel })
+  const area = () => screen.getByRole('group', { name: reactionStrings.areaLabel })
 
   it('is not there while Phys has not added the two indicators', () => {
     const store = memoryStore()
@@ -103,63 +113,75 @@ describe('ReactionCheck', () => {
   it('is skipped in one action, and nothing is saved', () => {
     const store = memoryStore()
     const { container } = draw(store)
-    fireEvent.click(
-      screen.getByRole('button', { name: reactionStrings.skip }),
-    )
+    fireEvent.click(screen.getByRole('button', { name: reactionStrings.skip }))
     expect(container).toBeEmptyDOMElement()
     expect(store.list()).toEqual([])
   })
 
-  it('starts light, counts a false start and saves the median and the lapses', () => {
+  it('starts light, and an answer before the stimulus is a false start', () => {
     const store = memoryStore()
     draw(store)
-    expect(
-      screen.getByRole('radio', { name: reactionStrings.light }),
-    ).toBeChecked()
+    expect(screen.getByRole('radio', { name: reactionStrings.light })).toBeChecked()
+    expect(screen.getByText(reactionStrings.demoLength)).toBeVisible()
 
     now = 0
-    fireEvent.click(
-      screen.getByRole('button', { name: reactionStrings.start }),
-    )
+    fireEvent.click(screen.getByRole('button', { name: reactionStrings.start }))
     expect(area()).toHaveAttribute('data-reaction-state', 'waiting')
-    expect(screen.getByText(reactionStrings.trial(1, REACTION_TRIALS))).toBeVisible()
+    expect(screen.getByText(reactionStrings.trial(1))).toBeVisible()
+    // The time left is in the label of the bar, not only in its length.
+    expect(screen.getByRole('progressbar', { name: reactionStrings.timeLeft })).toHaveAttribute(
+      'aria-valuetext',
+      reactionStrings.hasLeft(REACTION_DEMO_DURATION_MS / 1000),
+    )
 
-    // Space before the stimulus: a false start, and the same trial goes on.
     fireEvent.keyDown(window, { key: ' ' })
     expect(screen.getByText(reactionStrings.tooEarly)).toBeVisible()
     expect(area()).toHaveAttribute('data-reaction-state', 'waiting')
+    expect(store.list()).toEqual([])
+  })
 
+  it('counts an answer under 100 ms as a false start too', () => {
+    draw(memoryStore())
+    now = 0
+    fireEvent.click(screen.getByRole('button', { name: reactionStrings.start }))
     advance(REACTION_WAIT_MIN_MS)
     expect(area()).toHaveAttribute('data-reaction-state', 'stimulus')
-    expect(
-      area().querySelector('.reaction__light'),
-    ).not.toBeNull()
-    expect(screen.getByText(reactionStrings.now)).toBeVisible()
-
-    advance(100)
+    advance(REACTION_MIN_VALID_MS - 50)
     fireEvent.keyDown(window, { key: ' ' })
-    expect(area()).toHaveAttribute('data-reaction-state', 'waiting')
+    expect(screen.getByText(reactionStrings.tooEarly)).toBeVisible()
+    expect(screen.getByText(reactionStrings.trial(1))).toBeVisible()
+  })
 
-    // One trial late enough to be a lapse, then the rest on time.
+  it('ends at the demo length and saves the median and the lapses', () => {
+    const store = memoryStore()
+    draw(store)
+    now = 0
+    fireEvent.click(screen.getByRole('button', { name: reactionStrings.start }))
+
+    // One answer on time.
+    advance(REACTION_WAIT_MIN_MS)
+    advance(300)
+    fireEvent.keyDown(window, { key: ' ' })
+
+    // One answer past the cut-off: a lapse.
     advance(REACTION_WAIT_MIN_MS)
     advance(600)
     fireEvent.keyDown(window, { key: ' ' })
+    expect(screen.getByText(reactionStrings.trial(3))).toBeVisible()
 
-    for (let trial = 2; trial < REACTION_TRIALS; trial += 1) {
+    // The rest of the demo length: each stimulus after the shortest wait, each
+    // answer 300 ms later. The last one lands after the deadline and closes the
+    // run, so a trial in progress is not cut off.
+    for (let trial = 0; trial < 11; trial += 1) {
       advance(REACTION_WAIT_MIN_MS)
       advance(300)
       fireEvent.keyDown(window, { key: ' ' })
     }
+    expect(screen.queryByRole('group', { name: reactionStrings.areaLabel })).toBeNull()
 
-    expect(
-      screen.getByText(reactionStrings.result(300, 1)),
-    ).toBeVisible()
-    expect(
-      screen.getByText(reactionStrings.falseStarts(1)),
-    ).toBeVisible()
-    expect(
-      screen.getByText(reactionStrings.saved(2, false)),
-    ).toBeVisible()
+    expect(screen.getByText(reactionStrings.result(300, 1))).toBeVisible()
+    expect(screen.getByText(reactionStrings.falseStarts(0))).toBeVisible()
+    expect(screen.getByText(reactionStrings.saved(2, false))).toBeVisible()
 
     // Two entries, both waiting for the outbox: nothing here needs a server.
     const saved = store.list()
@@ -178,51 +200,54 @@ describe('ReactionCheck', () => {
     expect(store.pending()).toHaveLength(2)
   })
 
-  it('answers a tap on the test area too, and announces the sound cue', () => {
+  it('takes a tap on the test area, and shows the sound cue too', () => {
     const store = memoryStore()
     draw(store)
     fireEvent.click(screen.getByRole('radio', { name: reactionStrings.sound }))
-    fireEvent.click(
-      screen.getByRole('button', { name: reactionStrings.start }),
-    )
+    fireEvent.click(screen.getByRole('button', { name: reactionStrings.start }))
     // jsdom has no Web Audio: the screen says so and the ring is the cue.
     expect(screen.getByText(reactionStrings.noTone)).toBeVisible()
 
     advance(REACTION_WAIT_MIN_MS)
     expect(area().querySelector('.reaction__ring')).not.toBeNull()
     expect(screen.getByText(reactionStrings.cue.sound)).toBeVisible()
+    expect(screen.getByText(reactionStrings.now)).toBeVisible()
 
     advance(250)
     fireEvent.click(area())
-    advance(REACTION_WAIT_MIN_MS)
-    advance(250)
-    fireEvent.click(area())
-    expect(screen.getByText(reactionStrings.trial(3, REACTION_TRIALS))).toBeVisible()
+    expect(screen.getByText(reactionStrings.trial(2))).toBeVisible()
   })
 
-  it('stops with Escape and saves nothing when no trial was answered', () => {
+  it('stops with Escape and throws the run away', () => {
     const store = memoryStore()
     draw(store)
-    fireEvent.click(
-      screen.getByRole('button', { name: reactionStrings.start }),
-    )
+    fireEvent.click(screen.getByRole('button', { name: reactionStrings.start }))
+    advance(REACTION_WAIT_MIN_MS)
+    advance(250)
+    fireEvent.keyDown(window, { key: ' ' })
+
     fireEvent.keyDown(window, { key: 'Escape' })
-    expect(screen.getByText(reactionStrings.stoppedNothing)).toBeVisible()
+    expect(screen.getByText(reactionStrings.stopped)).toBeVisible()
     expect(store.list()).toEqual([])
   })
 
   it('offers another run after the result', () => {
     const store = memoryStore()
     draw(store)
-    fireEvent.click(
-      screen.getByRole('button', { name: reactionStrings.start }),
-    )
+    fireEvent.click(screen.getByRole('button', { name: reactionStrings.start }))
     fireEvent.keyDown(window, { key: 'Escape' })
-    fireEvent.click(
-      screen.getByRole('button', { name: reactionStrings.again }),
-    )
+    fireEvent.click(screen.getByRole('button', { name: reactionStrings.again }))
+    expect(screen.getByRole('button', { name: reactionStrings.start })).toBeVisible()
+    expect(screen.getByText(reactionStrings.demoLength)).toBeVisible()
+  })
+
+  it('runs the real length without the demo parameter', () => {
+    const store = memoryStore()
+    draw(store, { search: '' })
+    expect(screen.queryByText(reactionStrings.demoLength)).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: reactionStrings.start }))
     expect(
-      screen.getByRole('button', { name: reactionStrings.start }),
-    ).toBeVisible()
+      screen.getByRole('progressbar', { name: reactionStrings.timeLeft }),
+    ).toHaveAttribute('aria-valuemax', String(REACTION_DURATION_MS))
   })
 })

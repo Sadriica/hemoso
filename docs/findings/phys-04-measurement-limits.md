@@ -1,4 +1,4 @@
-# F-phys-04 · Two indicators measure something other than what their name suggests
+﻿# F-phys-04 Â· Two indicators measure something other than what their name suggests
 
 **Status:** Draft
 **Owner:** phys
@@ -22,15 +22,15 @@ temperature, and motion instead of sleep.
 | `hr_bpm` | ECG, Holter or the Bio-Monitor shirt | Not a stable baseline on Earth: in flight it was lower than preflight and rose past baseline at re-entry | https://humanresearchroadmap.nasa.gov/evidence/reports/Cardio%20Risk%20EB%202022%20FINAL_4-3-2023.pdf |
 | `glucose_mgdl` | i-STAT analyser: one fingerstick sample, read by amperometry | Not continuous monitoring. One value is a point, not a trend | https://ntrs.nasa.gov/citations/20230006919 https://pubmed.ncbi.nlm.nih.gov/9191561/ |
 | `bp_sys_mmhg`, `bp_dia_mmhg` | Bio-Monitor shirt or an arm cuff | Not a single rule: clinical sources state a threshold across both numbers, and one id cannot say "or" | https://www.asc-csa.gc.ca/eng/sciences/bio-monitor.asp |
-| all seven | — | No page read states an accuracy, a precision, a sampling rate or a calibration procedure | the pages above |
+| all seven | â€” | No page read states an accuracy, a precision, a sampling rate or a calibration procedure | the pages above |
 
 ## The two that matter most
 
 **Skin is not core.** The candidate answer to "body temperature" contains two different
-measurements, and a 36.8 °C reading from the shirt does not mean the same as 36.8 °C
+measurements, and a 36.8 Â°C reading from the shirt does not mean the same as 36.8 Â°C
 from the headband. A single warning value for both would be wrong for one of them.
 
-**Exercise moves the reading.** The Thermolab study reports that core temperature rises
+**Exercise moves the reading.** Stahn et al. 2017, the Thermolab investigation, reports that core temperature rises
 higher and faster during exercise in space than on Earth, and stays elevated at rest.
 A limit set at rest will flag a normal post-exercise reading, which is why
 `context` exists in the entry: `rest`, `after_exercise`, `on_waking`, `before_sleep`.
@@ -41,7 +41,7 @@ A limit set at rest will flag a normal post-exercise reading, which is why
 | --- | --- | --- | --- |
 | Wearable Tech for Space Station Research | T-Mini "examines how the body regulates its core temperature"; Actiwatch "contains an accelerometer to measure motion and photodetectors to monitor ambient lighting" | NASA | https://www.nasa.gov/missions/station/iss-research/wearable-tech-for-space-station-research/ |
 | CSA Bio-Monitor | Measures "skin temperature" among pulse, blood pressure, breathing, oxygen saturation and activity | NASA partner | https://www.asc-csa.gc.ca/eng/sciences/bio-monitor.asp |
-| Thermolab, reported on the NASA page | Core temperature "rises higher and faster during exercise in space than on Earth", and the increase was sustained during rest | Peer-reviewed, NASA summary | https://www.nature.com/articles/s41598-017-15560-w |
+| Stahn et al. 2017 (Thermolab), summarized on the NASA page | Core temperature "rises higher and faster during exercise in space than on Earth", and the increase was sustained during rest | Peer-reviewed, NASA summary | https://www.nature.com/articles/s41598-017-15560-w |
 | Cardiovascular evidence report, p. 23 | In-flight heart rate and blood pressure were lower than preflight and rose past baseline at re-entry | NASA | https://humanresearchroadmap.nasa.gov/evidence/reports/Cardio%20Risk%20EB%202022%20FINAL_4-3-2023.pdf |
 | Spaceflight Standard Measures | A questionnaire after waking on sleep quality and quantity; another before sleep on mood | NASA | https://www.nasa.gov/humans-in-space/spaceflight-standard-measures-characterizing-how-humans-adapt-in-space/ |
 
@@ -66,7 +66,7 @@ documentation, which was not opened.
 ## Limits and open questions
 
 - It does not say the instruments are inaccurate. It says how much is unknown.
-- The manufacturer documentation (Carré Technologies, Hexoskin, Philips Actiwatch) was
+- The manufacturer documentation (CarrÃ© Technologies, Hexoskin, Philips Actiwatch) was
   not opened. If it publishes an accuracy, this finding gains a second half.
 - The page number for the cardiovascular report is quoted from
   `team/eng1/notes/challenge-resources.md`; re-check it before citing a number from it.
@@ -80,3 +80,4 @@ documentation, which was not opened.
 - Thermolab (Nature, 2017): https://www.nature.com/articles/s41598-017-15560-w
 - Cardiovascular evidence report: https://humanresearchroadmap.nasa.gov/evidence/reports/Cardio%20Risk%20EB%202022%20FINAL_4-3-2023.pdf
 - Spaceflight Standard Measures: https://www.nasa.gov/humans-in-space/spaceflight-standard-measures-characterizing-how-humans-adapt-in-space/
+

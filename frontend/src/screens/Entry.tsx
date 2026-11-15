@@ -1,14 +1,17 @@
 import {
+  useEffect,
   useId,
   useRef,
   useState,
   type CSSProperties,
   type FormEvent,
+  type KeyboardEvent,
 } from 'react'
-import { missionNow, type MissionClock } from '../domain/clock'
+import { missionClockFor, type MissionClock } from '../domain/clock'
+import { getMissionStart } from '../data/missionStart'
 import { MEASUREMENT_CONTEXTS, contextForTime } from '../domain/context'
 import { latestEntry } from '../domain/entries'
-import type { Entry as EntryRecord, Indicator } from '../domain/types'
+import type { Entry as EntryRecord, Indicator, MeasurementContext } from '../domain/types'
 import type { EntryStore } from '../data/entryStore'
 import { IndicatorIcon, StatusIcon, systemColor } from '../icons'
 import Notice from '../components/Notice'
@@ -16,9 +19,11 @@ import {
   SCALE_VALUES,
   parseReport,
   readingRows,
+  rowContexts,
   type ReadingRow,
 } from './entryDraft'
 import { strings } from '../strings'
+import './entry.css'
 
 // The report screen: one row for every indicator of
 // config/data/indicators.csv, on one shared day, time and context, saved with
@@ -36,6 +41,7 @@ export default function Entry({
   indicators,
   entries,
   serverConfigured = false,
+  onFilledChange,
 }: {
   store: EntryStore
   personId: string
@@ -44,10 +50,13 @@ export default function Entry({
   // True only when a server is set up. Without one nothing is sent, so the
   // saved message does not promise a send.
   serverConfigured?: boolean
+  // Told how many rows hold a value that is not saved yet, so the screen can
+  // keep one primary action at a time. Presentation only.
+  onFilledChange?: (count: number) => void
 }) {
   // Day and time belong to the moment the form opens for this person; the
   // screen is keyed by person in App, so they are read once.
-  const [defaults] = useState(() => missionNow(entries))
+  const [defaults] = useState(() => missionClockFor(entries, personId, getMissionStart(personId)))
   const headingId = useId()
 
   if (indicators.length === 0) {
@@ -69,6 +78,7 @@ export default function Entry({
       entries={entries}
       defaults={defaults}
       serverConfigured={serverConfigured}
+      onFilledChange={onFilledChange}
     />
   )
 }
@@ -80,6 +90,7 @@ function ReportForm({
   entries,
   defaults,
   serverConfigured,
+  onFilledChange,
 }: {
   store: EntryStore
   personId: string
@@ -87,6 +98,7 @@ function ReportForm({
   entries: EntryRecord[]
   defaults: MissionClock
   serverConfigured: boolean
+  onFilledChange?: (count: number) => void
 }) {
   const [rows] = useState(() => readingRows(indicators))
   const [values, setValues] = useState<Record<string, string>>({})
@@ -96,7 +108,19 @@ function ReportForm({
   const [timeText, setTimeText] = useState(defaults.time)
   // The routine prompt (REQ-09): the readings are taken at the clock time the
   // form opens with, so the context that fits that time is picked first.
-  const [context, setContext] = useState(() => contextForTime(defaults.time))
+  // Each row keeps its own context: its usual one from the person's earlier
+  // entries, or the clock's when there are none. The header control sets all.
+  const [contexts, setContexts] = useState<Record<string, MeasurementContext>>(
+    () => rowContexts(rows, entries, contextForTime(defaults.time)),
+  )
+  const contextOf = (row: ReadingRow): MeasurementContext =>
+    contexts[row.key] ?? contextForTime(defaults.time)
+  const sharedContext = rows.every((row) => contextOf(row) === contextOf(rows[0]))
+    ? contextOf(rows[0])
+    : null
+  const rowOfField = new Map(
+    rows.flatMap((row) => row.fields.map((field) => [field.indicatorId, row] as const)),
+  )
   const [valueErrors, setValueErrors] = useState<Record<string, string>>({})
   const [dayError, setDayError] = useState<string | undefined>()
   const [timeError, setTimeError] = useState<string | undefined>()
@@ -107,12 +131,17 @@ function ReportForm({
   const choiceRefs = useRef<Record<string, HTMLInputElement | null>>({})
   const missionDayRef = useRef<HTMLInputElement>(null)
   const timeRef = useRef<HTMLInputElement>(null)
+  const saveRef = useRef<HTMLButtonElement>(null)
 
   const dayId = `${baseId}-mission-day`
   const dayErrorId = `${dayId}-error`
   const timeId = `${baseId}-time`
   const timeErrorId = `${timeId}-error`
 
+  // With an odd number of plain rows the last one takes the full width, so the
+  // two-column layout leaves no hole (presentation only).
+  const plain = rows.filter((row) => !row.scale)
+  const lastPlainKey = plain.length % 2 === 1 ? plain[plain.length - 1].key : null
   const names = new Map(indicators.map((item) => [item.id, item.name]))
   const errorOf = (row: ReadingRow) =>
     row.fields
@@ -188,7 +217,7 @@ function ReportForm({
         unit: reading.unit,
         missionDay: draft.missionDay,
         time: draft.time,
-        context,
+        context: contextOf(rowOfField.get(reading.indicatorId) ?? rows[0]),
       })
     }
 
@@ -212,84 +241,145 @@ function ReportForm({
     })
   }
 
+  // A row counts as filled when any of its fields has text (or a scale choice).
+  const filled = rows.filter((row) =>
+    row.fields.some((field) => (values[field.indicatorId] ?? '').trim() !== ''),
+  ).length
+  const empty = filled === 0
+  useEffect(() => {
+    onFilledChange?.(filled)
+  }, [filled, onFilledChange])
+  const progressId = `${baseId}-progress`
+  const reasonId = `${baseId}-reason`
+
+  // Enter in a field goes to the next one instead of sending the form: the day,
+  // the time, every row in order, and last the save button.
+  function onEnter(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key !== 'Enter') return
+    event.preventDefault()
+    const order: (HTMLElement | null | undefined)[] = [
+      missionDayRef.current,
+      timeRef.current,
+      ...rows.flatMap((row) =>
+        row.scale
+          ? [choiceRefs.current[row.key]]
+          : row.fields.map((field) => valueRefs.current[field.indicatorId]),
+      ),
+      saveRef.current,
+    ]
+    const at = order.indexOf(event.currentTarget)
+    order.slice(at + 1).find((element) => element != null)?.focus()
+  }
+
   return (
-    <section aria-labelledby={`${baseId}-heading`} className="report-form">
-      <h2 id={`${baseId}-heading`} className="report-form__heading">
-        {strings.entry.heading}
-      </h2>
+    <section aria-labelledby={`${baseId}-heading`} className="report-form rep">
+      <div className="rep-head">
+        <h2 id={`${baseId}-heading`} className="report-form__heading">
+          {strings.entry.heading}
+        </h2>
+        <div className="rep-progress capsule">
+          <span className="rep-progress__dots" aria-hidden="true">
+            {rows.map((row, index) => (
+              <span
+                key={row.key}
+                className={`rep-progress__dot${index < filled ? ' rep-progress__dot--on' : ''}`}
+              />
+            ))}
+          </span>
+          {/* Not role="status": the save result below is the one status. */}
+          <span id={progressId} aria-live="polite">
+            {strings.entry.progress(filled, rows.length)}
+          </span>
+        </div>
+      </div>
       {/* noValidate: the messages next to the rows replace the browser bubbles. */}
       <form className="report-form__body" noValidate onSubmit={onSubmit}>
-        <div className="report-meta">
-          <div className="report-meta__field">
-            <label className="field__label" htmlFor={dayId}>
-              {strings.entry.missionDay}
-            </label>
-            <input
-              ref={missionDayRef}
-              className="field__input report-meta__day"
-              id={dayId}
-              type="number"
-              min="1"
-              step="1"
-              inputMode="numeric"
-              value={missionDayText}
-              aria-invalid={dayError === undefined ? undefined : true}
-              aria-describedby={dayError === undefined ? undefined : dayErrorId}
-              onChange={(event) => setMissionDayText(event.target.value)}
-            />
-            {dayError !== undefined && (
-              <FieldError id={dayErrorId}>{dayError}</FieldError>
-            )}
+        <div className="rep-meta">
+          {/* Day and time as two chips on one line. Each chip is its own text
+              field, so a tap edits it; the time is 24-hour HH:MM whatever the
+              system clock shows (STANDARDS.md section 4). */}
+          <div className="rep-chips">
+            <div className="rep-chipwrap">
+              <label className="rep-chip" htmlFor={dayId}>
+                <span className="rep-chip__label">{strings.entry.missionDay}</span>
+                <input
+                  ref={missionDayRef}
+                  className="rep-chip__input rep-chip__input--day"
+                  id={dayId}
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  value={missionDayText}
+                  aria-invalid={dayError === undefined ? undefined : true}
+                  aria-describedby={dayError === undefined ? undefined : dayErrorId}
+                  onChange={(event) => setMissionDayText(event.target.value)}
+                  onKeyDown={onEnter}
+                />
+              </label>
+            </div>
+            <div className="rep-chipwrap">
+              <label className="rep-chip" htmlFor={timeId}>
+                <span className="rep-chip__label">{strings.entry.time}</span>
+                <input
+                  ref={timeRef}
+                  className="rep-chip__input rep-chip__input--time"
+                  id={timeId}
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  maxLength={5}
+                  placeholder="HH:MM"
+                  value={timeText}
+                  aria-invalid={timeError === undefined ? undefined : true}
+                  aria-describedby={
+                    timeError === undefined ? undefined : timeErrorId
+                  }
+                  onChange={(event) => setTimeText(event.target.value)}
+                  onKeyDown={onEnter}
+                />
+              </label>
+            </div>
           </div>
-
-          <div className="report-meta__field">
-            <label className="field__label" htmlFor={timeId}>
-              {strings.entry.time}
-            </label>
-            {/* The native time input follows the OS clock on screen (12-hour on
-                an en-US system) but its value is always 24-hour HH:MM, which is
-                what is stored and shown (STANDARDS.md section 4). Kept native
-                for its keyboard control and time semantics. */}
-            <input
-              ref={timeRef}
-              className="field__input report-meta__time"
-              id={timeId}
-              type="time"
-              value={timeText}
-              aria-invalid={timeError === undefined ? undefined : true}
-              aria-describedby={
-                timeError === undefined ? undefined : timeErrorId
-              }
-              onChange={(event) => setTimeText(event.target.value)}
-            />
-            {timeError !== undefined && (
-              <FieldError id={timeErrorId}>{timeError}</FieldError>
-            )}
-          </div>
+          {(dayError !== undefined || timeError !== undefined) && (
+            <div className="rep-chiperrors">
+              {dayError !== undefined && (
+                <FieldError id={dayErrorId}>{dayError}</FieldError>
+              )}
+              {timeError !== undefined && (
+                <FieldError id={timeErrorId}>{timeError}</FieldError>
+              )}
+            </div>
+          )}
 
           {/* What the person was doing when they took the readings, so each
               value is compared with readings of the same kind (FORMATS.md
-              section 3). Radios, so the arrow keys change it like the scale. */}
-          <fieldset className="report-meta__context">
-            <legend className="field__label">{strings.entry.context}</legend>
-            <div className="report-meta__choices">
+              section 3). One segmented control of radios: the arrow keys
+              change it like the scale. */}
+          <fieldset className="rep-segment">
+            <legend className="rep-segment__legend">{strings.entry.applyToAll}</legend>
+            <div className="rep-segment__track">
               {MEASUREMENT_CONTEXTS.map((choice) => (
-                <label key={choice} className="report-meta__choice">
+                <label key={choice} className="rep-segment__option">
                   <input
                     type="radio"
                     name={`${baseId}-context`}
                     value={choice}
-                    checked={context === choice}
-                    onChange={() => setContext(choice)}
+                    checked={sharedContext === choice}
+                    onChange={() =>
+                      setContexts(Object.fromEntries(rows.map((row) => [row.key, choice])))
+                    }
                   />
-                  {strings.entry.contextLabels[choice]}
+                  <span className="rep-segment__mark" aria-hidden="true">
+                    ✓
+                  </span>
+                  <span>{strings.entry.contextLabels[choice]}</span>
                 </label>
               ))}
             </div>
           </fieldset>
         </div>
 
-        <ul className="readings">
+        <ul className="rep-rows">
           {rows.map((row) => (
             <ReadingRowField
               key={row.key}
@@ -301,14 +391,29 @@ function ReportForm({
               onChange={onValueChange}
               valueRefs={valueRefs}
               choiceRefs={choiceRefs}
+              onEnter={onEnter}
+              wide={row.key === lastPlainKey}
+              context={contextOf(row)}
+              onContext={(choice) =>
+                setContexts((current) => ({ ...current, [row.key]: choice }))
+              }
             />
           ))}
         </ul>
 
-        <div className="form__actions">
-          <button className="button button--secondary button--save" type="submit">
+        <div className="rep-actions">
+          <button
+            ref={saveRef}
+            className="button button--primary rep-save"
+            type="submit"
+            aria-disabled={empty ? true : undefined}
+            aria-describedby={reasonId}
+          >
             {strings.entry.save}
           </button>
+          <p className="rep-actions__reason" id={reasonId}>
+            {empty ? strings.entry.saveNeeds : strings.entry.saveWhat}
+          </p>
         </div>
         {/* The live region stays in place so the text is read out when it appears. */}
         <p className="form__status" role="status">
@@ -328,6 +433,10 @@ function ReadingRowField({
   onChange,
   valueRefs,
   choiceRefs,
+  onEnter,
+  wide,
+  context,
+  onContext,
 }: {
   row: ReadingRow
   baseId: string
@@ -337,11 +446,16 @@ function ReadingRowField({
   onChange: (indicatorId: string, text: string) => void
   valueRefs: { current: Record<string, HTMLInputElement | null> }
   choiceRefs: { current: Record<string, HTMLInputElement | null> }
+  onEnter: (event: KeyboardEvent<HTMLInputElement>) => void
+  wide: boolean
+  context: MeasurementContext
+  onContext: (choice: MeasurementContext) => void
 }) {
   const unitId = `${baseId}-${row.key}-unit`
   const lastId = `${baseId}-${row.key}-last`
   const errorId = `${baseId}-${row.key}-error`
   const nameId = `${baseId}-${row.key}-name`
+  const ctxId = `${baseId}-${row.key}-ctx`
   // A screen reader reads the name, then the unit, the last reading and the
   // problem of the group it is in.
   const describedBy = [
@@ -357,9 +471,30 @@ function ReadingRowField({
   const invalid = error === undefined ? undefined : true
   const pair = row.fields.length === 2
 
+  const title = pair || row.scale ? (
+    <p className="rep-row__name" id={nameId}>
+      {row.name}
+    </p>
+  ) : (
+    <label className="rep-row__name" htmlFor={`${baseId}-${row.fields[0].indicatorId}`}>
+      {row.name}
+    </label>
+  )
+  const lastLine =
+    last === null ? null : (
+      <p className="rep-row__last" id={lastId}>
+        {last}
+      </p>
+    )
+  const errorLine =
+    error === undefined ? null : <FieldError id={errorId}>{error}</FieldError>
+
   return (
-    <li className={`reading${row.scale ? ' reading--scale' : ''}`} style={style}>
-      <span className="reading__icon">
+    <li
+      className={`rep-row${row.scale ? ' rep-row--scale' : ''}${wide ? ' rep-row--wide' : ''}`}
+      style={style}
+    >
+      <span className="rep-row__icon">
         <IndicatorIcon
           indicatorId={row.iconId}
           colored={row.system !== null}
@@ -369,18 +504,36 @@ function ReadingRowField({
 
       {row.scale ? (
         <div
-          className="reading__body"
+          className="rep-row__body"
           role="group"
           aria-labelledby={nameId}
           aria-describedby={describedBy}
           aria-invalid={invalid}
         >
-          <p className="reading__name" id={nameId}>
-            {row.name}
-          </p>
-          <div className="reading__pills">
+          <div className="rep-row__head">
+            {title}
+            {lastLine}
+            <span className="rep-ctx">
+              <label className="sr-only" htmlFor={ctxId}>
+                {strings.entry.rowContext(row.name)}
+              </label>
+              <select
+                id={ctxId}
+                className="rep-ctx__select"
+                value={context}
+                onChange={(event) => onContext(event.target.value as MeasurementContext)}
+              >
+                {MEASUREMENT_CONTEXTS.map((choice) => (
+                  <option key={choice} value={choice}>
+                    {strings.entry.contextLabels[choice]}
+                  </option>
+                ))}
+              </select>
+            </span>
+          </div>
+          <div className="rep-pills">
             {SCALE_VALUES.map((choice, index) => (
-              <label key={choice} className="reading__pill">
+              <label key={choice} className="rep-pill">
                 <input
                   ref={(element) => {
                     if (index === 0) choiceRefs.current[row.key] = element
@@ -397,39 +550,52 @@ function ReadingRowField({
               </label>
             ))}
           </div>
-          {last !== null && (
-            <p className="reading__last" id={lastId}>
-              {last}
-            </p>
-          )}
-          {error !== undefined && <FieldError id={errorId}>{error}</FieldError>}
+          {errorLine}
         </div>
       ) : (
         <div
-          className="reading__body"
+          className="rep-row__body"
           role={pair ? 'group' : undefined}
           aria-labelledby={pair ? nameId : undefined}
           aria-describedby={pair ? `${unitId} ${describedBy}`.trim() : undefined}
           aria-invalid={pair ? invalid : undefined}
         >
-          {pair ? (
-            <p className="reading__name" id={nameId}>
-              {row.name}
-            </p>
-          ) : (
-            <label
-              className="reading__name"
-              htmlFor={`${baseId}-${row.fields[0].indicatorId}`}
-            >
-              {row.name}
-            </label>
-          )}
+          <div className="rep-row__head">
+            {title}
+            {lastLine}
+            <span className="rep-ctx">
+              <label className="sr-only" htmlFor={ctxId}>
+                {strings.entry.rowContext(row.name)}
+              </label>
+              <select
+                id={ctxId}
+                className="rep-ctx__select"
+                value={context}
+                onChange={(event) => onContext(event.target.value as MeasurementContext)}
+              >
+                {MEASUREMENT_CONTEXTS.map((choice) => (
+                  <option key={choice} value={choice}>
+                    {strings.entry.contextLabels[choice]}
+                  </option>
+                ))}
+              </select>
+            </span>
+          </div>
 
-          <span className="reading__fields">
+          {/* One field, one border: the value large on the left, the unit
+              inside on the right. The blood pressure is the same field with
+              two values, "120 / 80 mmHg", each its own entry. */}
+          <span
+            onClick={(event) => {
+              if (event.target instanceof HTMLInputElement) return
+              const inputs = event.currentTarget.querySelectorAll('input')
+              inputs[event.target === event.currentTarget ? 0 : inputs.length - 1]?.focus()
+            }}
+            className={`rep-field${pair ? ' rep-field--pair' : ''}${invalid ? ' rep-field--invalid' : ''}`}>
             {row.fields.map((field, index) => (
-              <span key={field.indicatorId} className="reading__field">
+              <span key={field.indicatorId} className="rep-field__part">
                 {index > 0 && (
-                  <span className="reading__slash" aria-hidden="true">
+                  <span className="rep-field__slash" aria-hidden="true">
                     /
                   </span>
                 )}
@@ -443,40 +609,27 @@ function ReadingRowField({
                   ref={(element) => {
                     valueRefs.current[field.indicatorId] = element
                   }}
-                  className="reading__input"
+                  className="rep-field__input"
                   id={`${baseId}-${field.indicatorId}`}
-                  type="number"
-                  step="any"
+                  type="text"
                   inputMode="decimal"
+                  autoComplete="off"
+                  placeholder="–"
                   value={values[field.indicatorId] ?? ''}
                   aria-invalid={invalid}
                   aria-describedby={`${unitId} ${describedBy}`.trim()}
                   onChange={(event) =>
                     onChange(field.indicatorId, event.target.value)
                   }
+                  onKeyDown={onEnter}
                 />
-                {/* The unit of a single reading sits inside its field; the two
-                    blood pressures share one after both of them. */}
-                {!pair && (
-                  <span className="reading__unit" id={unitId}>
-                    {row.unit}
-                  </span>
-                )}
               </span>
             ))}
-            {pair && (
-              <span className="reading__unit" id={unitId}>
-                {row.unit}
-              </span>
-            )}
+            <span className="rep-field__unit" id={unitId}>
+              {row.unit}
+            </span>
           </span>
-
-          {last !== null && (
-            <p className="reading__last" id={lastId}>
-              {last}
-            </p>
-          )}
-          {error !== undefined && <FieldError id={errorId}>{error}</FieldError>}
+          {errorLine}
         </div>
       )}
     </li>

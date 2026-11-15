@@ -1,7 +1,9 @@
-// The words of the reaction check and of the current-state block. Interface
-// labels only: the state texts of the two indicators and of the condition come
-// from config/ (Bio 1, Bio 2), and the app adds no health wording of its own.
-// Kept next to the code that uses them, so the phase files stay untouched.
+// The words of the reaction check. Interface labels only: what the two
+// indicators mean comes from config/ (Phys, Bio 1), and the app adds no health
+// wording of its own. Kept next to the code that uses them, so the phase files
+// stay untouched.
+//
+// The short labels are also the words a screen reader announces for each step.
 
 export const reactionStrings = {
   heading: 'Reaction check',
@@ -14,14 +16,17 @@ export const reactionStrings = {
   skip: 'Skip the reaction check',
   // The visible cue of the sound mode, for a person who cannot hear the tone.
   cue: { light: 'Light', sound: 'Tone' },
-  wait: { light: 'Wait for the light.', sound: 'Wait for the tone.' },
-  now: 'Answer now.',
-  tooEarly: 'Too early. Wait for the next one.',
-  trial: (number: number, total: number): string => `Trial ${number} of ${total}`,
+  wait: 'Wait',
+  now: 'Now',
+  tooEarly: 'Too early',
+  trial: (number: number): string => `Trial ${number}`,
+  timeLeft: 'Time left',
+  hasLeft: (seconds: number): string => `${seconds} s left`,
   stop: 'Stop the check',
   areaLabel:
     'Reaction test. Tap here or press the space bar as soon as the stimulus appears. Escape stops the check.',
   noTone: 'This browser cannot play the tone. Watch the ring instead.',
+  demoLength: 'Demo run: 30 seconds instead of 3 minutes.',
   result: (medianMs: number | null, lapses: number): string =>
     `Median reaction: ${medianMs === null ? 'no answer in time' : `${medianMs} ms`} · Lapses: ${lapses}`,
   falseStarts: (count: number): string =>
@@ -34,8 +39,8 @@ export const reactionStrings = {
   },
   again: 'Take it again',
   done: 'Done',
-  stopped: 'Stopped. What you answered is kept.',
-  stoppedNothing: 'Stopped. Nothing was saved.',
+  stopped: 'Stopped. Nothing was saved.',
+  empty: 'No trial was completed. Nothing was saved.',
 }
 
 export const stateStrings = {

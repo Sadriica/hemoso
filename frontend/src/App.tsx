@@ -4,7 +4,8 @@ import { createAccountClient } from './data/accountClient'
 import { LocalEntryStore } from './data/entryStore'
 import { createHistoryClient } from './data/historyClient'
 import { createSyncClient } from './data/sync'
-import { missionNow } from './domain/clock'
+import { missionClockFor } from './domain/clock'
+import { setMissionStart, useMissionStart } from './data/missionStart'
 import { useEntries } from './hooks/useEntries'
 import { useHistorySync } from './hooks/useHistorySync'
 import { isDemoPerson, useSession } from './hooks/useSession'
@@ -21,17 +22,8 @@ import PhaseTransition from './motion/PhaseTransition'
 import { useReducedMotion } from './motion/motion'
 import { strings } from './strings'
 
-// The intro is a chunk of its own; it shows once per tab, on the first load.
+// The intro is a chunk of its own; it shows on every full page load.
 const Intro = lazy(() => import('./motion/Intro'))
-
-// The key Intro writes once it has run in this tab (src/motion/Intro.tsx).
-function introSeen(): boolean {
-  try {
-    return !!sessionStorage.getItem('hemoso-intro-seen')
-  } catch {
-    return false
-  }
-}
 
 // The app is one guided check in three phases, always in this order: identify,
 // report, status. There is no free menu: each phase has its own way forward
@@ -55,11 +47,6 @@ export default function App() {
   const [accounts] = useState(() => createAccountClient())
   const session = useSession(accounts)
   const personId = session.personId
-  // Face sign-in is off unless the page is opened with ?face=1: REQ-14 forbids
-  // real personal data in the app until Eng 1 records the exception.
-  const [faceEnabled] = useState(
-    () => new URLSearchParams(window.location.search).get('face') === '1',
-  )
   // Motion is off when the top bar switch says so or when the system asks for
   // less motion; the system setting is followed live (src/motion/motion.ts).
   const [still, setStill] = useState(false)
@@ -69,7 +56,7 @@ export default function App() {
   // The intro opens on the first load of a tab, unless motion is off. Until
   // its chunk arrives, a solid page-colour layer of the same size covers the
   // screen, so the first phase never flashes under it.
-  const [introOpen, setIntroOpen] = useState(() => !motionReduced && !introSeen())
+  const [introOpen, setIntroOpen] = useState(() => !motionReduced)
   const [requestedPhase, setPhase] = useState<PhaseId>('identify')
   const indicatorIds = useMemo(
     () => data.indicators.map((indicator) => indicator.id),
@@ -122,7 +109,10 @@ export default function App() {
     () => new URLSearchParams(window.location.search).get('team') === '1',
   )
 
-  const clock = missionNow(personEntries.length > 0 ? personEntries : entries)
+  // Day and clock belong to the signed-in person: nothing before sign-in.
+  const missionStart = useMissionStart(personId)
+  const clock =
+    phase !== 'identify' && personId ? missionClockFor(entries, personId, missionStart) : null
 
   return (
     <div className={`app${motionReduced ? ' app--still' : ''}`}>
@@ -133,14 +123,20 @@ export default function App() {
           <Intro
             still={motionReduced}
             onDone={() => setIntroOpen(false)}
-            clockText={strings.header.metadata(clock.missionDay, clock.time)}
+            clockText={clock ? strings.header.metadata(clock.missionDay, clock.time) : undefined}
             skipLabel={strings.intro.skip}
           />
         </Suspense>
       )}
       <Topbar
         clock={clock}
-        personId={phase === 'identify' ? null : personId}
+        personId={clock && personId}
+        missionStart={missionStart}
+        onChangeMissionStart={
+          personId && !isDemoPerson(personId)
+            ? (date) => setMissionStart(personId, date)
+            : undefined
+        }
         store={store}
         client={client}
         motionReduced={motionReduced}
@@ -157,7 +153,7 @@ export default function App() {
             headingRef={headingRef}
             personIds={personIds}
             session={session}
-            faceEnabled={faceEnabled}
+            still={motionReduced}
             onDone={() => setPhase('report')}
           />
         )}

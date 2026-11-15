@@ -1,0 +1,31 @@
+/* Hover and press (DESIGN.md 7.2): transform only, 2 to 6 px, with the arrow
+   of a journey button leaning forward. Off under reduced motion and when the
+   top bar switch is on (.app--still). The .app prefix wins over the buttons'
+   own transitions without editing their files. */
+@media (prefers-reduced-motion: no-preference) {
+  .app:not(.app--still) :is(.journey-button, .button, .crew-option, .indicator-card) {
+    transition:
+      transform var(--motion-fast) var(--ease-settle),
+      filter var(--motion-fast) var(--ease-out),
+      border-color var(--motion-base) var(--ease-out),
+      background-color var(--motion-base) var(--ease-out);
+  }
+
+  .app:not(.app--still) .journey-button__arrow {
+    transition: transform var(--motion-base) var(--ease-settle);
+  }
+
+  .app:not(.app--still) :is(.journey-button, .button, .crew-option, .indicator-card):active:not(:disabled) {
+    transform: translateY(var(--move-press));
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) and (hover: hover) {
+  .app:not(.app--still) :is(.journey-button, .button, .crew-option, .indicator-card):hover:not(:disabled) {
+    transform: translateY(calc(var(--move-hover) * -1));
+  }
+
+  .app:not(.app--still) .journey-button:hover:not(:disabled) .journey-button__arrow {
+    transform: translateX(var(--move-hover));
+  }
+}

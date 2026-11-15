@@ -5,6 +5,15 @@
 export const REACTION_MEDIAN_ID = 'reaction_median_ms'
 export const REACTION_LAPSES_ID = 'reaction_lapses'
 
+// The two ids as one list: the check writes them, and no screen asks the crew to
+// type them by hand (screens/entryDraft.ts skips them).
+export const REACTION_INDICATOR_IDS = [REACTION_MEDIAN_ID, REACTION_LAPSES_ID]
+
+/** True for the two indicators the check measures instead of the crew typing them. */
+export function isReactionIndicator(indicatorId: string): boolean {
+  return REACTION_INDICATOR_IDS.includes(indicatorId)
+}
+
 // The neuro-behavioural condition of config/rules/conditions.csv that joins the
 // two reaction signals with mood and sleep (T-73, Bio 2). Assumption until Bio 2
 // writes the row: no condition is shown while the file has another id.

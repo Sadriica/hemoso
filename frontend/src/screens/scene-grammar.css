@@ -1,0 +1,169 @@
+/* Report and Status in the mission-scene grammar (DESIGN.md 6 and 7.2): a quiet
+   scene next to the heading, one wide panel with the work in it, capsules for
+   state and telemetry. Every value is a token. The scene never sits behind a
+   field or a line of text: on a wide screen it fills the free space beside the
+   heading, on a narrow one it is a short band above the panel. */
+
+.phase--report,
+.phase--status {
+  position: relative;
+}
+
+.scene-band {
+  position: relative;
+  z-index: var(--layer-scene);
+  height: calc(var(--space-6) * 2);
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.scene-band .orbital {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 320px;
+  transform: translate(-50%, -50%);
+}
+
+@media (min-width: 900px) {
+  .scene-band {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 340px;
+    height: 340px;
+    overflow: visible;
+  }
+
+  .scene-band .orbital {
+    top: 0;
+    left: 0;
+    width: 100%;
+    transform: none;
+  }
+}
+
+/* The panel rises over the scene: layer above the stage. */
+.phase--report .panel,
+.phase--status .panel {
+  z-index: var(--layer-panel);
+}
+
+/* --- Report --------------------------------------------------------------- */
+
+.phase--report .report__panel {
+  max-width: none;
+}
+
+/* On a wide screen the rows sit in two columns, so the name and its field stay
+   close together; the mood scale takes the full width. */
+@media (min-width: 1000px) {
+  .phase--report .rep .rep-rows {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .phase--report .rep .rep-row--scale {
+    grid-column: 1 / -1;
+  }
+
+  .phase--report .rep .rep-row--wide {
+    grid-column: 1 / -1;
+  }
+
+  .phase--report .rep .rep-row--wide .rep-row__body {
+    grid-template-columns: minmax(0, 1fr) 260px;
+  }
+
+  .phase--report .rep .rep-row__body {
+    grid-template-columns: minmax(0, 1fr) 200px;
+  }
+
+  .phase--report .rep .rep-row--scale .rep-row__body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.phase--report .rep .rep-progress.capsule {
+  padding: var(--space-1) var(--space-3);
+  color: var(--color-text);
+  text-transform: none;
+  letter-spacing: normal;
+  font-size: var(--text-small);
+}
+
+/* --- Status --------------------------------------------------------------- */
+
+.phase--status .status-panel {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.phase--status .status-panel .board {
+  margin-bottom: 0;
+}
+
+/* One surface: the stage of the planetarium has no frame of its own inside the
+   panel, so the nesting stays panel, then cards. */
+.phase--status .status-panel .planetarium__stage {
+  border-color: transparent;
+  background: transparent;
+}
+
+/* State in capsules. */
+.phase--status .attention-badge {
+  border-radius: var(--radius-capsule);
+  padding-inline: var(--space-3);
+}
+
+/* The line from the selected body to its card, with a node where it lands. */
+.status-link {
+  --link: var(--status-no-data-text);
+  position: relative;
+  justify-self: center;
+  width: 1px;
+  height: var(--space-4);
+  background: linear-gradient(to bottom, transparent, var(--link));
+}
+
+.status-link::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: var(--space-2);
+  height: var(--space-2);
+  transform: translate(-50%, 50%);
+  border-radius: var(--radius-round);
+  background: var(--link);
+}
+
+.status-link--in_range { --link: var(--status-in-range-text); }
+.status-link--outside { --link: var(--status-attention-text); }
+.status-link--review { --link: var(--status-review-text); }
+
+/* The selected card: the figure is the hero, with a glow around it only, in
+   the colour of its state. */
+.phase--status .indicator-card {
+  border-radius: var(--radius-card);
+}
+
+.phase--status .indicator-card__reading {
+  align-items: center;
+}
+
+.phase--status .indicator-card .instrument {
+  width: calc(var(--space-7) * 2);
+  height: calc(var(--space-7) * 2);
+  background: radial-gradient(
+    closest-side,
+    color-mix(in srgb, currentColor 24%, transparent),
+    transparent
+  );
+}
+
+@media (max-width: 599px) {
+  .phase--status .indicator-card .instrument {
+    width: calc(var(--space-6) * 2);
+    height: calc(var(--space-6) * 2);
+  }
+}

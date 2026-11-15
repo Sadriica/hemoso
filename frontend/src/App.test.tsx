@@ -11,9 +11,11 @@ const PERSON = 'demo_astronaut_1'
 const copy = strings.phases
 
 beforeEach(() => {
+  // The carry to the next phase takes half a second; these tests are about what
+  // the phase does, so motion is off (src/motion/carry.test.tsx covers the carry).
+  vi.stubGlobal('matchMedia', () => ({ matches: true, addEventListener() {}, removeEventListener() {} }))
   localStorage.clear()
-  // Every test starts on the plain page: the face panel only exists with
-  // ?face=1, and some tests open it.
+  // Every test starts on the plain page, and some tests open the face panel.
   window.history.replaceState({}, '', '/')
 })
 
@@ -90,11 +92,11 @@ describe('guided check', () => {
     // The status of the indicators and the history are on the last phase.
     expect(screen.getByText(strings.personHeading(PERSON))).toBeInTheDocument()
     // The history waits behind a closed disclosure.
-    expect(screen.queryByText(/Your earlier median|Not enough earlier entries/)).toBeNull()
+    expect(screen.queryByText(/Your usual|Not enough earlier entries/)).toBeNull()
     await user.click(screen.getByRole('button', { name: copy.status.historyToggle }))
     expect(
       await screen.findByText(
-        /Your earlier median|Not enough earlier entries/,
+        /Your usual|Not enough earlier entries/,
         {},
         { timeout: 3000 },
       ),
@@ -202,7 +204,7 @@ describe('guided check', () => {
     await user.click(screen.getByRole('button', { name: copy.report.next }))
     expect(screen.getAllByText('1234567').length).toBeGreaterThan(0)
     expect(
-      screen.getAllByText(strings.timeLabel(Number(nextDay), '15:44')).length,
+      screen.getAllByText(new RegExp(`^DAY ${nextDay} · 15:44`)).length,
     ).toBeGreaterThan(0)
   })
 })
@@ -251,6 +253,7 @@ describe('sign in', () => {
     const user = userEvent.setup()
     render(<App />)
 
+    await user.click(screen.getByRole('button', { name: strings.signIn.moreToggle }))
     await user.type(screen.getByLabelText(strings.signIn.username), 'cadet_okoro')
     await user.type(screen.getByLabelText(strings.signIn.pin), '4821')
     await user.click(screen.getByRole('button', { name: strings.signIn.action }))
@@ -310,9 +313,11 @@ describe('top bar', () => {
   it('puts the day and the clock on one muted line, with who is on duty', async () => {
     const user = userEvent.setup()
     render(<App />)
-    const clock = screen.getByText(/^Day \d+ · \d\d:\d\d$/)
-    expect(clock).toBeInTheDocument()
+    const stamp = /^Day \d+ · \d\d:\d\d$/
+    // Nothing before sign-in: the day belongs to the person.
+    expect(screen.queryByText(stamp)).toBeNull()
     await signInByName(user)
+    expect(screen.getByText(stamp)).toBeInTheDocument()
     expect(
       screen.getByText(strings.topbar.onDuty(PERSON), { exact: false }),
     ).toBeInTheDocument()
@@ -328,6 +333,7 @@ describe('top bar', () => {
   })
 
   it('switches motion off and says so with aria-pressed', async () => {
+    vi.unstubAllGlobals()
     const user = userEvent.setup()
     render(<App />)
     const toggle = screen.getByRole('button', { name: strings.topbar.reduceMotion })
@@ -352,17 +358,18 @@ describe('top bar', () => {
   })
 })
 
-describe('face sign-in behind ?face=1', () => {
-  it('renders no face control on the plain page', () => {
+describe('face sign-in on the plain page', () => {
+  it('shows the face option without a flag, with the panel closed', () => {
     render(<App />)
-    expect(screen.queryByRole('button', { name: strings.face.buttonLabel })).toBeNull()
+    expect(
+      screen.getByRole('button', { name: strings.face.buttonLabel }),
+    ).toHaveAttribute('aria-expanded', 'false')
     expect(
       screen.queryByRole('region', { name: strings.face.heading }),
     ).toBeNull()
   })
 
-  it('shows the face button above the crew list with the flag', () => {
-    window.history.replaceState({}, '', '/?face=1')
+  it('shows the face button above the crew list', () => {
     render(<App />)
     expect(screen.getByRole('group', { name: copy.identify.crewLabel })).toBeInTheDocument()
     expect(
@@ -371,7 +378,6 @@ describe('face sign-in behind ?face=1', () => {
   })
 
   it('opens the panel with the consent text and closes it on Escape', async () => {
-    window.history.replaceState({}, '', '/?face=1')
     const user = userEvent.setup()
     render(<App />)
     const button = screen.getByRole('button', { name: strings.face.buttonLabel })
@@ -393,7 +399,6 @@ describe('face sign-in behind ?face=1', () => {
   })
 
   it('puts the focus on the crew list when the camera is blocked', async () => {
-    window.history.replaceState({}, '', '/?face=1')
     const original = navigator.mediaDevices
     const blocked = new Error('blocked')
     blocked.name = 'NotAllowedError'
