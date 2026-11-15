@@ -10,7 +10,7 @@ import { bodyRegionName } from '../components/body3d/regions'
 import { bodyWords, injuryWords } from '../components/body3d/words'
 import type { LoadedContent } from '../content/load'
 import { missionNow } from '../domain/clock'
-import { readPainReports } from '../data/painStore'
+import { readPainReports, removePainReport } from '../data/painStore'
 import type { EntryStore } from '../data/entryStore'
 import type { Entry } from '../domain/types'
 import Notice from '../components/Notice'
@@ -137,6 +137,19 @@ export default function StatusPhase({
                   {report.note !== '' && (
                     <p className="pain-reports__note">{report.note}</p>
                   )}
+                  <button
+                    type="button"
+                    className="text-link pain-reports__remove"
+                    aria-label={injuryWords.removeReport(
+                      injuryWords.reportWhen(report.missionDay, report.time),
+                    )}
+                    onClick={() => {
+                      removePainReport(report.id)
+                      refreshReports()
+                    }}
+                  >
+                    {injuryWords.removeReportShort}
+                  </button>
                 </li>
               ))}
             </ul>
