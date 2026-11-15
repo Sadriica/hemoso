@@ -1,5 +1,4 @@
 import { useId, useState } from 'react'
-import { attentionFor } from '../domain/attention'
 import {
   compareToOwnHistory,
   comparisonFromBaseline,
@@ -8,19 +7,26 @@ import {
 } from '../domain/entries'
 import type { LoadedContent } from '../content/load'
 import { createStateClient } from '../data/stateClient'
+import type { Entry } from '../domain/types'
 import type { EntryStore } from '../data/entryStore'
 import { useEntries } from '../hooks/useEntries'
 import { useIndicatorState } from '../hooks/useIndicatorState'
-import { attentionText } from '../components/attentionText'
+import { statusBadgeKind, statusText } from '../components/attentionText'
+import { StatusIcon } from '../icons'
+import { rowStatus } from './historyRows'
 import IndicatorChart from '../components/IndicatorChart'
 import Notice from '../components/Notice'
 import { strings } from '../strings'
 
+// How many readings the table shows before "Show all".
+const SHORT_TABLE = 14
+
 // One indicator against the person's own earlier readings (REQ-12): a sentence
 // with the latest value, the median of the earlier ones and the difference, a
-// chart of the same numbers and a table with every reading newest first. The
-// status of each reading comes from the same attention rules as Home, and is
-// written in words, never a colour on its own (REQ-15).
+// chart of the same numbers and a table of the newest readings. The status of
+// each reading comes from the same rule as the indicator card (its own
+// baseline, then the attention rows), written in words with the state icon,
+// never a colour on its own (REQ-15).
 export default function History({
   store,
   personId,
@@ -38,6 +44,8 @@ export default function History({
   const headingId = useId()
   const selectId = useId()
   const summaryId = useId()
+  const tableId = useId()
+  const [showAll, setShowAll] = useState(false)
 
   const indicator =
     data.indicators.find((item) => item.id === chosenId) ?? data.indicators[0]
@@ -82,6 +90,8 @@ export default function History({
         ? comparisonFromBaseline(latest, answer.median, answer.n)
         : compareToOwnHistory(rows)
 
+  const shown = showAll ? rows : rows.slice(0, SHORT_TABLE)
+
   if (indicator === undefined) {
     return (
       <section aria-labelledby={headingId} className="history">
@@ -123,7 +133,11 @@ export default function History({
         <>
           {/* The chart takes this sentence as its accessible name, so the id
               lives here and is handed down. */}
-          <SummarySentence id={summaryId} comparison={comparison} />
+          <SummarySentence
+            id={summaryId}
+            comparison={comparison}
+            latest={latest}
+          />
           <IndicatorChart
             entries={rows}
             unit={indicator.unit}
@@ -131,8 +145,15 @@ export default function History({
             comparison={comparison}
             labelledBy={summaryId}
           />
-          <div className="history__table-wrap">
-            <table className="history__table">
+          {/* A scroll box needs a keyboard stop and a name, so a keyboard user
+              can reach the columns that do not fit on a narrow screen. */}
+          <div
+            className="history__table-wrap"
+            role="region"
+            tabIndex={0}
+            aria-label={strings.history.tableRegion(indicator.name)}
+          >
+            <table className="history__table" id={tableId}>
               <caption className="history__caption">
                 {strings.history.tableCaption(indicator.name)}
               </caption>
@@ -140,27 +161,55 @@ export default function History({
                 <tr>
                   <th scope="col">{strings.history.columns.day}</th>
                   <th scope="col">{strings.history.columns.time}</th>
+                  <th scope="col">{strings.history.columns.context}</th>
                   <th scope="col">{strings.history.columns.value}</th>
                   <th scope="col">{strings.history.columns.status}</th>
                 </tr>
               </thead>
               <tbody>
-                {rows.map((entry) => (
-                  <tr key={entry.id}>
-                    <td>{entry.missionDay}</td>
-                    <td>{entry.time}</td>
-                    <td className="history__value">
-                      {entry.value}{' '}
-                      <span className="history__unit">
-                        {strings.cardUnit(entry.unit)}
-                      </span>
-                    </td>
-                    <td>{attentionText(attentionFor(entry.value, rules))}</td>
-                  </tr>
-                ))}
+                {shown.map((entry) => {
+                  const status = rowStatus(
+                    entry,
+                    rows,
+                    rules,
+                    indicator.minSpread,
+                  )
+                  return (
+                    <tr key={entry.id}>
+                      <td>{entry.missionDay}</td>
+                      <td>{entry.time}</td>
+                      <td>{strings.entry.contextLabels[entry.context]}</td>
+                      <td className="history__value">
+                        {entry.value}{' '}
+                        <span className="history__unit">
+                          {strings.cardUnit(entry.unit)}
+                        </span>
+                      </td>
+                      <td>
+                        <span className="history__status">
+                          <StatusIcon kind={statusBadgeKind(status)} size={16} />
+                          {statusText(status)}
+                        </span>
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
+          {rows.length > SHORT_TABLE && (
+            <button
+              type="button"
+              className="history__more"
+              aria-expanded={showAll}
+              aria-controls={tableId}
+              onClick={() => setShowAll(!showAll)}
+            >
+              {showAll
+                ? strings.history.showFewer
+                : strings.history.showAll(rows.length)}
+            </button>
+          )}
         </>
       )}
     </section>
@@ -174,15 +223,24 @@ export default function History({
 function SummarySentence({
   id,
   comparison,
+  latest,
 }: {
   id: string
   comparison: HistoryComparison | null
+  latest: Entry | null
 }) {
   return (
     <p className="history__summary" id={id} data-summary-id={id}>
-      {comparison === null
-        ? strings.history.notEnough
-        : summarySentence(comparison)}
+      {comparison !== null
+        ? summarySentence(comparison)
+        : latest === null
+          ? strings.history.notEnough
+          : strings.history.latestOnly({
+              value: String(latest.value),
+              unit: strings.cardUnit(latest.unit),
+              day: latest.missionDay,
+              time: latest.time,
+            })}
     </p>
   )
 }

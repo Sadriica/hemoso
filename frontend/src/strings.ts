@@ -237,11 +237,25 @@ export const strings = {
     columns: {
       day: 'Day',
       time: 'Time',
+      context: 'Context',
       value: 'Value',
       status: 'Status',
     },
+    // The table shows the newest readings first; the button shows the rest.
+    tableRegion: (name: string): string => `Readings table for ${name}`,
+    showAll: (count: number): string => `Show all ${count} readings`,
+    showFewer: 'Show fewer',
     noEntries: 'No entries for this indicator yet.',
     notEnough: 'Not enough earlier entries to compare yet.',
+    // The latest value is still said when there is nothing to compare it with.
+    latestOnly: (parts: {
+      value: string
+      unit: string
+      day: number
+      time: string
+    }): string =>
+      `Latest: ${parts.value} ${parts.unit} on Day ${parts.day} ${parts.time}. ` +
+      'Not enough earlier entries to compare yet.',
     summary: (parts: {
       value: string
       unit: string

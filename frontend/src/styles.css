@@ -1013,6 +1013,14 @@ legend {
    table is the full one, so the table stays a real <table> with a header row.
    On a phone it scrolls inside its own box instead of pushing the page
    sideways (REQ-32). */
+/* The parent is a grid whose items size to their content, so the table would
+   widen the whole page. With inline-size containment the panel takes no width
+   from its content and the table box scrolls inside itself instead. */
+.history {
+  min-width: 0;
+  contain: inline-size;
+}
+
 .history__heading {
   margin-bottom: var(--space-3);
   font-family: var(--font-display);
@@ -1085,6 +1093,42 @@ legend {
   color: var(--color-text-muted);
 }
 
+/* The state icon first, then the words: the shape carries the state as well as
+   the text. */
+.history__status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.history__status svg {
+  flex: none;
+}
+
+/* The table scrolls inside its own box on a narrow screen; the box takes the
+   focus ring so a keyboard user sees which region scrolls. */
+.history__table-wrap:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.history__more {
+  min-height: 44px;
+  margin-top: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  border: var(--border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.history__more:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
 /* Phone: tighter cells and a status that wraps, so the four columns fit at
    320 px without scrolling the table sideways (REQ-32). The number and its
    unit stay on one line. */
@@ -1096,6 +1140,11 @@ legend {
 
   .history__table tbody td:last-child {
     white-space: normal;
+  }
+
+  /* Two short lines at most; a longer level name scrolls the box. */
+  .history__status {
+    min-width: 9.5em;
   }
 }
 
