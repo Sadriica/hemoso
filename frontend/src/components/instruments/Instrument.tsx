@@ -178,8 +178,8 @@ function Tally({ value }: { value: number }) {
  *   other id renders nothing.
  * - `value`: the number the card already shows; it only sets the drawing.
  * - `reducedMotion`: draw the final state with no animation.
- * - `state`: optional. The accent (fill, needle, features) takes the state
- *   colour and the outline keeps the system colour. The tint changes over
+ * - `state`: optional. The whole figure (fill, needle, features and outline)
+ *   takes the state colour; the system colour stays on the name icon. The tint changes over
  *   `--motion-base`. Without it the figure is drawn in the system colour.
  */
 export interface InstrumentProps {
@@ -231,7 +231,7 @@ export default function Instrument({ indicatorId, value, reducedMotion = false, 
   return (
     <span
       className={`instrument ${reducedMotion ? 'instrument--still' : 'instrument--anim'}${tint ? ' instrument--state' : ''}`}
-      style={{ color: tint ? `var(${tint})` : system, '--ins-system': system } as CSSProperties}
+      style={{ color: tint ? `var(${tint})` : system }}
       data-state={tint ? state : undefined}
       aria-hidden="true"
       data-indicator={indicatorId}

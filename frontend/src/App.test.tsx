@@ -250,6 +250,7 @@ describe('sign in', () => {
     const user = userEvent.setup()
     render(<App />)
 
+    await user.click(screen.getByRole('button', { name: strings.signIn.moreToggle }))
     await user.type(screen.getByLabelText(strings.signIn.username), 'cadet_okoro')
     await user.type(screen.getByLabelText(strings.signIn.pin), '4821')
     await user.click(screen.getByRole('button', { name: strings.signIn.action }))

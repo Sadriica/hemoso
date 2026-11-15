@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { INTRO_DONE } from './entrance'
 import { tokenMs, useMotionAllowed } from './motion'
 import './motion.css'
 
@@ -52,6 +53,8 @@ export default function Intro({
       done.current = true
       setOpen(false)
       cb.current()
+      // The first phase entrance waits for this (see entrance.ts).
+      window.dispatchEvent(new Event(INTRO_DONE))
     }
     if (!show) {
       finish()
@@ -88,7 +91,8 @@ export default function Intro({
               top: `${star.y}%`,
               width: `${star.size * 2}px`,
               height: `${star.size * 2}px`,
-              animationDelay: `${star.delay}ms`,
+              // A share of the intro, in thirty-fourths of --motion-intro (tenths of a second at 3400 ms).
+              animationDelay: `calc(var(--motion-intro) * ${star.delay / 100} / 34)`,
             }}
           />
         ))}

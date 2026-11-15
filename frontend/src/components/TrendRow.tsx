@@ -67,6 +67,9 @@ export default function TrendRow({
           aria-hidden="true"
           focusable="false"
         >
+          {/* The rail spans the whole track, so the dot lands on a line even
+              when the value is far outside the usual band. */}
+          <rect className="trend__rail" x="0" y="5" width="100" height="2" />
           <rect
             className="trend__band"
             x={50 - bandHalf}

@@ -172,13 +172,39 @@ Content stops at 1200 px (`--container-width`). Side gutter: 16 px under
 horizontal scroll. Every target is at least 44 px (`--tap-min`). The page has
 at most one primary action per screen.
 
-## 6. Shape and elevation
+## 6. Shape, depth and layers
 
-`--radius-small` 2 px for buttons and badges, `--radius-card` 4 px for cards
-and inputs, `--radius-round` for orbit bodies and dots. Depth comes from
-surface steps (`bg` to `bg-raised` to `surface`) and 1 px borders; only an open
-panel over content uses `--shadow-raised`. Where text sits on the Starfield it
-sits on a solid `--color-surface` or `--color-bg-raised`, never on the stars.
+### 6.1 Shape grammar (round 3)
+
+The screen is a mission scene with a control panel in it, not a form with a
+space theme. One shape grammar, five parts:
+
+| Part | Token | Use |
+| --- | --- | --- |
+| Main panel | `--radius-panel` 24 px, optional cut corner `--cut` 18 px | The one wide surface a phase asks something on; at most one per screen |
+| Capsule | `--radius-capsule` | State, telemetry, chips, the segmented control, the rail nodes' labels |
+| Card | `--radius-card` 4 px | Inner blocks inside a panel (rows, indicator cards); smaller than the panel, never the dominant shape |
+| Arc and line | 1 px `--color-border` or accent at low alpha | Orbits, connection lines and rings replace extra boxes |
+| Button | `--radius-small` 2 px or `--radius-capsule` | One primary per screen |
+
+Rules: a cut corner is a decorative clip of the panel and never clips a focus
+ring or a field edge (keep controls inside the safe area, outline inside the
+offset). Nesting stops at two levels (panel, then card): no card in a card in a
+card. Keep `--radius-small` and `--radius-card` for dense data screens (report
+rows, tables).
+
+### 6.2 Depth and layers
+
+Depth comes from three layers and a local glow, not from more borders:
+`--layer-scene` (the stage: horizon, orbital object, stars in a near, a far and
+a dust layer), `--layer-panel` (the main panel, which may overlap the scene by
+up to a third of its height) and `--layer-telemetry` (mono telemetry, rail).
+`--shadow-float` lifts a floating panel; `--glow-accent` at `--glow-radius`
+sits around the protagonist object only, never as a uniform halo. Text always
+sits on a solid or near-solid surface (a panel, a capsule, or the plain page
+colour with a soft fade), never directly on stars. Under 600 px the scene
+shrinks to a band above the panel; it never pushes the primary action below the
+first screen.
 
 ## 7. Motion
 
@@ -198,12 +224,33 @@ Rules:
   block input, last at most 1.2 s, and skip with any key or tap. The intro is
   the one exception: it runs about 3.4 s (`--motion-intro`), and any key or tap
   ends it at once.
-- The Starfield drifts slowly and is the only ambient motion.
+- Ambient motion is allowed only in the stage (scene layers drifting, orbits
+  turning slowly, the object answering the pointer), never in the panel, and
+  stops under reduced motion. It is a few degrees or pixels, never a loop that
+  draws the eye away from the one action.
 - Everything stops under `prefers-reduced-motion` and with the top bar switch
   (class `app--still`); the app is complete without motion. Animate only
   `transform`, `opacity` and SVG stroke offsets.
 - The 30-second demo path never waits on an animation.
 - No sound.
+
+### 7.2 Choreography (round 3)
+
+One phase entrance, in order, all skippable by any key or tap and replaced by
+the final state under reduced motion (same hierarchy, no motion):
+
+1. Horizon and protagonist object appear (`--motion-horizon`, 700 to 900 ms).
+2. Orbits draw with `stroke-dashoffset` (`--motion-draw`).
+3. The headline enters line by line, `--motion-stagger` between lines.
+4. The panel rises from the object (`--motion-rise`, `--ease-settle`).
+5. Picking a crew member closes the ring; the avatar then carries into Report.
+6. Hover and press move the element `--move-hover` (2 to 6 px) and
+   `--move-press`, with an arrow that answers; transform and opacity only.
+
+The sequence may last up to `--motion-cinematic` plus the intro on first load;
+the demo path never waits on it. The pointer response of the object uses a
+throttled `pointermove` and one transform; it is off on touch and under reduced
+motion.
 
 ## 8. Components
 
@@ -330,3 +377,33 @@ Accepted deviations, so a later change does not "fix" them by accident:
 - With no attention rule filled in `config/rules`, every state is "no data"
   and the demo shows no state colour; this is a content gap, not a style bug.
 - Fonts are fallbacks until the files are approved (section 4.1).
+
+## 15. Mission scene (round 3, Sat 14 Nov 23:50)
+
+Decision (Wambi): the interface works and is clear, but it reads as an
+administrative form with a space theme. The next round changes the visual
+structure, not the technical base (React, the existing Three.js body stay; no
+new dependency, no imported background, icon or image, no generated image; the
+scene is our own CSS, Canvas and SVG).
+
+Keep: the headline hierarchy, the palette and contrast, the path identify ->
+report -> status, accessibility with colour never alone, the technical look.
+
+Identify composition (two zones): telemetry and headline on the left; a
+protagonist object (orbital scanner or body silhouette with orbits, slow depth,
+pointer response) on the right; the main panel carries one primary action,
+"Open the demo", visible at once; username and PIN sit in a secondary panel
+behind a disclosure; the face option stays first among sign-in methods.
+
+Ownership of files by slice (nobody edits another slice's files; tokens and
+class names from this file and `styles.css` are the interface):
+
+| Slice | Files |
+| --- | --- |
+| W1 composition | `phases/identify.css`, `phases/IdentifyPhase.tsx` (structure), `phases.css` panel and capsule rules |
+| W2 scene | `components/orbital/*` (new), `components/Starfield.tsx` |
+| W3 choreography | `motion/*`, the phase entrance |
+| W4 Identify to Report transition | the phase switch only, after W2 and W3 |
+| W5 report and status grammar | `screens/entry.css`, `screens/Entry.tsx` presentation, status card CSS, instruments; after W1 to W3 |
+
+Not ours: `reaction/**` and `screens/entryDraft.ts` (the reaction check).

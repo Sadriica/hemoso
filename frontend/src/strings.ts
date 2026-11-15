@@ -345,6 +345,7 @@ export const strings = {
   sync: {
     online: 'Online',
     offline: 'Offline',
+    offlineNotice: 'You are offline. Entries wait on this device.',
     noServer: 'No server',
     waiting: (count: number): string => `${count} ${WAITING_WORD}`,
     // The word alone, so a narrow screen can keep the count and the chip keeps
@@ -368,6 +369,8 @@ export const strings = {
   // wording. The PIN is never written down here or anywhere in the browser.
   signIn: {
     faceHeading: 'Sign in with your face',
+    // The closed row that holds the username and PIN form and the new account.
+    moreToggle: 'Username and PIN, or a new account',
     faceNote: 'A face saved on this device opens your session.',
     // No face on this device yet: how to add one, in one line.
     faceNone: 'Sign in with your PIN once, then add your face on this device',
