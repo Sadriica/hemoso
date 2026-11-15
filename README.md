@@ -22,7 +22,7 @@ replace them.
 
 - **Identify:** sign in with a username and a PIN, or open the synthetic demo
   astronaut. Face sign-in is optional, on the device only (`?face=1`).
-- **Report:** one row per indicator (15 indicators, `config/data/indicators.csv`)
+- **Report:** one row per indicator (12 indicators, `config/data/indicators.csv`)
   with its context (post-sleep, pre-sleep, rest…), an optional symptom list, a
   3D body to mark pain or an injury, and an optional 90-second reaction check
   (light or sound).
@@ -47,6 +47,37 @@ replace them.
 - **Possible conditions:** `config/rules/conditions.csv` scores each signal and
   each reported symptom (`config/data/symptoms.csv`) into an evidence score from
   0 to 1 with a three-step label (`docs/findings/bio2-02-evidence-score.md`).
+
+### Why you can trust what it says
+
+A plausible system that uses what actually flies, with rules you can check.
+
+- **Every limit has a source you can open.** Each threshold in
+  [`config/rules/attention.csv`](config/rules/attention.csv) carries a link or
+  the word `Assumption`, and the app shows it next to the result. The links are
+  collected in [`docs/sources.md`](docs/sources.md).
+- **The same rule in two places.** Your own baseline is computed by one rule
+  ([`docs/findings/phys-02-baseline-state-rule.md`](docs/findings/phys-02-baseline-state-rule.md))
+  in the API ([`backend/app/state.py`](backend/app/state.py)) and in the app
+  ([`frontend/src/domain/state.ts`](frontend/src/domain/state.ts)). The app is
+  tested against that finding's vectors
+  ([`scripts/fixtures/format_rules/window.json`](scripts/fixtures/format_rules/window.json)).
+- **A sourced limit comes first.** It is checked before the baseline, so a core
+  temperature of 39.5 °C on day 1, with no history, already needs review (the
+  cited row is above 38.0 °C). A row marked `Assumption` never raises an alarm
+  on its own ([`FORMATS.md`](FORMATS.md) section 3,
+  [`phys-02`](docs/findings/phys-02-baseline-state-rule.md)).
+- **Instruments that fly today**, from the sourced rows of
+  [`config/data/indicators.csv`](config/data/indicators.csv): the Bio-Monitor
+  smart shirt (heart rate, blood pressure), the T-Mini headband (core
+  temperature), the Actiwatch (sleep), the i-STAT blood analyser (glucose, one
+  fingerstick at a time), SLAMMD (body mass), the metered galley dispenser (fluid intake) and the ISS
+  Reaction Self Test (our check is a 90-second adaptation). Mood and appetite
+  are questions the crew answers.
+- **Never a diagnosis.** Possible conditions are an evidence score with its
+  signals ([`docs/findings/bio2-02-evidence-score.md`](docs/findings/bio2-02-evidence-score.md)),
+  the `notify` column names who acts (crew, CMO, flight surgeon), and the tool
+  is never a diagnosis or a replacement for either doctor (REQ-11).
 
 Every value in the app, in the database and in the deployments is synthetic
 (REQ-14). There are no real personal health data anywhere.
