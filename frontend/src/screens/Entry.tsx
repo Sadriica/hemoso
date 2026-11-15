@@ -9,7 +9,7 @@ import {
   type KeyboardEvent,
 } from 'react'
 import { missionClockFor, type MissionClock } from '../domain/clock'
-import { getMissionStart } from '../data/missionStart'
+import { getMissionStart, useMissionStart } from '../data/missionStart'
 import { MEASUREMENT_CONTEXTS, contextForTime } from '../domain/context'
 import { latestEntry, newestFirst } from '../domain/entries'
 import { localState, statusFromLocal, type Status } from '../domain/state'
@@ -76,9 +76,17 @@ export default function Entry({
   // The way on to the status, offered next to the saved message.
   onNext?: () => void
 }) {
-  // Day and time belong to the moment the form opens for this person; the
-  // screen is keyed by person in App, so they are read once.
-  const [defaults] = useState(() => missionClockFor(entries, personId, getMissionStart(personId)))
+  // The time belongs to the moment the form opens for this person; the screen
+  // is keyed by person in App, so it is read once. The day is not: the account's
+  // mission start can arrive after the form opened (REQ-37), so the day is
+  // counted again whenever the start or the entries change, and the form
+  // follows it until the person types a day of their own.
+  const [openedAt] = useState(() => missionClockFor(entries, personId, getMissionStart(personId)))
+  const missionStart = useMissionStart(personId)
+  const defaults: MissionClock = {
+    time: openedAt.time,
+    missionDay: missionClockFor(entries, personId, missionStart).missionDay,
+  }
   const headingId = useId()
 
   if (indicators.length === 0) {
@@ -140,9 +148,11 @@ function ReportForm({
     return () => document.removeEventListener('visibilitychange', update)
   }, [])
   const [values, setValues] = useState<Record<string, string>>({})
-  const [missionDayText, setMissionDayText] = useState(
-    String(defaults.missionDay),
-  )
+  // The day field shows the counted day until the person edits it; a typed
+  // value is never replaced by a later one.
+  const [typedDay, setTypedDay] = useState<string | null>(null)
+  const missionDayText = typedDay ?? String(defaults.missionDay)
+  const setMissionDayText = setTypedDay
   const [timeText, setTimeText] = useState(defaults.time)
   // The routine prompt (REQ-09): the readings are taken at the clock time the
   // form opens with, so the context that fits that time is the header's. Each
@@ -195,6 +205,7 @@ function ReportForm({
     () => outboxKey(store),
   )
   const sendState = sendStateOf(store, lastSave, serverConfigured)
+  const progress = sendState === 'waiting' ? sendProgressText(store, lastSave) : null
   // Rows saved in this check, so they keep reading as done once cleared, and
   // whether the last action was a save (it offers the way on).
   const [savedRows, setSavedRows] = useState<Record<string, boolean>>({})
@@ -524,6 +535,7 @@ function ReportForm({
             <p className="form__status" role="status">
               {status}
               {status !== '' && sendState !== null && ` ${sendWords[sendState]}`}
+              {status !== '' && sendState === 'waiting' && progress !== null && ` ${progress}`}
             </p>
             {afterSave && onNext !== undefined && (
               <button
@@ -1019,6 +1031,19 @@ function sendStateOf(
   const waiting = new Set(store.pending().map((entry) => entry.id))
   if (lastSave.ids.some((id) => waiting.has(id))) return 'waiting'
   return refusedCount(store) > lastSave.refusedBefore ? 'refused' : 'sent'
+}
+
+// "3 of 10 sent." while a save of several readings is on its way, so a slow
+// round reads as moving and not as stuck. Nothing for one reading or before the
+// first one leaves.
+function sendProgressText(
+  store: MaybeOutbox,
+  lastSave: { ids: string[] } | null,
+): string | null {
+  if (lastSave === null || store.pending === undefined || lastSave.ids.length < 2) return null
+  const waiting = new Set(store.pending().map((entry) => entry.id))
+  const done = lastSave.ids.filter((id) => !waiting.has(id)).length
+  return done === 0 ? null : strings.entry.sendProgress(done, lastSave.ids.length)
 }
 
 function lastReading(row: ReadingRow, entries: EntryRecord[]): string | null {

@@ -275,6 +275,8 @@ export const strings = {
     saved: 'Waiting to be sent.',
     // The same readings once the server took them, or when it did not.
     sent: 'Sent.',
+    // While a save of several readings is on its way: how many are there.
+    sendProgress: (done: number, total: number): string => `${done} of ${total} sent.`,
     notAccepted: 'The server did not accept it. Kept on this device.',
     savedOnDevice: 'Kept on this device.',
     noIndicators: 'No indicators are set up yet.',
