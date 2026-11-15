@@ -45,8 +45,8 @@ Your CMO or flight surgeon confirms.
 
 ### watch
 
-Your fluid intake is below 1500 mL today, well under the daily amount NASA
-recommends.
+Your fluid intake is below 1500 mL today, well under the 2.5 L a day NASA asks
+for.
 
 Drink some fluid now and log your total again tomorrow.
 

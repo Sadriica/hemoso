@@ -46,9 +46,10 @@ Your CMO or flight surgeon confirms.
 
 ### watch
 
-Your body mass is below 70 kg.
+Your body mass is below 45 kg. Assumption: this is a low value for an adult,
+not a NASA limit.
 
-Eat your full meals this week and measure again next week. Assumption.
+Eat your full meals this week and measure again next week.
 
 The crew checks your record on board.
 
