@@ -149,8 +149,11 @@ repository, the app and the demo are in English.
 
 | Name | Role |
 | --- | --- |
-| **TODO** | Bio 1 · health content and pitch |
-| Camila (pamirestrepo-code) | Bio 2 · rules, thresholds and submission |
-| **TODO** | Phys · data, NASA sources and measurement |
-| **TODO** | Eng 1 · integrator, backend and requirements |
-| **TODO** | Eng 2 · frontend and demo |
+| Sofía Ruiz Tamayo | Bio 1 · health content and pitch |
+| Camila (Cami) · **TODO:** surname | Bio 2 · rules, thresholds and submission |
+| Isabella Cabrera Quintero | Phys · data, NASA sources and measurement |
+| Wambi · **TODO:** full name | Eng 1 · integrator, backend and requirements |
+| Juli · **TODO:** full name | Eng 2 · frontend and demo |
+
+**TODO:** copy the five names exactly as they appear on the Members tab of the
+ReTardis page, so the page and the platform agree.
