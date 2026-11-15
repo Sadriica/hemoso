@@ -46,7 +46,6 @@ function allowCamera() {
 function renderPanel(overrides: Partial<FaceSignInProps> = {}) {
   const props: FaceSignInProps = {
     personId: 'demo_astronaut_1',
-    personIds: ['demo_astronaut_1'],
     onPersonSelected: vi.fn(),
     onClose: vi.fn(),
     onFocusPicker: vi.fn(),
@@ -134,27 +133,38 @@ describe('FaceSignIn', () => {
     expect(track.stop).toHaveBeenCalledTimes(1)
   })
 
-  it('registers the person chosen in the panel, not just the header one', async () => {
+  it('registers the face of the person on duty, and cannot without one', async () => {
     allowCamera()
     engine.descriptorFrom.mockResolvedValue([1, 1])
     const user = userEvent.setup()
-    renderPanel({ personIds: ['demo_astronaut_1', 'demo_astronaut_2'] })
+    renderPanel({ personId: '' })
 
     await user.click(screen.getByRole('button', { name: strings.face.continueLabel }))
-    await user.selectOptions(
-      screen.getByLabelText(strings.face.person),
-      'demo_astronaut_2',
-    )
+
+    // Nobody is on duty yet: the register button says so and registers nobody.
+    expect(screen.getByText(strings.face.chooseFirst)).toBeVisible()
+    expect(
+      screen.getByRole('button', { name: strings.face.register }),
+    ).toBeDisabled()
+    expect(engine.descriptorFrom).not.toHaveBeenCalled()
+  })
+
+  it('registers the face of the person on duty', async () => {
+    allowCamera()
+    engine.descriptorFrom.mockResolvedValue([1, 1])
+    const user = userEvent.setup()
+    renderPanel({ personId: 'cadet_okoro' })
+
+    await user.click(screen.getByRole('button', { name: strings.face.continueLabel }))
+    expect(screen.getByText(strings.face.registeredFor('cadet_okoro'))).toBeVisible()
     await user.click(screen.getByRole('button', { name: strings.face.register }))
 
     await waitFor(() =>
       expect(screen.getByRole('status')).toHaveTextContent(
-        strings.face.status.registered('demo_astronaut_2'),
+        strings.face.status.registered('cadet_okoro'),
       ),
     )
-    expect(loadFaces().map((record) => record.personId)).toEqual([
-      'demo_astronaut_2',
-    ])
+    expect(loadFaces().map((record) => record.personId)).toEqual(['cadet_okoro'])
   })
 
   it('keeps every track of a camera that was opened, even after an empty scan', async () => {
@@ -180,7 +190,7 @@ describe('FaceSignIn', () => {
     saveFace({ personId: 'demo_astronaut_2', descriptor: [1, 1] })
     engine.descriptorFrom.mockResolvedValue([1, 1])
     const user = userEvent.setup()
-    const props = renderPanel({ personIds: ['demo_astronaut_1', 'demo_astronaut_2'] })
+    const props = renderPanel()
 
     await user.click(screen.getByRole('button', { name: strings.face.continueLabel }))
     await user.click(screen.getByRole('button', { name: strings.face.signIn }))
@@ -198,7 +208,7 @@ describe('FaceSignIn', () => {
     saveFace({ personId: 'demo_astronaut_2', descriptor: [1, 1] })
     engine.descriptorFrom.mockResolvedValue([9, 9])
     const user = userEvent.setup()
-    const props = renderPanel({ personIds: ['demo_astronaut_1', 'demo_astronaut_2'] })
+    const props = renderPanel()
 
     await user.click(screen.getByRole('button', { name: strings.face.continueLabel }))
     await user.click(screen.getByRole('button', { name: strings.face.signIn }))

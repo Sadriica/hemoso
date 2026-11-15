@@ -28,7 +28,9 @@ test('without ?face=1 nothing face-related is on the page or requested', async (
   await expect(
     page.getByRole('button', { name: strings.face.buttonLabel }),
   ).toHaveCount(0)
-  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await expect(
+    page.getByRole('region', { name: strings.face.heading }),
+  ).toHaveCount(0)
   await expect(page.locator('.face-panel')).toHaveCount(0)
 
   // The way in that always works, with or without a camera.

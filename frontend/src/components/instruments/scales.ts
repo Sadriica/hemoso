@@ -10,6 +10,9 @@ export const SCALES: Record<string, { min: number; max: number }> = {
   temp_core_c: { min: 30, max: 42 },
   sleep_h: { min: 0, max: 12 },
   mood_1_5: { min: 1, max: 5 },
+  // A reaction time and a count of lapses: drawing bounds only, not a range.
+  reaction_median_ms: { min: 0, max: 600 },
+  reaction_lapses: { min: 0, max: 5 },
   glucose_mgdl: { min: 40, max: 300 },
 }
 
