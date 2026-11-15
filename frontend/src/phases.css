@@ -1210,7 +1210,7 @@ input.reading__input::-webkit-inner-spin-button {
    nothing jumps when the overview arrives. */
 .board__orbit {
   /* The square of the planetarium stage (its --planet-stage-max). */
-  --orbit-stage: 560px;
+  --orbit-stage: 620px;
   --orbit-height: 320px;
 
   display: grid;

@@ -232,9 +232,9 @@
   min-height: 0;
 }
 
-/* The square stage leaves air under the last orbit: trim it to one step. */
+/* The stage leaves a little air under the last orbit: trim it. */
 .phase--status .status-panel .planetarium__stage {
-  margin-bottom: calc(var(--space-6) * -1);
+  margin-bottom: calc(var(--space-4) * -1);
 }
 
 /* The connection runs behind the bodies and their tags, never across them. */
