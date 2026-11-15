@@ -583,3 +583,50 @@
 .identify__face .face-panel__status:empty {
   min-height: 0;
 }
+
+/* Review of Sun 09:40, point 7. The two account tabs floated as capsules over
+   a separate rounded form. They are now the top of that form: one surface,
+   and the selected tab runs into the panel under it. */
+.identify__more {
+  gap: 0;
+}
+
+.identify__tabs {
+  position: relative;
+  z-index: 1;
+  gap: 0;
+}
+
+.identify__tab {
+  margin-bottom: -1px;
+  border: var(--border-subtle);
+  border-bottom-color: transparent;
+  border-radius: var(--radius-card) var(--radius-card) 0 0;
+  background: transparent;
+  color: var(--color-text-muted);
+}
+
+.identify__tab + .identify__tab {
+  margin-left: -1px;
+}
+
+.identify__tab:hover {
+  border-color: var(--color-border);
+  border-bottom-color: transparent;
+  color: var(--color-text);
+}
+
+/* The selected one: the surface of the panel, an accent rule on top, and no
+   line between it and the form. */
+.identify__tab[aria-selected='true'] {
+  border-width: 1px;
+  border-color: var(--color-border);
+  border-top: 2px solid var(--color-accent);
+  border-bottom-color: var(--color-surface);
+  background: var(--color-surface);
+  color: var(--color-accent);
+}
+
+.identify__more-body {
+  border-radius: 0 0 var(--radius-panel) var(--radius-panel);
+}

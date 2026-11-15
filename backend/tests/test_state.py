@@ -32,6 +32,9 @@ FIXTURES = (
 )
 BASELINE = json.loads((FIXTURES / "baseline.json").read_text(encoding="utf-8"))
 ATTENTION = json.loads((FIXTURES / "attention.json").read_text(encoding="utf-8"))
+# The window rule of phys-02 (Sun 15 Nov), the same seven cases the frontend
+# checks in frontend/src/domain/state.test.ts: one file defines the window.
+WINDOW_VECTORS = json.loads((FIXTURES / "window.json").read_text(encoding="utf-8"))
 
 # A source with a link: only these rows can raise needs_review (phys-02).
 CITED = "https://example.org/limit"
@@ -168,6 +171,31 @@ def test_a_value_on_the_threshold_triggers_the_row(side, threshold, value, match
     }
 
     assert (attention_for([row], value) is not None) is matches
+
+
+@pytest.mark.parametrize("case", WINDOW_VECTORS["cases"], ids=lambda case: case["name"])
+def test_window_vectors(case):
+    given, expected = case["input"], case["expected"]
+    history = [
+        Entry(**{**ENTRY, "value": row["value"], "mission_day": row["mission_day"],
+                 "time": row["time"]})
+        for row in given["history"]
+    ]
+    test = given["test"]
+
+    recent = window(history, "rest", (test["mission_day"], test["time"]))
+    daily = daily_values(recent)
+    median, spread = baseline(daily, given["min_spread"])
+
+    assert daily == pytest.approx(expected["daily_values"])
+    assert len(daily) == expected["n"]
+    if expected["median"] is None:
+        assert median is None and spread is None
+    else:
+        assert median == pytest.approx(expected["median"])
+        # The file rounds `spread` to 4 decimals.
+        assert spread == pytest.approx(expected["spread"], abs=5e-5)
+    assert state_for(test["value"], median, spread, None) == expected["state"]
 
 
 def temperature_row(source: str) -> dict:
