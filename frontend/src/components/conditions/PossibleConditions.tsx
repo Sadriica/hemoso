@@ -3,7 +3,7 @@ import {
   orderConditions,
   scoreConditions,
   type Condition,
-  type ConditionSignal,
+  type IndicatorSignal,
 } from '../../domain/conditions'
 import type {
   AttentionRule,
@@ -11,6 +11,7 @@ import type {
   Entry,
   Indicator,
 } from '../../domain/types'
+import type { SymptomDef, SymptomReport } from '../../domain/symptoms'
 import {
   createConditionsClient,
   type ConditionsClient,
@@ -39,6 +40,10 @@ export interface PossibleConditionsProps {
   rules: AttentionRule[]
   /** Every stored entry; only this person's count. */
   entries: Entry[]
+  /** config/data/symptoms.csv; with none the symptom layer is off. */
+  symptoms?: SymptomDef[]
+  /** This person's symptom reports, any day; the newest day counts. */
+  symptomReports?: SymptomReport[]
   /** Opens the card of an indicator, the same selection the overview uses. */
   onSelectIndicator?: (indicatorId: string) => void
   /** A test passes a fake; the screen builds the HTTP client. */
@@ -48,6 +53,7 @@ export interface PossibleConditionsProps {
 // The state icon that goes with each step, so the step is a shape and a word
 // as well as a colour.
 const ICON: Record<Condition['label'], StatusKind> = {
+  urgent: 'review',
   review: 'review',
   possible: 'outside',
   low: 'in_range',
@@ -60,6 +66,8 @@ export default function PossibleConditions({
   indicators,
   rules,
   entries,
+  symptoms,
+  symptomReports,
   onSelectIndicator,
   client,
 }: PossibleConditionsProps) {
@@ -80,8 +88,9 @@ export default function PossibleConditions({
         entries.filter((entry) => entry.personId === personId),
         indicators,
         rules,
+        { defs: symptoms ?? [], reports: symptomReports ?? [] },
       ),
-    [conditions, entries, personId, indicators, rules],
+    [conditions, entries, personId, indicators, rules, symptoms, symptomReports],
   )
 
   // Asked again when the readings change, so a new reading is scored by the
@@ -111,12 +120,15 @@ export default function PossibleConditions({
   const waiting = ordered.filter((condition) => condition.label === 'no_data')
   const nameOf = (indicatorId: string): string =>
     indicators.find((item) => item.id === indicatorId)?.name ?? indicatorId
+  const symptomName = (symptomId: string): string =>
+    (symptoms ?? []).find((item) => item.id === symptomId)?.name ?? symptomId
 
   const row = (condition: Condition) => (
     <ConditionRow
       key={condition.id}
       condition={condition}
       nameOf={nameOf}
+      symptomName={symptomName}
       onSelectIndicator={onSelectIndicator}
     />
   )
@@ -149,10 +161,21 @@ function sameReadings(remote: Condition[], local: Condition[]): boolean {
     if (theirs === undefined || theirs.signals.length !== mine.signals.length) {
       return false
     }
+    if (mine.label === 'urgent' !== (theirs.label === 'urgent')) return false
     return mine.signals.every((signal, index) => {
       const other = theirs.signals[index]
+      if (signal.kind === 'symptom') {
+        // A report still waiting in the outbox is not on the server yet.
+        return (
+          other.kind === 'symptom' &&
+          other.symptomId === signal.symptomId &&
+          (other.contribution === null) === (signal.contribution === null)
+        )
+      }
       return (
-        other.indicatorId === signal.indicatorId && other.value === signal.value
+        other.kind !== 'symptom' &&
+        other.indicatorId === signal.indicatorId &&
+        other.value === signal.value
       )
     })
   })
@@ -176,18 +199,26 @@ function scoreText(score: number): string {
 function ConditionRow({
   condition,
   nameOf,
+  symptomName,
   onSelectIndicator,
 }: {
   condition: Condition
   nameOf: (indicatorId: string) => string
+  symptomName: (symptomId: string) => string
   onSelectIndicator?: (indicatorId: string) => void
 }) {
   const copy = strings.conditions
   const label = copy.label[condition.label]
-  const text = condition.score === null ? null : scoreText(condition.score)
+  const urgent = condition.label === 'urgent'
+  // "Call your CMO now" comes before any score: an urgent row shows no bar.
+  const text =
+    condition.score === null || urgent ? null : scoreText(condition.score)
 
   return (
     <li className={`condition condition--${condition.label}`}>
+      {urgent && (
+        <p className="condition__urgent">{copy.sentence.urgent}</p>
+      )}
       <div className="condition__head">
         <h3 className="condition__name">{condition.name}</h3>
         <p className="condition__label">
@@ -214,20 +245,39 @@ function ConditionRow({
           <p className="condition__score">{copy.evidence(text)}</p>
         </div>
       )}
-      <p className="condition__sentence">{copy.sentence[condition.label]}</p>
+      {!urgent && (
+        <p className="condition__sentence">{copy.sentence[condition.label]}</p>
+      )}
       <ul
         className="condition__signals"
         aria-label={copy.signalsLabel(condition.name)}
       >
-        {condition.signals.map((signal) => (
-          <li key={`${signal.indicatorId}:${signal.side ?? ''}`}>
-            <SignalChip
-              signal={signal}
-              text={signalText(signal, nameOf(signal.indicatorId))}
-              onSelectIndicator={onSelectIndicator}
-            />
-          </li>
-        ))}
+        {condition.signals.map((signal) =>
+          signal.kind === 'symptom' ? (
+            <li key={`symptom:${signal.symptomId}`}>
+              <span
+                className={`condition__signal${(signal.contribution ?? 0) > 0 ? ' condition__signal--pointing' : ''}`}
+              >
+                <span className="condition__arrow" aria-hidden="true">
+                  {(signal.contribution ?? 0) > 0 ? '↑' : '·'}
+                </span>
+                <span>
+                  {signal.contribution === null
+                    ? copy.symptom.notReported(symptomName(signal.symptomId))
+                    : copy.symptom.reported(symptomName(signal.symptomId))}
+                </span>
+              </span>
+            </li>
+          ) : (
+            <li key={`${signal.indicatorId}:${signal.side ?? ''}`}>
+              <SignalChip
+                signal={signal}
+                text={signalText(signal, nameOf(signal.indicatorId))}
+                onSelectIndicator={onSelectIndicator}
+              />
+            </li>
+          ),
+        )}
       </ul>
       <p className="condition__source">
         {copy.source}{' '}
@@ -249,7 +299,7 @@ function ConditionRow({
 }
 
 // What the newest reading of one signal says about the condition, in words.
-function signalText(signal: ConditionSignal, name: string): string {
+function signalText(signal: IndicatorSignal, name: string): string {
   const copy = strings.conditions
   if (signal.value === null) return copy.signal.noReading(name)
   if (signal.side === null || signal.contribution === null) {
@@ -269,7 +319,7 @@ function SignalChip({
   text,
   onSelectIndicator,
 }: {
-  signal: ConditionSignal
+  signal: IndicatorSignal
   text: string
   onSelectIndicator?: (indicatorId: string) => void
 }) {

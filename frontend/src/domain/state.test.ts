@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import baseline from '../../../scripts/fixtures/format_rules/baseline.json'
 import vectors from '../../../scripts/fixtures/format_rules/attention.json'
+import windowVectors from '../../../scripts/fixtures/format_rules/window.json'
 import { attentionFor } from './attention'
-import { baselineState, localState } from './state'
+import { baselineState, baselineWindow, dailyValues, localState } from './state'
 import type { AttentionRule, Entry, Notify } from './types'
 
 // The shared vectors of scripts/fixtures/format_rules are what the backend is
@@ -77,7 +78,7 @@ function latestOf(rows: Entry[]): Entry {
 }
 
 describe('localState', () => {
-  it('has no data with fewer than three earlier readings', () => {
+  it('has no data with fewer than three earlier days', () => {
     const rows = [entry(1, 10), entry(2, 10), entry(10, 10)]
     const state = localState(latestOf(rows), rows, [], 1)
     expect(state.state).toBe('no_data')
@@ -158,11 +159,45 @@ describe('localState', () => {
     })
   })
 
-  it('windows the last fourteen readings', () => {
+  it('windows the last fourteen mission days', () => {
     const rows = [
       ...Array.from({ length: 20 }, (_, index) => entry(index + 1, 500)),
       entry(30, 10),
     ]
     expect(localState(latestOf(rows), rows, [], 1).n).toBe(14)
   })
+})
+
+// The shared window vectors of docs/findings/phys-02-baseline-state-rule.md,
+// "Window test vectors", the same file the backend and scripts are checked
+// against. Each case writes its history out, so the daily means, the window of
+// 14 days, the left-out tested reading and the min_spread floor are all
+// exercised here as they are on the server.
+describe('the baseline window against the window vectors', () => {
+  for (const testCase of windowVectors.cases) {
+    it(testCase.name, () => {
+      const { min_spread: minSpread, history, test } = testCase.input
+      const rows = history.map((row) =>
+        entry(row.mission_day, row.value, { time: row.time }),
+      )
+      const latest = entry(test.mission_day, test.value, { time: test.time })
+      const expected = testCase.expected
+
+      expect(dailyValues(baselineWindow(rows, latest))).toEqual(
+        expected.daily_values,
+      )
+      const state = localState(latest, [...rows, latest], [], minSpread)
+      expect(state.n).toBe(expected.n)
+      expect(state.median).toBe(expected.median)
+      if (expected.spread === null) {
+        expect(state.spread).toBeNull()
+      } else {
+        // The vectors round the spread to 4 decimals.
+        expect(state.spread === null ? null : Number(state.spread.toFixed(4))).toBe(
+          expected.spread,
+        )
+      }
+      expect(state.state).toBe(expected.state)
+    })
+  }
 })

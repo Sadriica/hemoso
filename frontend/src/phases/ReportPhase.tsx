@@ -10,6 +10,8 @@ import type {
   Entry as EntryRecord,
 } from '../domain/types'
 import Disclosure from '../components/Disclosure'
+import SymptomChecklist from '../components/symptoms/SymptomChecklist'
+import type { SymptomDef } from '../domain/symptoms'
 import Entry from '../screens/Entry'
 import ReactionCheck from '../reaction/ReactionCheck'
 import { REACTION_LAPSES_ID, REACTION_MEDIAN_ID } from '../reaction/ids'
@@ -31,6 +33,8 @@ interface ReportPhaseProps {
   /** This person's entries, live from the store. */
   entries: EntryRecord[]
   serverConfigured: boolean
+  /** config/data/symptoms.csv; with none the symptom list is not shown. */
+  symptoms?: SymptomDef[]
   onBack: () => void
   onDone: () => void
   /** The top bar switch is on: the scene stands still. */
@@ -48,6 +52,7 @@ export default function ReportPhase({
   rules,
   entries,
   serverConfigured,
+  symptoms = [],
   onBack,
   onDone,
   still = false,
@@ -139,6 +144,8 @@ export default function ReportPhase({
         </Disclosure>
       </div>
       )}
+
+      <SymptomChecklist personId={personId} defs={symptoms} entries={entries} />
 
       <div className="phase__actions" data-enter="rest">
         <button type="button" className="text-link" onClick={onBack}>

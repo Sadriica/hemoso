@@ -194,11 +194,15 @@ export default function Home({
 
   // The flat body: what the centre of the orbits shows before the 3D figure
   // arrives and whenever it cannot be drawn.
+  // Drawn the same bare way as the 3D figure: the outline alone, with no tile
+  // behind it, so the centre of the orbits looks the same in both themes.
   const flatBody = (
-    <BodySilhouette
-      system={flatSystem(selectedSystem)}
-      label={strings.board.planetarium.center}
-    />
+    <div className="body3d body3d--bare body3d--flat">
+      <BodySilhouette
+        system={flatSystem(selectedSystem)}
+        label={strings.board.planetarium.center}
+      />
+    </div>
   )
 
   return (

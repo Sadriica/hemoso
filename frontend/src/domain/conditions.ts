@@ -1,6 +1,13 @@
 import { attentionFor } from './attention'
 import { newestFirst } from './entries'
 import { localState } from './state'
+import {
+  newestDayReports,
+  SYMPTOM_ONLY_CAP,
+  symptomWeight,
+  type SymptomDef,
+  type SymptomReport,
+} from './symptoms'
 import type {
   AttentionRule,
   ConditionRule,
@@ -18,9 +25,15 @@ import type {
 // The score is evidence from what was recorded, never a probability and never
 // a statement about the person: the CMO or the flight surgeon confirms.
 
-export type ConditionLabel = 'no_data' | 'low' | 'possible' | 'review'
+// `urgent` is not a band of the score: a reported red-flag symptom the row lists
+// makes it, whatever the score is, and the line then reads "Call your CMO now".
+export type ConditionLabel = 'no_data' | 'low' | 'possible' | 'review' | 'urgent'
 
-export interface ConditionSignal {
+export type ConditionSignal = IndicatorSignal | SymptomSignal
+
+export interface IndicatorSignal {
+  /** Left out of an indicator signal, as in the API. */
+  kind?: 'indicator'
   indicatorId: string
   /** The side of the person's range that counts for this condition. */
   side: 'above' | 'below' | null
@@ -28,6 +41,16 @@ export interface ConditionSignal {
   contribution: number | null
   /** The newest reading, or null when there is none. */
   value: number | null
+}
+
+/** A symptom the row lists and symptoms.csv defines. */
+export interface SymptomSignal {
+  kind: 'symptom'
+  symptomId: string
+  /** 0.5, or 0.25 for a shared symptom. */
+  weight: number
+  /** The weight when the person reported it that day; null when not. */
+  contribution: number | null
 }
 
 export interface Condition {
@@ -39,6 +62,8 @@ export interface Condition {
   signals: ConditionSignal[]
   /** The row's link, or the word Assumption. */
   source: string
+  /** true only when a red-flag symptom the row lists was reported. */
+  redFlag?: boolean
 }
 
 /** A newest reading that crossed a cited attention row on the signal's side. */
@@ -59,11 +84,47 @@ export function labelFor(score: number | null): ConditionLabel {
   return 'review'
 }
 
+/** One term of the weighted mean. */
+export interface ScoreTerm {
+  weight: number
+  /** null while the term is not usable. */
+  evidence: number | null
+  symptom: boolean
+}
+
+/**
+ * The weighted mean of the usable terms, or null while there is no score.
+ * Fewer than two usable terms is null, except with `singleBoundary` (a row that
+ * lists symptoms) when the one usable term is an indicator that crossed a
+ * cited limit: a crossed limit counts on its own. A mean that comes only from
+ * symptoms is capped at SYMPTOM_ONLY_CAP. Same rule as backend/app/conditions.py.
+ */
+export function weightedScore(
+  terms: ScoreTerm[],
+  singleBoundary = false,
+): number | null {
+  const usable = terms.filter((term) => term.evidence !== null)
+  if (usable.length === 0) return null
+  const [only] = usable
+  const alone =
+    usable.length === 1 &&
+    singleBoundary &&
+    !only.symptom &&
+    only.evidence === ATTENTION_POINT
+  if (usable.length < MIN_USABLE_SIGNALS && !alone) return null
+  const total = usable.reduce((sum, term) => sum + term.weight, 0)
+  const score =
+    usable.reduce((sum, term) => sum + term.weight * (term.evidence ?? 0), 0) / total
+  return usable.every((term) => term.symptom)
+    ? Math.min(score, SYMPTOM_ONLY_CAP)
+    : score
+}
+
 /** The mean of the usable points; null with fewer than two of them. */
 export function scoreFor(points: (number | null)[]): number | null {
-  const usable = points.filter((point): point is number => point !== null)
-  if (usable.length < MIN_USABLE_SIGNALS) return null
-  return usable.reduce((sum, point) => sum + point, 0) / usable.length
+  return weightedScore(
+    points.map((point) => ({ weight: 1, evidence: point, symptom: false })),
+  )
 }
 
 // The point one signal adds, or null while it is not usable. `entries` are the
@@ -100,12 +161,22 @@ export function signalPoint(
   return BASELINE_POINT
 }
 
-/** One row of conditions.csv, scored from one person's readings. */
+/** The symptom definitions and the person's reports; both empty turns the layer off. */
+export interface SymptomLayer {
+  defs: SymptomDef[]
+  /** Reports of this person, any day; only the newest day counts. */
+  reports: SymptomReport[]
+}
+
+const NO_SYMPTOMS: SymptomLayer = { defs: [], reports: [] }
+
+/** One row of conditions.csv, scored from one person's readings and reports. */
 export function scoreCondition(
   rule: ConditionRule,
   personEntries: Entry[],
   indicators: Indicator[],
   rules: AttentionRule[],
+  layer: SymptomLayer = NO_SYMPTOMS,
 ): Condition {
   const signals: ConditionSignal[] = rule.signals.map((signal) => {
     const own = personEntries.filter(
@@ -124,15 +195,43 @@ export function scoreCondition(
       value: newestFirst(own)[0]?.value ?? null,
     }
   })
-  const score = scoreFor(signals.map((signal) => signal.contribution))
+  const terms: ScoreTerm[] = signals.map((signal) => ({
+    weight: 1,
+    evidence: signal.contribution,
+    symptom: false,
+  }))
+
+  // A symptom counts once, on the newest day that holds any report. One the
+  // person did not report is listed with no contribution and stays out of both
+  // sums; an id symptoms.csv does not define is left out altogether.
+  const today = newestDayReports(layer.reports)
+  const reported = new Set(today.map((report) => report.symptomId))
+  let redFlag = false
+  for (const symptomId of rule.symptoms) {
+    const def = layer.defs.find((item) => item.id === symptomId)
+    if (def === undefined) continue
+    const weight = symptomWeight(def)
+    const present = reported.has(symptomId)
+    if (present && def.redFlag) redFlag = true
+    signals.push({
+      kind: 'symptom',
+      symptomId,
+      weight,
+      contribution: present ? weight : null,
+    })
+    terms.push({ weight, evidence: present ? 1 : null, symptom: true })
+  }
+
+  const score = weightedScore(terms, rule.symptoms.length > 0)
   return {
     id: rule.id,
     name: rule.name,
     score: score === null ? null : Number(score.toFixed(SCORE_DECIMALS)),
-    // The label is read from the unrounded mean.
-    label: labelFor(score),
+    // The label is read from the unrounded mean; a red flag outranks it.
+    label: redFlag ? 'urgent' : labelFor(score),
     signals,
     source: rule.source,
+    ...(redFlag ? { redFlag: true } : {}),
   }
 }
 
@@ -142,9 +241,10 @@ export function scoreConditions(
   personEntries: Entry[],
   indicators: Indicator[],
   rules: AttentionRule[],
+  layer: SymptomLayer = NO_SYMPTOMS,
 ): Condition[] {
   return conditionRules.map((rule) =>
-    scoreCondition(rule, personEntries, indicators, rules),
+    scoreCondition(rule, personEntries, indicators, rules, layer),
   )
 }
 
@@ -152,10 +252,11 @@ export function scoreConditions(
 // possible, then what the readings do not point to; rows with not enough data
 // come last. Inside one step the higher score comes first, then file order.
 const LABEL_ORDER: Record<ConditionLabel, number> = {
-  review: 0,
-  possible: 1,
-  low: 2,
-  no_data: 3,
+  urgent: 0,
+  review: 1,
+  possible: 2,
+  low: 3,
+  no_data: 4,
 }
 
 export function orderConditions(conditions: Condition[]): Condition[] {
