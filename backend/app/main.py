@@ -30,8 +30,11 @@ from .models import (
     Credentials,
     Entry,
     IndicatorState,
+    MissionStartIn,
+    NewAccount,
     PainReport,
     PainReportIn,
+    ProfileOut,
     SessionOut,
     is_valid_id,
     is_valid_time,
@@ -69,7 +72,7 @@ app.add_middleware(RateLimitMiddleware, limiter=limiter)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins(),
-    allow_methods=["GET", "POST"],
+    allow_methods=["GET", "POST", "PUT"],
     allow_headers=["Content-Type", "Authorization"],
 )
 
@@ -184,7 +187,7 @@ def health() -> dict[str, str]:
         }
     },
 )
-def create_account(body: Credentials, store: Store) -> AccountOut:
+def create_account(body: NewAccount, store: Store) -> AccountOut:
     """Create one account (REQ-37): the PIN is kept only as a salted hash."""
     if accounts.name_taken(body.person_id, store):
         raise HTTPException(status_code=409, detail=accounts.TAKEN_NAME)
@@ -193,6 +196,7 @@ def create_account(body: Credentials, store: Store) -> AccountOut:
         person_id=body.person_id,
         salt=salt,
         pin_hash=accounts.hash_pin(body.pin, salt),
+        mission_start=body.mission_start,
     )
     try:
         created = store.create_account(account)
@@ -235,6 +239,59 @@ def create_session(body: Credentials, store: Store) -> SessionOut:
     accounts.wrong_pins.clear(body.person_id)
     token, expires_at = accounts.issue_token(body.person_id)
     return SessionOut(token=token, person_id=body.person_id, expires_at=expires_at)
+
+
+@app.get(
+    "/people/{person_id}/profile",
+    responses={
+        404: {"description": "This person has no account."},
+    },
+)
+def get_profile(person_id: str, store: Store, request: Request) -> ProfileOut:
+    """The account's own settings (REQ-37): today only the mission start date.
+
+    The mission start is what the frontend counts Flight Day 1 from, so it
+    follows the person to another device instead of staying on one. A person
+    without an account has no settings to read: 404, not an empty profile.
+    """
+    check_id("person_id", person_id)
+    accounts.authorize(request, person_id, store)
+    try:
+        account = store.account(person_id)
+    except httpx.HTTPError as error:
+        raise HTTPException(
+            status_code=502, detail=accounts.STORAGE_ERROR
+        ) from error
+    if account is None:
+        raise HTTPException(status_code=404, detail=accounts.NO_ACCOUNT)
+    return ProfileOut(person_id=person_id, mission_start=account.mission_start)
+
+
+@app.put(
+    "/people/{person_id}/mission_start",
+    responses={
+        404: {"description": "This person has no account."},
+    },
+)
+def put_mission_start(
+    person_id: str, body: MissionStartIn, store: Store, request: Request
+) -> ProfileOut:
+    """Set or change the mission start of an account (REQ-37).
+
+    The date is per person, so a change here moves the Flight Day of that
+    person on every device; nothing is stored for a person without an account.
+    """
+    check_id("person_id", person_id)
+    accounts.authorize(request, person_id, store)
+    try:
+        stored = store.set_mission_start(person_id, body.mission_start)
+    except httpx.HTTPError as error:
+        raise HTTPException(
+            status_code=502, detail=accounts.STORAGE_ERROR
+        ) from error
+    if not stored:
+        raise HTTPException(status_code=404, detail=accounts.NO_ACCOUNT)
+    return ProfileOut(person_id=person_id, mission_start=body.mission_start)
 
 
 @app.post(
@@ -424,7 +481,7 @@ def get_conditions(
         200: {"description": "The exact same pain report was already stored."},
         409: {
             "description": "A pain report for this person, region, day and "
-            "time exists with a different intensity or note."
+            "time exists with a different kind, intensity or note."
         },
     },
 )
@@ -439,9 +496,10 @@ def create_pain(
 
     The person is in the path, so the same report sent twice from the
     frontend's outbox answers 200 with the stored report and adds nothing; a
-    different intensity or note for the same person, region, day and time is a
-    409. The intensity is kept as the astronaut set it: this route does not
-    read it as a sign of anything.
+    different kind, intensity or note for the same person, region, day and
+    time is a 409. `kind` is what the astronaut marked there and defaults to
+    `pain` when the body does not carry it. The intensity is kept as the
+    astronaut set it: this route does not read it as a sign of anything.
     """
     check_id("person_id", person_id)
     accounts.authorize(request, person_id, store)
@@ -453,7 +511,7 @@ def create_pain(
             status_code=409,
             detail=(
                 "a pain report for this person, region, day and time already"
-                " exists with a different intensity or note"
+                " exists with a different kind, intensity or note"
             ),
         ) from error
     except httpx.HTTPError as error:
