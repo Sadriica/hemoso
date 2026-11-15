@@ -1,11 +1,11 @@
-import type { ConditionRule, ConditionSignalRule } from "../domain/types";
-import { parseCsvFile } from "./csv";
+import type { ConditionRule, ConditionSignalRule } from '../domain/types'
+import { parseCsvFile } from './csv'
 
 // The required columns of FORMATS.md section 3. The header may also hold the
 // optional `symptoms` column (T-78), which a row may leave out. An id written
 // twice in one row is one symptom.
-const REQUIRED_COLUMNS = ["condition_id", "name", "based_on", "source"];
-const OPTIONAL_COLUMN = "symptoms";
+const REQUIRED_COLUMNS = ['condition_id', 'name', 'based_on', 'source']
+const OPTIONAL_COLUMN = 'symptoms'
 
 // Validates and reads one conditions.csv (REQ-06). Problems are appended in
 // place; a row that cannot be shown safely (no id, no name, no source) is left
@@ -17,63 +17,65 @@ export function parseConditions(
   validIds: Set<string>,
   problems: string[],
 ): ConditionRule[] {
-  const conditions: ConditionRule[] = [];
-  const seen = new Set<string>();
+  const conditions: ConditionRule[] = []
+  const seen = new Set<string>()
   const rows = parseCsvFile(
     fileName,
     text,
     problems,
     REQUIRED_COLUMNS,
     OPTIONAL_COLUMN,
-  );
+  )
   for (const row of rows) {
-    const id = row.condition_id?.trim() ?? "";
-    const name = row.name?.trim() ?? "";
-    if (id === "" || name === "") {
-      problems.push(`A condition in ${fileName} has no id or no name.`);
-      continue;
+    const id = row.condition_id?.trim() ?? ''
+    const name = row.name?.trim() ?? ''
+    if (id === '' || name === '') {
+      problems.push(`A condition in ${fileName} has no id or no name.`)
+      continue
     }
     if (seen.has(id)) {
-      problems.push(`Duplicate condition id '${id}'.`);
-      continue;
+      problems.push(`Duplicate condition id '${id}'.`)
+      continue
     }
-    seen.add(id);
-    const source = row.source?.trim() ?? "";
-    if (source !== "Assumption" && !/^https?:\/\//.test(source)) {
-      problems.push(`Condition '${id}' has no source or Assumption.`);
-      continue;
+    seen.add(id)
+    const source = row.source?.trim() ?? ''
+    if (source !== 'Assumption' && !/^https?:\/\//.test(source)) {
+      problems.push(`Condition '${id}' has no source or Assumption.`)
+      continue
     }
-    const signals = parseSignals(row.based_on ?? "");
+    const signals = parseSignals(row.based_on ?? '')
     for (const signal of signals) {
       if (!validIds.has(signal.indicatorId)) {
         problems.push(
           `Condition '${id}' rests on unknown indicator '${signal.indicatorId}'.`,
-        );
+        )
       }
       if (signal.side === null) {
         problems.push(
           `Condition '${id}' has no side for '${signal.indicatorId}'.`,
-        );
+        )
       }
     }
     const symptoms = [
-      ...new Set((row.symptoms ?? "").split(/\s+/).filter((token) => token !== "")),
-    ];
-    conditions.push({ id, name, signals, symptoms, source });
+      ...new Set(
+        (row.symptoms ?? '').split(/\s+/).filter((token) => token !== ''),
+      ),
+    ]
+    conditions.push({ id, name, signals, symptoms, source })
   }
-  return conditions;
+  return conditions
 }
 
 // `indicator_id:above` or `indicator_id:below`, separated by spaces.
 function parseSignals(cell: string): ConditionSignalRule[] {
   return cell
     .split(/\s+/)
-    .filter((token) => token !== "")
+    .filter((token) => token !== '')
     .map((token) => {
-      const [indicatorId, side] = token.split(":");
+      const [indicatorId, side] = token.split(':')
       return {
         indicatorId,
-        side: side === "above" || side === "below" ? side : null,
-      };
-    });
+        side: side === 'above' || side === 'below' ? side : null,
+      }
+    })
 }
