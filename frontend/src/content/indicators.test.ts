@@ -18,6 +18,44 @@ describe('parseIndicators', () => {
     expect(problems).toEqual([])
   })
 
+  it('reads min_spread when the column is there', () => {
+    const problems: string[] = []
+    const indicators = parseIndicators(
+      'config/data/indicators.csv',
+      'id,name,unit,direction,measured_on_board,hazards,min_spread,tier,system,source\n' +
+        'example_indicator,Example indicator,example_unit,higher,example measurement method,isolation_and_confinement,4,A,cardiovascular,Assumption\n',
+      problems,
+    )
+    expect(indicators[0].minSpread).toBe(4)
+    expect(problems).toEqual([])
+  })
+
+  it('reads a file without the min_spread column as no floor', () => {
+    const problems: string[] = []
+    const indicators = parseIndicators(
+      'config/data/indicators.csv',
+      header +
+        'example_indicator,Example indicator,example_unit,higher,example measurement method,isolation_and_confinement,Assumption\n',
+      problems,
+    )
+    expect(indicators[0].minSpread).toBe(0)
+    expect(problems).toEqual([])
+  })
+
+  it('reports a min_spread that is not a number greater than 0', () => {
+    const problems: string[] = []
+    const indicators = parseIndicators(
+      'config/data/indicators.csv',
+      'id,name,unit,direction,measured_on_board,hazards,min_spread,source\n' +
+        'example_indicator,Example indicator,example_unit,higher,example measurement method,isolation_and_confinement,0,Assumption\n',
+      problems,
+    )
+    expect(indicators[0].minSpread).toBe(0)
+    expect(problems).toEqual([
+      "Indicator 'example_indicator' has an invalid min_spread '0'.",
+    ])
+  })
+
   it('reports an unknown hazard and drops it from the indicator', () => {
     const problems: string[] = []
     const indicators = parseIndicators(

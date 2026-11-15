@@ -38,7 +38,7 @@ VALID = {
     ),
     "config/rules/conditions.csv": (
         "condition_id,name,based_on,source\n"
-        "example_condition,Example condition,example_indicator,Assumption\n"
+        "example_condition,Example condition,example_indicator:above,Assumption\n"
     ),
     "config/content/body_regions.csv": (
         "id,name,source\n"
@@ -49,7 +49,7 @@ VALID = {
         "## Why it matters\nExample reason. Assumption.\n\n"
         "## How spaceflight affects it\nExample hazard effect. Assumption.\n\n"
         "## Measurement steps\n1. Example step one.\n2. Example step two.\n\n"
-        "## Status and next steps\n### example_level\n"
+        "## Status and next steps\n### in_range\nIn your usual range. Assumption.\n### outside_range\nOutside your usual range. Assumption.\n### example_level\n"
         "Example status text and example next step. Assumption.\n\n"
         "## How to prevent problems\nExample guidance. Assumption.\n\n"
         "## Sources\n- Example title: https://example.org\n"
@@ -109,7 +109,7 @@ class ContentCheckTest(unittest.TestCase):
         files = dict(VALID)
         files["config/rules/conditions.csv"] = (
             "condition_id,name,based_on,source\n"
-            "example_condition,Example condition,example_indicator,\n"
+            "example_condition,Example condition,example_indicator:above,\n"
         )
         self.assert_error(files, "empty required cell")
 
@@ -133,11 +133,36 @@ class ContentCheckTest(unittest.TestCase):
         )
         self.assert_error(files, "unknown indicator_id 'missing_indicator'")
 
+    def test_based_on_side_required_under_strict(self):
+        files = dict(VALID)
+        files["config/rules/conditions.csv"] = (
+            "condition_id,name,based_on,source\n"
+            "example_condition,Example condition,example_indicator,Assumption\n"
+        )
+        self.assertFalse(any("has no side" in line for line in self.errors(files)))
+        self.assert_error(files, "has no side", strict=True)
+
+    def test_based_on_bad_side(self):
+        files = dict(VALID)
+        files["config/rules/conditions.csv"] = (
+            "condition_id,name,based_on,source\n"
+            "example_condition,Example condition,example_indicator:up,Assumption\n"
+        )
+        self.assert_error(files, "side must be above or below")
+
+    def test_based_on_same_indicator_twice(self):
+        files = dict(VALID)
+        files["config/rules/conditions.csv"] = (
+            "condition_id,name,based_on,source\n"
+            "example_condition,Example condition,example_indicator:above example_indicator:below,Assumption\n"
+        )
+        self.assert_error(files, "names 'example_indicator' twice")
+
     def test_unknown_based_on_id(self):
         files = dict(VALID)
         files["config/rules/conditions.csv"] = (
             "condition_id,name,based_on,source\n"
-            "example_condition,Example condition,missing_indicator,Assumption\n"
+            "example_condition,Example condition,missing_indicator:above,Assumption\n"
         )
         self.assert_error(files, "based_on id 'missing_indicator'")
 
@@ -337,7 +362,28 @@ class ContentCheckTest(unittest.TestCase):
         files["config/content/example_indicator.md"] = VALID[
             "config/content/example_indicator.md"
         ].replace("### example_level\n", "### wrong_level\n")
-        self.assert_error(files, "not an attention_level for indicator 'example_indicator'")
+        self.assert_error(files, "nor an attention_level for indicator 'example_indicator'")
+
+    def test_missing_baseline_state_heading(self):
+        files = dict(VALID)
+        files["config/content/example_indicator.md"] = VALID[
+            "config/content/example_indicator.md"
+        ].replace("### in_range\nIn your usual range. Assumption.\n", "")
+        self.assert_error(files, "no '### in_range' heading for the baseline state")
+
+    def test_duplicate_status_heading(self):
+        files = dict(VALID)
+        files["config/content/example_indicator.md"] = VALID[
+            "config/content/example_indicator.md"
+        ].replace("### example_level\n", "### example_level\nText. Assumption.\n### example_level\n")
+        self.assert_error(files, "duplicate heading '### example_level'")
+
+    def test_no_data_heading_is_allowed(self):
+        files = dict(VALID)
+        files["config/content/example_indicator.md"] = VALID[
+            "config/content/example_indicator.md"
+        ].replace("### example_level\n", "### no_data\nNo readings yet. Assumption.\n### example_level\n")
+        self.assertEqual(self.errors(files), [])
 
     def test_missing_attention_level_heading(self):
         files = dict(VALID)
@@ -355,7 +401,7 @@ class ContentCheckTest(unittest.TestCase):
             "## Why it matters\nNo source here.\n\n"
             "## How spaceflight affects it\nExample. Assumption.\n\n"
             "## Measurement steps\n1. Step.\n\n"
-            "## Status and next steps\n### example_level\nText. Assumption.\n\n"
+            "## Status and next steps\n### in_range\nIn your usual range. Assumption.\n### outside_range\nOutside your usual range. Assumption.\n### example_level\nText. Assumption.\n\n"
             "## How to prevent problems\nText. Assumption.\n\n"
             "## Sources\n- Example title\n"
         )

@@ -1,6 +1,20 @@
 {
   "components": {
     "schemas": {
+      "AccountOut": {
+        "description": "The body of `POST /accounts`: the person, nothing else.",
+        "properties": {
+          "person_id": {
+            "title": "Person Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "person_id"
+        ],
+        "title": "AccountOut",
+        "type": "object"
+      },
       "AttentionRow": {
         "description": "The attention.csv row a value crosses (REQ-05).\n\n`attention_level` is the state name Bio 2 writes, which is also the\nsub-heading in `config/content/<indicator_id>.md`; `notify` is who acts;\n`source` is the link or `Assumption` of the row.",
         "properties": {
@@ -28,6 +42,164 @@
           "source"
         ],
         "title": "AttentionRow",
+        "type": "object"
+      },
+      "BloodPressureState": {
+        "description": "One blood pressure reading: the worse of its systolic and diastolic state.\n\n`systolic` and `diastolic` are the same body the single-indicator state\nroute returns, one against `bp_sys_mmhg`'s history and one against\n`bp_dia_mmhg`'s; `state` is the worse of the two states\n(`docs/findings/bio2-01-pressure-state-rule.md`).",
+        "properties": {
+          "diastolic": {
+            "$ref": "#/components/schemas/IndicatorState"
+          },
+          "state": {
+            "enum": [
+              "no_data",
+              "in_range",
+              "outside_range",
+              "needs_review"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "systolic": {
+            "$ref": "#/components/schemas/IndicatorState"
+          }
+        },
+        "required": [
+          "state",
+          "systolic",
+          "diastolic"
+        ],
+        "title": "BloodPressureState",
+        "type": "object"
+      },
+      "ConditionScore": {
+        "description": "The evidence score of one possible condition (bio2-02, REQ-06).\n\n`score` is the mean of the signals' points, from 0 to 1, or null while\nfewer than two signals are usable; `label` is `no_data` with no score.\nThe score is evidence, not a probability: the CMO or the flight surgeon\nconfirms, and the route never says the person has the condition.",
+        "properties": {
+          "condition_id": {
+            "title": "Condition Id",
+            "type": "string"
+          },
+          "label": {
+            "enum": [
+              "no_data",
+              "low",
+              "possible",
+              "review"
+            ],
+            "title": "Label",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "signals": {
+            "items": {
+              "$ref": "#/components/schemas/ConditionSignal"
+            },
+            "title": "Signals",
+            "type": "array"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "condition_id",
+          "name",
+          "score",
+          "label",
+          "signals",
+          "source"
+        ],
+        "title": "ConditionScore",
+        "type": "object"
+      },
+      "ConditionSignal": {
+        "description": "One signal a condition rests on (bio2-02).\n\n`side` is the side of the person's range that counts for the condition, or\nnull when `based_on` left it out; `contribution` is the point the signal\nadded, or null while it is not usable (no reading, no side or no baseline);\n`value` is the newest reading, or null when there is none.",
+        "properties": {
+          "contribution": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contribution"
+          },
+          "indicator_id": {
+            "title": "Indicator Id",
+            "type": "string"
+          },
+          "side": {
+            "anyOf": [
+              {
+                "enum": [
+                  "above",
+                  "below"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Side"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "required": [
+          "indicator_id",
+          "side",
+          "contribution",
+          "value"
+        ],
+        "title": "ConditionSignal",
+        "type": "object"
+      },
+      "Credentials": {
+        "description": "The body of `POST /accounts` and of `POST /sessions`.\n\n`person_id` follows the same lowercase `snake_case` rule as every id in the\nAPI; `pin` is 4 to 8 digits.",
+        "properties": {
+          "person_id": {
+            "maxLength": 64,
+            "title": "Person Id",
+            "type": "string"
+          },
+          "pin": {
+            "maxLength": 8,
+            "title": "Pin",
+            "type": "string"
+          }
+        },
+        "required": [
+          "person_id",
+          "pin"
+        ],
+        "title": "Credentials",
         "type": "object"
       },
       "Entry": {
@@ -158,6 +330,30 @@
         "title": "IndicatorState",
         "type": "object"
       },
+      "SessionOut": {
+        "description": "The body of `POST /sessions`: the token and when it stops working.\n\n`expires_at` is ISO 8601 in UTC; the token is sent as\n`Authorization: Bearer <token>`.",
+        "properties": {
+          "expires_at": {
+            "title": "Expires At",
+            "type": "string"
+          },
+          "person_id": {
+            "title": "Person Id",
+            "type": "string"
+          },
+          "token": {
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token",
+          "person_id",
+          "expires_at"
+        ],
+        "title": "SessionOut",
+        "type": "object"
+      },
       "ValidationError": {
         "properties": {
           "ctx": {
@@ -206,6 +402,48 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/accounts": {
+      "post": {
+        "description": "Create one account (REQ-37): the PIN is kept only as a salted hash.",
+        "operationId": "create_account_accounts_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Credentials"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "409": {
+            "description": "This username is taken, or this person already has an account."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Account"
+      }
+    },
     "/entries": {
       "post": {
         "operationId": "create_entry_entries_post",
@@ -270,6 +508,153 @@
           }
         },
         "summary": "Health"
+      }
+    },
+    "/people/{person_id}/blood_pressure/state": {
+      "get": {
+        "description": "One blood pressure reading: the worse of its two states (bio2-01).",
+        "operationId": "get_blood_pressure_state_people__person_id__blood_pressure_state_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "person_id",
+            "required": true,
+            "schema": {
+              "title": "Person Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "systolic",
+            "required": true,
+            "schema": {
+              "title": "Systolic",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "diastolic",
+            "required": true,
+            "schema": {
+              "title": "Diastolic",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "context",
+            "required": false,
+            "schema": {
+              "default": "rest",
+              "title": "Context",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "mission_day",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Mission Day"
+            }
+          },
+          {
+            "in": "query",
+            "name": "time",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BloodPressureState"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "A blood pressure indicator is not in config/data/indicators.csv."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Blood Pressure State"
+      }
+    },
+    "/people/{person_id}/conditions": {
+      "get": {
+        "description": "The evidence score of every condition in config/rules/conditions.csv.\n\nOne point per signal: 1 when the newest reading crossed an attention row on\nthe signal's side, 0.5 when it is outside the person's baseline on that\nside (both from `app.state`), 0 otherwise; the score is the mean of the\nusable signals (bio2-02, FORMATS.md section 3 point 3).",
+        "operationId": "get_conditions_people__person_id__conditions_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "person_id",
+            "required": true,
+            "schema": {
+              "title": "Person Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ConditionScore"
+                  },
+                  "title": "Response Get Conditions People  Person Id  Conditions Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Conditions"
       }
     },
     "/people/{person_id}/indicators/{indicator_id}/history": {
@@ -365,6 +750,38 @@
               "title": "Context",
               "type": "string"
             }
+          },
+          {
+            "in": "query",
+            "name": "mission_day",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Mission Day"
+            }
+          },
+          {
+            "in": "query",
+            "name": "time",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Time"
+            }
           }
         ],
         "responses": {
@@ -393,6 +810,51 @@
           }
         },
         "summary": "Get State"
+      }
+    },
+    "/sessions": {
+      "post": {
+        "description": "A token for one person, valid 30 days (REQ-37).",
+        "operationId": "create_session_sessions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Credentials"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Unknown person or wrong PIN; the same message."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "description": "Five wrong PINs for this person in ten minutes."
+          }
+        },
+        "summary": "Create Session"
       }
     }
   }

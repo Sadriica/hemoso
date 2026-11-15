@@ -6,6 +6,7 @@ import {
   type ReactNode,
 } from 'react'
 import { missionNow, type MissionClock } from '../domain/clock'
+import { MEASUREMENT_CONTEXTS, contextForTime } from '../domain/context'
 import type { Entry as EntryRecord, Indicator } from '../domain/types'
 import type { EntryStore } from '../data/entryStore'
 import Notice from '../components/Notice'
@@ -86,6 +87,9 @@ function EntryForm({
     String(defaults.missionDay),
   )
   const [timeText, setTimeText] = useState(defaults.time)
+  // The routine prompt (REQ-09): the reading is taken at the clock time the
+  // form opens with, so the context that fits that time is picked first.
+  const [context, setContext] = useState(() => contextForTime(defaults.time))
   const [errors, setErrors] = useState<DraftErrors>({})
   const [status, setStatus] = useState('')
 
@@ -156,6 +160,7 @@ function EntryForm({
       unit: indicator.unit,
       missionDay: draft.missionDay,
       time: draft.time,
+      context,
     })
     setStatus(serverConfigured ? strings.entry.saved : strings.entry.savedOnDevice)
     // The day and the time usually repeat; only the reading changes.
@@ -295,8 +300,30 @@ function EntryForm({
           )}
         </div>
 
+        {/* Records what the person was doing when they took the reading, so the
+            value is compared with readings of the same kind (FORMATS.md
+            section 3). Radios, so the arrow keys change it like the 1 to 5
+            scales. */}
+        <fieldset className="field field--context">
+          <legend className="field__label">{strings.entry.context}</legend>
+          <div className="field__choices">
+            {MEASUREMENT_CONTEXTS.map((choice) => (
+              <label key={choice} className="field__choice">
+                <input
+                  type="radio"
+                  name={`${baseId}-context`}
+                  value={choice}
+                  checked={context === choice}
+                  onChange={() => setContext(choice)}
+                />
+                {strings.entry.contextLabels[choice]}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+
         <div className="form__actions">
-          <button className="button button--primary" type="submit">
+          <button className="button button--secondary button--save" type="submit">
             {strings.entry.save}
           </button>
         </div>

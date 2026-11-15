@@ -1,10 +1,12 @@
-"""The config rows the backend reads: indicators.csv and attention.csv.
+"""The config rows the backend reads: indicators.csv, attention.csv and conditions.csv.
 
 `data/indicators.csv` answers "which indicators exist and what is each unit"
 (entry validation) and "what is each noise floor" (the baseline in
 `app.state`). `rules/attention.csv` answers "when does a value need attention
-and who acts" (REQ-05). Both files are read as FORMATS.md defines them; a
-missing file reads as no rows, as it does while the team fills `config/`.
+and who acts" (REQ-05). `rules/conditions.csv` answers "what may the astronaut
+have and which signals does it rest on" (REQ-06), scored by `app.conditions`.
+All three files are read as FORMATS.md defines them; a missing file reads as no
+rows, as it does while the team fills `config/`.
 """
 
 from __future__ import annotations
@@ -67,6 +69,36 @@ def load_attention_rows(indicator_id: str) -> list[dict]:
                 }
             )
     return rows
+
+
+def load_demo_people() -> set[str]:
+    """The `person_id` values of data/demo_data.csv; empty while the file is missing."""
+    path = config_dir() / "data" / "demo_data.csv"
+    if not path.exists():
+        return set()
+    with path.open(newline="", encoding="utf-8-sig") as handle:
+        return {
+            row["person_id"].strip()
+            for row in csv.DictReader(handle)
+            if (row.get("person_id") or "").strip()
+        }
+
+
+def load_condition_rows() -> list[dict[str, str]]:
+    """rules/conditions.csv in file order; [] while the file is missing.
+
+    `based_on` keeps its column text; `app.conditions` splits it into
+    `indicator_id:side` pairs.
+    """
+    path = config_dir() / "rules" / "conditions.csv"
+    if not path.exists():
+        return []
+    with path.open(newline="", encoding="utf-8-sig") as handle:
+        return [
+            {key: (value or "").strip() for key, value in row.items()}
+            for row in csv.DictReader(handle)
+            if row["condition_id"].strip()
+        ]
 
 
 def validate_against_indicators(entry: Entry) -> str | None:

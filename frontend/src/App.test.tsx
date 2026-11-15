@@ -1,107 +1,221 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { ThemeProvider } from '@mui/material/styles'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
+import { loadContent } from './content/load'
 import { STORAGE_KEY } from './data/storedState'
 import { strings } from './strings'
-import { theme } from './theme/theme'
 
-// The app is always rendered inside its theme (src/main.tsx does the same), so
-// the screens here are the screens a person sees.
-function renderApp() {
-  return render(
-    <ThemeProvider theme={theme}>
-      <App />
-    </ThemeProvider>,
-  )
-}
+const PERSON = 'demo_astronaut_1'
+const copy = strings.phases
 
 beforeEach(() => {
   localStorage.clear()
   // Every test starts on the plain page: the face panel only exists with
-  // ?face=1, and one test opens it.
+  // ?face=1, and some tests open it.
   window.history.replaceState({}, '', '/')
 })
 
 afterEach(() => {
   vi.restoreAllMocks()
+  // A test with a server leaves neither its fetch nor its base URL behind.
+  vi.unstubAllGlobals()
+  vi.stubEnv('VITE_API_BASE_URL', '')
 })
 
-describe('App', () => {
-  it('renders the tabs pattern with a selected Home tab and its panel', () => {
-    renderApp()
-    expect(screen.getByRole('tablist')).toBeInTheDocument()
-    const tab = screen.getByRole('tab', { name: /^Home/ })
-    expect(tab).toHaveAttribute('aria-selected', 'true')
-    expect(tab).toHaveAttribute('aria-controls', 'panel-home')
-    expect(screen.getByRole('tabpanel')).toHaveAttribute(
-      'aria-labelledby',
-      'tab-home',
+function heading() {
+  return screen.getByRole('heading', { level: 1 })
+}
+
+function currentStep() {
+  const rail = screen.getByRole('navigation', { name: copy.railLabel })
+  return within(rail)
+    .getAllByRole('listitem')
+    .find((item) => item.getAttribute('aria-current') === 'step')
+}
+
+// Phase 1 to phase 2: pick the demo person and press the way on.
+async function signInByName(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole('radio', { name: PERSON }))
+  await user.click(screen.getByRole('button', { name: copy.identify.next }))
+}
+
+describe('guided check', () => {
+  it('opens on phase 1, identify, with its headline and the rail on step 1', () => {
+    render(<App />)
+    expect(heading()).toHaveTextContent(copy.identify.headline.join(' '))
+    expect(screen.getByText(copy.identify.eyebrow)).toBeInTheDocument()
+    expect(currentStep()).toHaveTextContent(copy.identify.name)
+  })
+
+  it('offers no menu: the rail shows progress only, with no buttons or links', () => {
+    render(<App />)
+    const rail = screen.getByRole('navigation', { name: copy.railLabel })
+    expect(within(rail).queryAllByRole('button')).toHaveLength(0)
+    expect(within(rail).queryAllByRole('link')).toHaveLength(0)
+    expect(within(rail).getAllByRole('listitem')).toHaveLength(3)
+  })
+
+  it('lists the crew members from the demo person ids', () => {
+    render(<App />)
+    const picker = screen.getByRole('group', { name: copy.identify.crewLabel })
+    expect(within(picker).getByRole('radio', { name: PERSON })).toBeInTheDocument()
+  })
+
+  it('asks for a name before it moves on, and puts focus on the crew list', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await user.click(screen.getByRole('button', { name: copy.identify.next }))
+    expect(screen.getByRole('alert')).toHaveTextContent(copy.identify.missing)
+    expect(screen.getByRole('radio', { name: PERSON })).toHaveFocus()
+    expect(heading()).toHaveTextContent(copy.identify.headline.join(' '))
+  })
+
+  it('goes identify, report, status in order, moving focus to each heading', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    await signInByName(user)
+    expect(heading()).toHaveTextContent(copy.report.headline.join(' '))
+    expect(heading()).toHaveFocus()
+    expect(currentStep()).toHaveTextContent(copy.report.name)
+    expect(screen.getByText(strings.topbar.onDuty(PERSON))).toBeInTheDocument()
+    expect(screen.getByText(copy.report.logged(0))).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: copy.report.next }))
+    expect(heading()).toHaveTextContent(copy.status.headline.join(' '))
+    expect(heading()).toHaveFocus()
+    expect(currentStep()).toHaveTextContent(copy.status.name)
+    // The status of the indicators and the history are on the last phase.
+    expect(screen.getByText(strings.personHeading(PERSON))).toBeInTheDocument()
+    // The history waits behind a closed disclosure.
+    expect(screen.queryByText(/Your earlier median|Not enough earlier entries/)).toBeNull()
+    await user.click(screen.getByRole('button', { name: copy.status.historyToggle }))
+    expect(
+      await screen.findByText(/Your earlier median|Not enough earlier entries/),
+    ).toBeInTheDocument()
+  })
+
+  it('reads the stored history of every indicator for the chosen person', async () => {
+    vi.stubEnv('VITE_API_BASE_URL', 'https://api.example.test')
+    const indicators = loadContent().indicators
+    const first = indicators[0]
+    const urls: string[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((input: string) => {
+        urls.push(input)
+        // The server keeps one reading this device never saved, for the first
+        // indicator of the check; every other history is empty.
+        const body = input.endsWith(`/indicators/${first.id}/history`)
+          ? [
+              {
+                person_id: PERSON,
+                indicator_id: first.id,
+                value: 71,
+                unit: first.unit,
+                mission_day: 31,
+                time: '05:15',
+                context: 'rest',
+              },
+            ]
+          : []
+        return Promise.resolve({
+          status: 200,
+          json: () => Promise.resolve(body),
+        } as unknown as Response)
+      }),
     )
-  })
-
-  it('moves between the tabs with the arrow keys', async () => {
     const user = userEvent.setup()
-    renderApp()
-    const tab = screen.getByRole('tab', { name: /^Home/ })
-    tab.focus()
-    await user.keyboard('{ArrowRight}')
-    expect(
-      screen.getByRole('tab', { name: /^Entry/, selected: true }),
-    ).toBeInTheDocument()
-    await user.keyboard('{ArrowLeft}')
-    expect(
-      screen.getByRole('tab', { name: /^Home/, selected: true }),
-    ).toBeInTheDocument()
+    render(<App />)
+
+    await signInByName(user)
+
+    // One request per indicator of the content, all for the chosen person.
+    await waitFor(() =>
+      expect(urls.filter((url) => url.endsWith('/history'))).toHaveLength(
+        indicators.length,
+      ),
+    )
+    for (const indicator of indicators) {
+      expect(urls).toContain(
+        `https://api.example.test/people/${PERSON}/indicators/${indicator.id}/history`,
+      )
+    }
+
+    // The reading of the other device is in the history the screen shows.
+    await user.click(screen.getByRole('button', { name: copy.report.next }))
+    await user.click(
+      screen.getByRole('button', { name: copy.status.historyToggle }),
+    )
+    const table = await screen.findByRole('table')
+    expect(within(table).getByText('05:15')).toBeInTheDocument()
+    expect(within(table).getByText('31')).toBeInTheDocument()
   })
 
-  it('keeps History after Entry', () => {
-    renderApp()
-    // The name a person hears is the plain screen name, followed by the numbered
-    // label the eye reads, so the first part of the name is the screen.
-    expect(
-      screen
-        .getAllByRole('tab')
-        .map((tab) => tab.getAttribute('aria-label')?.split(',')[0]),
-    ).toEqual(['Home', 'Entry', 'History'])
-  })
-
-  it('opens History by keyboard and shows the table with a comparison', async () => {
+  it('goes back one phase at a time and starts a new check from phase 1', async () => {
     const user = userEvent.setup()
-    renderApp()
-    screen.getByRole('tab', { name: /^Home/ }).focus()
-    await user.keyboard('{ArrowRight}{ArrowRight}')
-    expect(
-      screen.getByRole('tab', { name: /^History/, selected: true }),
-    ).toBeInTheDocument()
-    // The number of readings comes from config/, so the test asks for the shape
-    // of the sentence, not for a value.
-    expect(
-      screen.getByText(/Your earlier median|Not enough earlier entries/),
-    ).toBeInTheDocument()
-    expect(
-      screen.getByRole('columnheader', { name: 'Status' }),
-    ).toBeInTheDocument()
+    render(<App />)
+    await signInByName(user)
+    await user.click(screen.getByRole('button', { name: copy.report.next }))
+
+    await user.click(screen.getByRole('button', { name: copy.status.back }))
+    expect(heading()).toHaveTextContent(copy.report.headline.join(' '))
+    await user.click(screen.getByRole('button', { name: copy.report.back }))
+    expect(heading()).toHaveTextContent(copy.identify.headline.join(' '))
+
+    await user.click(screen.getByRole('button', { name: copy.identify.next }))
+    await user.click(screen.getByRole('button', { name: copy.report.next }))
+    await user.click(screen.getByRole('button', { name: copy.status.restart }))
+    expect(heading()).toHaveTextContent(copy.identify.headline.join(' '))
+    // A new check asks again who is on duty.
+    expect(screen.getByRole('radio', { name: PERSON })).not.toBeChecked()
   })
 
-  // The waiting-for text depends on which config files exist, so Home tests
-  // cover it with fixed data. Here only the note that is always on screen.
-  it('shows the synthetic data notice', () => {
-    renderApp()
-    expect(screen.getByText('Demo with synthetic data only.')).toBeInTheDocument()
-  })
+  it('saves a reading in phase 2 and shows it in phase 3', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await signInByName(user)
 
-  it('shows a person picker built from the demo person ids', () => {
-    renderApp()
-    expect(screen.getByLabelText('Person')).toBeInTheDocument()
+    // The day after the latest one in the store, so the new entry is the latest
+    // one whatever the clock says.
+    const day = screen.getByLabelText('Mission day') as HTMLInputElement
+    const nextDay = String(Number(day.value) + 1)
+    await user.clear(day)
+    await user.type(day, nextDay)
+    await user.type(screen.getByLabelText('Value'), '1234567')
+    // The native time input keeps HH:MM in its value on any OS setting.
+    fireEvent.change(screen.getByLabelText('Time'), { target: { value: '15:44' } })
+    const save = screen.getByRole('button', { name: 'Save entry' })
+    save.focus()
+    await user.keyboard('{Enter}')
+    expect(screen.getByText('Saved on this device.')).toBeInTheDocument()
+    expect(screen.getByText(copy.report.logged(1))).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: copy.report.next }))
+    expect(screen.getAllByText('1234567').length).toBeGreaterThan(0)
     expect(
-      screen.getByRole('option', { name: 'demo_astronaut_1' }),
-    ).toBeInTheDocument()
+      screen.getAllByText(strings.timeLabel(Number(nextDay), '15:44')).length,
+    ).toBeGreaterThan(0)
+  })
+})
+
+describe('top bar', () => {
+  it('shows the synthetic data sentence on every phase', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    expect(screen.getByText(strings.syntheticNotice)).toBeInTheDocument()
+    await signInByName(user)
+    expect(screen.getByText(strings.syntheticNotice)).toBeInTheDocument()
   })
 
-  it('shows the sync status in the header with no server set up', () => {
-    renderApp()
+  it('labels the device clock as NOW in the metadata line', () => {
+    render(<App />)
+    expect(screen.getByText(/^DAY \d+ · NOW \d\d:\d\d$/)).toBeInTheDocument()
+  })
+
+  it('shows the sync status with no server set up', () => {
+    render(<App />)
     expect(screen.getByText('Nothing waiting to be sent')).toBeInTheDocument()
     expect(screen.getByText('Not sent yet')).toBeInTheDocument()
     expect(screen.getByText('Online')).toBeInTheDocument()
@@ -109,79 +223,42 @@ describe('App', () => {
     expect(screen.queryByRole('button', { name: 'Send now' })).toBeNull()
   })
 
+  it('switches motion off and says so with aria-pressed', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    const toggle = screen.getByRole('button', { name: strings.topbar.reduceMotion })
+    const before = toggle.getAttribute('aria-pressed')
+    await user.click(toggle)
+    expect(toggle.getAttribute('aria-pressed')).not.toBe(before)
+  })
+
   it('warns when the browser does not save the entries on this device', () => {
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new Error('storage is blocked')
     })
-    renderApp()
-    expect(
-      screen.getByText('Entries are not saved on this device.'),
-    ).toBeInTheDocument()
+    render(<App />)
+    expect(screen.getByText(strings.sync.notSaved)).toBeInTheDocument()
   })
 
   it('warns when stored entries could not be read and were replaced', () => {
     localStorage.setItem(STORAGE_KEY, '{"version":2,"entries":[]')
-    renderApp()
-    expect(
-      screen.getByText(
-        'Saved entries could not be read and were replaced by the demo data.',
-      ),
-    ).toBeInTheDocument()
-    expect(
-      screen.queryByText('Entries are not saved on this device.'),
-    ).toBeNull()
-  })
-
-  it('saves an entry on the Entry tab and shows it on Home', async () => {
-    const user = userEvent.setup()
-    renderApp()
-    screen.getByRole('tab', { name: /^Home/ }).focus()
-    await user.keyboard('{ArrowRight}')
-    expect(
-      screen.getByRole('tab', { name: /^Entry/, selected: true }),
-    ).toBeInTheDocument()
-
-    // One Tab: the panel is not a stop of its own.
-    await user.tab()
-    expect(screen.getByLabelText('Indicator')).toHaveFocus()
-
-    // The day after the latest one in the store, so the new entry is the latest
-    // one on Home whatever the clock says.
-    const day = screen.getByLabelText('Mission day') as HTMLInputElement
-    const nextDay = String(Number(day.value) + 1)
-    await user.clear(day)
-    await user.type(day, nextDay)
-    await user.type(screen.getByLabelText('Value'), '1234567')
-    // The native time input keeps HH:MM in its value on any OS setting.
-    const time = screen.getByLabelText('Time')
-    fireEvent.change(time, { target: { value: '15:44' } })
-    const save = screen.getByRole('button', { name: 'Save entry' })
-    save.focus()
-    await user.keyboard('{Enter}')
-    expect(screen.getByRole('status')).toHaveTextContent(
-      'Saved on this device.',
-    )
-
-    screen.getByRole('tab', { name: /^Home/ }).focus()
-    await user.keyboard('{Enter}')
-    expect(screen.getByText('1234567')).toBeInTheDocument()
-    expect(screen.getByText(`Day ${nextDay} 15:44`)).toBeInTheDocument()
+    render(<App />)
+    expect(screen.getByText(strings.sync.reset)).toBeInTheDocument()
+    expect(screen.queryByText(strings.sync.notSaved)).toBeNull()
   })
 })
 
 describe('face sign-in behind ?face=1', () => {
   it('renders no face control on the plain page', () => {
-    renderApp()
-    expect(
-      screen.queryByRole('button', { name: strings.face.buttonLabel }),
-    ).toBeNull()
+    render(<App />)
+    expect(screen.queryByRole('button', { name: strings.face.buttonLabel })).toBeNull()
     expect(screen.queryByRole('dialog')).toBeNull()
   })
 
-  it('shows the button next to the person picker with the flag', () => {
+  it('shows the face button above the crew list with the flag', () => {
     window.history.replaceState({}, '', '/?face=1')
-    renderApp()
-    expect(screen.getByLabelText('Person')).toBeInTheDocument()
+    render(<App />)
+    expect(screen.getByRole('group', { name: copy.identify.crewLabel })).toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: strings.face.buttonLabel }),
     ).toHaveAttribute('aria-expanded', 'false')
@@ -190,10 +267,8 @@ describe('face sign-in behind ?face=1', () => {
   it('opens the panel with the consent text and closes it on Escape', async () => {
     window.history.replaceState({}, '', '/?face=1')
     const user = userEvent.setup()
-    renderApp()
-    const button = screen.getByRole('button', {
-      name: strings.face.buttonLabel,
-    })
+    render(<App />)
+    const button = screen.getByRole('button', { name: strings.face.buttonLabel })
 
     await user.click(button)
     const panel = await screen.findByRole('dialog')
@@ -207,7 +282,7 @@ describe('face sign-in behind ?face=1', () => {
     expect(button).toHaveAttribute('aria-expanded', 'false')
   })
 
-  it('puts the focus on the person picker when the camera is blocked', async () => {
+  it('puts the focus on the crew list when the camera is blocked', async () => {
     window.history.replaceState({}, '', '/?face=1')
     const original = navigator.mediaDevices
     const blocked = new Error('blocked')
@@ -218,24 +293,18 @@ describe('face sign-in behind ?face=1', () => {
     })
     try {
       const user = userEvent.setup()
-      renderApp()
+      render(<App />)
+      await user.click(screen.getByRole('button', { name: strings.face.buttonLabel }))
       await user.click(
-        screen.getByRole('button', { name: strings.face.buttonLabel }),
+        await screen.findByRole('button', { name: strings.face.continueLabel }),
       )
-      await user.click(
-        await screen.findByRole('button', {
-          name: strings.face.continueLabel,
-        }),
-      )
-      await user.click(
-        screen.getByRole('button', { name: strings.face.signIn }),
-      )
+      await user.click(screen.getByRole('button', { name: strings.face.signIn }))
 
       expect(await screen.findByRole('alert')).toHaveTextContent(
         strings.face.camera.denied,
       )
-      // The way out that always works has the focus, not the panel button.
-      expect(screen.getByLabelText('Person')).toHaveFocus()
+      // The way in that always works has the focus.
+      expect(screen.getByRole('radio', { name: PERSON })).toHaveFocus()
     } finally {
       Object.defineProperty(navigator, 'mediaDevices', {
         configurable: true,

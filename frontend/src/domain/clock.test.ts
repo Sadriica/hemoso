@@ -11,6 +11,7 @@ function entry(missionDay: number): Entry {
     unit: 'example_unit',
     missionDay,
     time: '08:00',
+    context: 'rest',
   }
 }
 

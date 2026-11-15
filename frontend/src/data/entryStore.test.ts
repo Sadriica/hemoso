@@ -33,6 +33,7 @@ function entry(id: string, personId = 'demo_astronaut_1'): Entry {
     unit: 'example_unit',
     missionDay: 1,
     time: '08:00',
+    context: 'rest',
   }
 }
 
@@ -47,6 +48,21 @@ function newEntry(
     unit: 'example_unit',
     missionDay: 2,
     time: '09:15',
+    context: 'rest',
+  }
+}
+
+// One row as GET .../history returns it, with the id historyClient gives it.
+function remoteEntry(missionDay = 3, time = '07:30', value = 4): Entry {
+  return {
+    id: `server:demo_astronaut_1:example_indicator:${missionDay}:${time}`,
+    personId: 'demo_astronaut_1',
+    indicatorId: 'example_indicator',
+    value,
+    unit: 'example_unit',
+    missionDay,
+    time,
+    context: 'rest',
   }
 }
 
@@ -322,5 +338,98 @@ describe('LocalEntryStore', () => {
     expect(second.pending()).toEqual([])
     expect(second.lastSent()).toEqual({ missionDay: 2, time: '09:20' })
     expect(second.wasReset()).toBe(false)
+  })
+
+  it('adds the remote entries already sent, and tells the screens once', () => {
+    const store = new LocalEntryStore({ storage: new MemoryStorage() })
+    let calls = 0
+    store.subscribe(() => {
+      calls += 1
+    })
+
+    store.mergeRemote([remoteEntry(3), remoteEntry(4)])
+
+    expect(store.list().map((item) => item.id)).toEqual([
+      remoteEntry(3).id,
+      remoteEntry(4).id,
+    ])
+    expect(store.pending()).toEqual([])
+    expect(store.getOutboxSnapshot()).toEqual({
+      pendingCount: 0,
+      conflictCount: 0,
+      rejectedCount: 0,
+      lastSent: null,
+    })
+    expect(calls).toBe(1)
+  })
+
+  it('keeps the local entry when the server has one with the same four keys', () => {
+    const store = new LocalEntryStore({
+      storage: new MemoryStorage(),
+      seedEntries: [entry('a')],
+    })
+
+    // The local row is day 1 at 08:00; the server holds another value for the
+    // same person, indicator, day and time.
+    store.mergeRemote([remoteEntry(1, '08:00', 99)])
+
+    expect(store.list()).toHaveLength(1)
+    expect(store.list()[0].id).toBe('a')
+    expect(store.list()[0].value).toBe(1)
+  })
+
+  it('takes one entry per person, indicator, day and time from a read', () => {
+    const store = new LocalEntryStore({ storage: new MemoryStorage() })
+
+    store.mergeRemote([remoteEntry(3), remoteEntry(3), remoteEntry(3)])
+
+    expect(store.list()).toHaveLength(1)
+  })
+
+  it('keeps a local entry of another person out of the way and deletes nothing', () => {
+    const store = new LocalEntryStore({
+      storage: new MemoryStorage(),
+      seedEntries: [entry('a', 'demo_astronaut_2')],
+    })
+
+    store.mergeRemote([remoteEntry(3)])
+
+    expect(store.list().map((item) => item.id)).toEqual(['a', remoteEntry(3).id])
+  })
+
+  it('adds only the rows a second read did not have yet', () => {
+    const store = new LocalEntryStore({ storage: new MemoryStorage() })
+    store.mergeRemote([remoteEntry(3)])
+    const afterFirst = store.getSnapshot()
+
+    store.mergeRemote([remoteEntry(3), remoteEntry(5)])
+
+    expect(store.list().map((item) => item.missionDay)).toEqual([3, 5])
+    expect(store.getSnapshot()).not.toBe(afterFirst)
+  })
+
+  it('keeps the snapshot when a read has nothing new', () => {
+    const store = new LocalEntryStore({ storage: new MemoryStorage() })
+    const before = store.getSnapshot()
+
+    store.mergeRemote([])
+    store.mergeRemote([remoteEntry(3)])
+    const afterFirst = store.getSnapshot()
+    store.mergeRemote([remoteEntry(3)])
+
+    expect(before).toHaveLength(0)
+    expect(store.getSnapshot()).toBe(afterFirst)
+  })
+
+  it('keeps the remote entries across a reload, out of the outbox', () => {
+    const storage = new MemoryStorage()
+    const first = new LocalEntryStore({ storage })
+    first.mergeRemote([remoteEntry(3)])
+
+    const second = new LocalEntryStore({ storage })
+
+    expect(second.wasReset()).toBe(false)
+    expect(second.list().map((item) => item.id)).toEqual([remoteEntry(3).id])
+    expect(second.pending()).toEqual([])
   })
 })

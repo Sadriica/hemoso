@@ -14,8 +14,8 @@ consideration the statement offers, or a team quality rule) · **context**
 
 | ID | Requirement | Class | Priority | Owner (GitHub) | Block | Done when |
 | --- | --- | --- | --- | --- | --- | --- |
-| REQ-01 | A visual tool astronauts use to assess their own health and act on its status: the screens | challenge | P0 | Juli (@julimejia) | B2 Sat 13:30-17 | On one screen the astronaut sees the status of each indicator they track and a clear next step; content comes from config/ (REQ-26) |
-| REQ-02 | Gather health indicators from user input: keyboard and clicks; camera or images are optional | challenge | P0 | Juli (@julimejia) | B2 Sat 13:30-17 | Every chosen indicator can be entered without special hardware; units shown at entry |
+| REQ-01 | A visual tool astronauts use to assess their own health and act on its status: the screens | challenge | P0 | Wambi (@Sadriica) | B2 Sat 13:30-17 | On one screen the astronaut sees the status of each indicator they track and a clear next step; content comes from config/ (REQ-26) |
+| REQ-02 | Gather health indicators from user input: keyboard and clicks; camera or images are optional | challenge | P0 | Wambi (@Sadriica) | B2 Sat 13:30-17 | Every chosen indicator can be entered without special hardware; units shown at entry |
 | REQ-03 | Confirm each chosen indicator is measurable on board, and how | challenge | P0 | Phys (@IsabellaCabreraquintero) | B1 Sat 10-12 | For each indicator the team chose (T-06): instrument or method in flight, unit and precision, with a NASA or peer-reviewed source; any statement example left out (for example blood sugar) says why, in docs/DECISIONS.md through Wambi |
 | REQ-04 | Each indicator answers the five questions of the statement, assembled in one place | challenge | P0 | Bio 1 (@sofiaruizt) | B3 Sat 17-1 | Per indicator: question 2 (why it is needed) written by Bio 1 with sources, and links to the answers of questions 1 (REQ-03), 3 (REQ-07), 4 (REQ-05) and 5 (REQ-06) |
 | REQ-05 | Say when a result needs attention from the crew, the CMO or the flight surgeon | challenge | P0 | Bio 2 (@pamirestrepo-code) | B3 Sat 17-1 | Each indicator has an attention rule with its source, or the rule is labelled Assumption in the interface |
@@ -25,10 +25,10 @@ consideration the statement offers, or a team quality rule) · **context**
 | REQ-09 | Optional considerations chosen or left out on purpose | optional | P1 | Wambi (@Sadriica) | B1 Sat 10-12 | Human figure, colour coding, dynamic charts, routine prompts, gamification, mission environments, animations and camera input each have a row in docs/DECISIONS.md: use or leave out, and why (decided by the team in T-06) |
 | REQ-10 | Every medical statement has a source or is marked Assumption, visible to the user: review | delivery | P0 | Bio 2 (@pamirestrepo-code) | B3 Sat 17-1 | Bio 2 reviews config/ and the interface before each checkpoint; no unsourced statement remains; Assumption labels show in the app |
 | REQ-11 | Never presented as a replacement for the CMO or the flight surgeon | context | P0 | Bio 1 (@sofiaruizt) | B3 Sat 17-1 | Interface, pitch and page say the tool supports the crew's own assessment and that decisions stay with the CMO and flight surgeon |
-| REQ-12 | History view: each indicator against the person's own earlier values | context | P1 | Juli (@julimejia) | B3 Sat 17-1 | Each indicator has a history view comparing with that astronaut's own earlier values, reading the stored history (REQ-27) |
+| REQ-12 | History view: each indicator against the person's own earlier values | context | P1 | Wambi (@Sadriica) | B3 Sat 17-1 | Each indicator has a history view comparing with that astronaut's own earlier values, reading the stored history (REQ-27) |
 | REQ-13 | Data keeps working with delayed or no contact with Earth | context | P1 | Wambi (@Sadriica) | B3 Sat 17-1 | Entries are saved locally with no network; anything meant for the ground waits in a queue and is sent later without duplicates |
 | REQ-14 | Treat health data as private; no real personal data anywhere | context | P0 | Wambi (@Sadriica) | B3 Sat 17-1 | No real personal data in the repository or the app; the interface labels all data as synthetic. One exception (REQ-36): a face descriptor the person chooses to register stays only in their own browser |
-| REQ-15 | Readable and usable without colour alone or a mouse | optional | P1 | Juli (@julimejia) | B3 Sat 17-1 | Every state has text or an icon besides colour; the demo path works by keyboard |
+| REQ-15 | Readable and usable without colour alone or a mouse | optional | P1 | Wambi (@Sadriica) | B3 Sat 17-1 | Every state has text or an icon besides colour; the demo path works by keyboard |
 | REQ-16 | Everything submitted is in English: page and linked materials | delivery | P0 | Bio 2 (@pamirestrepo-code) | B4 Sun 9-12 | Page, slides and linked documents in English; a video may be spoken in another language only with English subtitles |
 | REQ-17 | Demo format, script and slides within the limits | delivery | P0 | Bio 1 (@sofiaruizt) | B4 Sun 9-12 | Format chosen (video of 30 s or less, or 7 slides at most including title and intro); script or slides ready and checked against the limit |
 | REQ-18 | Public repository with a README that explains how to run the project | delivery | P0 | Wambi (@Sadriica) | B4 Sun 9-12 | Repository public; README says what HeMoSo is and how to run it; opens in a private window with no login |
@@ -40,24 +40,25 @@ consideration the statement offers, or a team quality rule) · **context**
 | REQ-24 | All five members registered for the Medellín event and on the team's Members tab | operations | P0 | Bio 2 (@pamirestrepo-code) | B0 Sat 9-10 | Members tab of ReTardis shows all five; no member can be added after submission closes |
 | REQ-25 | Local judging and the 14:00 mentor presentation confirmed with the local lead | operations | P0 | Bio 2 (@pamirestrepo-code) | Submit Sun 12-14 | Time, length and language confirmed and logged (T-04) |
 | REQ-26 | Status and next-step texts the astronaut reads for each indicator | challenge | P0 | Bio 1 (@sofiaruizt) | B2 Sat 13:30-17 | Every status of every chosen indicator has a short text and a next step in config/, plain words, sourced or marked Assumption |
-| REQ-27 | Keep each astronaut's measurements over time so earlier values can be compared | context | P1 | Wambi (@Sadriica) | B3 Sat 17-1 | Every entry is stored with time, unit and person; the history survives a reload; a function returns a person's earlier values for an indicator |
-| REQ-28 | Interface works offline and shows what is waiting to be sent | context | P1 | Juli (@julimejia) | B3 Sat 17-1 | The app opens and works with the network off after the first load; pending items and the last sync time are visible |
+| REQ-27 | Keep each astronaut's measurements over time so earlier values can be compared | context | P1 | Juli (@julimejia) | B3 Sat 17-1 | Every entry is stored with time, unit and person; the history survives a reload; a function returns a person's earlier values for an indicator |
+| REQ-28 | Interface works offline and shows what is waiting to be sent | context | P1 | Wambi (@Sadriica) | B3 Sat 17-1 | The app opens and works with the network off after the first load; pending items and the last sync time are visible |
 | REQ-29 | Synthetic demo data with its assumptions documented | context | P0 | Phys (@IsabellaCabreraquintero) | B3 Sat 17-1 | The demo dataset in config/data/ is synthetic, each value range has a source or is marked Assumption, and the generation method is written down |
-| REQ-30 | The app interface is in English | delivery | P0 | Juli (@julimejia) | B4 Sun 9-12 | Every screen, label and message of the app in English |
+| REQ-30 | The app interface is in English | delivery | P0 | Wambi (@Sadriica) | B4 Sun 9-12 | Every screen, label and message of the app in English |
 | REQ-31 | Demo video recorded with English subtitles and a public link | delivery | P0 | Juli (@julimejia) | B4 Sun 9-12 | Video of 30 s or less recorded from the app, English subtitles burned in, hosted outside Space Apps, link opens with no password, permission or registration |
-| REQ-32 | Running app published at a public link | delivery | P0 | Juli (@julimejia) | B4 Sun 9-12 | The app opens at a public link in a private window with no login, on desktop and phone |
+| REQ-32 | Running app published at a public link | delivery | P0 | Wambi (@Sadriica) | B4 Sun 9-12 | The app opens at a public link in a private window with no login, on desktop and phone |
 | REQ-33 | SI-assisted code and data acknowledged in the repository | delivery | P0 | Wambi (@Sadriica) | B1 Sat 10-12 | The solution idea came from the team; SI-assisted code and data are acknowledged in descriptive text and metadata (a file at the repository root built from team/eng1/notes/si-use-log.md) |
 | REQ-34 | The submission page answers the five judging criteria | delivery | P0 | Bio 2 (@pamirestrepo-code) | B4 Sun 9-12 | The page description says how HeMoSo serves Impact, Creativity, Validity, Relevance and Presentation |
 | REQ-35 | Two-minute story for the mentors rehearsed three times | operations | P0 | Bio 1 (@sofiaruizt) | Submit Sun 12-14 | The story is read aloud in two minutes or less, three times, before 14:00 on Sunday |
-| REQ-36 | Sign in with the face, on the device only (optional, off by default) | context | P2 | Juli (@julimejia) | B3 Sat 17-1 | Off unless the URL has `?face=1`; the person consents first; a face is registered once and matched in the browser with bundled models; no image or face data leaves the device; the person can delete it; the person picker works without a camera |
+| REQ-36 | Sign in with the face, on the device only (optional, off by default) | context | P2 | Wambi (@Sadriica) | B3 Sat 17-1 | Off unless the URL has `?face=1`; the person consents first; a face is registered once and matched in the browser with bundled models; no image or face data leaves the device; the person can delete it; the person picker works without a camera |
+| REQ-37 | Sign in with a username and a PIN checked on the server; the face unlocks it on a device | context | P1 | Wambi (@Sadriica) | B3 Sat 17-1 | A person creates an account with a username and a 4 to 8 digit PIN; the server stores only a salted scrypt hash; signing in returns a session token and the routes of a person with an account refuse requests without it; the same account works on any device; after one PIN sign-in on a device the face unlocks that stored session (the face data stays on the device, REQ-36); the synthetic demo astronaut opens with one click and no PIN (REQ-32) |
 
 ## By owner
 
 - **Bio 1 (@sofiaruizt)**: REQ-04, REQ-08, REQ-11, REQ-17, REQ-21, REQ-22, REQ-26, REQ-35
 - **Bio 2 (@pamirestrepo-code)**: REQ-05, REQ-06, REQ-10, REQ-16, REQ-20, REQ-23, REQ-24, REQ-25, REQ-34
 - **Phys (@IsabellaCabreraquintero)**: REQ-03, REQ-07, REQ-19, REQ-29
-- **Wambi (@Sadriica)**: REQ-09, REQ-13, REQ-14, REQ-18, REQ-27, REQ-33
-- **Juli (@julimejia)**: REQ-01, REQ-02, REQ-12, REQ-15, REQ-28, REQ-30, REQ-31, REQ-32, REQ-36
+- **Wambi (@Sadriica)**: REQ-01, REQ-02, REQ-09, REQ-12, REQ-13, REQ-14, REQ-15, REQ-18, REQ-28, REQ-30, REQ-32, REQ-33, REQ-36, REQ-37
+- **Juli (@julimejia)**: REQ-27, REQ-31
 
 ## Sources
 
@@ -99,6 +100,7 @@ consideration the statement offers, or a team quality rule) · **context**
 | REQ-34 | Judging guide · https://www.spaceappschallenge.org/resources/judging-awards-guide/ |
 | REQ-35 | Medellín event schedule · SG: Submission guide · https://www.spaceappschallenge.org/resources/project-submission-guide/ (local judging times may differ) |
 | REQ-36 | Our design · @vladmandic/face-api README (distance below 0.6 is a match) · team/eng2/notes/face-login-proposal.md |
+| REQ-37 | Team decision (Wambi), Sat 21:55 · docs/DECISIONS.md (Accounts row) · docs/API.md (accounts and sessions) |
 
 ## Judging criteria
 

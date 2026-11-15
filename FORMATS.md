@@ -44,8 +44,8 @@ new ones without updating this table and the owner named in it.
 | `temp_core_c` | Core temperature | °C | `both` | Tier A · system `thermoregulation` |
 | `sleep_h` | Sleep duration | h | `lower` | Tier A · system `sleep` |
 | `mood_1_5` | Mood | 1 to 5 | `lower` | Tier B · system `neuro_behavioural`; 1 = very low, 2 = low, 3 = neutral, 4 = good, 5 = very good, about the whole day, answered before sleep (our scale, Assumption: NASA asks about mood before sleep and publishes no fixed scale) |
-| `glucose_mgdl` | Blood glucose | mg/dL | `both` | Tier C · system `metabolic`; explained only, never an input |
-| `<condition_id>` | to be filled by Bio 2 (REQ-06) | — (a condition has a probability, not a unit) | — | One row per possible condition; example id `example_condition`. |
+| `glucose_mgdl` | Blood glucose | mg/dL | `both` | Tier A · system `metabolic`; measured on board with the i-STAT blood analyser from a fingerstick sample, so a value exists only when the crew takes one (Bio 2, `team/bio2/notes/indicators-review.md`; changed from tier C on Sat 19:40) |
+| `<condition_id>` | to be filled by Bio 2 (REQ-06) | — (a condition has an evidence score from 0 to 1, not a unit) | — | One row per possible condition; example id `example_condition`. |
 | `<body_region_id>` | to be filled by the owner (open question) | — | — | One row per selectable body region; example id `example_body_region`. |
 
 The demo indicators are the six the challenge statement names (team decision,
@@ -119,9 +119,15 @@ values.
    The app computes it from the stored history (REQ-27); no file holds it.
 2. **Clinical or assumed limits:** the rows of `rules/attention.csv`, each with
    its source or `Assumption` and who is notified.
-3. **Possible conditions:** `rules/conditions.csv`, shown as probabilities with
-   what they are based on, never as a certainty; the CMO or flight surgeon
-   confirms.
+3. **Possible conditions:** `rules/conditions.csv`, shown as an evidence score
+   from 0 to 1 with a three-step label and the signals behind it, never a
+   percentage and never a certainty; the CMO or flight surgeon confirms
+   (`docs/findings/bio2-02-evidence-score.md`). A signal adds 1 when its value
+   crossed a row of `rules/attention.csv` on the signal's side, 0.5 when it is
+   outside the person's baseline on that side, 0 otherwise; the score is the mean
+   over the condition's signals, and fewer than 2 usable signals is "no data yet".
+4. **Blood pressure:** one reading shows the worse of the systolic and the
+   diastolic state (`docs/findings/bio2-01-pressure-state-rule.md`).
 
 States the astronaut reads: no data yet · in your usual range · outside your
 usual range · needs review (an attention row is crossed). Bio 2 writes the
@@ -223,31 +229,35 @@ by Bio 2 (REQ-05).
 
 ### `config/rules/conditions.csv`
 
-Purpose: what the astronaut may have, as a probability and never a certainty
-(REQ-06). The app always adds "your CMO or flight surgeon confirms"
-(`STANDARDS.md` §5); it is not stored per row. The columns for the probability
-are added when the team answers the open question on how it is computed; the
-probability must come from the person's records, so a fixed value per row is
-not enough.
+Purpose: what the astronaut may have, as an evidence score and never a
+certainty (REQ-06). The app always adds "your CMO or flight surgeon confirms"
+(`STANDARDS.md` §5); it is not stored per row. The score is computed from the
+person's records with the rule in "How each value is compared", so no score is
+stored here.
 
 Columns in order: `condition_id`, `name`, `based_on`, `source`.
 
 - `condition_id`: the id from section 2.
 - `name`: plain name, sentence case.
-- `based_on`: the indicator or symptom ids this rests on, separated by spaces.
+- `based_on`: the signals this rests on, separated by spaces, each written
+  `indicator_id:above` or `indicator_id:below`: the side of the person's range
+  that counts for this condition. The side keeps two conditions on one
+  indicator apart (hyperglycaemia `glucose_mgdl:above`, hypoglycaemia
+  `glucose_mgdl:below`).
 - `source`: a link or `Assumption`.
 
 Example:
 
 ```csv
 condition_id,name,based_on,source
-example_condition,Example condition,example_indicator,Assumption
+example_condition,Example condition,example_indicator:above,Assumption
 ```
 
-Valid when: `condition_id` in section 2; every id in `based_on` exists in
-`data/indicators.csv`; `source` is a link or `Assumption`. The probability
-columns are filled in when the team answers the open question on how the
-probability is computed.
+Valid when: `condition_id` in section 2; every signal in `based_on` is
+`indicator_id:above` or `indicator_id:below`, its id exists in
+`data/indicators.csv` and no id appears twice in one row; `source` is a link or
+`Assumption`. A signal without a side is a warning, and an error under
+`--strict`, until Bio 2 adds the sides.
 
 ### `config/content/<indicator_id>.md`
 
@@ -265,6 +275,10 @@ short sentences and plain words. One file per indicator, named after its id
 ## Measurement steps
 
 ## Status and next steps
+
+### in_range
+
+### outside_range
 
 ### <attention_level>
 
@@ -286,9 +300,15 @@ problems) — `## How to prevent problems` with `rules/conditions.csv`.
   (question 3, REQ-07); written by Bio 1 from the findings of Phys, with their
   sources.
 - `Measurement steps`: numbered steps, one action per sentence (REQ-08).
-- `Status and next steps`: one `### <attention_level>` sub-section per level in
-  `rules/attention.csv` (question 4, REQ-05); each holds the short status text
-  and the next step the astronaut reads (REQ-26).
+- `Status and next steps`: the short status text and the next step the
+  astronaut reads (REQ-26), one `###` sub-section per state:
+  - `### in_range` and `### outside_range`, always: the two baseline states the
+    API returns (`backend/app/state.py`); `### no_data` is optional.
+  - one `### <attention_level>` per level this indicator has in
+    `rules/attention.csv` (question 4, REQ-05): the text for `needs_review`,
+    told per level (for example `consult`, `urgent`, `watch`).
+  No other `###` heading, and none twice. (Team decision Sat 21:05, so Bio 1's
+  state texts and Bio 2's levels fit one file.)
 - `How to prevent problems`: what the astronaut can do (question 5, REQ-06);
   written by Bio 1 from the findings of Bio 2, with their sources.
 - `Sources`: the links from `STANDARDS.md` §6, one per line as
@@ -310,6 +330,10 @@ Example hazard effect, written by Bio 1 from Phys's findings (question 3, REQ-07
 2. Example step two.
 
 ## Status and next steps
+### in_range
+Example text for a value in the usual range, and its next step. Assumption.
+### outside_range
+Example text for a value outside the usual range, and its next step. Assumption.
 ### example_level
 Example status text and example next step. Assumption.
 
@@ -320,8 +344,10 @@ Example guidance, written by Bio 1 from Bio 2's findings (question 5, REQ-06). A
 - Example title: https://example.org
 ```
 
-Valid when: the headings appear in this order; every `###` heading matches an
-`attention_level` in `rules/attention.csv`; every medical statement carries a
+Valid when: the headings appear in this order; `### in_range` and `###
+outside_range` are present; every other `###` heading is `no_data` or an
+`attention_level` of this indicator in `rules/attention.csv`, with every level
+present and no heading twice; every medical statement carries a
 link or the word `Assumption`. The example text above is placeholder.
 
 ### `config/content/body_regions.csv`

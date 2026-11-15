@@ -1,72 +1,90 @@
-# Draft for `config/rules/attention.csv` (REQ-05) · real ids
+# Thresholds for `config/rules/attention.csv` (REQ-05)
 
-Sat 14 Nov 16:00. Ids copied from `config/data/indicators.csv` (Phys, 15:50).
-Ready to transcribe when the team confirms the approach below.
+Sat 14 Nov 17:30. The rows below are in the file. Ids come from
+`config/data/indicators.csv` (Phys, 15:50).
 
-## What changed after F-phys-01 and F-phys-02
+## What this file holds
 
-Phys found that no NASA source sets in-flight cut-offs, and proposed that the
-app compare each reading with the crew member's own baseline (median and 3
-spreads). In that design the everyday states ("in your usual range", "outside
-your usual range") come from the baseline, **not from this file**.
-
-So this file holds only **clinical boundaries that a source states**. A row
-here means: this value is beyond a published limit, so a person reviews it. The
-mild steps I had drafted (37.5 °C, 120 bpm) are gone: they were my invention,
-the baseline already covers them, and they would have shown a "watch" for a
-value that is normal for that crew member.
-
-Consequence: only `consult` and `urgent` are used. `watch` stays defined in
-`team/bio2/notes/attention-levels.md` and is unused until a source states a mild
-limit.
+Only clinical boundaries that a source states, plus the rows marked
+`Assumption` where the team has no source yet. The everyday states ("in your
+usual range", "outside your usual range") come from the person's own baseline
+(F-phys-02), not from this file. A row here means: this value is beyond a
+published limit, so a person reviews it. Sleep and mood keep a `watch` row
+marked `Assumption` so every indicator has at least one state.
 
 ## Rows
 
 | indicator_id | side | threshold | level | notify | source |
 | --- | --- | --- | --- | --- | --- |
-| temp_core_c | above | 38.0 | consult | cmo | JSC 22538 |
-| temp_core_c | below | 36.0 | consult | cmo | Assumption |
-| hr_bpm | above | 100 | consult | cmo | AHA |
+| temp_core_c | below | 35 | urgent | flight_surgeon | NASA-STD-3001 Vol. 1 Rev. C |
+| temp_core_c | above | 38 | consult | cmo | JSC 22538 Rev. F |
 | hr_bpm | below | 50 | consult | cmo | Assumption |
-| bp_sys_mmhg | above | 140 | consult | cmo | WHO |
+| hr_bpm | above | 100 | consult | cmo | MedlinePlus, NIH |
 | bp_sys_mmhg | above | 180 | urgent | flight_surgeon | WHO |
-| bp_dia_mmhg | above | 90 | consult | cmo | WHO |
+| bp_sys_mmhg | above | 140 | consult | cmo | WHO |
 | bp_dia_mmhg | above | 120 | urgent | flight_surgeon | WHO |
-| glucose_mgdl | above | 126 | consult | cmo | ADA |
-| glucose_mgdl | below | 70 | consult | cmo | Assumption |
+| bp_dia_mmhg | above | 90 | consult | cmo | WHO |
+| glucose_mgdl | above | 126 | consult | cmo | American Diabetes Association |
+| glucose_mgdl | below | 70 | consult | cmo | American Diabetes Association |
+| sleep_h | below | 6 | watch | crew | Assumption |
+| mood_1_5 | below | 2 | watch | crew | Assumption |
 
-Links (the `source` cell holds the link, not the label):
+The two blood-pressure steps are written most severe first. The frontend
+returns the first matching rule, and `FORMATS.md` says the most severe rule
+wins; the file order keeps both behaviours the same until the code applies the
+rule from the format.
 
-- JSC 22538 Rev F, Flight Crew Health Stabilization Program: fever is 100.4 °F
-  (38.0 °C) or more. It is a pre-launch document, so the number is used as the
-  fever definition, not as an in-flight criterion.
+## Sources
+
+- NASA-STD-3001 Volume 1, Revision C, **Appendix C (Definitions)**, p. 63 of
+  86: normal body temperature is around 37 °C, and hypothermia is below 35 °C.
+  The definition is in Appendix C, not Appendix A.
+  https://www.nasa.gov/wp-content/uploads/2023/11/nasa-std-3001-vol-1-rev-c-with-signature.pdf
+- JSC 22538 Revision F, section 7.1.B: if temperature is measured, fever is
+  100.4 °F (38.0 °C) or greater. It is a pre-launch screening document, so the
+  number is used as the fever definition, not as an in-flight criterion.
   https://ntrs.nasa.gov/api/citations/20230012738/downloads/JSC%2022538%20Health%20Stabilization%20Program%20Rev%20F%20Clean.pdf
-- AHA: resting heart rate 60–100 bpm; over 100 is tachycardia, under 60 is
-  bradycardia, and fit adults rest near 40.
-  https://www.heart.org/en/health-topics/high-blood-pressure/the-facts-about-high-blood-pressure/all-about-heart-rate-pulse
-- WHO: hypertension is 140/90 mmHg or higher measured on two different days;
-  values of 180/120 or higher with symptoms need care at once.
+- MedlinePlus, NIH: a normal adult resting heart rate is 60 to 100 bpm; trained
+  athletes can rest at 40 to 60. Over 100 is tachycardia and below 60 is
+  bradycardia. https://medlineplus.gov/ency/article/003399.htm
+- WHO, Hypertension: 140/90 mmHg or higher measured on two different days is
+  hypertension; 180/120 mmHg or higher with symptoms needs care at once.
   https://www.who.int/news-room/fact-sheets/detail/hypertension
-- ADA: fasting glucose under 100 is normal, 100–125 prediabetes, 126 or more on
-  a second test is diabetes. https://diabetes.org/about-diabetes/diagnosis
+- American Diabetes Association, Diagnosis: fasting glucose of 126 mg/dL or
+  higher is diabetes. https://diabetes.org/about-diabetes/diagnosis
+- American Diabetes Association, Low blood glucose: below 70 mg/dL needs
+  action. https://diabetes.org/living-with-diabetes/hypoglycemia-low-blood-glucose
 
-## Rows I did not write, and why
+## Why these choices
 
-| indicator_id | Why no row |
-| --- | --- |
-| `sleep_h` | NASA defines sleep disturbance as under 8 h, but it is a description of the finding, not a limit that triggers a review. The baseline covers the change; a source-stated review limit does not exist |
-| `mood_1_5` | The 1–5 scale is not defined yet, and a self-report does not trigger a medical review by itself |
+- **Heart rate below 50 is an Assumption.** A fit crew member can rest near 40,
+  so the published bradycardia limit of 60 would fire on healthy people. The
+  team can raise or remove this row once it has a flight-surgeon source.
+- **Sleep below 6 h is an Assumption.** NASA-STD-3001 recommends an 8.5 h sleep
+  period, but that is a planned opportunity, not an observed cut-off.
+- **Mood below 2 is an Assumption.** The team defined the scale as 1 = very
+  low to 5 = very good (`FORMATS.md`, Sat 16:10). The row only fires on the
+  lowest answer.
+- **Fever is a pre-launch definition.** It is the only source-backed fever
+  number in the repository, and the interface must say that a clinician
+  confirms.
+- **Hypothermia is a definition, not an in-flight rule.** NASA states the
+  boundary, not an operational alert. The app uses it because it is published,
+  and sends the case to the flight surgeon.
 
-## Before this goes into the file
+## Open points for the team
 
-1. **Blood pressure**: two rows per number cannot express the clinical "or". A
-   person with 120/95 must reach the diastolic state. Decision needed from Eng 1
-   and Bio 1; recorded in `docs/DECISIONS.md` (see
-   `team/bio2/notes/indicators-review.md` point 2).
-2. **Fever in microgravity**: 38.0 °C comes from a pre-launch programme. The
-   interface must show the source and that a clinician confirms, never "you have
-   a fever".
-3. **`hr_bpm` below 50**: fit crew members rest near 40, so this row can fire on
-   a healthy person. Either raise it or accept it and say why in the LOG.
+1. **Blood pressure is two indicators.** The clinical rule is "systolic at
+   least 140 **or** diastolic at least 90". Two independent rows cannot say
+   "or". The app must take the worse state of the two, or a combined indicator
+   must be added. Decision for Eng 1 and Bio 1, then a row in
+   `docs/DECISIONS.md`.
+2. **The frontend comparison is strict.** It uses `value > threshold` and
+   `value < threshold`, so exactly 140 mmHg or 38.0 °C does not trigger. The
+   team must decide whether to use `>=` / `<=` or a threshold one decimal below
+   the published value.
+3. **The first matching rule wins in the frontend.** `FORMATS.md` says the most
+   severe rule wins. The file is ordered severe first, but the code should
+   follow the format.
 4. **Every row notifies a person, never a diagnosis.** The probability of a
    condition lives in `config/rules/conditions.csv`, not here.

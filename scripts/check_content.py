@@ -324,7 +324,12 @@ def check_attention_order(rep: Reporter, bounds: dict) -> None:
                           f"notify the same or more")
 
 
-def check_conditions(rep: Reporter, root: Path, state: dict) -> None:
+BASELINE_STATES = ("in_range", "outside_range", "no_data")
+BASELINE_STATES_REQUIRED = ("in_range", "outside_range")
+SIGNAL_SIDES = ("above", "below")
+
+
+def check_conditions(rep: Reporter, root: Path, state: dict, strict: bool = False) -> None:
     header = CONDITIONS_HEADER
     rows = read_table(root, "config/rules/conditions.csv", header, rep)
     if rows is None:
@@ -342,9 +347,21 @@ def check_conditions(rep: Reporter, root: Path, state: dict) -> None:
                 rep.error(f"{rel}:{line_no} duplicate condition_id '{cid}'")
             seen.add(cid)
         indicators = state.get("indicators")
+        sides_seen: dict[str, str] = {}
         for based in cells["based_on"].split():
-            if indicators is not None and based not in indicators:
-                rep.error(f"{rel}:{line_no} based_on id '{based}' is not an indicator")
+            iid, sep, side = based.partition(":")
+            if not sep:
+                # Without a side two conditions on one indicator (hyper- and
+                # hypoglycaemia) both score on any change (FORMATS.md, F-bio2-02).
+                report_problem(rep, strict, f"{rel}:{line_no} based_on '{based}' has no side, "
+                               "write it as indicator_id:above or indicator_id:below")
+            elif side not in SIGNAL_SIDES:
+                rep.error(f"{rel}:{line_no} based_on '{based}' side must be above or below, got '{side}'")
+            if indicators is not None and iid not in indicators:
+                rep.error(f"{rel}:{line_no} based_on id '{iid}' is not an indicator")
+            if iid in sides_seen:
+                rep.error(f"{rel}:{line_no} based_on names '{iid}' twice")
+            sides_seen[iid] = side
         source = cells["source"].strip()
         if source and not valid_source(source):
             rep.error(f"{rel}:{line_no} source must be an http(s) link or 'Assumption'")
@@ -495,12 +512,22 @@ def check_content_file(rep: Reporter, path: Path, rel: str, stem: str, state: di
                 rep.error(f"{rel}: '### {block['heading']}' must be under '## Status and next steps'")
             subheads.append(block["heading"])
 
+    # The baseline states the API returns (backend/app/state.py): in_range and
+    # outside_range need their own text, no_data may have one; needs_review is
+    # told per attention_level of rules/attention.csv.
+    for st in BASELINE_STATES_REQUIRED:
+        if st not in subheads:
+            rep.error(f"{rel}: no '### {st}' heading for the baseline state of indicator '{stem}'")
+    for h, count in Counter(subheads).items():
+        if count > 1:
+            rep.error(f"{rel}: duplicate heading '### {h}'")
     attention = state.get("attention")
     if attention is not None:
         levels = attention.get(stem, set())
         for h in subheads:
-            if h not in levels:
-                rep.error(f"{rel}: '### {h}' is not an attention_level for indicator '{stem}'")
+            if h not in levels and h not in BASELINE_STATES:
+                rep.error(f"{rel}: '### {h}' is neither a baseline state ({', '.join(BASELINE_STATES)}) "
+                          f"nor an attention_level for indicator '{stem}'")
         for level in sorted(levels - set(subheads)):
             rep.error(f"{rel}: no '### {level}' heading for attention_level of indicator '{stem}'")
     else:
@@ -615,7 +642,7 @@ def check(root: Path, strict: bool) -> list[str]:
     check_indicators(rep, root, state)
     check_demo_ranges(rep, root, state)
     check_attention(rep, root, state)
-    check_conditions(rep, root, state)
+    check_conditions(rep, root, state, strict)
     check_body_regions(rep, root)
     check_demo_data(rep, root, state)
     check_content_files(rep, root, state, strict)

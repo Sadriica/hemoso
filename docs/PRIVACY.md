@@ -63,8 +63,26 @@ that example.
 
 The backend holds the Supabase service role key, which bypasses row level
 security, so the `entries` table has RLS on with no policies and only the
-backend can reach it. The API itself has no login; that is acceptable only
-because every value is synthetic (REQ-14).
+backend can reach it. The `accounts` table follows the same rule.
+
+## Accounts and sessions
+
+A person may create an account with a username and a PIN of 4 to 8 digits
+(REQ-37, [DECISIONS.md](DECISIONS.md)). The backend stores only the person id, a
+random 16-byte salt and the scrypt hash of the PIN, in the `accounts` table of
+Supabase (or SQLite, or memory in tests). The PIN is never stored, logged or
+returned, and the browser never keeps it.
+
+Signing in returns a session token signed with `SESSION_SECRET`, valid for 30
+days. The server keeps no copy of the token; the browser keeps it per person
+until sign-out or expiry. `SESSION_SECRET` lives only in the backend host's
+settings, empty in `.env.example`; without it the backend makes a random one at
+start, so tokens stop working after a restart.
+
+The routes of a person with an account refuse requests without that person's
+token. The synthetic demo astronaut has no account, so the demo opens with no
+login (REQ-32). The face data of face sign-in never leaves the device (REQ-36):
+the face only unlocks a session already stored on that device.
 
 ## If a key is committed
 

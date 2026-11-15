@@ -1,26 +1,45 @@
-import { lazy, Suspense, useMemo, useRef, useState } from 'react'
-import { Box } from '@mui/material'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { loadContent } from './content/load'
 import { LocalEntryStore } from './data/entryStore'
+import { createHistoryClient } from './data/historyClient'
 import { createSyncClient } from './data/sync'
 import { missionNow } from './domain/clock'
 import { useEntries } from './hooks/useEntries'
-import AppHeader, { PERSON_PICKER_ID } from './components/AppHeader'
+import { useHistorySync } from './hooks/useHistorySync'
 import Notice from './components/Notice'
-import ScreenTabs from './components/ScreenTabs'
-import { TABS, type TabId } from './components/tabs'
+import PhaseRail from './components/PhaseRail'
+import type { PhaseId } from './phases/phaseIds'
 import SkipLink from './components/SkipLink'
-import Entry from './screens/Entry'
-import History from './screens/History'
-import Home from './screens/Home'
+import Starfield from './components/Starfield'
+import Topbar from './components/Topbar'
+import IdentifyPhase from './phases/IdentifyPhase'
+import ReportPhase from './phases/ReportPhase'
+import StatusPhase from './phases/StatusPhase'
+import PhaseTransition from './motion/PhaseTransition'
 import { strings } from './strings'
-import { LAYOUT } from './theme/tokens'
 
-// The face panel is a chunk of its own, loaded the first time it opens. A page
-// without ?face=1 never asks for it, so the public demo keeps the same bundle
-// and the same data as before (REQ-14).
-const FaceSignIn = lazy(() => import('./screens/FaceSignIn'))
+// The intro is a chunk of its own; it shows once per tab, on the first load.
+const Intro = lazy(() => import('./motion/Intro'))
 
+// The key Intro writes once it has run in this tab (src/motion/Intro.tsx).
+function introSeen(): boolean {
+  try {
+    return !!sessionStorage.getItem('hemoso-intro-seen')
+  } catch {
+    return false
+  }
+}
+
+function prefersReducedMotion(): boolean {
+  return (
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  )
+}
+
+// The app is one guided check in three phases, always in this order: identify,
+// report, status. There is no free menu: each phase has its own way forward
+// and back, and the rail at the bottom only shows where the check is.
 export default function App() {
   const [data] = useState(() => loadContent())
   // One store for the tab: it seeds itself from the demo rows on the first run
@@ -29,123 +48,138 @@ export default function App() {
     () => new LocalEntryStore({ seedEntries: data.demoEntries }),
   )
   const entries = useEntries(store)
-  // The sync client is built once, from VITE_API_BASE_URL. An empty value is
-  // the public demo: nothing is sent and the header says so.
+  // Built once from VITE_API_BASE_URL. Empty is the public demo: nothing is
+  // sent and the top bar says so.
   const [client] = useState(() => createSyncClient())
-  // Storage problems the astronaut has to know about: entries that live only in
-  // this tab, or entries the app had to replace because it could not read them.
-  const storageWarnings = [
-    ...(store.isPersistent() ? [] : [strings.sync.notSaved]),
-    ...(store.wasReset() ? [strings.sync.reset] : []),
-  ]
+  // The same base URL for reading back what the server kept: a second device
+  // then shows the readings the first one made (REQ-27).
+  const [historyClient] = useState(() => createHistoryClient())
+  // Face sign-in is off unless the page is opened with ?face=1: REQ-14 forbids
+  // real personal data in the app until Eng 1 records the exception.
+  const [faceEnabled] = useState(
+    () => new URLSearchParams(window.location.search).get('face') === '1',
+  )
+  const [motionReduced, setMotionReduced] = useState(prefersReducedMotion)
+
+  // The intro opens on the first load of a tab, unless motion is off. Until
+  // its chunk arrives, a solid page-colour layer of the same size covers the
+  // screen, so the first phase never flashes under it.
+  const [introOpen, setIntroOpen] = useState(() => !motionReduced && !introSeen())
+  const [phase, setPhase] = useState<PhaseId>('identify')
+  const [personId, setPersonId] = useState<string | null>(null)
+  const indicatorIds = useMemo(
+    () => data.indicators.map((indicator) => indicator.id),
+    [data],
+  )
+  // The person chosen here, or already chosen when the page loads: the history
+  // of every indicator comes from the server once, and the screens then show
+  // the same readings on any device (REQ-27).
+  useHistorySync(historyClient, store, personId, indicatorIds)
+
   const personIds = useMemo(() => {
-    // The demo rows keep their person in the picker even when the browser holds
-    // entries of an earlier session for other people.
     const ids = new Set(data.demoEntries.map((entry) => entry.personId))
     for (const entry of entries) ids.add(entry.personId)
     return [...ids]
   }, [data, entries])
-  const [personId, setPersonId] = useState('')
-  const selectedPerson = personId || personIds[0] || ''
-  const [activeTab, setActiveTab] = useState<TabId>(TABS[0].id)
-  // Face sign-in is off unless the page is opened with ?face=1. REQ-14 forbids
-  // real personal data in the app until Eng 1 records the exception, so the
-  // button, the panel and the whole face module wait for that flag.
-  const [faceEnabled] = useState(
-    () => new URLSearchParams(window.location.search).get('face') === '1',
+  const personEntries = useMemo(
+    () => entries.filter((entry) => entry.personId === personId),
+    [entries, personId],
   )
-  const [faceOpen, setFaceOpen] = useState(false)
-  const faceButtonRef = useRef<HTMLButtonElement>(null)
-  // The metadata line of the header: the latest mission day in the store and
-  // the clock time now.
-  const clock = missionNow(entries)
+
+  // Storage problems the astronaut has to know about, on every phase.
+  const storageWarnings = [
+    ...(store.isPersistent() ? [] : [strings.sync.notSaved]),
+    ...(store.wasReset() ? [strings.sync.reset] : []),
+  ]
+
+  // A new phase starts at the top, with focus on its heading, so a screen
+  // reader announces where the person is. The page load keeps the focus where
+  // the browser puts it: only a real change of phase moves it.
+  const headingRef = useRef<HTMLHeadingElement>(null)
+  const shownPhase = useRef(phase)
+  useEffect(() => {
+    if (shownPhase.current === phase) return
+    shownPhase.current = phase
+    window.scrollTo?.({ top: 0 })
+    headingRef.current?.focus()
+  }, [phase])
+  // ?team=1 is the team's view: it adds the content problems the astronaut
+  // never needs to read (and never sees in the demo video).
+  const [teamView] = useState(
+    () => new URLSearchParams(window.location.search).get('team') === '1',
+  )
+
+  const clock = missionNow(personEntries.length > 0 ? personEntries : entries)
 
   return (
-    <>
+    <div className={`app${motionReduced ? ' app--still' : ''}`}>
+      <Starfield still={motionReduced} />
       <SkipLink />
-      <AppHeader
-        personIds={personIds}
-        personId={selectedPerson}
-        onPersonChange={setPersonId}
+      {introOpen && (
+        <Suspense fallback={<div className="intro-cover" aria-hidden="true" />}>
+          <Intro
+            still={motionReduced}
+            onDone={() => setIntroOpen(false)}
+            clockText={strings.header.metadata(clock.missionDay, clock.time)}
+            skipLabel={strings.intro.skip}
+          />
+        </Suspense>
+      )}
+      <Topbar
         clock={clock}
+        personId={phase === 'identify' ? null : personId}
         store={store}
         client={client}
-        faceEnabled={faceEnabled}
-        faceOpen={faceOpen}
-        onToggleFace={() => setFaceOpen((open) => !open)}
-        faceButtonRef={faceButtonRef}
+        motionReduced={motionReduced}
+        onToggleMotion={() => setMotionReduced((still) => !still)}
       />
-      <Box
-        component="main"
-        id="main-content"
-        tabIndex={-1}
-        sx={{
-          maxWidth: LAYOUT.containerWidth,
-          mx: 'auto',
-          px: {
-            xs: `${LAYOUT.gutter.phone}px`,
-            sm: `${LAYOUT.gutter.tablet}px`,
-            md: `${LAYOUT.gutter.desktop}px`,
-          },
-          pt: { xs: 3, md: 5 },
-          pb: 6,
-        }}
-      >
-        {faceEnabled && faceOpen && (
-          <Suspense
-            fallback={
-              <p className="face-panel__status" role="status">
-                {strings.face.opening}
-              </p>
-            }
-          >
-            <FaceSignIn
-              personId={selectedPerson}
-              personIds={personIds}
-              onPersonSelected={setPersonId}
-              onFocusPicker={() =>
-                document.getElementById(PERSON_PICKER_ID)?.focus()
-              }
-              onClose={() => {
-                setFaceOpen(false)
-                // Back to the control that opened the panel, as a dialog does.
-                faceButtonRef.current?.focus()
-              }}
-            />
-          </Suspense>
-        )}
+      <main id="main-content" className="stage" tabIndex={-1}>
         {storageWarnings.length > 0 && (
           <Notice tone="warning">{storageWarnings.join(' ')}</Notice>
         )}
-        <ScreenTabs activeTab={activeTab} onTabChange={setActiveTab} />
-        {/* The panel holds the focusable controls, so it is not a tab stop of
-            the tabs pattern. */}
-        <div
-          role="tabpanel"
-          id={`panel-${activeTab}`}
-          aria-labelledby={`tab-${activeTab}`}
-        >
-          {activeTab === 'home' && (
-            <Home personId={selectedPerson} data={data} entries={entries} />
-          )}
-          {activeTab === 'entry' && (
-            // A new person means a new form, with that person's day and time.
-            <Entry
-              key={selectedPerson}
-              store={store}
-              personId={selectedPerson}
-              indicators={data.indicators}
-              serverConfigured={client.isConfigured()}
-              entries={entries.filter(
-                (entry) => entry.personId === selectedPerson,
-              )}
-            />
-          )}
-          {activeTab === 'history' && (
-            <History store={store} personId={selectedPerson} data={data} />
-          )}
-        </div>
-      </Box>
-    </>
+        <PhaseTransition phase={phase} still={motionReduced}>
+        {phase === 'identify' && (
+          <IdentifyPhase
+            headingRef={headingRef}
+            personIds={personIds}
+            personId={personId}
+            onPersonChange={setPersonId}
+            faceEnabled={faceEnabled}
+            onDone={() => setPhase('report')}
+          />
+        )}
+        {phase === 'report' && personId && (
+          // A new person means a new form, with that person's day and time.
+          <ReportPhase
+            key={personId}
+            headingRef={headingRef}
+            store={store}
+            personId={personId}
+            indicators={data.indicators}
+            entries={personEntries}
+            serverConfigured={client.isConfigured()}
+            onBack={() => setPhase('identify')}
+            onDone={() => setPhase('status')}
+          />
+        )}
+        {phase === 'status' && personId && (
+          <StatusPhase
+            headingRef={headingRef}
+            store={store}
+            personId={personId}
+            data={teamView ? data : { ...data, problems: [] }}
+            entries={entries}
+            motionReduced={motionReduced}
+            onBack={() => setPhase('report')}
+            onRestart={() => {
+              setPersonId(null)
+              setPhase('identify')
+            }}
+          />
+        )}
+        </PhaseTransition>
+      </main>
+      <PhaseRail current={phase} />
+    </div>
   )
 }

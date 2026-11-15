@@ -21,9 +21,10 @@ test('without ?face=1 nothing face-related is on the page or requested', async (
 
   await page.goto('/')
 
-  await expect(
-    page.getByRole('heading', { level: 1, name: strings.appName }),
-  ).toBeVisible()
+  // Phase 1 is open: the identify headline is on screen.
+  await expect(page.getByRole('heading', { level: 1 })).toContainText(
+    strings.phases.identify.headline[0],
+  )
   await expect(
     page.getByRole('button', { name: strings.face.buttonLabel }),
   ).toHaveCount(0)
@@ -31,7 +32,9 @@ test('without ?face=1 nothing face-related is on the page or requested', async (
   await expect(page.locator('.face-panel')).toHaveCount(0)
 
   // The way in that always works, with or without a camera.
-  await expect(page.getByLabel(strings.personPickerLabel)).toBeVisible()
+  await expect(
+    page.getByRole('group', { name: strings.phases.identify.crewLabel }),
+  ).toBeVisible()
 
   // The page may still be loading its own files; nothing may ask for a model.
   await page.waitForLoadState('networkidle')

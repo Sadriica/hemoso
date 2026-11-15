@@ -64,6 +64,18 @@ export default function SyncStatus({
           <p className="sync-status__item">{strings.sync.noServer}</p>
         )}
       </div>
+      {configured && !online && (
+        <Notice
+          tone="warning"
+          action={
+            <button className="button button--secondary" type="button" onClick={sendNow}>
+              {strings.sync.tryAgain}
+            </button>
+          }
+        >
+          {strings.sync.offlineNotice}
+        </Notice>
+      )}
       {notAccepted > 0 && (
         <Notice tone="warning">{strings.sync.notAccepted(notAccepted)}</Notice>
       )}

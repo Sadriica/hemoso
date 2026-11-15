@@ -59,8 +59,9 @@ licences allow it, and shows the body in 3D, including muscles, ligaments and bo
 **Indicators we chose, and why** (Sat 14 Nov 15:37): the six the challenge
 statement names: heart rate, blood pressure (systolic and diastolic), body
 temperature, sleep hours, mood and blood sugar. Each has a source for how it is
-measured on board, except blood sugar, which no in-flight source covers: it is
-explained (tier C), never an input. Ids in `FORMATS.md` section 2.
+measured on board. Blood sugar is measured with the i-STAT blood analyser from
+a fingerstick sample, not continuously (Bio 2 found the source on Sat 19:30; it
+was tier C until then). Ids in `FORMATS.md` section 2.
 
 **Demo format:** video of 30 s or less, or 7 slides (the other one is plan B).
 
@@ -69,8 +70,8 @@ explained (tier C), never an input. Ids in `FORMATS.md` section 2.
 | Name | Licence | What for |
 | --- | --- | --- |
 | React 19.3.1, React DOM | MIT | The app's screens |
-| MUI 9.5.0, Emotion 11.14 | MIT | Theme, header and tabs |
 | @vladmandic/face-api 1.7.15 and its models | MIT | Face sign-in on the device (REQ-36) |
+| three (version pinned in frontend/package.json) | MIT | The 3D body: rotate, see the systems, select where it hurts (REQ-15) |
 | Vite 8.3.8, TypeScript 6.0.3 | MIT, Apache-2.0 | Build and types (development only) |
 | Vitest, Testing Library, jsdom | MIT | Frontend tests (development only) |
 | Playwright, axe-core | Apache-2.0, MPL-2.0 | End-to-end and accessibility tests (development only) |
@@ -106,7 +107,13 @@ planning, wording, and code. Not the base idea. Kept in `team/eng1/notes/si-use-
 | Use | No Supabase client library: the backend calls the Supabase REST API with httpx | One dependency less; its licence row is httpx's | REQ-27 |
 | Use | Face sign-in on the device (REQ-36), off unless the URL has `?face=1`: consent first, the descriptor stays in the person's own browser, never sent to the backend; exception to REQ-14 limited to that | Juli's proposal (team/eng2/notes/face-login-proposal.md), accepted by Wambi Sat 18:25; first step toward the team's face and eye analysis | REQ-36, REQ-14 |
 | Use | @vladmandic/face-api 1.7.15, MIT, with its tiny detector, tiny 68-point landmark and recognition models copied to `frontend/public/models/` with the licence | Runs in the browser with no external service and no CDN; loaded only when the face panel opens | REQ-36 |
-| Use | @mui/material 9.5.0 with @emotion/react 11.14.0 and @emotion/styled 11.14.1, MIT | The app's theme, header and tabs (Juli, Sat 19:00); split into its own `vendor-mui` file so the browser keeps it cached when only the app changes | REQ-01, REQ-15, REQ-30 |
+| Rejected | @mui/material 9.5.0 with @emotion/react and @emotion/styled (used Sat 19:00 to 19:50) | Juli replaced it with the app's own CSS and a three-phase check (identify, report, status): first-load JavaScript went from 525 kB to 290 kB (163 to 88 kB gzip) | REQ-01, REQ-15 |
+| Use | Blood pressure shows the worse of its two states (systolic or diastolic) for one reading | F-bio2-01: WHO and ACC/AHA both classify a mixed reading by the higher category | REQ-05 |
+| Use | Possible conditions shown as an evidence score from 0 to 1 with a three-step label and its signals, never a percentage; each signal in `rules/conditions.csv` names its side (`indicator_id:above` or `:below`) | F-bio2-02: a percentage would need prevalence and signal rates we do not have for astronauts; the score keeps "as probabilities, never a certainty" without inventing calibration. Bio 2's proposal, accepted by Wambi Sat 19:40 | REQ-06 |
+| Use | Blood glucose is tier A: i-STAT fingerstick on board, a value only when the crew takes a sample | Bio 2's review with the NTRS, FDA and Clinical Chemistry sources (`team/bio2/notes/indicators-review.md`); Phys updates `data/indicators.csv` | REQ-03 |
+| Use | Roles swapped at Sat 19:40: Wambi (eng1) takes the frontend, Juli (eng2) takes the backend, `docs/API.md` and `docs/openapi.json`; Wambi stays integrator. Paths in `scripts/precheck.py` and the agent files, owners in the requirements and cards | Team decision (Wambi and Juli) | REQ-01, REQ-27 |
+| Use | Visual direction: futuristic planetarium in a space mission, comfortable and simple; the app guides one step at a time and shows details on demand; palette inspired by space agency blues with a sparing signal red-orange, no agency brand colours, logos or insignia; own SVG icon per indicator coloured by body system; an animated instrument per card, a body silhouette lighting the system zone (first layer of the 3D body) and a planetarium status view with a plain list equivalent; short motion for state changes and a few cinematic moments, all off under reduced motion | Wambi, Sat 20:05; brief in `team/eng1/notes/frontend-visual-agent-prompt.md` | REQ-01, REQ-09, REQ-15 |
+| Use | Each content file has a status text for the baseline states (`### in_range`, `### outside_range`, optional `### no_data`, the names the API returns) and one per attention level of that indicator (the text for `needs_review`) | Bio 1 wrote texts per baseline state and Bio 2 defined attention levels; one file now holds both (Wambi, Sat 21:05) | REQ-26, REQ-05 |
 | Use | Colour coding: one colour per status, always paired with an icon and the status in words, so colour is never the only signal (REQ-15) | Team decision (Wambi), Sat 18:45; the badge already pairs colour, icon and words | REQ-09, REQ-15 |
 | Use | Dynamic charts over time: the History tab draws each indicator against the person's earlier values (`frontend/src/components/IndicatorChart.tsx`, merged in #67) | Team decision (Wambi), Sat 18:45; the chart is what REQ-12 compares against | REQ-09, REQ-12 |
 | Use | Routine prompts: the app asks for the measurement that fits the moment of the mission routine (on waking, after exercise, before sleep), using the `context` values | Team decision (Wambi), Sat 18:45; it turns `context` into the crew's daily routine | REQ-09, REQ-02 |
@@ -114,3 +121,6 @@ planning, wording, and code. Not the base idea. Kept in `team/eng1/notes/si-use-
 | Use | Mission environments: the crew member picks where the mission runs (station, spacecraft, lunar or Mars base) and the interface names and frames it | Team decision (Wambi), Sat 18:45 | REQ-09 |
 | Use | Animations, kept short: transitions that show a change of state, all switched off under `prefers-reduced-motion` | Team decision (Wambi), Sat 18:45; they must not slow the 30 s demo | REQ-09, REQ-15 |
 | Use | Camera input: face sign-in on the device (REQ-36) and, later, face and eye analysis; the form keeps working on a device without a camera | Team decision (Wambi), Sat 18:45 | REQ-09, REQ-36 |
+| Use | First-load JavaScript budget of 600 kB raw, a target, not a CI check (was 300 kB in the visual brief) | Wambi, Sat 21:20: the visual layer and the state route left 0.8 kB of room, and restructuring the app to save under 1 kB risked the first screen; the face engine stays lazy and outside it; the team trims the bundle later if the demo needs it | REQ-15 |
+| Use | Accounts: username and a 4 to 8 digit PIN checked on the server (salted scrypt hash in Supabase, signed session token, routes of a person with an account need it); the face stays on the device and unlocks the session stored there after one PIN sign-in; the synthetic demo astronaut stays open with one click | Team decision (Wambi), Sat 21:55: the same account must work on the PC and the phone, the face is the quick way in but cannot be checked by the server without sending biometric data, and the judges need a link with no login (REQ-32) | REQ-37, REQ-36, REQ-32 |
+| Use | The 3D body is drawn with three.js from primitives (no model file, no asset licence), loaded on demand outside the first-load budget, with the 2D silhouette as the fallback without WebGL; the astronaut selects where it hurts and sets an intensity from 0 to 10, stored on the device only for now (`hemoso:pain:v1`) | Wambi, Sat 22:20: the 3D body is the core of the team's idea and only a 2D silhouette existed; the backend is paused, so pain reports stay local until it resumes; the region list lives in the frontend until the open question on `config/content/body_regions.csv` is answered | REQ-15 |
