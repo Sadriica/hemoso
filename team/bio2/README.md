@@ -20,6 +20,8 @@ _Update before every checkpoint and at every shift change._
   glucose review now has the in-flight analyser source (REQ-03).
 - **In progress:** Eng 1 has to record the two rules in `docs/DECISIONS.md`;
   Bio 1 needs `### watch` headings for sleep and mood.
+- **Done today, outside the code:** the five members are on the Members tab of
+  ReTardis (REQ-24, checked at 19:35).
 - **Next:** review Bio 1's status texts (REQ-10); ask the four questions of T-04
   to the organiser; start the submission page.
 - **Board:** open cards #4, #16, #17, #21, #27, #31, #34, #35, #36, #38, #41, #50.
