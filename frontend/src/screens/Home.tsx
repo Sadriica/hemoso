@@ -26,6 +26,9 @@ import { useIndicatorStates } from '../hooks/useIndicatorState'
 import { IndicatorIcon, StatusIcon, systemColor, systemOf } from '../icons'
 import { useCountUp, useMotionAllowed } from '../motion/motion'
 import { strings } from '../strings'
+// The slot of the lazy 3D body has its size here, so nothing moves when the
+// chunk arrives.
+import '../components/body3d/body3d.css'
 
 // The three figures are chunks of their own, so the first load stays small.
 // Each one waits in a box of its final size, so nothing moves when it arrives.
@@ -33,9 +36,8 @@ const Planetarium = lazy(() =>
   import('../components/planetarium').then((m) => ({ default: m.Planetarium })),
 )
 const Instrument = lazy(() => import('../components/instruments'))
-const BodySilhouette = lazy(() =>
-  import('../components/body').then((m) => ({ default: m.BodySilhouette })),
-)
+// The body is a chunk of its own: three.js never reaches the first load.
+const Body3D = lazy(() => import('../components/body3d/Body3D'))
 
 // One indicator with everything the screen draws from: its readings, its rules,
 // and the one status the planetarium, the notice and the card all read.
@@ -204,10 +206,12 @@ export default function Home({
           </ul>
           <div className="detail__body">
             <Suspense
-              fallback={<div className="detail__body-slot" aria-hidden="true" />}
+              fallback={<div className="body3d-slot" aria-hidden="true" />}
             >
-              <BodySilhouette
+              <Body3D
+                mode="status"
                 system={selectedSystem}
+                state={statusBadgeKind(selected.status)}
                 label={
                   selectedSystem
                     ? strings.board.bodyLabel(selected.indicator.name)
