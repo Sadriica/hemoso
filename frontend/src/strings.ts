@@ -349,6 +349,9 @@ export const strings = {
       markLegend: 'Marks',
       pickReading: 'Select a reading to see it here.',
       newest: 'Newest reading',
+      // Short series names for the threshold lines of a blood pressure chart.
+      systolicShort: 'Sys',
+      diastolicShort: 'Dia',
       readout: (parts: {
         series: string | null
         value: string

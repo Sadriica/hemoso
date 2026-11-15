@@ -44,6 +44,8 @@ export interface TrendSeriesInput {
   key: string
   // The series name shown beside a value; null when the chart has one series.
   label: string | null
+  // A short form of the name for the threshold labels, where room is tight.
+  shortLabel?: string
   unit: string
   rules: AttentionRule[]
   // Oldest first.
@@ -602,7 +604,10 @@ function buildModel(series: TrendSeriesInput[], plot: Plot): Model {
   const thresholds = thresholdLines(
     cited.map(({ item, rule }) => ({
       key: `${item.key}:${rule.attentionLevel}:${rule.side}:${rule.threshold}`,
-      text: strings.history.trend.thresholdLabel(item.label, rule.attentionLevel),
+      text: strings.history.trend.thresholdLabel(
+        item.shortLabel ?? item.label,
+        rule.attentionLevel,
+      ),
       y: yPosition(rule.threshold),
       above: rule.side === 'above',
     })),
