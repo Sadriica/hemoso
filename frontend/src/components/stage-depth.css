@@ -57,16 +57,11 @@
   opacity: 0.8;
 }
 
-/* One slow turn of the orbit: four minutes a lap. */
+/* The orbit stays still. It turned once in four minutes, which nobody could
+   see, and the turn repainted a full-screen SVG layer on every frame: the main
+   idle cost of the app (performance review, Sun 15 Nov). */
 .depth__turn {
   transform-origin: 500px 300px;
-  animation: depth-turn 240s linear infinite;
-}
-
-@keyframes depth-turn {
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 /* A soft pool of light where the active panel sits, so the panel stands
