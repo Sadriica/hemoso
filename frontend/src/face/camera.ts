@@ -47,7 +47,12 @@ export async function startCamera(
     throw new CameraError(problemFor(error))
   }
 
+  // iOS Safari plays inline only with these set, and starts a stream only on
+  // play(); the attributes on the element are not enough on their own.
+  video.muted = true
+  video.playsInline = true
   video.srcObject = stream
+  startPlaying(video)
   try {
     // The second time the panel opens the camera, the element starts from an
     // empty stream: without this wait the model is handed a video with no
@@ -72,6 +77,17 @@ export async function startCamera(
       for (const track of stream.getTracks()) track.stop()
       video.srcObject = null
     },
+  }
+}
+
+// play() may be refused (autoplay rules) or interrupted by a new stream; the
+// first frame wait below decides whether the camera works, not this promise.
+function startPlaying(video: HTMLVideoElement): void {
+  try {
+    const played: unknown = video.play()
+    if (played instanceof Promise) played.catch(() => undefined)
+  } catch {
+    // jsdom and very old browsers: nothing to start.
   }
 }
 

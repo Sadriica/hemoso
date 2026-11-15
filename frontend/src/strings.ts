@@ -131,6 +131,7 @@ export const strings = {
       sleep: 'Sleep',
       neuro: 'Brain and behaviour',
       metabolic: 'Metabolism',
+      musculoskeletal: 'Muscles and bones',
     },
     // The limit a needs-review card was triggered by, then where it comes from.
     limitCrossed: (side: 'above' | 'below', threshold: number, unit: string): string =>
@@ -585,17 +586,17 @@ export const strings = {
       deleted: (personId: string): string =>
         `Face data deleted for ${personId}.`,
       noFace: 'No face found. Look at the camera and try again.',
-      // The model did not load, or the browser gave up on it: not the person's
-      // fault, and the picker still works.
-      failed: 'The face check could not run on this device. Pick your name below.',
-      notRecognised: 'Face not recognised. Pick your name instead.',
     },
-    camera: {
-      denied:
-        'The browser blocked the camera. Allow it for this site, or pick your name below.',
-      missing: 'No camera was found. Pick your name below.',
-      busy: 'The camera is in use by another app. Close it and try again, or pick your name below.',
-    },
+    // What the person reads while the model files come down: a phone on mobile
+    // data can wait a while for 6.4 MB, so the number moves.
+    loading: (percent: number): string =>
+      `Loading the face check, ${percent} %. This happens once.`,
+    // A problem is a short sentence and a way out that exists on the screen
+    // where it appears (T-70). `register`: the person is signed in, so the
+    // username and PIN already work. `tab`: the Sign in tab is on the screen.
+    // `picker`: no accounts on this server, only the demo crew to pick from.
+    problem: (kind: FaceProblem, where: FaceFallback): string =>
+      `${FACE_PROBLEM[kind]} ${FACE_FALLBACK[where]}`,
   },
   // The mission time of a reading on a card: the technical label style, with
   // the middle dot between the day and the clock time (guide 7.3).
@@ -612,6 +613,29 @@ export const strings = {
   // The unit that follows a value on a card: "58 bpm". The 1 to 5 scales hold
   // their range in the unit, so they read "4 / 5" and not "4 1 to 5".
   cardUnit: (unit: string): string => (unit === SCALE_UNIT ? '/ 5' : unit),
+}
+
+// The face sentences of T-70, kept apart so each one is written once.
+export type FaceProblem =
+  | 'failed'
+  | 'denied'
+  | 'missing'
+  | 'busy'
+  | 'notRecognised'
+export type FaceFallback = 'register' | 'tab' | 'picker'
+
+const FACE_PROBLEM: Record<FaceProblem, string> = {
+  failed: 'Face sign-in is not available on this device.',
+  denied: 'The browser blocked the camera. Allow it for this site.',
+  missing: 'No camera was found.',
+  busy: 'The camera is in use by another app. Close it and try again.',
+  notRecognised: 'Face not recognised.',
+}
+
+const FACE_FALLBACK: Record<FaceFallback, string> = {
+  register: 'Your username and PIN keep working.',
+  tab: 'Use the Sign in tab with your username and PIN.',
+  picker: 'Pick your name below.',
 }
 
 // "last 1 reading" and "last 9 readings": the count inside the history sentence.

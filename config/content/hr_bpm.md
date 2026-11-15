@@ -45,7 +45,8 @@ No one is notified for now.
 
 ### consult
 
-Your resting heart rate is far outside your usual range.
+Your resting heart rate is far outside your usual range. A resting rate of
+100 bpm or more, or 50 bpm or less, is also outside the range your CMO uses.
 
 Tell your CMO today. Rest and measure again in 2 hours. Assumption.
 

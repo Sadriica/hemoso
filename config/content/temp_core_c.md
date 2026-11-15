@@ -58,7 +58,8 @@ Your CMO checks you in person.
 
 ### urgent
 
-Your temperature is well above your usual range, or well below it.
+Your temperature is well below your usual range. A temperature below 35.0 °C is
+the emergency line your CMO uses.
 
 Tell your CMO now. Rest and drink fluids. Assumption.
 

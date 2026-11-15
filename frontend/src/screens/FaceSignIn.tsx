@@ -7,7 +7,8 @@ import {
   loadFaces,
   saveFace,
 } from '../face/descriptors'
-import { strings } from '../strings'
+import { describeError } from '../face/backends'
+import { strings, type FaceFallback } from '../strings'
 
 // Signing in by looking at the camera, on this device only (REQ-36, T-58,
 // T-59). The panel opens from the header button and never opens the camera
@@ -35,8 +36,11 @@ export interface FaceSignInProps {
   personId: string
   onPersonSelected(personId: string): void
   onClose(): void
-  // Puts focus back on the person picker, the fallback the screen names.
+  // Puts focus on the way in the sentence names when signing in with the face
+  // fails: the Sign in tab, or the crew picker when the server has no accounts.
   onFocusPicker(): void
+  // Which of the two that is; the sentence says the same thing.
+  fallback?: FaceFallback
   // Tests open the panel with 0 so five frames do not wait two seconds.
   frameIntervalMs?: number
 }
@@ -46,11 +50,13 @@ export default function FaceSignIn({
   onPersonSelected,
   onClose,
   onFocusPicker,
+  fallback = 'tab',
   frameIntervalMs = FRAME_INTERVAL_MS,
 }: FaceSignInProps) {
   const [stage, setStage] = useState<Stage>('consent')
   const [message, setMessage] = useState<Message | null>(null)
   const [cameraOn, setCameraOn] = useState(false)
+  const [loadingPercent, setLoadingPercent] = useState<number | null>(null)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [savedIds, setSavedIds] = useState<string[]>(() =>
     loadFaces().map((record) => record.personId),
@@ -61,6 +67,7 @@ export default function FaceSignIn({
   const continueRef = useRef<HTMLButtonElement>(null)
   const registerRef = useRef<HTMLButtonElement>(null)
   const signInRef = useRef<HTMLButtonElement>(null)
+  const closeRef = useRef<HTMLButtonElement>(null)
   const focusFirstAction = useRef(false)
   const videoRef = useRef<HTMLVideoElement>(null)
   const sessionRef = useRef<CameraSession | null>(null)
@@ -110,20 +117,35 @@ export default function FaceSignIn({
     setCameraOn(false)
   }
 
-  function reportFailure(error: unknown) {
-    // A camera that will not start has its own sentence; anything else is the
-    // model or the browser giving up, and the person still has the picker.
-    if (error instanceof CameraError) {
-      setMessage({ text: strings.face.camera[error.problem], alert: true })
-    } else {
-      setMessage({ text: strings.face.status.failed, alert: true })
-    }
-    // The panel stays open with the sentence, and the picker that always works
-    // takes the focus.
-    onFocusPicker()
+  // `where` is the action that failed: registering happens signed in, so the
+  // username and PIN are already there; signing in points at the way in that
+  // exists on this screen. The cause goes to the console, name and message only.
+  function reportFailure(error: unknown, action: 'register' | 'signIn') {
+    console.warn(`face: ${action} failed (${describeError(error)})`)
+    const where = action === 'register' ? 'register' : fallback
+    const kind =
+      error instanceof CameraError ? error.problem : ('failed' as const)
+    setMessage({ text: strings.face.problem(kind, where), alert: true })
+    // The panel stays open with the sentence. Registering has nowhere else to
+    // go but Close; signing in sends the focus to the other way in.
+    if (action === 'register') closeRef.current?.focus()
+    else onFocusPicker()
   }
 
-  // The model is a separate chunk: the main page never waits for it.
+  // The model is a separate chunk: the main page never waits for it. Its files
+  // download while the camera starts, with the percentage on screen.
+  async function prepareModels(): Promise<void> {
+    const engine = await import('../face/engine')
+    let shown = -1
+    await engine.loadModels((fraction) => {
+      const percent = Math.floor((fraction * 100) / 10) * 10
+      if (percent !== shown) {
+        shown = percent
+        setLoadingPercent(percent)
+      }
+    })
+  }
+
   async function descriptorOf(
     video: HTMLVideoElement,
   ): Promise<number[] | null> {
@@ -153,13 +175,24 @@ export default function FaceSignIn({
     return video
   }
 
+  // The camera and the model files start together; a camera that fails first
+  // is reported and the download is left to finish in the cache.
+  async function openCameraAndModels(): Promise<HTMLVideoElement> {
+    const loading = prepareModels()
+    loading.catch(() => undefined)
+    const video = await openCamera()
+    await loading
+    setLoadingPercent(null)
+    return video
+  }
+
   async function register() {
     if (busy || personId === '') return
     setConfirmingDelete(false)
     setMessage(null)
     setStage('registering')
     try {
-      const video = await openCamera()
+      const video = await openCameraAndModels()
       const frames = await captureFrames(video, FRAME_COUNT)
       const descriptor = averageDescriptors(frames)
       if (descriptor === null) {
@@ -173,8 +206,9 @@ export default function FaceSignIn({
         alert: false,
       })
     } catch (error) {
-      reportFailure(error)
+      reportFailure(error, 'register')
     } finally {
+      setLoadingPercent(null)
       stopCamera()
       setStage('ready')
     }
@@ -186,20 +220,24 @@ export default function FaceSignIn({
     setMessage(null)
     setStage('signingIn')
     try {
-      const video = await openCamera()
+      const video = await openCameraAndModels()
       const frames = await captureFrames(video, 1)
       const probe = frames[0] ?? null
       const match = probe === null ? null : bestMatch(loadFaces(), probe)
       if (match === null) {
-        setMessage({ text: strings.face.status.notRecognised, alert: true })
+        setMessage({
+          text: strings.face.problem('notRecognised', fallback),
+          alert: true,
+        })
         onFocusPicker()
         return
       }
       onPersonSelected(match.personId)
       onClose()
     } catch (error) {
-      reportFailure(error)
+      reportFailure(error, 'signIn')
     } finally {
+      setLoadingPercent(null)
       stopCamera()
       setStage('ready')
     }
@@ -321,7 +359,11 @@ export default function FaceSignIn({
 
           {/* The picture exists only while the camera is on. The label is part
               of the panel, so the element is never an unlabelled video. */}
-          <div className="face-panel__camera" hidden={!cameraOn}>
+          <div
+            className="face-panel__camera"
+            hidden={!cameraOn}
+            aria-hidden={!cameraOn}
+          >
             <video
               ref={videoRef}
               className="face-panel__video"
@@ -336,7 +378,11 @@ export default function FaceSignIn({
           </div>
 
           <p className="face-panel__status" role="status">
-            {message !== null && !message.alert ? message.text : ''}
+            {loadingPercent !== null
+              ? strings.face.loading(loadingPercent)
+              : message !== null && !message.alert
+                ? message.text
+                : ''}
           </p>
           {message !== null && message.alert && (
             <p className="face-panel__status" role="alert">
@@ -346,6 +392,7 @@ export default function FaceSignIn({
 
           <div className="face-panel__actions">
             <button
+              ref={closeRef}
               className="button button--secondary"
               type="button"
               onClick={onClose}
