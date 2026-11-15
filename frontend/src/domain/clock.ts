@@ -7,7 +7,7 @@ export interface MissionClock {
   time: string // HH:MM
 }
 
-// The latest mission day in `entries`, and `date` as HH:MM (local time).
+// The latest mission day in `entries`, and `date` as HH:MM (GMT).
 // A person with no entries yet is on day 1.
 export function missionNow(
   entries: Entry[],
@@ -58,9 +58,11 @@ export function missionClockFor(
   return start ? { ...own, missionDay: missionDayFromStart(start, now) } : own
 }
 
+// The clock the crew reads is GMT, the time the station runs on (STANDARDS.md
+// section 5), so the label "GMT" is true on a device in any time zone.
 function formatClockTime(date: Date): string {
-  const hours = String(date.getHours()).padStart(2, '0')
-  const minutes = String(date.getMinutes()).padStart(2, '0')
+  const hours = String(date.getUTCHours()).padStart(2, '0')
+  const minutes = String(date.getUTCMinutes()).padStart(2, '0')
   return `${hours}:${minutes}`
 }
 

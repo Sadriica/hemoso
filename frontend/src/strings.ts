@@ -92,6 +92,9 @@ export const strings = {
           : `${count} ${count === 1 ? 'reading' : 'readings'} logged in this check.`,
       back: 'Back',
       next: 'See my status',
+      // The reaction check is optional and sits behind one closed line.
+      reactionOptional: 'Reaction check, optional',
+      reactionDone: (result: string): string => `Reaction check, done: ${result}`,
     },
     status: {
       number: '03',
@@ -138,6 +141,20 @@ export const strings = {
     noReadings:
       'No readings yet. Log your first readings in the report, then come back here.',
     loading: 'Loading the overview.',
+    // The system strip of the console: counts only, from the statuses on
+    // screen. No health wording.
+    strip: {
+      label: 'System summary',
+      channels: (count: number): string =>
+        `${count} ${count === 1 ? 'channel' : 'channels'}`,
+      count: {
+        review: (count: number): string =>
+          `${count} ${count === 1 ? 'needs' : 'need'} review`,
+        outside: (count: number): string => `${count} outside usual range`,
+        in_range: (count: number): string => `${count} in usual range`,
+        no_data: (count: number): string => `${count} with no data yet`,
+      },
+    },
     // The overview figure failed to draw; the cards and the history still work.
     overviewFailed: 'The overview could not be drawn. Reload the page to try again.',
   },
@@ -179,7 +196,7 @@ export const strings = {
   },
   topbar: {
     tagline: 'CREW HEALTH',
-    onDuty: (personId: string): string => `on duty ${personId}`,
+    onDuty: (personId: string): string => `On duty: ${personName(personId)}`,
     reduceMotion: 'Reduce motion',
     // What the motion switch turns off, in words for its tooltip.
     motionOn: 'Motion is on',
@@ -193,32 +210,57 @@ export const strings = {
     bloodPressure: 'Blood pressure',
     systolic: 'Systolic',
     diastolic: 'Diastolic',
-    missionDay: 'Mission day',
-    time: 'Time',
+    // The crew's own words (STANDARDS.md section 5): the day of the mission is
+    // the Flight Day, and the station clock runs on GMT. The plain words are
+    // the helper under the two fields.
+    missionDay: 'Flight Day',
+    time: 'GMT',
+    timeHelp: 'Flight Day is the day of your mission. GMT is station time.',
     // What the astronaut was doing when they took the readings (FORMATS.md
     // section 3, `context`). The choice that fits the local clock is picked
     // first, and the person can change it.
     context: 'Context',
-    // The header control sets every row's own context at once.
-    applyToAll: 'Apply to all rows',
-    applyToAllHint: 'Tap one to set every row at once.',
+    // The header says the context once; a row names its own only when it
+    // differs, and that tag opens the four choices for the row.
+    change: 'change',
+    keepOwn: (count: number): string =>
+      count === 1 ? '1 row keeps its own context' : `${count} rows keep their own context`,
     rowContext: (name: string): string => `Context for ${name}`,
     contextLabels: {
       rest: 'At rest',
       after_exercise: 'After exercise',
-      on_waking: 'On waking',
-      before_sleep: 'Before sleep',
+      on_waking: 'Post-sleep · on waking',
+      before_sleep: 'Pre-sleep · before bed',
     },
     // The mood scale of FORMATS.md section 2 (1 = very low to 5 = very good).
     // The app writes no health word of its own beyond these.
     scaleWords: ['Very low', 'Low', 'Neutral', 'Good', 'Very good'],
     // The last reading of that indicator, under its field.
     lastValue: (reading: string): string => `last ${reading}`,
+    // The state of that last reading, read before its badge by a screen reader.
+    lastState: 'Last reading:',
+    // The small history of a panel in words: how many earlier readings it
+    // draws and the lowest and highest of them.
+    history: (
+      label: string | null,
+      count: number,
+      low: number,
+      high: number,
+      unit: string,
+    ): string =>
+      `${label === null ? '' : `${label}: `}${count} earlier ${count === 1 ? 'reading' : 'readings'} · ${low} to ${high} ${unit}`,
+    // A panel with no earlier reading yet: one plain line instead of a blank.
+    noHistory: 'No earlier readings yet.',
+    // The console the report is: its name and the tag every screen keeps.
+    console: 'Physiology telemetry',
     save: 'Save readings',
     // Progress through the rows of the report, and why Save waits.
     progress: (filled: number, total: number): string => `${filled} of ${total} filled`,
     saveNeeds: 'Fill in at least one reading to save.',
     saveWhat: 'Saves every filled row for this day and time.',
+    // The way on, offered next to the saved message.
+    next: 'See my status',
+    nextLabel: 'See my status, your readings are saved',
     // What was saved, one item per reading: "Heart rate 72 bpm, Mood 3 / 5".
     savedList: (items: string): string => `Saved: ${items}.`,
     reading: (name: string, value: string): string => `${name} ${value}`,
@@ -233,8 +275,8 @@ export const strings = {
       valueRequired: 'Enter a value.',
       valueNumber: 'Enter a number.',
       valueScale: 'Choose a value from 1 to 5.',
-      missionDay: 'Enter a whole mission day, 1 or more.',
-      time: 'Enter a time as HH:MM.',
+      missionDay: 'Enter a whole Flight Day, 1 or more.',
+      time: 'Enter the GMT time as HH:MM.',
     },
   },
   // The history of one indicator against the person's own earlier readings
@@ -245,8 +287,8 @@ export const strings = {
     indicator: 'Indicator',
     tableCaption: (name: string): string => `Readings for ${name}`,
     columns: {
-      day: 'Day',
-      time: 'Time',
+      day: 'Flight Day',
+      time: 'GMT',
       context: 'Context',
       value: 'Value',
       status: 'Status',
@@ -264,7 +306,7 @@ export const strings = {
       day: number
       time: string
     }): string =>
-      `Latest: ${parts.value} ${parts.unit} on Day ${parts.day} ${parts.time}. ` +
+      `Latest: ${parts.value} ${parts.unit} on FD ${parts.day}, GMT ${parts.time}. ` +
       'Not enough earlier entries to compare yet.',
     summary: (parts: {
       value: string
@@ -277,7 +319,7 @@ export const strings = {
       count: number
       difference: string
     }): string =>
-      `Latest: ${parts.value} ${parts.unit} on Day ${parts.day} ${parts.time}. ` +
+      `Latest: ${parts.value} ${parts.unit} on FD ${parts.day}, GMT ${parts.time}. ` +
       `Your usual ${parts.context}: ${parts.median} ${parts.unit} (${readingCount(
         parts.count,
       )}). ` +
@@ -285,6 +327,45 @@ export const strings = {
     // A difference always carries its sign: "+5" and "-5" read as a change,
     // "0" as none.
     signed: (value: number): string => (value > 0 ? `+${value}` : String(value)),
+    // The trend chart over the table: comparison words only, the states come
+    // from `badge` and the contexts from `entry.contextLabels`.
+    trend: {
+      heading: 'Trend',
+      contextLegend: 'Context',
+      windowLegend: 'Show',
+      last14: 'Last 14',
+      all: 'All',
+      chartName: (name: string): string => `Trend of ${name}`,
+      hint: 'Arrow keys move between readings. Home and End jump to the first and last.',
+      hintPair: 'Up and down switch between the two series.',
+      noneInContext: 'No readings in this context yet.',
+      // The contexts that do have readings, so the person knows where to look.
+      readingsIn: (contexts: string): string => `Readings are in: ${contexts}.`,
+      usualBand: (series: string | null): string =>
+        series === null ? 'Usual band' : `${series} usual band`,
+      noBand: 'The usual band needs 3 earlier readings in this context.',
+      thresholdLabel: (series: string | null, level: string): string =>
+        series === null ? level : `${series}: ${level}`,
+      markLegend: 'Marks',
+      pickReading: 'Select a reading to see it here.',
+      newest: 'Newest reading',
+      // Short series names for the threshold lines of a blood pressure chart.
+      systolicShort: 'Sys',
+      diastolicShort: 'Dia',
+      readout: (parts: {
+        series: string | null
+        value: string
+        unit: string
+        day: number
+        time: string
+        context: string
+        state: string
+      }): string =>
+        `${parts.series === null ? '' : `${parts.series}: `}${parts.value} ${parts.unit} · ` +
+        `FD ${parts.day} · GMT ${parts.time} · ${parts.context} · ${parts.state}`,
+      point: (parts: { index: number; count: number }): string =>
+        `Reading ${parts.index} of ${parts.count}`,
+    },
   },
   // The four states of docs/API.md, GET .../state, in plain words (REQ-30).
   badge: {
@@ -341,6 +422,49 @@ export const strings = {
     rule: (side: string, value: string, level: string): string =>
       `${side} ${value}: ${level}.`,
   },
+  // The possible conditions of config/rules/conditions.csv (REQ-06): an
+  // evidence score from 0 to 1 with a three-step label and the signals behind
+  // it. Never a percentage, never a statement about the person; the names come
+  // from the file.
+  conditions: {
+    eyebrow: 'Evidence board',
+    heading: 'Possible conditions',
+    intro: 'What your readings point to, scored as evidence from 0 to 1.',
+    confirms: 'Your CMO or flight surgeon confirms.',
+    // The three steps, as one word and as one sentence.
+    label: {
+      review: 'Review',
+      possible: 'Possible',
+      low: 'Low',
+      no_data: 'Not enough data yet',
+    },
+    sentence: {
+      review: 'Ask your CMO or flight surgeon to check this.',
+      possible: 'Some of your readings point to it.',
+      low: 'Your readings do not point to it.',
+      no_data: 'It needs at least two readings that can be compared.',
+    },
+    // The bar: its name, the value as text, and what a screen reader hears.
+    meterName: (name: string): string => `Evidence for ${name}`,
+    evidence: (score: string): string => `Evidence ${score} of 1`,
+    evidenceSpoken: (score: string, label: string): string =>
+      `${score} of 1, ${label.toLowerCase()}`,
+    // One signal: the indicator, then what its newest reading says.
+    signalsLabel: (name: string): string => `Readings behind ${name}`,
+    side: { above: 'above', below: 'below' },
+    signal: {
+      limit: (name: string, side: string): string => `${name}: ${side} a set limit`,
+      outside: (name: string, side: string): string => `${name}: ${side} your usual`,
+      inside: (name: string, side: string): string => `${name}: not ${side} your usual`,
+      notComparable: (name: string): string =>
+        `${name}: not enough readings to compare`,
+      noReading: (name: string): string => `${name}: no reading yet`,
+    },
+    // What a tap on a signal does, for its accessible name.
+    openCard: (text: string): string => `Show the reading. ${text}`,
+    source: 'Source:',
+    notEnough: (count: number): string => `Not enough data yet (${count})`,
+  },
   problems: {
     label: 'Content problems (for the team)',
   },
@@ -381,8 +505,9 @@ export const strings = {
   // wording. The PIN is never written down here or anywhere in the browser.
   signIn: {
     faceHeading: 'Sign in with your face',
-    // The closed row that holds the username and PIN form and the new account.
-    moreToggle: 'Username and PIN',
+    // The two tabs above the username and PIN form: sign in or create.
+    accountHeading: 'Account',
+    signInTab: 'Sign in',
     faceNote: 'A face saved on this device opens your session.',
     // No face on this device yet: how to add one, in one line.
     faceNone: 'Sign in with your PIN once, then add your face on this device',
@@ -400,7 +525,6 @@ export const strings = {
     createToggle: 'Create an account',
     createHeading: 'Create an account',
     createAction: 'Create my account',
-    createBack: 'Back to signing in',
     confirmPin: 'PIN again',
     demoHeading: 'Demo',
     demoNote: 'The demo astronaut has no account. Every value in it is synthetic.',
@@ -408,13 +532,15 @@ export const strings = {
     // The role line of a crew card. The demo crew is synthetic data (REQ-14),
     // so that is the role it carries.
     crewRole: 'Synthetic crew member',
+    // The id a typed name becomes, shown under the field while it is typed.
+    willSignInAs: (personId: string): string => `You will sign in as ${personId}`,
     signedInAs: (personId: string): string => `Signed in as ${personId}`,
     signOut: 'Sign out',
     expired: 'Your session ended. Enter your PIN again.',
     askPin: (personId: string): string => `Enter the PIN for ${personId}.`,
     errors: {
       username:
-        'Use lowercase letters, digits and underscores, starting with a letter.',
+        'Start with a letter. Use letters, digits, spaces or underscores, 64 at most.',
       pin: 'Enter a PIN of 4 to 8 digits.',
       pinMismatch: 'The two PINs are different.',
       wrong: 'Wrong username or PIN.',
@@ -474,7 +600,9 @@ export const strings = {
   // The mission time of a reading on a card: the technical label style, with
   // the middle dot between the day and the clock time (guide 7.3).
   timeLabel: (day: number, time: string, context?: string): string =>
-    context ? `DAY ${day} · ${time} · ${context}` : `DAY ${day} · ${time}`,
+    context
+      ? `FD ${day} · GMT ${time} · ${context}`
+      : `FD ${day} · GMT ${time}`,
   // The metadata line of the top bar: the mission day of the latest reading and
   // the device clock, on one row with who is on duty. The synthetic data
   // sentence of REQ-14 sits in the strip under the bar.
@@ -494,5 +622,5 @@ function readingCount(count: number): string {
 // The mission time of the header band, in the technical label style of
 // STANDARDS.md section 4: the day, then the clock, on one line.
 function missionStamp(day: number, time: string): string {
-  return `Day ${day} · ${time}`
+  return `Flight Day ${day} · GMT ${time}`
 }

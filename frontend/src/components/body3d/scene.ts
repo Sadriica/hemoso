@@ -13,6 +13,7 @@
 
 import {
   BoxGeometry,
+  CircleGeometry,
   Color,
   ConeGeometry,
   CylinderGeometry,
@@ -24,6 +25,7 @@ import {
   OctahedronGeometry,
   PerspectiveCamera,
   Raycaster,
+  RingGeometry,
   Scene,
   SphereGeometry,
   TorusGeometry,
@@ -32,6 +34,7 @@ import {
   type BufferGeometry,
 } from 'three'
 import { bodyRegion } from './regions'
+import { sceneColors } from './palette'
 import { buildMannequin } from './mannequin'
 import { createFrameLoop } from './frame'
 import type { InjuryKind } from '../../data/painStore'
@@ -83,7 +86,7 @@ export interface SceneCallbacks {
 
 const IDLE_TURN = 0.16 // radians per second
 const BUTTON_TURN = Math.PI / 3
-const HOME = { distance: 3.5, y: 1.0 }
+const HOME = { distance: 3.5, y: 0.93 }
 const FOCUS_DISTANCE = 2.8
 const ZOOM_MIN = 2
 const ZOOM_MAX = 4.6
@@ -120,21 +123,42 @@ export function createBodyScene(
   const renderer = new WebGLRenderer({ canvas, antialias: true, alpha: true })
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
 
+  // Two tones the caller does not pass: the figure always uses the dark set.
+  const tones = sceneColors()
   const scene = new Scene()
   const camera = new PerspectiveCamera(34, 1, 0.1, 20)
 
-  // Soft key from the front right, a cool rim from behind and a low fill: the
-  // three give the figure its depth without a texture or a shadow map.
-  scene.add(new HemisphereLight(new Color(colors.muted), new Color(colors.base), 1.1))
-  const key = new DirectionalLight(new Color(colors.base), 3.4)
+  // Four lights give the figure its depth without a texture or a shadow map.
+  // A soft sky and ground keep every side readable, a warm key from the front
+  // right models the form, and two cool lights from behind left and right graze
+  // the edges, so the outline is a bright line against the stage whichever way
+  // the body is turned.
+  scene.add(new HemisphereLight(new Color(colors.muted), new Color(tones['color-border-control']), 2.6))
+  const key = new DirectionalLight(new Color(tones['color-text']), 3.4)
   key.position.set(1.6, 2.8, 2.4)
   scene.add(key)
-  const rim = new DirectionalLight(new Color(colors.accent), 1.6)
-  rim.position.set(-2.2, -0.4, -2)
-  scene.add(rim)
-  const fill = new DirectionalLight(new Color(colors.muted), 0.6)
-  fill.position.set(-1.4, 1.2, 1.8)
+  const fill = new DirectionalLight(new Color(colors.muted), 1.1)
+  fill.position.set(-1.8, 1.0, 2.0)
   scene.add(fill)
+  for (const side of [-1, 1]) {
+    const rim = new DirectionalLight(new Color(colors.accent), 5)
+    rim.position.set(side * 3, 1.6, -1.6)
+    scene.add(rim)
+  }
+
+  // A pad under the feet: the body tone seen as a soft shadow on the light
+  // stage and a lighter floor on the dark one, with a thin ring of the accent.
+  const floorGeometries = [new CircleGeometry(0.42, 40), new RingGeometry(0.4, 0.425, 48)]
+  const floorMaterials = [
+    new MeshBasicMaterial({ color: new Color(colors.base), transparent: true, opacity: 0.45, depthWrite: false }),
+    new MeshBasicMaterial({ color: new Color(colors.accent), transparent: true, opacity: 0.55, depthWrite: false }),
+  ]
+  for (const [index, geometry] of floorGeometries.entries()) {
+    const floor = new Mesh(geometry, floorMaterials[index])
+    floor.rotation.x = -Math.PI / 2
+    floor.position.y = 0.001 + index * 0.001
+    scene.add(floor)
+  }
 
   const pivot = new Group()
   scene.add(pivot)
@@ -445,6 +469,8 @@ export function createBodyScene(
       }
       markerGroup.clear()
       mannequin.dispose()
+      for (const geometry of floorGeometries) geometry.dispose()
+      for (const material of floorMaterials) material.dispose()
       renderer.dispose()
       renderer.forceContextLoss()
     },

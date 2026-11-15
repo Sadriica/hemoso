@@ -2,6 +2,7 @@ import type { Source } from '../domain/types'
 import { useId } from 'react'
 import { strings } from '../strings'
 import { sourceLabel } from './sourceLabel'
+import './sources-phone.css'
 
 // The sources a reading rests on, or the word Assumption when the team has no
 // link yet (STANDARDS.md section 6). The list is shown inside the Details panel

@@ -17,28 +17,28 @@ function entry(missionDay: number, personId = 'demo_astronaut_1'): Entry {
 
 describe('missionNow', () => {
   it('returns day 1 and the clock time when there are no entries', () => {
-    expect(missionNow([], new Date(2026, 10, 14, 13, 30))).toEqual({
+    expect(missionNow([], new Date(Date.UTC(2026, 10, 14, 13, 30)))).toEqual({
       missionDay: 1,
       time: '13:30',
     })
   })
 
   it('returns the latest mission day in the entries', () => {
-    expect(missionNow([entry(3), entry(41), entry(9)], new Date(2026, 10, 14, 9, 5))).toEqual({
+    expect(missionNow([entry(3), entry(41), entry(9)], new Date(Date.UTC(2026, 10, 14, 9, 5)))).toEqual({
       missionDay: 41,
       time: '09:05',
     })
   })
 
   it('pads the hours and the minutes to two digits', () => {
-    expect(missionNow([], new Date(2026, 10, 14, 9, 5)).time).toBe('09:05')
-    expect(missionNow([], new Date(2026, 10, 14, 0, 0)).time).toBe('00:00')
-    expect(missionNow([], new Date(2026, 10, 14, 23, 59)).time).toBe('23:59')
+    expect(missionNow([], new Date(Date.UTC(2026, 10, 14, 9, 5))).time).toBe('09:05')
+    expect(missionNow([], new Date(Date.UTC(2026, 10, 14, 0, 0))).time).toBe('00:00')
+    expect(missionNow([], new Date(Date.UTC(2026, 10, 14, 23, 59))).time).toBe('23:59')
   })
 })
 
 describe('missionNowFor', () => {
-  const at = new Date(2026, 10, 14, 9, 5)
+  const at = new Date(Date.UTC(2026, 10, 14, 9, 5))
 
   it('counts only the entries of that person', () => {
     const entries = [entry(30, 'a'), entry(4, 'b'), entry(7, 'b')]
@@ -79,7 +79,7 @@ describe('missionDayFromStart', () => {
 })
 
 describe('missionClockFor', () => {
-  const now = new Date(2026, 10, 14, 9, 5)
+  const now = new Date(Date.UTC(2026, 10, 14, 9, 5))
   it('counts from the mission start of the person', () => {
     expect(missionClockFor([entry(30, 'a')], 'a', '2026-11-02', now)).toEqual({
       missionDay: 13,

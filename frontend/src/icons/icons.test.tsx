@@ -36,9 +36,11 @@ describe('icons', () => {
   it('gives the two blood pressures their own drawing', () => {
     const sys = markup(<IndicatorIcon indicatorId="bp_sys_mmhg" />);
     const dia = markup(<IndicatorIcon indicatorId="bp_dia_mmhg" />);
+    const pair = markup(<IndicatorIcon indicatorId="bp" />);
     expect(sys).not.toBe(dia);
-    // The pair of readings has one gauge of its own.
-    expect(markup(<IndicatorIcon indicatorId="bp" />)).not.toBe(sys);
+    // The pair of readings has one gauge of its own; neither reading reuses it.
+    expect(pair).not.toBe(sys);
+    expect(pair).not.toBe(dia);
   });
 
   it('gives the two reaction indicators their own glyph and the neuro colour', () => {

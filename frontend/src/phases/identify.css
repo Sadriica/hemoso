@@ -178,7 +178,6 @@
 }
 
 .identify__quiet,
-.identify__more-toggle,
 .crew-begin {
   display: inline-flex;
   align-items: center;
@@ -199,7 +198,6 @@
 }
 
 .identify__quiet:hover,
-.identify__more-toggle:hover,
 .crew-begin:hover {
   border-color: var(--color-accent);
   color: var(--color-accent);
@@ -227,25 +225,51 @@
   font-size: var(--text-body);
 }
 
-/* The secondary row: a capsule that opens the form. */
+/* The account block: two tabs (sign in, create) over one form. */
 .identify__more {
   display: grid;
   gap: var(--space-3);
   justify-items: start;
 }
 
-.identify__more-toggle {
-  min-width: 0;
-  white-space: nowrap;
+.identify__tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: 100%;
+  gap: var(--space-2);
 }
 
-.identify__more-chevron {
-  display: inline-block;
-  transition: transform var(--motion-fast) var(--ease-out);
+.identify__tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--tap-min);
+  padding: 0 var(--space-4);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-capsule);
+  background: transparent;
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  cursor: pointer;
 }
 
-.identify__more-toggle[aria-expanded='true'] .identify__more-chevron {
-  transform: rotate(90deg);
+.identify__tab:hover,
+.identify__tab[aria-selected='true'] {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.identify__tab[aria-selected='true'] {
+  border-width: 2px;
+  background: color-mix(in srgb, var(--color-accent) 14%, transparent);
+}
+
+.identify__more {
+  gap: var(--space-2);
 }
 
 .identify__more-body {
@@ -523,4 +547,39 @@
   .identify__face > button {
     width: 100%;
   }
+}
+
+/* A phone: the crew card and the way on take the full width, one under the
+   other, so neither is a small island in the panel. */
+@media (max-width: 599px) {
+  .identify__who .crew-picker,
+  .identify__who .signin__begin {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+
+  .identify__who .crew-picker__options {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* The face consent and camera inside the Identify panel: the same corner,
+   spacing and capsule buttons as the rest of the panel, and the full width of
+   the column. */
+.identify__face .face-panel {
+  max-width: none;
+  margin: var(--space-3) 0 0;
+  border-radius: var(--radius-panel);
+  background: color-mix(in srgb, var(--color-bg) 35%, var(--color-surface));
+}
+
+.identify__face .face-panel__actions .button {
+  min-height: var(--tap-min);
+  border-radius: var(--radius-capsule);
+  padding-inline: var(--space-4);
+}
+
+.identify__face .face-panel__status:empty {
+  min-height: 0;
 }

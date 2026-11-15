@@ -1,11 +1,12 @@
 // The mannequin: the region data of regions.ts turned into three.js objects.
 // Every region gets its own material, so one place on the body lights without
-// touching its neighbours. No model file and no texture: capsules, spheres,
-// rounded segments of a lathe and one box per foot.
+// touching its neighbours. No model file and no texture: spheres stretched into
+// ovoids, tapered tubes for the limbs, capsules and rounded segments of a lathe.
 
 import {
   BoxGeometry,
   CapsuleGeometry,
+  CylinderGeometry,
   Group,
   LatheGeometry,
   Mesh,
@@ -28,8 +29,8 @@ export interface Mannequin {
   dispose(): void
 }
 
-// Low poly on purpose: 16 to 20 segments keeps the figure smooth and the
-// second chunk small.
+// Low poly on purpose: 16 to 24 segments keeps the figure smooth on a phone and
+// the second chunk small.
 const RADIAL = 16
 const LATHE_SEGMENTS = 20
 
@@ -46,6 +47,8 @@ function geometryFor(primitive: Primitive): BufferGeometry {
         primitive.arc[0],
         primitive.arc[1],
       )
+    case 'taper':
+      return new CylinderGeometry(primitive.radiusTop, primitive.radiusBottom, primitive.length, RADIAL, 1)
     case 'box':
       return new BoxGeometry(primitive.size[0], primitive.size[1], primitive.size[2])
   }
@@ -64,8 +67,8 @@ export function buildMannequin(baseColor: string): Mannequin {
   for (const region of BODY_REGIONS) {
     const material = new MeshStandardMaterial({
       color: baseColor,
-      roughness: 0.55,
-      metalness: 0.12,
+      roughness: 0.42,
+      metalness: 0,
       emissive: baseColor,
       emissiveIntensity: 0,
     })
@@ -76,10 +79,10 @@ export function buildMannequin(baseColor: string): Mannequin {
       geometries.push(geometry)
       const mesh = new Mesh(geometry, material)
       mesh.position.set(primitive.at[0], primitive.at[1], primitive.at[2])
-      if (primitive.kind === 'sphere' && primitive.scale) {
+      if (primitive.scale) {
         mesh.scale.set(primitive.scale[0], primitive.scale[1], primitive.scale[2])
       }
-      if (primitive.kind === 'capsule' && primitive.rotation) {
+      if (primitive.rotation) {
         mesh.rotation.set(
           primitive.rotation[0],
           primitive.rotation[1],

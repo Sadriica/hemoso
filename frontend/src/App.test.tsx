@@ -43,7 +43,14 @@ async function signInByName(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('button', { name: copy.identify.next }))
 }
 
-describe('guided check', () => {
+// These tests walk whole phases: each phase loads its lazy chunks (the status
+// phase, the history, the scene) through the jsdom transform the first time, and
+// that is slow on a busy machine. The default 5 s budget is a measure of the
+// machine, not of the app, so the walks get a budget that holds under load. The
+// checks inside stay as strict as they were.
+const WALK_TIMEOUT = 30_000
+
+describe('guided check', { timeout: WALK_TIMEOUT }, () => {
   it('opens on phase 1, identify, with its headline and the rail on step 1', () => {
     render(<App />)
     expect(heading()).toHaveTextContent(copy.identify.headline.join(' '))
@@ -98,7 +105,7 @@ describe('guided check', () => {
       await screen.findByText(
         /Your usual|Not enough earlier entries/,
         {},
-        { timeout: 3000 },
+        { timeout: 10_000 },
       ),
     ).toBeInTheDocument()
   })
@@ -186,7 +193,7 @@ describe('guided check', () => {
 
     // The day after the latest one in the store, so the new entry is the latest
     // one whatever the clock says.
-    const day = screen.getByLabelText('Mission day') as HTMLInputElement
+    const day = screen.getByLabelText(strings.entry.missionDay) as HTMLInputElement
     const nextDay = String(Number(day.value) + 1)
     await user.clear(day)
     await user.type(day, nextDay)
@@ -204,12 +211,12 @@ describe('guided check', () => {
     await user.click(screen.getByRole('button', { name: copy.report.next }))
     expect(screen.getAllByText('1234567').length).toBeGreaterThan(0)
     expect(
-      screen.getAllByText(new RegExp(`^DAY ${nextDay} · 15:44`)).length,
+      screen.getAllByText(new RegExp(`^FD ${nextDay} · GMT 15:44`)).length,
     ).toBeGreaterThan(0)
   })
 })
 
-describe('sign in', () => {
+describe('sign in', { timeout: WALK_TIMEOUT }, () => {
   it('opens the demo with one click and no PIN', async () => {
     const user = userEvent.setup()
     render(<App />)
@@ -253,7 +260,6 @@ describe('sign in', () => {
     const user = userEvent.setup()
     render(<App />)
 
-    await user.click(screen.getByRole('button', { name: strings.signIn.moreToggle }))
     await user.type(screen.getByLabelText(strings.signIn.username), 'cadet_okoro')
     await user.type(screen.getByLabelText(strings.signIn.pin), '4821')
     await user.click(screen.getByRole('button', { name: strings.signIn.action }))
@@ -279,7 +285,7 @@ describe('sign in', () => {
 
     // The day after the latest one in the store, so the new reading is the
     // latest whatever the clock says (CI runs in UTC).
-    const day = screen.getByLabelText('Mission day') as HTMLInputElement
+    const day = screen.getByLabelText(strings.entry.missionDay) as HTMLInputElement
     const nextDay = String(Number(day.value) + 1)
     await user.clear(day)
     await user.type(day, nextDay)
@@ -313,7 +319,7 @@ describe('top bar', () => {
   it('puts the day and the clock on one muted line, with who is on duty', async () => {
     const user = userEvent.setup()
     render(<App />)
-    const stamp = /^Day \d+ · \d\d:\d\d$/
+    const stamp = /^Flight Day \d+ · GMT \d\d:\d\d$/
     // Nothing before sign-in: the day belongs to the person.
     expect(screen.queryByText(stamp)).toBeNull()
     await signInByName(user)

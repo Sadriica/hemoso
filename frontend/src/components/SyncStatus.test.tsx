@@ -226,6 +226,23 @@ describe('SyncStatus', () => {
     expect(offlineChip.length).toBeGreaterThan(0)
   })
 
+  it('draws the state as a dot next to the words, with no box icon', () => {
+    const { container } = render(
+      <SyncStatus store={new LocalEntryStore({ storage: null })} client={new NoopSync()} />,
+    )
+    const chip = chipOf(strings.sync.noServer, strings.sync.savedHere)
+    expect(chip.querySelector('.sync-chip__dot')).toHaveAttribute('aria-hidden', 'true')
+    expect(chip.querySelector('svg')).toBeNull()
+    expect(container.querySelector('.sync-chip--idle')).not.toBeNull()
+  })
+
+  it('uses the attention tone for a waiting reading without a server', () => {
+    renderStatus(new NoopSync(), [newEntry()])
+    expect(chipOf(strings.sync.noServer, strings.sync.waiting(1))).toHaveClass(
+      'sync-chip--attention',
+    )
+  })
+
   it('runs one round at a time', async () => {
     let calls = 0
     // Never answers, so the first round is still running on the second click.

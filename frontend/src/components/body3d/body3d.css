@@ -21,11 +21,19 @@
   min-height: 320px;
   overflow: hidden;
   border-radius: var(--radius-card);
+  /* Two soft pools of the accent colour behind the figure: a wide one that
+     lifts the page tone and a tighter one at the torso, so the outline of the
+     body stands against a lighter ground instead of the page. */
   background:
     radial-gradient(
-      circle at 50% 32%,
-      color-mix(in srgb, var(--color-accent) 12%, transparent),
-      transparent 62%
+      ellipse 40% 36% at 50% 50%,
+      color-mix(in srgb, var(--color-accent) 16%, transparent),
+      transparent
+    ),
+    radial-gradient(
+      circle at 50% 40%,
+      color-mix(in srgb, var(--color-accent) 10%, transparent),
+      transparent 70%
     ),
     var(--color-bg-raised);
 }
@@ -566,4 +574,75 @@
 .pain-reports__remove {
   align-self: flex-start;
   min-height: var(--tap-min);
+}
+
+/* Only the figure (the centre of the status orbits): no backplate, no frame,
+   the size of its container, and no pointer event, so it never takes a tap
+   meant for an indicator beside it. */
+.body3d--bare {
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.body3d--bare .body3d__stage {
+  aspect-ratio: auto;
+  min-height: 0;
+  height: 100%;
+  border-radius: 0;
+  background: none;
+  cursor: default;
+}
+
+/* The flat body in the same place: the outline alone, with no tile behind
+   it and no caption (the orbits name the centre in words). */
+.body3d--bare .body-silhouette {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  box-sizing: border-box;
+  border: 0;
+  background: none;
+}
+
+.body3d--bare .body-silhouette__svg {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
+}
+
+.body3d--bare .body-silhouette figcaption,
+.body3d--bare .body-silhouette__label {
+  display: none;
+}
+
+/* One mark of the picker: the strength reads "5 / 10", and removing it is a
+   bordered button, not a bare word under the slider. */
+.pain-picker__mark {
+  background: color-mix(in srgb, var(--color-bg) 40%, var(--color-surface));
+}
+
+.pain-picker__value::after {
+  content: ' / 10';
+  color: var(--color-text-muted);
+  font-size: var(--text-small);
+}
+
+.pain-picker__mark .text-link {
+  align-self: flex-start;
+  min-height: var(--tap-min);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-small);
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.pain-picker__mark .text-link:hover {
+  border-color: var(--color-signal);
+  color: var(--color-signal);
+}
+
+.pain-picker__scale {
+  max-width: 60ch;
 }

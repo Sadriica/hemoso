@@ -26,7 +26,13 @@ import {
   type Status,
 } from '../domain/state'
 import AttentionBadge from '../components/AttentionBadge'
-import { statusBadgeKind, statusText } from '../components/attentionText'
+import {
+  statusBadgeKind,
+  statusText,
+  type BadgeKind,
+} from '../components/attentionText'
+import { BodySilhouette, BODY_ZONES } from '../components/body'
+import type { BodySystem } from '../components/body/zones'
 import Disclosure from '../components/Disclosure'
 import ErrorBoundary from '../components/ErrorBoundary'
 import IndicatorDetails from '../components/IndicatorDetails'
@@ -50,7 +56,13 @@ const Planetarium = lazy(() =>
 )
 const Instrument = lazy(() => import('../components/instruments'))
 // The body is a chunk of its own: three.js never reaches the first load.
-const Body3D = lazy(() => import('../components/body3d/Body3D'))
+// One more try when the chunk does not arrive: a tab opened before a deploy
+// asks for a file name that is gone, and a weak link drops a request.
+const Body3D = lazy(() =>
+  import('../components/body3d/Body3D').catch(
+    () => import('../components/body3d/Body3D'),
+  ),
+)
 
 // One indicator with everything the screen draws from: its readings, its rules,
 // and the one status the planetarium, the notice and the card all read.
@@ -180,6 +192,15 @@ export default function Home({
   const selected = rows.find((row) => row.indicator.id === selectedId)
   const selectedSystem = selected ? systemOf(selected.indicator.id) : null
 
+  // The flat body: what the centre of the orbits shows before the 3D figure
+  // arrives and whenever it cannot be drawn.
+  const flatBody = (
+    <BodySilhouette
+      system={flatSystem(selectedSystem)}
+      label={strings.board.planetarium.center}
+    />
+  )
+
   return (
     <section aria-labelledby="home-heading">
       <h2 id="home-heading" className="home__heading">
@@ -223,6 +244,7 @@ export default function Home({
         </Notice>
       )}
       <div ref={panelRef} className="status-panel panel panel--cut" data-enter="panel">
+      {rows.length > 0 && <SystemStrip rows={rows} />}
       {rows.length > 0 && (
         <div className="board">
           <div className="board__orbit">
@@ -255,6 +277,33 @@ export default function Home({
                 onSelect={setChosenId}
                 reducedMotion={motionReduced}
                 initialView={initialView}
+                center={
+                  wide ? (
+                    // The body stands in the centre of the orbits and lights
+                    // the zone of the selected indicator. It is never an empty
+                    // space: while the 3D chunk loads, or when it cannot be
+                    // loaded or drawn, the flat body takes its place.
+                    <ErrorBoundary fallback={flatBody}>
+                      <Suspense fallback={flatBody}>
+                        <Body3D
+                          bare
+                          mode="status"
+                          system={selectedSystem}
+                          state={selected ? statusBadgeKind(selected.status) : null}
+                          reducedMotion={motionReduced}
+                        />
+                      </Suspense>
+                    </ErrorBoundary>
+                  ) : undefined
+                }
+                centerText={
+                  selected && selectedSystem
+                    ? strings.board.bodyLabel(
+                        strings.board.systemNames[selectedSystem],
+                        selected.indicator.name,
+                      )
+                    : undefined
+                }
               />
             </Suspense>
             </ErrorBoundary>
@@ -282,37 +331,47 @@ export default function Home({
               motionReduced={motionReduced}
             />
           </ul>
-          <div className="detail__body">
-            {/* The body is an extra: when it cannot be drawn its column stays
-                empty and the card beside it keeps every fact. */}
-            <ErrorBoundary fallback={null}>
-            <Suspense
-              fallback={<div className="body3d-slot" aria-hidden="true" />}
-            >
-              {wide && (
-                <Body3D
-                  mode="status"
-                  system={selectedSystem}
-                  state={statusBadgeKind(selected.status)}
-                  label={
-                    selectedSystem
-                      ? strings.board.bodyLabel(
-                          strings.board.systemNames[selectedSystem],
-                          selected.indicator.name,
-                        )
-                      : strings.board.bodyNone
-                  }
-                />
-              )}
-            </Suspense>
-            </ErrorBoundary>
-          </div>
         </div>
         </>
       )}
       </div>
     </section>
   )
+}
+
+// The system strip of the console: how many channels there are and how many
+// of them are in each state right now. Counted from the same statuses the
+// cards show; a state with no channel is left out.
+const STRIP_ORDER: BadgeKind[] = ['review', 'outside', 'in_range', 'no_data']
+
+function SystemStrip({ rows }: { rows: Row[] }) {
+  const copy = strings.board.strip
+  const counts = new Map<BadgeKind, number>()
+  for (const row of rows) {
+    const kind = statusBadgeKind(row.status)
+    counts.set(kind, (counts.get(kind) ?? 0) + 1)
+  }
+  return (
+    <ul className="sys-strip" aria-label={copy.label}>
+      <li className="sys-strip__item sys-strip__item--total">
+        {copy.channels(rows.length)}
+      </li>
+      {STRIP_ORDER.filter((kind) => counts.has(kind)).map((kind) => (
+        <li key={kind} className={`sys-strip__item sys-strip__item--${kind}`}>
+          <StatusIcon kind={kind} size={16} />
+          <span>{copy.count[kind](counts.get(kind) ?? 0)}</span>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+// The system of the selected indicator as the flat body names its zones, or
+// null when it has no zone there.
+function flatSystem(system: string | null): BodySystem | null {
+  return system !== null && (BODY_ZONES as readonly string[]).includes(system)
+    ? (system as BodySystem)
+    : null
 }
 
 // True from 900 px up, the width at which the body column appears (phases.css).

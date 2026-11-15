@@ -1,0 +1,396 @@
+/* The status phase in the console grammar of DESIGN.md section 16: a system
+   strip, the card and the 3D body as instrument panels, and the possible
+   conditions as an evidence board. Tokens only. */
+
+.sys-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  list-style: none;
+}
+
+.sys-strip__item {
+  --strip: var(--color-text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--space-5);
+  padding: 0 var(--space-3);
+  border: 1px solid color-mix(in srgb, var(--strip) 45%, var(--color-border));
+  border-radius: var(--radius-small);
+  background: var(--color-bg-raised);
+  color: var(--strip);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.sys-strip__item--total {
+  --strip: var(--accent-cyan);
+}
+
+.sys-strip__item--review {
+  --strip: var(--status-review-text);
+}
+
+.sys-strip__item--outside {
+  --strip: var(--status-attention-text);
+}
+
+.sys-strip__item--in_range {
+  --strip: var(--status-in-range-text);
+}
+
+/* The card of one indicator: the state colour on the top edge, the name in
+   display uppercase, the frame with two corner marks. */
+.phase--status .indicator-card {
+  position: relative;
+  border-left-width: 1px;
+  border-left-color: var(--color-border);
+  border-top: 2px solid var(--status-no-data-text);
+  background: var(--color-bg-raised);
+}
+
+.phase--status .indicator-card--in_range {
+  border-top-color: var(--status-in-range-text);
+}
+
+.phase--status .indicator-card--outside {
+  border-top-color: var(--status-attention-text);
+}
+
+.phase--status .indicator-card--review {
+  border-top-color: var(--status-review-text);
+}
+
+.phase--status .indicator-card__name {
+  font-family: var(--font-display);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.phase--status .indicator-card::before,
+.phase--status .indicator-card::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  width: var(--space-3);
+  height: var(--space-3);
+  border-bottom: 2px solid var(--color-border-control);
+  pointer-events: none;
+}
+
+.phase--status .indicator-card::before {
+  left: -1px;
+  border-left: 2px solid var(--color-border-control);
+}
+
+.phase--status .indicator-card::after {
+  right: -1px;
+  border-right: 2px solid var(--color-border-control);
+}
+
+/* The card stands alone now: the body is in the centre of the orbits. */
+@media (min-width: 900px) {
+  .phase--status .detail {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* The possible conditions as an evidence board. */
+.conditions__eyebrow {
+  margin: 0;
+  color: var(--accent-cyan);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.phase--status .condition {
+  position: relative;
+  border-left-width: 1px;
+  border-left-color: var(--color-border);
+  border-top: 2px solid var(--step);
+}
+
+.phase--status .condition--review,
+.phase--status .condition--possible {
+  border-left-width: 1px;
+  border-top-width: 4px;
+}
+
+.phase--status .condition__name {
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.phase--status .condition__sentence,
+.phase--status .condition__score {
+  font-family: var(--font-mono);
+}
+
+.phase--status .condition__sentence {
+  font-family: var(--font-body);
+}
+
+/* Round of Sun 06:45. */
+
+/* The scene of the phase stays beside the headline: at its old size it ran
+   over the review notice and its button. */
+@media (min-width: 900px) {
+  .phase--status .scene-band {
+    width: calc(var(--space-7) * 3);
+    height: calc(var(--space-7) * 3);
+  }
+}
+
+/* The view switch sits on the row of the system strip, at its right end, so
+   the orbits start right under it and not after an empty row. */
+@media (min-width: 900px) {
+  .phase--status .status-panel .planetarium {
+    position: relative;
+  }
+
+  /* Lifted by its own height and the gap under the strip. */
+  .phase--status .status-panel .planetarium__toggle {
+    position: absolute;
+    top: calc((var(--tap-min) + var(--space-3) + var(--space-3)) * -1);
+    right: 0;
+  }
+
+  .phase--status .sys-strip {
+    min-height: var(--tap-min);
+    align-items: center;
+    padding-right: calc(var(--space-7) * 2 + var(--space-5));
+  }
+}
+
+/* On a phone the strip is one tight block: two chips to a row. */
+@media (max-width: 599px) {
+  .sys-strip {
+    gap: var(--space-1);
+  }
+
+  .sys-strip__item {
+    padding: 0 var(--space-2);
+    letter-spacing: 0.04em;
+  }
+}
+
+/* A soft light behind the body in the centre of the orbits, so the figure
+   separates from the stage in both themes without a tile around it. */
+.phase--status .planetarium__center--figure::before {
+  content: '';
+  position: absolute;
+  inset: -8% -90%;
+  z-index: -1;
+  background: radial-gradient(
+    ellipse at 50% 46%,
+    color-mix(in srgb, var(--accent-cyan) 18%, transparent),
+    color-mix(in srgb, var(--accent-violet) 8%, transparent) 45%,
+    transparent 68%
+  );
+  pointer-events: none;
+}
+
+/* The evidence board: tiles of one row share a height, a last tile on its own
+   takes the whole row, and the closing sentence has a full-width rule. */
+.phase--status .conditions__list {
+  align-items: stretch;
+}
+
+@media (min-width: 900px) {
+  .phase--status .conditions__list > .condition:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+}
+
+.phase--status .conditions__confirms {
+  max-width: none;
+}
+
+/* Round of Sun 06:55. */
+
+/* On a phone and a tablet the status opens on the states: the scene of the
+   phase is decoration and it cost a fifth of the first screen. */
+@media (max-width: 899px) {
+  .phase--status .scene-band {
+    display: none;
+  }
+}
+
+/* Who acts is the one thing to do on a card that needs review: it reads as an
+   instruction, with the review edge beside it, not as a footnote. */
+.phase--status .indicator-card__who-acts {
+  justify-self: start;
+  padding: var(--space-1) var(--space-3);
+  border-left: 3px solid var(--status-review-text);
+  background: var(--status-review-bg);
+  color: var(--status-review-text);
+  font-family: var(--font-mono);
+  font-size: var(--text-small);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+/* The line from the selected indicator to its card passes other indicators
+   on its way: quieter, it reads as a lead and not as a bar across them. Its
+   dash pattern is left alone: the draw animation uses it. */
+.phase--status .status-path path {
+  opacity: 0.55;
+}
+
+/* The evidence board on a phone: tighter tiles, so five conditions are not
+   five screens. */
+@media (max-width: 599px) {
+  .phase--status .condition {
+    gap: var(--space-1);
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .phase--status .condition__signals {
+    gap: var(--space-1);
+  }
+
+  .phase--status .conditions.panel {
+    padding: var(--space-3);
+  }
+}
+
+/* A row the crew acts on is drawn amber (attentionText.ts), so its line is. */
+.phase--status .indicator-card--outside .indicator-card__who-acts {
+  border-left-color: var(--status-attention-text);
+  background: var(--status-attention-bg);
+  color: var(--status-attention-text);
+}
+
+/* Round of Sun 07:00. The top of the orbit stage is empty down to its first
+   row of indicators: pulled up under the strip, the orbits and the card start
+   higher. The stage keeps its size and every tag stays inside it. Only from
+   1100 px: under that the strip wraps to a second row and needs the room. */
+@media (min-width: 1100px) {
+  .phase--status .status-panel .planetarium__stage {
+    margin-top: calc(var(--space-6) * -1);
+  }
+}
+
+/* Round of Sun 07:10. A baseline that is still being built: three marks, one
+   per reading it needs, filled as they arrive. */
+.trend--waiting {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+
+.trend__pips {
+  display: inline-flex;
+  gap: var(--space-1);
+}
+
+.trend__pip {
+  width: var(--space-4);
+  height: var(--space-1);
+  border-radius: var(--radius-round);
+  background: color-mix(in srgb, var(--color-border-control) 45%, transparent);
+}
+
+.trend__pip--on {
+  background: var(--accent-cyan);
+}
+
+/* Round of Sun 07:20. The Details of a card on a wide screen: the sections
+   ran down a single column of 70 characters and left the right half of the
+   card empty. From 1100 px they flow in two columns; the two facts stay
+   across the top and no section is split between columns. */
+@media (min-width: 1100px) {
+  .phase--status .indicator-details {
+    display: block;
+    column-count: 2;
+    column-gap: var(--space-6);
+    column-rule: 1px solid color-mix(in srgb, var(--color-border) 60%, transparent);
+  }
+
+  .phase--status .indicator-details__fact,
+  .phase--status .indicator-details__missing {
+    column-span: all;
+  }
+
+  .phase--status .indicator-details__section {
+    break-inside: avoid;
+    margin-bottom: var(--space-3);
+  }
+}
+
+/* Round of Sun 07:25. In "When it needs attention" the source of a limit sat
+   as a bullet under it. It reads on the same line as the limit it backs, and
+   wraps under it only when the line is full. */
+.phase--status .indicator-details__rules > li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-2);
+}
+
+.phase--status .indicator-details__rules .sources__list {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.phase--status .indicator-details__rules .sources__list li {
+  margin: 0;
+}
+
+/* Round of Sun 07:30. The history and "Where does it hurt?" stood as loose
+   buttons on the sky under the board. Each is now a framed block of the
+   console, like the card and the evidence board, with a quiet rule on top. */
+.phase--status .status__history,
+.phase--status .pain {
+  position: relative;
+  padding: var(--space-4);
+  border: var(--border-subtle);
+  border-top: 2px solid var(--color-border-control);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.phase--status .pain {
+  margin-top: var(--space-4);
+}
+
+/* The button that opens the body is one control of the block, not a bar
+   across the page. */
+.phase--status .pain > .button {
+  align-self: flex-start;
+  width: auto;
+}
+
+@media (max-width: 599px) {
+  .phase--status .status__history,
+  .phase--status .pain {
+    padding: var(--space-3);
+  }
+
+  .phase--status .pain > .button {
+    align-self: stretch;
+  }
+}
+
+/* Round of Sun 07:35. The pain picker had a frame of its own inside the new
+   block: one frame is enough. */
+.phase--status .pain .pain-picker {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+}

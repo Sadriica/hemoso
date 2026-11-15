@@ -617,23 +617,12 @@
 }
 
 .rep .rep-ctx {
-  position: relative;
   display: inline-flex;
   align-items: center;
-  margin-left: calc(var(--space-1) * -1);
-}
-
-.rep .rep-ctx::after {
-  content: '\25BE';
-  position: absolute;
-  right: var(--space-3);
-  color: var(--color-text-muted);
-  pointer-events: none;
-}
-
-.rep .rep-ctx select.rep-ctx__select {
+  gap: var(--space-2);
   min-height: var(--tap-min);
-  padding: 0 calc(var(--space-3) + var(--space-3)) 0 var(--space-3);
+  margin-left: calc(var(--space-1) * -1);
+  padding: 0 var(--space-3);
   border: 1px solid var(--color-border-control);
   border-radius: var(--radius-capsule);
   background: var(--color-bg);
@@ -642,13 +631,74 @@
   font-size: var(--text-label);
   letter-spacing: var(--tracking-label);
   text-transform: uppercase;
-  appearance: none;
+  white-space: nowrap;
   cursor: pointer;
 }
 
-.rep .rep-ctx select.rep-ctx__select:focus-visible {
+.rep .rep-ctx__change,
+.rep .rep-chip__change {
+  color: var(--color-text-muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-transform: lowercase;
+}
+
+/* A row that matches the header: no words, only a quiet way to change it. */
+.rep .rep-ctx--quiet {
+  justify-content: center;
+  /* The button keeps its 44 px target but adds no height to the row. */
+  margin-block: calc(var(--space-3) * -1);
+  gap: var(--space-1);
+  min-width: var(--tap-min);
+  padding: 0 var(--space-2);
+  border-color: transparent;
+  background: transparent;
+  color: var(--color-text-muted);
+}
+
+.rep .rep-ctx:hover {
+  border-color: var(--color-accent);
+}
+
+.rep .rep-ctx:focus-visible,
+.rep .rep-chip--button:focus-visible {
   outline: 3px solid var(--color-accent);
   outline-offset: 2px;
+}
+
+.rep .rep-chip--button {
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.rep .rep-chip__value {
+  font-family: var(--font-mono);
+  font-size: var(--text-body);
+}
+
+.rep .rep-chip--button[aria-expanded='true'] {
+  border-color: var(--color-accent);
+}
+
+.rep .rep-keep {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+}
+
+/* The four choices of one row open under it, across the card. */
+.rep .rep-segment--row {
+  grid-column: 1 / -1;
+  margin: var(--space-2) 0 0;
+}
+
+.rep .rep-segment {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
 }
 
 /* The pair field: two values, a slash and the unit. Each value keeps room for
@@ -670,14 +720,6 @@
   padding-right: var(--space-2);
 }
 
-/* "Apply to all rows": a visible hint, and a control that answers the pointer. */
-.rep .rep-segment__hint {
-  margin-left: var(--space-2);
-  color: var(--color-text-muted);
-  letter-spacing: normal;
-  text-transform: none;
-}
-
 .rep .rep-segment__track {
   border-color: color-mix(in srgb, var(--color-accent) 55%, var(--color-border-control));
 }
@@ -696,4 +738,156 @@
   .app:not(.app--still) .rep .rep-segment__option:active {
     transform: translateY(var(--move-press));
   }
+}
+
+/* Round 5: the footer, the saved message with the way on, and rows that read
+   as done. */
+.rep .rep-footer {
+  position: sticky;
+  bottom: calc(var(--rail-height) + var(--space-2));
+  z-index: 1;
+  display: grid;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+  padding: var(--space-2) 0;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-bg-raised);
+  /* A soft edge above, so the bar reads as docked over the cards and not as a
+     strip that cuts them off. */
+  box-shadow: 0 calc(var(--space-3) * -1) var(--space-3) calc(var(--space-2) * -1)
+    color-mix(in srgb, var(--color-bg) 90%, transparent);
+}
+
+/* On a phone the footer with the saved message and two buttons is a third of
+   the screen: it stays in the flow there, so the rows are never covered. */
+@media (max-width: 599px) {
+  .rep .rep-footer {
+    position: static;
+  }
+}
+
+/* Once saved, the footer is the confirmation and the way on: it holds the
+   message and drops the reason line to stay short. */
+.rep .rep-footer--saved .rep-actions__reason {
+  display: none;
+}
+
+.rep .rep-footer--saved .rep-actions {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: 'save';
+  justify-items: end;
+}
+
+.rep .rep-actions {
+  margin-top: 0;
+}
+
+.rep .rep-saved {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+}
+
+.rep .rep-saved .form__status {
+  flex: 1 1 16rem;
+}
+
+.rep .rep-saved .form__status:empty {
+  display: none;
+}
+
+.rep .rep-next {
+  flex: none;
+  min-height: 48px;
+}
+
+/* A done row: a check on its icon and a thicker system edge. */
+.rep .rep-row {
+  position: relative;
+}
+
+.rep .rep-row__icon {
+  position: relative;
+}
+
+.rep .rep-row__check {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--radius-round);
+  background: var(--color-accent);
+  color: var(--color-on-interactive);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.rep .rep-row--done {
+  border-left-width: 6px;
+  border-color: color-mix(in srgb, var(--color-accent) 60%, var(--color-border));
+  border-left-color: var(--reading-system, var(--color-border));
+}
+
+/* Plain rows on a phone keep the field beside the name when there is room, so
+   the form is shorter. The blood pressure pair and the scale keep their own
+   line. */
+@media (min-width: 380px) and (max-width: 599px) {
+  .rep .rep-row:not(.rep-row--pair):not(.rep-row--scale) {
+    grid-template-columns: var(--tap-min) minmax(0, 1fr) 132px;
+  }
+
+  .rep .rep-row:not(.rep-row--pair):not(.rep-row--scale) .rep-field {
+    grid-column: 3;
+    margin-top: 0;
+  }
+
+  .rep .rep-row:not(.rep-row--pair):not(.rep-row--scale) .rep-row__body > .field__error {
+    grid-column: 2 / -1;
+  }
+}
+
+.report__reaction {
+  /* The same width as the readings panel above it, so the row reads as part of
+     the report and not as a stray control. */
+  max-width: none;
+}
+
+.report__reaction .disclosure__toggle {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: calc(var(--tap-min) + var(--space-2));
+  padding: 0 var(--space-4);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  text-align: left;
+}
+
+.report__reaction .disclosure__toggle:hover {
+  border-color: var(--color-accent);
+}
+
+/* Beside the field there is no room for the word "change": the tag keeps it in
+   its name, and the capsule and its caret say it can be opened. */
+@media (min-width: 380px) and (max-width: 599px) {
+  .rep .rep-row:not(.rep-row--pair):not(.rep-row--scale) .rep-ctx__change {
+    display: none;
+  }
+
+  .rep .rep-row:not(.rep-row--pair):not(.rep-row--scale) .rep-ctx--tag::after {
+    content: '\25BE';
+    color: var(--color-text-muted);
+  }
+}
+
+.rep .rep-next__arrow {
+  margin-left: var(--space-2);
 }

@@ -3,17 +3,22 @@ import { loadContent } from './content/load'
 import { createAccountClient } from './data/accountClient'
 import { LocalEntryStore } from './data/entryStore'
 import { createHistoryClient } from './data/historyClient'
+import { createPainClient } from './data/painClient'
+import { createProfileClient } from './data/profileClient'
 import { createSyncClient } from './data/sync'
 import { missionClockFor } from './domain/clock'
 import { setMissionStart, useMissionStart } from './data/missionStart'
 import { useEntries } from './hooks/useEntries'
 import { useHistorySync } from './hooks/useHistorySync'
+import { useMissionStartSync } from './hooks/useMissionStartSync'
+import { usePainSync } from './hooks/usePainSync'
 import { isDemoPerson, useSession } from './hooks/useSession'
 import ErrorBoundary from './components/ErrorBoundary'
 import Notice from './components/Notice'
 import PhaseRail from './components/PhaseRail'
 import type { PhaseId } from './phases/phaseIds'
 import SkipLink from './components/SkipLink'
+import StageDepth from './components/StageDepth'
 import Starfield from './components/Starfield'
 import Topbar from './components/Topbar'
 import IdentifyPhase from './phases/IdentifyPhase'
@@ -46,6 +51,11 @@ export default function App() {
   // Accounts live on the server (REQ-37). With no base URL there are none, and
   // the demo astronaut is the only way in.
   const [accounts] = useState(() => createAccountClient())
+  // The same base URL for the pain reports and the account's mission start:
+  // both travel for a person with an account, and both stay on the device
+  // without a server.
+  const [painClient] = useState(() => createPainClient())
+  const [profileClient] = useState(() => createProfileClient())
   const session = useSession(accounts)
   const personId = session.personId
   // Motion is off when the top bar switch says so or when the system asks for
@@ -112,12 +122,17 @@ export default function App() {
 
   // Day and clock belong to the signed-in person: nothing before sign-in.
   const missionStart = useMissionStart(personId)
+  // A person with an account reads the mission start of the account (REQ-37),
+  // and the reports of the 3D body travel with the account too.
+  useMissionStartSync(profileClient, personId, session.kind)
+  usePainSync(painClient, personId, session.kind)
   const clock =
     phase !== 'identify' && personId ? missionClockFor(entries, personId, missionStart) : null
 
   return (
     <div className={`app${motionReduced ? ' app--still' : ''}`}>
       <Starfield still={motionReduced} />
+      <StageDepth still={motionReduced} />
       <SkipLink />
       {introOpen && (
         <Suspense fallback={<div className="intro-cover" aria-hidden="true" />}>
@@ -135,7 +150,13 @@ export default function App() {
         missionStart={missionStart}
         onChangeMissionStart={
           personId && !isDemoPerson(personId)
-            ? (date) => setMissionStart(personId, date)
+            ? (date) => {
+                // The device copy first: it is what the screens count from if
+                // the request fails. The account gets the same date, so the
+                // other devices follow (REQ-37).
+                setMissionStart(personId, date)
+                void profileClient.saveMissionStart(personId, date)
+              }
             : undefined
         }
         store={store}
@@ -147,6 +168,9 @@ export default function App() {
         {storageWarnings.length > 0 && (
           <Notice tone="warning">{storageWarnings.join(' ')}</Notice>
         )}
+        {/* The transition stays mounted across phases, so it knows which way
+            the check moved; the boundary inside it is the one per phase. */}
+        <PhaseTransition phase={phase} still={motionReduced}>
         {/* One boundary per phase: a part that fails to draw shows a sentence
             and a way back, never an empty page. A new phase starts clean. */}
         <ErrorBoundary
@@ -168,7 +192,6 @@ export default function App() {
             </Notice>
           }
         >
-        <PhaseTransition phase={phase} still={motionReduced}>
         {phase === 'identify' && (
           <IdentifyPhase
             key={expiredFor ?? 'identify'}
@@ -187,6 +210,7 @@ export default function App() {
             store={store}
             personId={personId}
             indicators={data.indicators}
+            rules={data.rules}
             entries={personEntries}
             serverConfigured={client.isConfigured()}
             onBack={() => setPhase('identify')}
@@ -209,8 +233,8 @@ export default function App() {
             }}
           />
         )}
-        </PhaseTransition>
         </ErrorBoundary>
+        </PhaseTransition>
       </main>
       <PhaseRail current={phase} />
     </div>

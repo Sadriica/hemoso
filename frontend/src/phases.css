@@ -95,10 +95,12 @@ html {
   transform: none;
 }
 
-/* Top bar: one row of real data (mark, name, mission line, sync chip, motion
-   switch), then a 28 px strip with the synthetic data sentence of REQ-14 so it
-   stays on screen on every phase. It sits on the raised band, never on the
-   stars (DESIGN.md 6, 8). */
+/* Top bar: one calm line of plain text on the raised band, with one hairline
+   under it and nothing else: no stripe, no boxes (DESIGN.md 6, 8). Left to
+   right: the mark and the name, the mission line (day, clock, who is on duty),
+   the synthetic data sentence of REQ-14, then the sync state and the motion
+   switch against the right edge. Under 1100 px the sentence moves to a row of
+   its own, and on a phone the mission line does too, so nothing is cut. */
 .topbar {
   border-bottom: var(--border-subtle);
   background: var(--color-bg-raised);
@@ -106,18 +108,15 @@ html {
 
 .topbar__bar {
   display: grid;
-  /* One row: the mark and the name, the mission day and clock, who is on
-     duty, then the chip and the switch against the right edge. */
-  grid-template-columns: auto auto minmax(0, 1fr) auto;
-  grid-template-areas: 'brand stamp who controls';
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    'brand mission controls'
+    'notice notice notice';
   align-items: center;
-  gap: 0 var(--space-4);
+  gap: 0 var(--space-3);
   max-width: var(--container-width);
-  /* Tall enough for a 44 px target, short enough to stay one calm line
-     (DESIGN.md 14, structural size). */
-  min-height: 60px;
   margin: 0 auto;
-  padding: 0 var(--space-6);
+  padding: var(--space-1) var(--space-6);
 }
 
 .identity {
@@ -144,54 +143,53 @@ html {
   text-transform: uppercase;
 }
 
-/* The mission line: the day and the clock, next to the mark. */
-.topbar__stamp {
-  grid-area: stamp;
-  min-width: 0;
-  overflow: hidden;
-  color: var(--color-text-muted);
-  font-family: var(--font-mono);
-  font-size: var(--text-label);
-  line-height: var(--leading-label);
-  letter-spacing: var(--tracking-label);
-  text-overflow: ellipsis;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-/* Who is on duty, when the check has a person: a dot and the id as written. */
-.topbar__who {
+/* The mission line: plain mono text, day and clock, then who is on duty. */
+.topbar__mission {
   display: flex;
   flex-wrap: wrap;
-  grid-area: who;
+  grid-area: mission;
   align-items: center;
-  justify-self: start;
-  gap: 0 var(--space-3);
+  gap: 0 var(--space-2);
   min-width: 0;
-}
-
-.topbar__duty {
-  display: flex;
-  align-items: center;
-  align-items: center;
-  gap: var(--space-2);
-  min-width: 0;
-  overflow: hidden;
   color: var(--color-text-muted);
   font-family: var(--font-mono);
   font-size: var(--text-label);
   line-height: var(--leading-label);
-  letter-spacing: var(--tracking-label);
-  white-space: nowrap;
+  letter-spacing: var(--tracking-display);
 }
 
-/* A person id is shown as it is written: never transformed. */
-.topbar__dot {
-  flex: none;
-  width: 6px;
-  height: 6px;
-  border-radius: var(--radius-round);
-  background: var(--status-in-range-text);
+.topbar__mission:empty {
+  display: none;
+}
+
+.topbar__stamp,
+.topbar__duty {
+  min-width: 0;
+  margin: 0;
+}
+
+.topbar__stamp + .topbar__duty::before {
+  content: '·';
+  margin-right: var(--space-2);
+}
+
+/* When the line has to wrap, the dot would start the second line. */
+@media (max-width: 399px) {
+  .topbar__stamp + .topbar__duty::before {
+    display: none;
+  }
+}
+
+/* REQ-14: the synthetic data sentence, quiet text in the same voice. */
+.synthetic-notice {
+  grid-area: notice;
+  margin: 0;
+  padding-bottom: var(--space-1);
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  letter-spacing: var(--tracking-display);
 }
 
 .topbar__controls {
@@ -200,21 +198,34 @@ html {
   justify-self: end;
   align-items: center;
   gap: var(--space-2);
+  min-width: 0;
 }
 
-/* The motion switch is one icon with its name on the button: a pressed button
-   means motion is off. */
+/* The motion switch is plain text with an icon: a pressed button means motion
+   is off, shown by the accent ink and the still icon as well as the state. */
 .topbar__motion {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: var(--tap-min);
-  height: var(--tap-min);
-  border: 1px solid var(--color-border-control);
-  border-radius: var(--radius-small);
+  gap: var(--space-2);
+  min-width: var(--tap-min);
+  min-height: var(--tap-min);
+  padding: 0 var(--space-2);
+  border: 0;
   background: transparent;
   color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  letter-spacing: var(--tracking-display);
   cursor: pointer;
+}
+
+.topbar__motion:hover {
+  color: var(--color-text);
+}
+
+.topbar__motion[aria-pressed="true"] {
+  color: var(--color-accent);
 }
 
 /* The word beside the icon, from 900 px up; the button keeps its name. */
@@ -223,18 +234,53 @@ html {
 }
 
 @media (min-width: 900px) {
-  .topbar__motion {
-    gap: var(--space-2);
-    width: auto;
-    padding: 0 var(--space-3);
-    font-family: var(--font-mono);
-    font-size: var(--text-label);
-    letter-spacing: var(--tracking-label);
-    text-transform: uppercase;
-  }
-
   .topbar__motion-label {
     display: inline;
+  }
+}
+
+/* Under 900 px the mission line leaves the first row, so it is never cut: with
+   the sentence beside it from 700 px, under it before that. */
+@media (max-width: 899px) {
+  .topbar__bar {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'brand controls'
+      'mission mission'
+      'notice notice';
+  }
+
+  .topbar__mission {
+    padding-bottom: var(--space-1);
+  }
+}
+
+@media (min-width: 700px) and (max-width: 899px) {
+  .topbar__bar {
+    grid-template-areas:
+      'brand controls'
+      'mission notice';
+  }
+
+  .synthetic-notice {
+    padding-bottom: var(--space-1);
+    text-align: right;
+    white-space: nowrap;
+  }
+}
+
+/* One row from 1100 px: the sentence sits between the mission line and the
+   controls. */
+@media (min-width: 1100px) {
+  .topbar__bar {
+    grid-template-columns: auto auto minmax(0, 1fr) auto;
+    grid-template-areas: 'brand mission notice controls';
+  }
+
+  .synthetic-notice {
+    padding-bottom: 0;
+    text-align: right;
+    white-space: nowrap;
   }
 }
 
@@ -254,45 +300,6 @@ html {
   margin: 0 auto;
 }
 
-/* From 600 to 700 px the stamp would be cut; it is hidden like on a phone. */
-@media (min-width: 600px) and (max-width: 700px) {
-  .topbar__stamp {
-    display: none;
-  }
-}
-
-/* Two rows up to 899 px: who is on duty never shares a row with the chip. */
-@media (min-width: 600px) and (max-width: 899px) {
-  .topbar__bar {
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    grid-template-areas:
-      'brand stamp controls'
-      'who who who';
-    gap: var(--space-1) var(--space-4);
-    padding-block: var(--space-1);
-  }
-}
-
-.topbar__motion[aria-pressed="true"] {
-  border-color: var(--color-accent);
-  color: var(--color-accent);
-}
-
-/* REQ-14: the synthetic data sentence, on the 28 px strip under the bar. */
-.synthetic-notice {
-  display: flex;
-  align-items: center;
-  max-width: var(--container-width);
-  min-height: 28px;
-  margin: 0 auto;
-  padding: 0 var(--space-6);
-  color: var(--color-text-muted);
-  font-family: var(--font-mono);
-  font-size: var(--text-label);
-  line-height: var(--leading-label);
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
-}
 
 /* The stage: one phase at a time, room to breathe, and room under it for the
    sticky rail, so no control ever sits beneath it. */
@@ -405,6 +412,14 @@ html {
     transparent
   );
   pointer-events: none;
+}
+
+/* On a phone the Identify scene sits beside the headline lines, not behind
+   them, so the fade would only wash the scene out. */
+@media (max-width: 599px) {
+  .phase--identify .phase-heading::before {
+    display: none;
+  }
 }
 
 .phase-heading__intro {
@@ -1019,16 +1034,11 @@ input.reading__input::-webkit-inner-spin-button {
     --leading-hero: 42px;
   }
 
+  /* The mark and the controls keep the first row; the mission line and the
+     sentence each take a row of their own, so nothing is cut at 320 px. */
   .topbar__bar {
-    /* The mark and the controls keep the first row; who is on duty takes the
-       second, so nothing overflows at 360 px. */
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    grid-template-areas:
-      'brand . controls'
-      'who who who';
-    gap: var(--space-1) var(--space-2);
-    padding: 0 var(--space-3);
-    min-height: 64px;
+    gap: 0 var(--space-2);
+    padding: var(--space-1) var(--space-3);
   }
 
   /* A smaller mark and a tighter pair of gaps keep the row inside 320 px. */
@@ -1041,18 +1051,8 @@ input.reading__input::-webkit-inner-spin-button {
     height: 22px;
   }
 
-  /* The day and the clock do not fit next to the chip at 360 px. They are on
-     the report panel and on every status card. */
-  .topbar__stamp {
-    display: none;
-  }
-
-  .synthetic-notice {
-    padding: 0 var(--space-3);
-  }
-
-  /* The chip keeps its state and, when something waits, the count. The words
-     that would push the bar sideways stay in the accessibility tree. */
+  /* The sync words keep the state and, when something waits, the count. The
+     rest stays in the title and the accessibility tree. */
   .sync-chip__word,
   .sync-chip__quiet {
     position: absolute;
@@ -1064,7 +1064,7 @@ input.reading__input::-webkit-inner-spin-button {
     white-space: nowrap;
   }
 
-  /* Nothing follows the dot: the state is the whole chip. */
+  /* Nothing follows the state: no separator either. */
   .sync-chip:has(.sync-chip__quiet) .sync-chip__separator {
     display: none;
   }
@@ -1074,12 +1074,72 @@ input.reading__input::-webkit-inner-spin-button {
       calc(var(--rail-height) + var(--space-3));
   }
 
+  /* A low rail: the three nodes in one row, and only the current step keeps
+     its name. The page keeps this height free at the bottom, and the bar sits
+     above the home indicator of a phone. */
+  :root:root {
+    --rail-height: calc(56px + env(safe-area-inset-bottom, 0px));
+  }
+
   .phase-rail {
-    padding: var(--space-3) var(--space-3);
+    justify-content: center;
+    padding: var(--space-1) var(--space-3) env(safe-area-inset-bottom, 0px);
+    background: color-mix(in srgb, var(--color-bg-raised) 90%, transparent);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+  }
+
+  .phase-rail__stepper {
+    --rail-row: 32px;
+    --rail-node: 26px;
+    width: auto;
+    margin: 0;
+  }
+
+  .phase-rail__track {
+    display: none;
+  }
+
+  .phase-rail__steps {
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .phase-rail__step {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
     letter-spacing: var(--tracking-label);
+  }
+
+  /* The line between two nodes is drawn in the accent up to the current one. */
+  .phase-rail__step + .phase-rail__step::before {
+    content: '';
+    width: 28px;
+    height: 2px;
+    margin-inline: var(--space-2);
+    background: var(--color-border-control);
+  }
+
+  .phase-rail__step + .phase-rail__step--done::before,
+  .phase-rail__step + .phase-rail__step--current::before {
+    background: var(--color-accent);
+  }
+
+  .phase-rail__step--current .phase-rail__node {
+    width: 30px;
+    height: 30px;
+  }
+
+  .phase-rail__step:not(.phase-rail__step--current) .phase-rail__label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
   }
 
   .report__panel {
@@ -1288,5 +1348,69 @@ input.reading__input::-webkit-inner-spin-button {
   .panel {
     padding: var(--space-3);
     box-shadow: none;
+  }
+}
+
+/* Round of Sun 07:00: the rail on a wide screen. At 88 px it covered a tenth
+   of the screen under every phase. The name of each step now sits beside its
+   node, on the track, so the rail is one row of 60 px; the label paints the
+   raised band over the line, as the node does. */
+@media (min-width: 600px) {
+  :root:root {
+    --rail-height: 60px;
+  }
+
+  .phase-rail {
+    padding-block: var(--space-2);
+  }
+
+  .phase-rail__step {
+    grid-template-rows: var(--rail-row);
+    grid-template-columns: auto auto;
+    justify-content: center;
+    column-gap: 0;
+    row-gap: 0;
+  }
+
+  .phase-rail__label {
+    position: relative;
+    z-index: 1;
+    padding-inline: var(--space-2) var(--space-3);
+    background: var(--color-bg-raised);
+  }
+}
+
+/* Round of Sun 07:05: the top bar between 900 and 1279 px. The one-row layout
+   only fits from 1280 px (with a waiting count the controls are wider, and
+   the sentence ran under them at 1100 px). Until then the sentence takes the
+   second row, as it does on a tablet, and the dot that joins the day to the
+   person is dropped wherever that line can wrap. */
+@media (min-width: 1100px) and (max-width: 1279px) {
+  .topbar__bar {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      'brand mission controls'
+      'notice notice notice';
+  }
+
+  .synthetic-notice {
+    padding-bottom: var(--space-1);
+    text-align: left;
+  }
+}
+
+@media (max-width: 1099px) {
+  .topbar__stamp + .topbar__duty::before {
+    display: none;
+  }
+}
+
+/* Round of Sun 07:15: the dot that joins the day to the person. Under 1100 px
+   the line can wrap, and a dot at the start of the second line reads as a
+   stray mark, so it closes the first part instead: at the end of the day and
+   the clock, whether the person follows on the same line or on the next. */
+@media (max-width: 1099px) {
+  .topbar__stamp:has(+ .topbar__duty)::after {
+    content: ' ·';
   }
 }

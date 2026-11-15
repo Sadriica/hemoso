@@ -51,6 +51,16 @@ describe('PhaseRail', () => {
     expect(screen.getByText(strings.phases.step(3, 3))).toBeInTheDocument()
   })
 
+  it('keeps every step name in the tree, for the short rail of a phone', () => {
+    render(<PhaseRail current="identify" />)
+    // The phone view shows only the current name; the others are hidden by
+    // CSS, so each one must still be text a screen reader reads.
+    for (const phase of ['identify', 'report', 'status'] as const) {
+      expect(screen.getByText(strings.phases[phase].name)).toBeInTheDocument()
+    }
+    expect(screen.getAllByRole('listitem').filter((item) => item.getAttribute('aria-current') === 'step')).toHaveLength(1)
+  })
+
   it('offers no way to jump between phases', () => {
     render(<PhaseRail current="identify" />)
     const rail = screen.getByRole('navigation', { name: strings.phases.railLabel })
