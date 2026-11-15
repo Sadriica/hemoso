@@ -25,8 +25,10 @@ an astronaut records health indicators and understands the result.
 
 ## What HeMoSo does
 
-- Records a measurement per indicator (heart rate, both blood pressures, core
-  temperature, blood glucose, sleep hours, mood, reaction time and lapses).
+- Records a measurement per indicator, twelve in all: heart rate, systolic
+  blood pressure, diastolic blood pressure, core temperature, sleep duration,
+  mood, blood glucose, reaction time median, reaction lapses, appetite, fluid
+  intake and body mass.
 - Compares each reading with the person's own earlier readings, not with a
   population range: compared with the person's own recent readings, in a moving
   window.
@@ -36,10 +38,13 @@ an astronaut records health indicators and understands the result.
   outside your usual range, or needs review, and names who acts: the crew, the
   crew medical officer on board, or the flight surgeon on the ground.
 - Shows the next step for that state, written for someone who is not a doctor,
-  for seven of the nine indicators.
+  for each of the twelve indicators.
 - Suggests possible conditions as an evidence score with the signals behind it,
   never as a percentage and never as a certainty. The crew medical officer or
   the flight surgeon confirms.
+- Lets the astronaut report symptoms. A reported symptom adds evidence to the
+  conditions that list it, and a red flag tells the astronaut to call the crew
+  medical officer now.
 - Readings are saved on the device without a connection and sent when the link
   returns, with a notice while the app is offline.
 - Uses synthetic data only, labelled in the interface.
@@ -99,23 +104,24 @@ The same daily check works wherever the doctor is far away: Antarctic stations, 
 Each of these is designed and written in the repository, and none of them is
 shown as working:
 
-- Symptoms as a second kind of evidence, with red flags that escalate at once
-  (`config/data/symptoms.csv`, task T-78). Waiting for the checker and the data.
 - The app reopening with no network. A service worker is not part of this build.
-- Face and eye analysis for fatigue, stress and sleep. The camera today only
-  signs a crew member in; it does not read affect.
+- Reading fatigue, stress or mood from the face. Face sign-in only picks a
+  name on this device; the app does not read affect from the camera.
 - Learning from each person's records beyond the moving window above.
 
 ## How it works
 
-The app reads four plain CSV/Markdown files, so a biologist can change the
-content without touching code:
+The app reads seven kinds of plain CSV and Markdown files from `config/`, so a
+biologist can change the content without touching code:
 
 | File | What it holds |
 | --- | --- |
 | `config/data/indicators.csv` | the indicators, unit, direction, how each is measured in flight, and the instrument |
 | `config/rules/attention.csv` | the clinical limits: indicator, side, threshold, level, who is notified, source |
 | `config/rules/conditions.csv` | the possible conditions and the signals each rests on (with their side) |
+| `config/data/symptoms.csv` | the symptoms the astronaut can report, which are red flags, and their sources |
+| `config/data/symptom_log.csv` | the symptoms reported by the demo astronaut |
+| `config/data/demo_data.csv` | the synthetic readings of the demo |
 | `config/content/<indicator>.md` | the text the astronaut reads: why it matters, how spaceflight affects it, steps, status and next step |
 
 Two rules make the result reproducible and explainable:
@@ -140,13 +146,11 @@ Two rules make the result reproducible and explainable:
   https://www.asc-csa.gc.ca/eng/sciences/bio-monitor.asp
 - NASA-STD-3001 Volume 1, Revision C (monitoring and trending, limits relative
   to pre-mission values): https://www.nasa.gov/wp-content/uploads/2023/11/nasa-std-3001-vol-1-rev-c-with-signature.pdf
-- JSC 22538 Rev F, Health Stabilization Program (the fever condition in
-  `config/rules/conditions.csv`):
-  https://ntrs.nasa.gov/api/citations/20230012738/downloads/JSC%2022538%20Health%20Stabilization%20Program%20Rev%20F%20Clean.pdf
-- NIH MedlinePlus, Fever (38 °C measured rectally; the core temperature limit):
+- NIH MedlinePlus, Fever (38 °C measured rectally; the core temperature limit
+  and the fever condition):
   https://medlineplus.gov/ency/article/003090.htm
 - WHO, surveillance case definitions for ILI and SARI (measured fever of 38 °C
-  or more): https://cdn.who.int/media/docs/default-source/influenza/who_ili_sari_case_definitions_2014.pdf
+  or more; the core temperature limit and the fever condition): https://cdn.who.int/media/docs/default-source/influenza/who_ili_sari_case_definitions_2014.pdf
 - NASA, In-Situ Laboratory Analysis Capability (point-of-care blood analysis in
   flight): https://ntrs.nasa.gov/citations/20230006919
 - Assessment of a portable clinical blood analyzer during space flight,
@@ -167,8 +171,7 @@ Every library is listed with its licence and the reason it is there in
 generated with AI, so none carries a watermark, and no NASA logo, flag or
 mission identifier appears in the interface.
 
-**TODO:** add the demo video or slides link (the app, repository and team
-URLs are under Links).
+The app, repository and team URLs are under Links.
 
 ## AI (SI) use
 
@@ -178,30 +181,32 @@ writing code with tests. Every use is recorded per card in `SI-USE.md`, in the
 repository, with the files produced and who reviewed them. No AI service runs
 inside the product: everything it computes runs on the device.
 
-**TODO:** confirm the wording with the team, and add the exact sentence the
-submission page asks for.
+The Project Submission Guide asks teams to disclose where and how SI tools were
+used. `SI-USE.md` is that disclosure, and this section is its summary.
 
 ## The five judging criteria
 
 **Impact.** A crew member on a long mission cannot wait for Earth. HeMoSo turns
 a measurement into a next step and names who to tell, in the minutes that
-matter. It is built for the moment when the flight surgeon is 20 minutes away.
+matter. It is built for the moment when the flight surgeon is far away.
 
 **Creativity.** The comparison is with the person, not the population: median
 and spread of that astronaut's own readings. On the same screen, published
 clinical limits still apply on day one, before any history exists. The state
 names who acts, not just how bad it looks.
 
-**Validity.** Every threshold is either a link to a NASA, WHO, AHA or ADA
-document, or the word Assumption in the file, visible in the interface. The
+**Validity.** Every threshold is either a link or the word Assumption in the file,
+visible in the interface. The links in `attention.csv` go to NASA-STD-3001 and a
+NASA water technical brief, WHO, the American Heart Association, the American
+Diabetes Association, NIH MedlinePlus and a peer-reviewed sleep journal. The
 attention file cannot be written with an untraceable number: `scripts/check_content.py`
 rejects a row with no source, a non-monotonic escalation, or an unknown
 indicator. The rule that a sourced limit wins over the baseline is written in a
 finding with test vectors.
 
-**Relevance.** The indicators are the six the challenge names plus three that
-matter in flight, and each one is measured with hardware that exists on the ISS
-today. The rules answer the five questions the statement asks per indicator:
+**Relevance.** The indicators are the six the challenge names plus six more that
+matter in flight, twelve in all. Each measured one uses an instrument documented
+for the ISS; mood and appetite are daily questions. The rules answer the five questions the statement asks per indicator:
 how it is measured, why it matters, how spaceflight affects it, when it needs
 attention and what prevents a problem.
 
@@ -214,7 +219,7 @@ repository, the app and the demo are in English.
 
 - Repository: https://github.com/Sadriica/hemoso
 - Live app: https://www.hemoso.space/
-- Demo (video 30 s or 7 slides): **TODO**
+- Demo video (30 s): **TODO:** demo video link
 - Team: https://www.spaceappschallenge.org/2026/find-a-team/tardis2/
 
 ## Team
@@ -224,7 +229,7 @@ repository, the app and the demo are in English.
 | Sofía Ruiz Tamayo | Bio 1 · health content and pitch |
 | Camila Restrepo Arango | Bio 2 · rules, thresholds and submission |
 | Isabella Cabrera Quintero | Phys · data, NASA sources and measurement |
-| Santiago Rodríguez Mojica (Wambi) | Eng 1 · integrator, backend and requirements |
-| Julián David Mejía Otálvaro (Juli) | Eng 2 · frontend and demo |
+| Santiago Rodríguez Mojica (Wambi) | Eng 1 · integrator, frontend and requirements |
+| Julián David Mejía Otálvaro (Juli) | Eng 2 · backend and demo |
 
 Names as registered on the Members tab of the ReTardis page.
