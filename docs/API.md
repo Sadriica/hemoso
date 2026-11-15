@@ -223,17 +223,23 @@ Query parameters:
 | `mission_day` | integer | optional; the mission day of the value being tested, greater than 0; given with `time` or not at all |
 | `time` | string | optional; the `HH:MM` clock time of the value being tested; given with `mission_day` or not at all |
 
-The rule is FORMATS.md section 3, "How each value is compared", and
-`docs/findings/phys-02-baseline-state-rule.md`:
+The rule is FORMATS.md section 3, "How each value is compared", point 1 (team
+decision Sun 05:54, replacing "the last 14 readings" of Sat 18:45), and
+`docs/findings/phys-02-baseline-state-rule.md`: daily averages over the last 14
+mission days that hold a reading, with fewer than 3 days giving `no_data`:
 
-- The window is the last 14 stored entries for the person and indicator in the
-  same context, oldest first. With `mission_day` and `time`, only the entries
+- The window is the last 14 mission days that hold a reading for the person and
+  indicator in the same context. With `mission_day` and `time`, only the entries
   strictly earlier than that day and time are kept, so a reading the app has
   already stored is not compared with its own copy; without them every stored
   entry counts, as before.
-- `median` is the median of the window; `spread` is
+- Each day gives one value: the arithmetic mean of that day's readings in the
+  context. A day with six readings counts once, and a gap between two days does
+  not shorten the window: one reading each on days 1, 2, 5 and 9 is four days.
+- `median` is the median of those daily values; `spread` is
   `max(1.4826 × median absolute deviation, min_spread)`, with `min_spread` from
   that indicator's row in `config/data/indicators.csv`.
+
 The checks run in this order (phys-02, safety decision of Sat 14 Nov):
 
 1. A matching row of `config/rules/attention.csv` whose `source` is a link
@@ -241,8 +247,8 @@ The checks run in this order (phys-02, safety decision of Sat 14 Nov):
    rows match, the most severe `notify` wins (`crew` < `cmo` <
    `flight_surgeon`). A row marked `Assumption` is ignored: it never gives
    `needs_review` and never appears in `attention`.
-2. Otherwise, fewer than 3 entries gives `no_data`; `median` and `spread` are
-   null and `n` counts the entries available.
+2. Otherwise, fewer than 3 days gives `no_data`; `median` and `spread` are
+   null, `n` counts the days available and `readings` the readings behind them.
 3. Otherwise, a value at most 3 spreads from the median is `in_range`, and
    anything further is `outside_range`. `attention` is null.
 
@@ -250,11 +256,14 @@ So a core temperature of 39.5 °C on the first day, past a cited limit, is
 `needs_review` and not `no_data`, while the same value past an `Assumption`
 limit is `no_data`.
 
-Four points the decision does not settle, resolved here and reported as open
+Points the decision does not settle, resolved here and reported as open
 questions in `team/eng1/`:
 
-- The window counts entries, not days: entries carry a mission day and a time,
-  not a date, so "the last 14 days" cannot be measured from the store.
+- The window counts mission days, not calendar days: entries carry a mission
+  day and a time, not a date, so 14 mission days that hold a reading is the
+  most the store can answer.
+- A day's value is the arithmetic mean of that day's readings, so a day with
+  six readings weighs the same as a day with one.
 - A row's `source` counts as a link when every word in it starts with
   `https://` or `http://`; a cell that mixes a link and `Assumption` does not.
 - A value exactly on an attention threshold does not trigger that row.
@@ -273,14 +282,20 @@ given, or `mission_day` is not a positive integer or `time` is not `HH:MM`;
 | Field | Type | Meaning |
 | --- | --- | --- |
 | `state` | string | `no_data`, `in_range`, `outside_range` or `needs_review` |
-| `median` | number or null | the window's median, in the indicator's unit |
-| `spread` | number or null | the window's spread, in the indicator's unit |
-| `n` | integer | how many entries the window holds |
+| `median` | number or null | the median of the daily values, in the indicator's unit |
+| `spread` | number or null | the spread of the daily values, in the indicator's unit |
+| `n` | integer | how many mission days the window holds, one value per day |
+| `readings` | integer | how many stored readings those days hold; `n` counts days, so 3 days can hold 5 readings |
 | `attention` | object or null | the attention row that matched: `attention_level`, `notify`, `source` |
+
+The field names carry the change: `n` counts mission days and `readings` counts
+the readings behind them, so a window of 3 days may hold 5 readings. Code that
+read `n` as a count of readings has to use `readings` and leave `n` as the day
+count.
 
 ```bash
 curl "$VITE_API_BASE_URL/people/demo_astronaut_1/indicators/hr_bpm/state?value=72&context=rest"
-# 200 {"state":"in_range","median":70.0,"spread":4.0,"n":14,"attention":null}
+# 200 {"state":"in_range","median":70.0,"spread":4.0,"n":14,"readings":21,"attention":null}
 ```
 
 ```js
@@ -289,7 +304,7 @@ const response = await fetch(
   `${VITE_API_BASE_URL}/people/demo_astronaut_1/indicators/hr_bpm/state?${params}`
 );
 const status = await response.json();
-// { state: "in_range", median: 70.0, spread: 4.0, n: 14, attention: null }
+// { state: "in_range", median: 70.0, spread: 4.0, n: 14, readings: 21, attention: null }
 if (status.attention !== null) {
   // status.state === "needs_review": show status.attention.attention_level,
   // who is notified, and the source; the CMO or flight surgeon confirms.
@@ -327,7 +342,9 @@ a usual baseline is `in_range`. When both sides need review, each side's
 
 `mission_day` and `time` work as they do on the state route: with both, each
 window holds only the entries strictly earlier than that day and time, so the
-reading being tested is not compared with a stored copy of itself.
+reading being tested is not compared with a stored copy of itself. Each side
+uses the same daily window: the last 14 mission days with a reading, one value
+per day, then median and spread.
 
 Responses: `200` (a `BloodPressureState`); `404` when `bp_sys_mmhg` or
 `bp_dia_mmhg` has no row in `config/data/indicators.csv` (also while that file
@@ -343,7 +360,7 @@ unreachable or returns an error.
 
 ```bash
 curl "$VITE_API_BASE_URL/people/demo_astronaut_1/blood_pressure/state?systolic=120&diastolic=95&context=rest"
-# 200 {"state":"needs_review","systolic":{"state":"in_range","median":115.0,"spread":5.0,"n":14,"attention":null},"diastolic":{"state":"needs_review","median":75.0,"spread":4.0,"n":14,"attention":{"attention_level":"consult","notify":"cmo","source":"https://www.who.int/news-room/fact-sheets/detail/hypertension"}}}
+# 200 {"state":"needs_review","systolic":{"state":"in_range","median":115.0,"spread":5.0,"n":14,"readings":14,"attention":null},"diastolic":{"state":"needs_review","median":75.0,"spread":4.0,"n":14,"readings":14,"attention":{"attention_level":"consult","notify":"cmo","source":"https://www.who.int/news-room/fact-sheets/detail/hypertension"}}}
 ```
 
 ```js
@@ -374,9 +391,9 @@ The rule is FORMATS.md section 3, "How each value is compared", point 3:
 | Question | Answer |
 | --- | --- |
 | Which reading is scored? | The newest stored entry of the signal. Its `context` decides what it is compared with. |
-| What is its baseline? | `state.py`'s: the last 14 readings before the newest one in that same context, median and spread with the indicator's `min_spread`. |
+| What is its baseline? | `state.py`'s: the last 14 mission days before the newest one in that same context, one value per day, median and spread with the indicator's `min_spread`. |
 | What does one signal add? | `1` when the value crossed a row of `config/rules/attention.csv` whose `side` is the signal's side and whose `source` is a link, with or without a baseline. Rows marked `Assumption` never add this point. `0.5` when it is outside the baseline on that side. `0` otherwise, including a value on the wrong side of the condition, whatever its distance from the baseline: a glucose of 180 mg/dL adds nothing to `hypoglycaemia`. |
-| When is a signal not usable? | With no reading, no side in `based_on`, or no baseline (fewer than 3 readings in that context, or no row in `config/data/indicators.csv`) and no cited limit crossed. It is listed, with `contribution` and `value` null, and left out of the mean. |
+| When is a signal not usable? | With no reading, no side in `based_on`, or no baseline (fewer than 3 days in that context, or no row in `config/data/indicators.csv`) and no cited limit crossed. It is listed, with `contribution` and `value` null, and left out of the mean. |
 | How is the score computed? | The mean of the usable signals, from 0 to 1, shown with three decimals. Fewer than 2 usable signals gives `score` null and `label` `no_data`, never a low score. |
 
 Labels:
@@ -394,8 +411,8 @@ Four points the finding does not settle, resolved here:
   0.6`, `0.6 to 1`). They are read closed at the lower end, so exactly 0.3 is
   `possible` and exactly 0.6 is `review`.
 - The context is the newest reading's own: heart rate after exercise is
-  compared with readings after exercise, and a context with fewer than 3
-  readings leaves the signal without a baseline.
+  compared with readings after exercise, and a context with fewer than 3 days
+  leaves the signal without a baseline.
 - A signal without a baseline still adds 1 when its value crossed a cited
   attention row on its side (bio2-02: "a clinical boundary does not need a
   baseline"); with no cited row crossed it is left out of the score.

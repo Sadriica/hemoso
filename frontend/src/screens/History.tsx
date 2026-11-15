@@ -406,20 +406,20 @@ function ReadingsTable({
             tabIndex={0}
             aria-label={strings.history.tableRegion(indicator.name)}
           >
-            <table className="history__table" id={tableId}>
+            <table className="history__table" id={tableId} role="table">
               <caption className="history__caption">
                 {strings.history.tableCaption(indicator.name)}
               </caption>
-              <thead>
-                <tr>
-                  <th scope="col">{strings.history.columns.day}</th>
-                  <th scope="col">{strings.history.columns.time}</th>
-                  <th scope="col">{strings.history.columns.context}</th>
-                  <th scope="col">{strings.history.columns.value}</th>
-                  <th scope="col">{strings.history.columns.status}</th>
+              <thead role="rowgroup">
+                <tr role="row">
+                  <th scope="col" role="columnheader">{strings.history.columns.day}</th>
+                  <th scope="col" role="columnheader">{strings.history.columns.time}</th>
+                  <th scope="col" role="columnheader">{strings.history.columns.context}</th>
+                  <th scope="col" role="columnheader">{strings.history.columns.value}</th>
+                  <th scope="col" role="columnheader">{strings.history.columns.status}</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody role="rowgroup">
                 {shown.map((entry) => {
                   const status = rowStatus(
                     entry,
@@ -428,17 +428,17 @@ function ReadingsTable({
                     indicator.minSpread,
                   )
                   return (
-                    <tr key={entry.id}>
-                      <td>{entry.missionDay}</td>
-                      <td>{entry.time}</td>
-                      <td>{strings.entry.contextLabels[entry.context]}</td>
-                      <td className="history__value">
+                    <tr key={entry.id} role="row">
+                      <td role="cell">{entry.missionDay}</td>
+                      <td role="cell">{entry.time}</td>
+                      <td role="cell">{strings.entry.contextLabels[entry.context]}</td>
+                      <td className="history__value" role="cell">
                         {entry.value}{' '}
                         <span className="history__unit">
                           {strings.cardUnit(entry.unit)}
                         </span>
                       </td>
-                      <td>
+                      <td role="cell">
                         <span className="history__status">
                           <StatusIcon kind={statusBadgeKind(status)} size={16} />
                           {statusText(status)}
