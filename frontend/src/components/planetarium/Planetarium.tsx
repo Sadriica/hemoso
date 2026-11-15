@@ -72,7 +72,7 @@ function place(i: number, n: number) {
   const k = Math.floor(i / 2)
   const m = Math.ceil((n - (left ? 1 : 0)) / 2)
   const dy = m < 2 ? 0 : -36 + (k * 72) / (m - 1)
-  const dx = 18 + (k % 2) * 6
+  const dx = 14 + (k % 2) * 6
   return { r: Math.hypot(dx, dy), x: 50 + (left ? -dx : dx), y: 50 + dy, left }
 }
 

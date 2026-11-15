@@ -17,8 +17,9 @@ import type { AttemptFailure, SessionState } from '../hooks/useSession'
 import { personInitials, personName, strings } from '../strings'
 import './identify.css'
 
-// The face panel is a chunk of its own, loaded the first time it opens. A page
-// without ?face=1 never asks for it (REQ-14).
+// The face panel is a chunk of its own, loaded the first time it opens, and
+// the models behind it only when the person starts the camera: a plain page
+// load asks for neither (REQ-14, REQ-36).
 const FaceSignIn = lazy(() => import('../screens/FaceSignIn'))
 
 /** The fieldset of crew members: the face panel sends the focus back here. */
@@ -38,8 +39,6 @@ interface IdentifyPhaseProps {
   /** The crew ids of the demo data, the people who need no account. */
   personIds: string[]
   session: SessionState
-  /** Face sign-in exists only on a page opened with ?face=1 (REQ-14). */
-  faceEnabled: boolean
   onDone: () => void
 }
 
@@ -53,7 +52,6 @@ export default function IdentifyPhase({
   headingRef,
   personIds,
   session,
-  faceEnabled,
   onDone,
 }: IdentifyPhaseProps) {
   const copy = strings.phases.identify
@@ -73,7 +71,12 @@ export default function IdentifyPhase({
   const [username, setUsername] = useState(session.expiredFor ?? '')
   // A face is on this device when the screen opens: that is what makes it the
   // first way in (REQ-36).
-  const [hasFace] = useState(() => faceEnabled && loadFaces().length > 0)
+  const [hasFace] = useState(() => loadFaces().length > 0)
+  // After a PIN sign-in on a device with a camera and no face saved for that
+  // person, the screen offers to add one before the report.
+  const [offer, setOffer] = useState(false)
+  const [offerDone, setOfferDone] = useState(false)
+  const offerButtonRef = useRef<HTMLButtonElement>(null)
 
   const faceButtonRef = useRef<HTMLButtonElement>(null)
   const usernameRef = useRef<HTMLInputElement>(null)
@@ -86,6 +89,7 @@ export default function IdentifyPhase({
   const faceTitleId = useId()
   const accountTitleId = useId()
   const demoTitleId = useId()
+  const offerTitleId = useId()
 
   // A token the server stopped accepting: the PIN of that person, right here.
   // The notice stays until the person is in again.
@@ -142,6 +146,16 @@ export default function IdentifyPhase({
     onDone()
   }
 
+  // A person is in with a PIN: the report comes next, unless the device has a
+  // camera and no face of theirs, when adding one is offered first.
+  const afterPinSignIn = (person: string) => {
+    if (canUseCamera() && !loadFaces().some((face) => face.personId === person)) {
+      setOffer(true)
+      return
+    }
+    onDone()
+  }
+
   const openDemo = () => {
     session.openDemo()
     onDone()
@@ -172,7 +186,7 @@ export default function IdentifyPhase({
       return
     }
     setPin('')
-    onDone()
+    afterPinSignIn(person)
   }
 
   async function submitCreate(event: FormEvent<HTMLFormElement>) {
@@ -205,7 +219,7 @@ export default function IdentifyPhase({
     setMissionStart(person, isIsoDate(startDate) ? startDate : todayIso())
     setPin('')
     setConfirmPin('')
-    onDone()
+    afterPinSignIn(person)
   }
 
   const problemText = problem === null ? null : signInCopy.errors[problem]
@@ -215,7 +229,9 @@ export default function IdentifyPhase({
       <h2 id={faceTitleId} className="signin__title">
         {signInCopy.faceHeading}
       </h2>
-      <p className="signin__text">{signInCopy.faceNote}</p>
+      <p className="signin__text">
+        {hasFace ? signInCopy.faceNote : signInCopy.faceNone}
+      </p>
       <button
         ref={faceButtonRef}
         type="button"
@@ -274,9 +290,62 @@ export default function IdentifyPhase({
           </p>
         )}
 
-        {faceEnabled && hasFace && facePanel}
+        {!offer && facePanel}
 
-        {session.accountsOffered && (
+        {offer && session.personId !== null && (
+          <section className="signin__option" aria-labelledby={offerTitleId}>
+            <h2 id={offerTitleId} className="signin__title">
+              {signInCopy.faceOfferHeading}
+            </h2>
+            <p className="signin__text">{signInCopy.faceOfferNote}</p>
+            {faceOpen && (
+              <Suspense fallback={<p role="status">{strings.face.opening}</p>}>
+                <FaceSignIn
+                  personId={session.personId}
+                  onPersonSelected={faceMatched}
+                  onFocusPicker={() => offerButtonRef.current?.focus()}
+                  onClose={() => {
+                    setFaceOpen(false)
+                    setOfferDone(
+                      loadFaces().some((face) => face.personId === session.personId),
+                    )
+                  }}
+                />
+              </Suspense>
+            )}
+            {!faceOpen && (
+              <div className="signin__actions">
+                {offerDone ? (
+                  <button type="button" className="journey-button journey-button--solid" onClick={onDone}>
+                    <span>{copy.next}</span>
+                    <span className="journey-button__arrow" aria-hidden="true">
+                      →
+                    </span>
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      ref={offerButtonRef}
+                      type="button"
+                      className="journey-button journey-button--solid"
+                      onClick={() => setFaceOpen(true)}
+                    >
+                      <span>{signInCopy.faceOfferAction}</span>
+                      <span className="journey-button__arrow" aria-hidden="true">
+                        ◎
+                      </span>
+                    </button>
+                    <button type="button" className="signin__link" onClick={onDone}>
+                      {signInCopy.faceOfferSkip}
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+          </section>
+        )}
+
+        {!offer && session.accountsOffered && (
           <section className="signin__option" aria-labelledby={accountTitleId}>
             <h2 id={accountTitleId} className="signin__title">
               {creating ? signInCopy.createHeading : signInCopy.pinHeading}
@@ -398,6 +467,7 @@ export default function IdentifyPhase({
           </section>
         )}
 
+        {!offer && (
         <section className="signin__option" aria-labelledby={demoTitleId}>
           <h2 id={demoTitleId} className="signin__title">
             {signInCopy.demoHeading}
@@ -466,8 +536,7 @@ export default function IdentifyPhase({
             </span>
           </button>
         </section>
-
-        {faceEnabled && !hasFace && facePanel}
+        )}
       </div>
     </section>
   )
@@ -481,6 +550,14 @@ function SigninError({ id, children }: { id?: string; children: string }) {
       <StatusIcon kind="warning" size={16} />
       <span>{children}</span>
     </p>
+  )
+}
+
+// A browser with a camera API: only then is adding a face offered.
+function canUseCamera(): boolean {
+  return (
+    typeof navigator !== 'undefined' &&
+    typeof navigator.mediaDevices?.getUserMedia === 'function'
   )
 }
 

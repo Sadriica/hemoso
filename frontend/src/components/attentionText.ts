@@ -25,7 +25,13 @@ const KIND_BY_STATE: Record<IndicatorStateName, BadgeKind> = {
   no_data: 'no_data',
 }
 
+// A crossed attention row is drawn by who acts on it (Wambi, Sat 23:00): a row
+// for the crew reads as outside (amber), a row for the CMO or the flight
+// surgeon as needs review (red). The words stay the level name of the row.
 export function statusBadgeKind(status: Status): BadgeKind {
+  if (status.state === 'needs_review' && status.notify === 'crew') {
+    return 'outside'
+  }
   return KIND_BY_STATE[status.state]
 }
 

@@ -615,7 +615,8 @@ describe('Home board', () => {
         { ...indicator, id: 'first_indicator', name: 'First indicator' },
         second,
       ],
-      rules: [{ ...rule, indicatorId: 'second_indicator' }],
+      // A row for the CMO is the one that reads as needs review.
+      rules: [{ ...rule, indicatorId: 'second_indicator', notify: 'cmo' }],
       contents: {},
       demoEntries: [secondEntry],
     }

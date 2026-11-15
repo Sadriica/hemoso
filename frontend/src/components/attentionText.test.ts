@@ -28,6 +28,28 @@ describe('statusBadgeKind', () => {
   }
 })
 
+describe('statusBadgeKind for a crossed row', () => {
+  const crossed = (notify: Status['notify']): Status => ({
+    state: 'needs_review',
+    level: 'example_level',
+    notify,
+    sources: [],
+  })
+
+  it('draws a row for the crew as outside, in amber', () => {
+    expect(statusBadgeKind(crossed('crew'))).toBe('outside')
+  })
+
+  it('draws a row for the CMO or the flight surgeon as needs review, in red', () => {
+    expect(statusBadgeKind(crossed('cmo'))).toBe('review')
+    expect(statusBadgeKind(crossed('flight_surgeon'))).toBe('review')
+  })
+
+  it('keeps the words of the row whatever the colour', () => {
+    expect(statusText(crossed('crew'))).toBe('example_level')
+  })
+})
+
 describe('statusText', () => {
   it('says outside your usual range as its own words', () => {
     expect(statusText(status('outside_range'))).toBe(

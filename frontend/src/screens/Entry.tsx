@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useId,
   useRef,
   useState,
@@ -39,6 +40,7 @@ export default function Entry({
   indicators,
   entries,
   serverConfigured = false,
+  onFilledChange,
 }: {
   store: EntryStore
   personId: string
@@ -47,6 +49,9 @@ export default function Entry({
   // True only when a server is set up. Without one nothing is sent, so the
   // saved message does not promise a send.
   serverConfigured?: boolean
+  // Told how many rows hold a value that is not saved yet, so the screen can
+  // keep one primary action at a time. Presentation only.
+  onFilledChange?: (count: number) => void
 }) {
   // Day and time belong to the moment the form opens for this person; the
   // screen is keyed by person in App, so they are read once.
@@ -72,6 +77,7 @@ export default function Entry({
       entries={entries}
       defaults={defaults}
       serverConfigured={serverConfigured}
+      onFilledChange={onFilledChange}
     />
   )
 }
@@ -83,6 +89,7 @@ function ReportForm({
   entries,
   defaults,
   serverConfigured,
+  onFilledChange,
 }: {
   store: EntryStore
   personId: string
@@ -90,6 +97,7 @@ function ReportForm({
   entries: EntryRecord[]
   defaults: MissionClock
   serverConfigured: boolean
+  onFilledChange?: (count: number) => void
 }) {
   const [rows] = useState(() => readingRows(indicators))
   const [values, setValues] = useState<Record<string, string>>({})
@@ -221,6 +229,9 @@ function ReportForm({
     row.fields.some((field) => (values[field.indicatorId] ?? '').trim() !== ''),
   ).length
   const empty = filled === 0
+  useEffect(() => {
+    onFilledChange?.(filled)
+  }, [filled, onFilledChange])
   const progressId = `${baseId}-progress`
   const reasonId = `${baseId}-reason`
 
@@ -245,9 +256,25 @@ function ReportForm({
 
   return (
     <section aria-labelledby={`${baseId}-heading`} className="report-form rep">
-      <h2 id={`${baseId}-heading`} className="report-form__heading">
-        {strings.entry.heading}
-      </h2>
+      <div className="rep-head">
+        <h2 id={`${baseId}-heading`} className="report-form__heading">
+          {strings.entry.heading}
+        </h2>
+        <div className="rep-progress">
+          <span className="rep-progress__dots" aria-hidden="true">
+            {rows.map((row, index) => (
+              <span
+                key={row.key}
+                className={`rep-progress__dot${index < filled ? ' rep-progress__dot--on' : ''}`}
+              />
+            ))}
+          </span>
+          {/* Not role="status": the save result below is the one status. */}
+          <span id={progressId} aria-live="polite">
+            {strings.entry.progress(filled, rows.length)}
+          </span>
+        </div>
+      </div>
       {/* noValidate: the messages next to the rows replace the browser bubbles. */}
       <form className="report-form__body" noValidate onSubmit={onSubmit}>
         <div className="rep-meta">
@@ -312,7 +339,7 @@ function ReportForm({
               section 3). One segmented control of radios: the arrow keys
               change it like the scale. */}
           <fieldset className="rep-segment">
-            <legend className="sr-only">{strings.entry.context}</legend>
+            <legend className="rep-segment__legend">{strings.entry.context}</legend>
             <div className="rep-segment__track">
               {MEASUREMENT_CONTEXTS.map((choice) => (
                 <label key={choice} className="rep-segment__option">
@@ -351,34 +378,18 @@ function ReportForm({
         </ul>
 
         <div className="rep-actions">
-          <div className="rep-progress">
-            <span className="rep-progress__dots" aria-hidden="true">
-              {rows.map((row, index) => (
-                <span
-                  key={row.key}
-                  className={`rep-progress__dot${index < filled ? ' rep-progress__dot--on' : ''}`}
-                />
-              ))}
-            </span>
-            {/* Not role="status": the save result below is the one status. */}
-            <span id={progressId} aria-live="polite">
-              {strings.entry.progress(filled, rows.length)}
-            </span>
-          </div>
           <button
             ref={saveRef}
             className="button button--primary rep-save"
             type="submit"
             aria-disabled={empty ? true : undefined}
-            aria-describedby={empty ? reasonId : undefined}
+            aria-describedby={reasonId}
           >
             {strings.entry.save}
           </button>
-          {empty && (
-            <p className="rep-actions__reason" id={reasonId}>
-              {strings.entry.saveNeeds}
-            </p>
-          )}
+          <p className="rep-actions__reason" id={reasonId}>
+            {empty ? strings.entry.saveNeeds : strings.entry.saveWhat}
+          </p>
         </div>
         {/* The live region stays in place so the text is read out when it appears. */}
         <p className="form__status" role="status">
@@ -509,7 +520,13 @@ function ReadingRowField({
           {/* One field, one border: the value large on the left, the unit
               inside on the right. The blood pressure is the same field with
               two values, "120 / 80 mmHg", each its own entry. */}
-          <span className={`rep-field${pair ? ' rep-field--pair' : ''}${invalid ? ' rep-field--invalid' : ''}`}>
+          <span
+            onClick={(event) => {
+              if (event.target instanceof HTMLInputElement) return
+              const inputs = event.currentTarget.querySelectorAll('input')
+              inputs[event.target === event.currentTarget ? 0 : inputs.length - 1]?.focus()
+            }}
+            className={`rep-field${pair ? ' rep-field--pair' : ''}${invalid ? ' rep-field--invalid' : ''}`}>
             {row.fields.map((field, index) => (
               <span key={field.indicatorId} className="rep-field__part">
                 {index > 0 && (
@@ -532,7 +549,7 @@ function ReadingRowField({
                   type="text"
                   inputMode="decimal"
                   autoComplete="off"
-                  placeholder=" "
+                  placeholder="–"
                   value={values[field.indicatorId] ?? ''}
                   aria-invalid={invalid}
                   aria-describedby={`${unitId} ${describedBy}`.trim()}

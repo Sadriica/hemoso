@@ -135,7 +135,7 @@ export default function Home({
             : { median: local.median, spread: local.spread, n: local.n },
     }
   })
-  const reviewRows = rows.filter((row) => row.status.state === 'needs_review')
+  const reviewRows = rows.filter((row) => statusBadgeKind(row.status) === 'review')
   const selected = rows.find((row) => row.indicator.id === selectedId)
   const selectedSystem = selected ? systemOf(selected.indicator.id) : null
 
@@ -365,6 +365,7 @@ function IndicatorRow({
                 indicatorId={indicator.id}
                 value={latest.value}
                 reducedMotion={motionReduced}
+                state={kind}
               />
             </Suspense>
           )}
