@@ -57,6 +57,9 @@ def content_text(indicator_id: str) -> str:
     lines = [f"# {indicator_id}"]
     for heading in check_content.EXPECTED_H2:
         lines.extend(["", f"## {heading}"])
+        if heading == "Status and next steps":
+            for state in check_content.BASELINE_STATES_REQUIRED:
+                lines.extend(["", f"### {state}"])
     return "\n".join(lines) + "\n"
 
 
@@ -93,9 +96,10 @@ def create_content_files(root: Path, ids: list[str]) -> bool:
 
 
 def print_bio1_note() -> None:
-    print("Note: replace the '# <id>' heading with the indicator name, and add")
-    print("one '### <level>' heading under '## Status and next steps' for each")
-    print("attention_level in config/rules/attention.csv.")
+    print("Note: replace the '# <id>' heading with the indicator name, write the")
+    print("'### in_range' and '### outside_range' texts, and add one '### <level>'")
+    print("heading under '## Status and next steps' for each attention_level of")
+    print("that indicator in config/rules/attention.csv.")
 
 
 def print_next_steps() -> None:

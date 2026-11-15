@@ -276,6 +276,10 @@ short sentences and plain words. One file per indicator, named after its id
 
 ## Status and next steps
 
+### in_range
+
+### outside_range
+
 ### <attention_level>
 
 ## How to prevent problems
@@ -296,9 +300,15 @@ problems) — `## How to prevent problems` with `rules/conditions.csv`.
   (question 3, REQ-07); written by Bio 1 from the findings of Phys, with their
   sources.
 - `Measurement steps`: numbered steps, one action per sentence (REQ-08).
-- `Status and next steps`: one `### <attention_level>` sub-section per level in
-  `rules/attention.csv` (question 4, REQ-05); each holds the short status text
-  and the next step the astronaut reads (REQ-26).
+- `Status and next steps`: the short status text and the next step the
+  astronaut reads (REQ-26), one `###` sub-section per state:
+  - `### in_range` and `### outside_range`, always: the two baseline states the
+    API returns (`backend/app/state.py`); `### no_data` is optional.
+  - one `### <attention_level>` per level this indicator has in
+    `rules/attention.csv` (question 4, REQ-05): the text for `needs_review`,
+    told per level (for example `consult`, `urgent`, `watch`).
+  No other `###` heading, and none twice. (Team decision Sat 21:05, so Bio 1's
+  state texts and Bio 2's levels fit one file.)
 - `How to prevent problems`: what the astronaut can do (question 5, REQ-06);
   written by Bio 1 from the findings of Bio 2, with their sources.
 - `Sources`: the links from `STANDARDS.md` §6, one per line as
@@ -320,6 +330,10 @@ Example hazard effect, written by Bio 1 from Phys's findings (question 3, REQ-07
 2. Example step two.
 
 ## Status and next steps
+### in_range
+Example text for a value in the usual range, and its next step. Assumption.
+### outside_range
+Example text for a value outside the usual range, and its next step. Assumption.
 ### example_level
 Example status text and example next step. Assumption.
 
@@ -330,8 +344,10 @@ Example guidance, written by Bio 1 from Bio 2's findings (question 5, REQ-06). A
 - Example title: https://example.org
 ```
 
-Valid when: the headings appear in this order; every `###` heading matches an
-`attention_level` in `rules/attention.csv`; every medical statement carries a
+Valid when: the headings appear in this order; `### in_range` and `###
+outside_range` are present; every other `###` heading is `no_data` or an
+`attention_level` of this indicator in `rules/attention.csv`, with every level
+present and no heading twice; every medical statement carries a
 link or the word `Assumption`. The example text above is placeholder.
 
 ### `config/content/body_regions.csv`

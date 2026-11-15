@@ -11,6 +11,7 @@ function entry(missionDay: number, time: string, value = 1): Entry {
     unit: 'example_unit',
     missionDay,
     time,
+    context: 'rest',
   }
 }
 
@@ -127,6 +128,29 @@ describe('compareToOwnHistory', () => {
     expect(result?.earlierCount).toBe(2)
     expect(result?.earlierMedian).toBe(7)
     expect(result?.difference).toBe(13)
+  })
+
+  it('compares only with readings in the same context', () => {
+    // The latest reading is at rest; the exercise reading of the same
+    // indicator is another population and is left out (FORMATS.md section 3).
+    const result = compareToOwnHistory([
+      entry(1, '08:00', 70),
+      { ...entry(2, '18:00', 140), context: 'after_exercise' },
+      entry(3, '08:00', 72),
+    ])
+    expect(result?.latest.value).toBe(72)
+    expect(result?.earlierCount).toBe(1)
+    expect(result?.earlierMedian).toBe(70)
+    expect(result?.difference).toBe(2)
+  })
+
+  it('has nothing to compare when every earlier reading is in another context', () => {
+    const result = compareToOwnHistory([
+      entry(1, '08:00', 70),
+      entry(2, '08:00', 71),
+      { ...entry(3, '18:00', 140), context: 'after_exercise' },
+    ])
+    expect(result).toBeNull()
   })
 
   it('keeps the reading a correction replaced as the earlier one', () => {
