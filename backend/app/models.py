@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field, field_validator
 
 _ID = re.compile(r"^[a-z][a-z0-9_]*$")
 _TIME = re.compile(r"^([01][0-9]|2[0-3]):[0-5][0-9]$")
+_PIN = re.compile(r"^[0-9]{4,8}$")
 
 # The four contexts an entry is measured in (FORMATS.md, demo_data.csv).
 Context = Literal["rest", "after_exercise", "on_waking", "before_sleep"]
@@ -33,6 +34,11 @@ def is_valid_id(value: str) -> bool:
 def is_valid_time(value: str) -> bool:
     """True when `value` is a 24-hour clock time `HH:MM` (FORMATS.md section 3)."""
     return _TIME.fullmatch(value) is not None
+
+
+def is_valid_pin(value: str) -> bool:
+    """True when `value` is 4 to 8 digits (REQ-37)."""
+    return _PIN.fullmatch(value) is not None
 
 
 class Entry(BaseModel):
@@ -138,3 +144,58 @@ class ConditionScore(BaseModel):
     label: ConditionLabel
     signals: list[ConditionSignal]
     source: str
+
+
+class Account(BaseModel):
+    """A stored account (REQ-37): the person, the salt and the salted PIN hash.
+
+    The PIN itself is never stored and never logged; `pin_hash` is the
+    hex digest of `hashlib.scrypt` over the PIN and `salt`.
+    """
+
+    person_id: str
+    salt: str
+    pin_hash: str
+
+
+class Credentials(BaseModel):
+    """The body of `POST /accounts` and of `POST /sessions`.
+
+    `person_id` follows the same lowercase `snake_case` rule as every id in the
+    API; `pin` is 4 to 8 digits.
+    """
+
+    person_id: str = Field(max_length=64)
+    pin: str = Field(max_length=8)
+
+    @field_validator("person_id")
+    @classmethod
+    def _check_id(cls, value: str) -> str:
+        if not is_valid_id(value):
+            raise ValueError("must be lowercase snake_case")
+        return value
+
+    @field_validator("pin")
+    @classmethod
+    def _check_pin(cls, value: str) -> str:
+        if not is_valid_pin(value):
+            raise ValueError("pin must be 4 to 8 digits")
+        return value
+
+
+class AccountOut(BaseModel):
+    """The body of `POST /accounts`: the person, nothing else."""
+
+    person_id: str
+
+
+class SessionOut(BaseModel):
+    """The body of `POST /sessions`: the token and when it stops working.
+
+    `expires_at` is ISO 8601 in UTC; the token is sent as
+    `Authorization: Bearer <token>`.
+    """
+
+    token: str
+    person_id: str
+    expires_at: str

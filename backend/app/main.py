@@ -2,16 +2,17 @@
 
 from __future__ import annotations
 
+import hmac
 import math
 import os
 from contextlib import asynccontextmanager
 from typing import Annotated
 
 import httpx
-from fastapi import Depends, FastAPI, HTTPException, Response
+from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 
-from . import storage
+from . import accounts, storage
 from .conditions import condition_result, latest_value, parse_signals
 from .indicators import (
     load_attention_rows,
@@ -21,11 +22,15 @@ from .indicators import (
 )
 from .models import (
     CONTEXTS,
+    Account,
+    AccountOut,
     AttentionRow,
     BloodPressureState,
     ConditionScore,
+    Credentials,
     Entry,
     IndicatorState,
+    SessionOut,
     is_valid_id,
     is_valid_time,
 )
@@ -55,7 +60,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins(),
     allow_methods=["GET", "POST"],
-    allow_headers=["*"],
+    allow_headers=["Content-Type", "Authorization"],
 )
 
 Store = Annotated[storage.Storage, Depends(storage.get_storage)]
@@ -159,6 +164,62 @@ def health() -> dict[str, str]:
 
 
 @app.post(
+    "/accounts",
+    status_code=201,
+    responses={409: {"description": "This person already has an account."}},
+)
+def create_account(body: Credentials, store: Store) -> AccountOut:
+    """Create one account (REQ-37): the PIN is kept only as a salted hash."""
+    salt = accounts.new_salt()
+    account = Account(
+        person_id=body.person_id,
+        salt=salt,
+        pin_hash=accounts.hash_pin(body.pin, salt),
+    )
+    try:
+        created = store.create_account(account)
+    except httpx.HTTPError as error:
+        raise HTTPException(
+            status_code=502, detail=accounts.STORAGE_ERROR
+        ) from error
+    if not created:
+        raise HTTPException(
+            status_code=409, detail="this person already has an account"
+        )
+    return AccountOut(person_id=body.person_id)
+
+
+@app.post(
+    "/sessions",
+    responses={
+        401: {"description": "Unknown person or wrong PIN; the same message."},
+        429: {"description": "Five wrong PINs for this person in ten minutes."},
+    },
+)
+def create_session(body: Credentials, store: Store) -> SessionOut:
+    """A token for one person, valid 30 days (REQ-37)."""
+    if accounts.wrong_pins.locked(body.person_id):
+        raise HTTPException(status_code=429, detail=accounts.LOCKED)
+    try:
+        account = store.account(body.person_id)
+    except httpx.HTTPError as error:
+        raise HTTPException(
+            status_code=502, detail=accounts.STORAGE_ERROR
+        ) from error
+    # An unknown person still pays for one scrypt run, so the answer says
+    # nothing about which people have an account.
+    salt = account.salt if account is not None else accounts.DUMMY_SALT
+    if account is None or not hmac.compare_digest(
+        accounts.hash_pin(body.pin, salt), account.pin_hash
+    ):
+        accounts.wrong_pins.record(body.person_id)
+        raise HTTPException(status_code=401, detail=accounts.WRONG_CREDENTIALS)
+    accounts.wrong_pins.clear(body.person_id)
+    token, expires_at = accounts.issue_token(body.person_id)
+    return SessionOut(token=token, person_id=body.person_id, expires_at=expires_at)
+
+
+@app.post(
     "/entries",
     status_code=201,
     responses={
@@ -169,7 +230,10 @@ def health() -> dict[str, str]:
         },
     },
 )
-def create_entry(entry: Entry, store: Store, response: Response) -> Entry:
+def create_entry(
+    entry: Entry, store: Store, request: Request, response: Response
+) -> Entry:
+    accounts.authorize(request, entry.person_id, store)
     error = validate_against_indicators(entry)
     if error is not None:
         raise HTTPException(status_code=422, detail=error)
@@ -193,9 +257,12 @@ def create_entry(entry: Entry, store: Store, response: Response) -> Entry:
 
 
 @app.get("/people/{person_id}/indicators/{indicator_id}/history")
-def get_history(person_id: str, indicator_id: str, store: Store) -> list[Entry]:
+def get_history(
+    person_id: str, indicator_id: str, store: Store, request: Request
+) -> list[Entry]:
     for name, path_id in (("person_id", person_id), ("indicator_id", indicator_id)):
         check_id(name, path_id)
+    accounts.authorize(request, person_id, store)
     return history_of(store, person_id, indicator_id)
 
 
@@ -210,6 +277,7 @@ def get_state(
     indicator_id: str,
     value: float,
     store: Store,
+    request: Request,
     context: str = "rest",
     mission_day: int | None = None,
     time: str | None = None,
@@ -217,6 +285,7 @@ def get_state(
     """One value against the person's own baseline (FORMATS.md section 3)."""
     for name, path_id in (("person_id", person_id), ("indicator_id", indicator_id)):
         check_id(name, path_id)
+    accounts.authorize(request, person_id, store)
     check_context(context)
     check_value("value", value)
     before = check_before(mission_day, time)
@@ -243,12 +312,14 @@ def get_blood_pressure_state(
     systolic: float,
     diastolic: float,
     store: Store,
+    request: Request,
     context: str = "rest",
     mission_day: int | None = None,
     time: str | None = None,
 ) -> BloodPressureState:
     """One blood pressure reading: the worse of its two states (bio2-01)."""
     check_id("person_id", person_id)
+    accounts.authorize(request, person_id, store)
     check_context(context)
     for name, number in (("systolic", systolic), ("diastolic", diastolic)):
         check_value(name, number)
@@ -284,7 +355,9 @@ def get_blood_pressure_state(
 
 
 @app.get("/people/{person_id}/conditions")
-def get_conditions(person_id: str, store: Store) -> list[ConditionScore]:
+def get_conditions(
+    person_id: str, store: Store, request: Request
+) -> list[ConditionScore]:
     """The evidence score of every condition in config/rules/conditions.csv.
 
     One point per signal: 1 when the newest reading crossed an attention row on
@@ -296,6 +369,7 @@ def get_conditions(person_id: str, store: Store) -> list[ConditionScore]:
         raise HTTPException(
             status_code=422, detail="person_id must be lowercase snake_case"
         )
+    accounts.authorize(request, person_id, store)
     rows = load_condition_rows()
     indicators = load_indicator_rows()
     indicator_ids = list(

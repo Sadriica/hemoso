@@ -1,6 +1,20 @@
 {
   "components": {
     "schemas": {
+      "AccountOut": {
+        "description": "The body of `POST /accounts`: the person, nothing else.",
+        "properties": {
+          "person_id": {
+            "title": "Person Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "person_id"
+        ],
+        "title": "AccountOut",
+        "type": "object"
+      },
       "AttentionRow": {
         "description": "The attention.csv row a value crosses (REQ-05).\n\n`attention_level` is the state name Bio 2 writes, which is also the\nsub-heading in `config/content/<indicator_id>.md`; `notify` is who acts;\n`source` is the link or `Assumption` of the row.",
         "properties": {
@@ -167,6 +181,27 @@
         "title": "ConditionSignal",
         "type": "object"
       },
+      "Credentials": {
+        "description": "The body of `POST /accounts` and of `POST /sessions`.\n\n`person_id` follows the same lowercase `snake_case` rule as every id in the\nAPI; `pin` is 4 to 8 digits.",
+        "properties": {
+          "person_id": {
+            "maxLength": 64,
+            "title": "Person Id",
+            "type": "string"
+          },
+          "pin": {
+            "maxLength": 8,
+            "title": "Pin",
+            "type": "string"
+          }
+        },
+        "required": [
+          "person_id",
+          "pin"
+        ],
+        "title": "Credentials",
+        "type": "object"
+      },
       "Entry": {
         "description": "One row of config/data/demo_data.csv: person, indicator, value, unit, day, time, context.",
         "properties": {
@@ -295,6 +330,30 @@
         "title": "IndicatorState",
         "type": "object"
       },
+      "SessionOut": {
+        "description": "The body of `POST /sessions`: the token and when it stops working.\n\n`expires_at` is ISO 8601 in UTC; the token is sent as\n`Authorization: Bearer <token>`.",
+        "properties": {
+          "expires_at": {
+            "title": "Expires At",
+            "type": "string"
+          },
+          "person_id": {
+            "title": "Person Id",
+            "type": "string"
+          },
+          "token": {
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token",
+          "person_id",
+          "expires_at"
+        ],
+        "title": "SessionOut",
+        "type": "object"
+      },
       "ValidationError": {
         "properties": {
           "ctx": {
@@ -343,6 +402,48 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/accounts": {
+      "post": {
+        "description": "Create one account (REQ-37): the PIN is kept only as a salted hash.",
+        "operationId": "create_account_accounts_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Credentials"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "409": {
+            "description": "This person already has an account."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Account"
+      }
+    },
     "/entries": {
       "post": {
         "operationId": "create_entry_entries_post",
@@ -709,6 +810,51 @@
           }
         },
         "summary": "Get State"
+      }
+    },
+    "/sessions": {
+      "post": {
+        "description": "A token for one person, valid 30 days (REQ-37).",
+        "operationId": "create_session_sessions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Credentials"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "Unknown person or wrong PIN; the same message."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          },
+          "429": {
+            "description": "Five wrong PINs for this person in ten minutes."
+          }
+        },
+        "summary": "Create Session"
       }
     }
   }

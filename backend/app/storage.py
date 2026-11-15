@@ -11,11 +11,12 @@ from typing import Protocol
 
 import httpx
 
-from .models import Entry, entry_key
+from .models import Account, Entry, entry_key
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 
 _COLUMNS = ("person_id", "indicator_id", "value", "unit", "mission_day", "time", "context")
+_ACCOUNT_COLUMNS = ("person_id", "salt", "pin_hash")
 
 
 class EntryConflict(Exception):
@@ -35,16 +36,21 @@ class Storage(Protocol):
 
     def history(self, person_id: str, indicator_id: str) -> list[Entry]: ...
 
+    def account(self, person_id: str) -> Account | None: ...
+
+    def create_account(self, account: Account) -> bool: ...
+
 
 def _ordered(entries: list[Entry]) -> list[Entry]:
     return sorted(entries, key=lambda entry: (entry.mission_day, entry.time))
 
 
 class MemoryStorage:
-    """Holds entries in a list; used by tests."""
+    """Holds entries and accounts in memory; used by tests."""
 
     def __init__(self) -> None:
         self._entries: list[Entry] = []
+        self._accounts: dict[str, Account] = {}
 
     def add(self, entry: Entry) -> tuple[Entry, bool]:
         key = entry_key(entry)
@@ -62,6 +68,15 @@ class MemoryStorage:
             for entry in self._entries
             if entry.person_id == person_id and entry.indicator_id == indicator_id
         )
+
+    def account(self, person_id: str) -> Account | None:
+        return self._accounts.get(person_id)
+
+    def create_account(self, account: Account) -> bool:
+        if account.person_id in self._accounts:
+            return False
+        self._accounts[account.person_id] = account
+        return True
 
 
 class SqliteStorage:
@@ -109,6 +124,14 @@ class SqliteStorage:
             self._conn.execute(
                 "CREATE UNIQUE INDEX IF NOT EXISTS entries_natural_key_idx"
                 " ON entries (person_id, indicator_id, mission_day, time)"
+            )
+            # Accounts (REQ-37): the PIN is stored only as a salted scrypt hash.
+            self._conn.execute(
+                "CREATE TABLE IF NOT EXISTS accounts ("
+                "person_id TEXT PRIMARY KEY,"
+                "salt TEXT NOT NULL,"
+                "pin_hash TEXT NOT NULL,"
+                "created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)"
             )
             self._conn.commit()
 
@@ -158,6 +181,28 @@ class SqliteStorage:
                 (person_id, indicator_id),
             ).fetchall()
         return [Entry(**dict(zip(_COLUMNS, row))) for row in rows]
+
+    def account(self, person_id: str) -> Account | None:
+        with self._lock:
+            rows = self._conn.execute(
+                "SELECT person_id, salt, pin_hash FROM accounts WHERE person_id = ?",
+                (person_id,),
+            ).fetchall()
+        return Account(**dict(zip(_ACCOUNT_COLUMNS, rows[0]))) if rows else None
+
+    def create_account(self, account: Account) -> bool:
+        with self._lock:
+            try:
+                self._conn.execute(
+                    "INSERT INTO accounts (person_id, salt, pin_hash)"
+                    " VALUES (?, ?, ?)",
+                    (account.person_id, account.salt, account.pin_hash),
+                )
+                self._conn.commit()
+            except sqlite3.IntegrityError:
+                self._conn.rollback()
+                return False
+        return True
 
 
 class SupabaseStorage:
@@ -234,6 +279,32 @@ class SupabaseStorage:
         )
         response.raise_for_status()
         return [Entry(**row) for row in response.json()]
+
+    def account(self, person_id: str) -> Account | None:
+        response = self._client.get(
+            f"{self.url}/rest/v1/accounts",
+            params={
+                "person_id": f"eq.{person_id}",
+                "select": "person_id,salt,pin_hash",
+            },
+            headers=self._headers(),
+        )
+        response.raise_for_status()
+        rows = response.json()
+        return Account(**rows[0]) if rows else None
+
+    def create_account(self, account: Account) -> bool:
+        headers = self._headers() | {"Prefer": "return=minimal"}
+        response = self._client.post(
+            f"{self.url}/rest/v1/accounts",
+            json=account.model_dump(),
+            headers=headers,
+        )
+        if response.status_code == 409:
+            # The primary key already holds this person: the account exists.
+            return False
+        response.raise_for_status()
+        return True
 
 
 _storage: Storage | None = None
