@@ -13,12 +13,20 @@ from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 from . import accounts, storage
-from .conditions import condition_result, latest_value, parse_signals
+from .conditions import (
+    condition_result,
+    latest_value,
+    parse_signals,
+    shared_ids,
+    symptom_ids,
+)
 from .indicators import (
     load_attention_rows,
     load_condition_rows,
     load_indicator_rows,
+    load_symptom_rows,
     validate_against_indicators,
+    validate_against_symptoms,
 )
 from .models import (
     CONTEXTS,
@@ -36,6 +44,8 @@ from .models import (
     PainReportIn,
     ProfileOut,
     SessionOut,
+    SymptomReport,
+    SymptomReportIn,
     is_valid_id,
     is_valid_time,
 )
@@ -429,16 +439,24 @@ def get_blood_pressure_state(
     )
 
 
-@app.get("/people/{person_id}/conditions")
+@app.get("/people/{person_id}/conditions", response_model_exclude_unset=True)
 def get_conditions(
     person_id: str, store: Store, request: Request
 ) -> list[ConditionScore]:
     """The evidence score of every condition in config/rules/conditions.csv.
 
-    One point per signal: 1 when the newest reading crossed an attention row on
-    the signal's side, 0.5 when it is outside the person's baseline on that
-    side (both from `app.state`), 0 otherwise; the score is the mean of the
-    usable signals (bio2-02, FORMATS.md section 3 point 3).
+    The score is a weighted mean over the usable signals (T-78, FORMATS.md
+    section 3 point 3): an indicator signal weighs 1, with evidence 1 when the
+    newest reading crossed a cited attention row on the signal's side and 0.5
+    when it is outside the person's baseline on that side (both from
+    `app.state`); a reported symptom weighs 0.5 when `data/symptoms.csv` marks
+    it specific and 0.25 when it marks it shared. Fewer than two usable signals
+    is `no_data` unless an indicator crossed a cited boundary, a symptom-only
+    score stops at 0.5, and a reported red flag makes the label `urgent`.
+
+    Fields a condition leaves unset are left out of the answer, so a
+    four-column `conditions.csv` returns exactly the body it returned before
+    the symptom layer: no `kind` on an indicator signal, no `red_flag`.
     """
     if not is_valid_id(person_id):
         raise HTTPException(
@@ -447,6 +465,7 @@ def get_conditions(
     accounts.authorize(request, person_id, store)
     rows = load_condition_rows()
     indicators = load_indicator_rows()
+    symptom_rows = load_symptom_rows()
     indicator_ids = list(
         dict.fromkeys(
             indicator_id
@@ -454,11 +473,15 @@ def get_conditions(
             for indicator_id, _ in parse_signals(row["based_on"])
         )
     )
+    # A person's reports are read only when some row lists a symptom: with the
+    # four-column file the route asks the store for nothing new.
+    wants_symptoms = any(symptom_ids(row) for row in rows)
     try:
         histories = {
             indicator_id: store.history(person_id, indicator_id)
             for indicator_id in indicator_ids
         }
+        reports = store.symptom_reports(person_id) if wants_symptoms else []
     except httpx.HTTPError as error:
         raise HTTPException(
             status_code=502, detail="upstream storage error"
@@ -471,7 +494,10 @@ def get_conditions(
             None if indicator is None else float(indicator["min_spread"]),
             load_attention_rows(indicator_id),
         )
-    return [condition_result(row, latest) for row in rows]
+    shared = shared_ids(symptom_rows)
+    return [
+        condition_result(row, latest, reports, symptom_rows, shared) for row in rows
+    ]
 
 
 @app.post(
@@ -540,6 +566,81 @@ def list_pain(
         check_id("region_id", region_id)
     try:
         return store.pain_reports(person_id, region_id)
+    except httpx.HTTPError as error:
+        raise HTTPException(
+            status_code=502, detail="upstream storage error"
+        ) from error
+
+
+@app.post(
+    "/people/{person_id}/symptoms",
+    status_code=201,
+    responses={
+        200: {"description": "The exact same symptom report was already stored."},
+        409: {
+            "description": "A symptom report for this person, day, time and "
+            "symptom exists with a different severity."
+        },
+    },
+)
+def create_symptom(
+    person_id: str,
+    body: SymptomReportIn,
+    store: Store,
+    request: Request,
+    response: Response,
+) -> SymptomReport:
+    """Store one symptom report (T-79; the format is in FORMATS.md section 3).
+
+    The person is in the path, so the same report sent twice from the
+    frontend's outbox answers 200 with the stored report and adds nothing; a
+    different severity for the same person, day, time and symptom is a 409.
+    While `config/data/symptoms.csv` exists the symptom id must be one of its
+    rows; without that file any lowercase `snake_case` id is accepted. The
+    severity is stored as the astronaut set it and adds nothing to the score.
+    """
+    check_id("person_id", person_id)
+    accounts.authorize(request, person_id, store)
+    error = validate_against_symptoms(body.symptom_id)
+    if error is not None:
+        raise HTTPException(status_code=422, detail=error)
+    report = SymptomReport(person_id=person_id, **body.model_dump())
+    try:
+        stored, created = store.add_symptom(report)
+    except storage.SymptomConflict as conflict:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "a symptom report for this person, day, time and symptom"
+                " already exists with a different severity"
+            ),
+        ) from conflict
+    except httpx.HTTPError as error:
+        raise HTTPException(
+            status_code=502, detail="upstream storage error"
+        ) from error
+    if not created:
+        response.status_code = 200
+    return stored
+
+
+@app.get("/people/{person_id}/symptoms")
+def list_symptoms(
+    person_id: str,
+    store: Store,
+    request: Request,
+    symptom_id: str | None = None,
+) -> list[SymptomReport]:
+    """One person's symptom reports, oldest first, optionally for one symptom.
+
+    `symptom_id` filters; an unknown person is an empty list, not a 404.
+    """
+    check_id("person_id", person_id)
+    accounts.authorize(request, person_id, store)
+    if symptom_id is not None:
+        check_id("symptom_id", symptom_id)
+    try:
+        return store.symptom_reports(person_id, symptom_id)
     except httpx.HTTPError as error:
         raise HTTPException(
             status_code=502, detail="upstream storage error"
