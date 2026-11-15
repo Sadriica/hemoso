@@ -21,6 +21,7 @@ function newEntry(): Omit<Entry, 'id'> {
     unit: 'example_unit',
     missionDay: 2,
     time: '09:15',
+    context: 'rest',
   }
 }
 

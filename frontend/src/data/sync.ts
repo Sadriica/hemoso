@@ -28,7 +28,7 @@ export type FetchLike = (
 // A bare `fetch` called as a method throws "Illegal invocation" in browsers, so
 // the default is this arrow. It reads the global at call time, which also lets
 // a test replace fetch after the client is built.
-const defaultFetch: FetchLike = (input, init) => fetch(input, init)
+export const defaultFetch: FetchLike = (input, init) => fetch(input, init)
 
 export class NoopSync implements SyncClient {
   isConfigured(): boolean {
@@ -94,6 +94,7 @@ interface ApiEntry {
   unit: string
   mission_day: number
   time: string
+  context: string
 }
 
 function toApiEntry(entry: Entry): ApiEntry {
@@ -104,6 +105,7 @@ function toApiEntry(entry: Entry): ApiEntry {
     unit: entry.unit,
     mission_day: entry.missionDay,
     time: entry.time,
+    context: entry.context,
   }
 }
 

@@ -2,12 +2,15 @@ import { useId, useState } from 'react'
 import { attentionFor } from '../domain/attention'
 import {
   compareToOwnHistory,
+  comparisonFromBaseline,
   newestFirst,
   type HistoryComparison,
 } from '../domain/entries'
 import type { LoadedContent } from '../content/load'
+import { createStateClient } from '../data/stateClient'
 import type { EntryStore } from '../data/entryStore'
 import { useEntries } from '../hooks/useEntries'
+import { useIndicatorState } from '../hooks/useIndicatorState'
 import { attentionText } from '../components/attentionText'
 import IndicatorChart from '../components/IndicatorChart'
 import Notice from '../components/Notice'
@@ -29,12 +32,53 @@ export default function History({
 }) {
   const entries = useEntries(store)
   const [chosenId, setChosenId] = useState(data.indicators[0]?.id ?? '')
+  // Built once from VITE_API_BASE_URL. Empty is the public demo: the sentence
+  // compares the readings of this device.
+  const [client] = useState(() => createStateClient())
   const headingId = useId()
   const selectId = useId()
   const summaryId = useId()
 
   const indicator =
     data.indicators.find((item) => item.id === chosenId) ?? data.indicators[0]
+
+  // The person's rows only: another person's readings never count, even when
+  // both people share the browser.
+  const rows =
+    indicator === undefined
+      ? []
+      : newestFirst(
+          entries.filter(
+            (entry) =>
+              entry.personId === personId &&
+              entry.indicatorId === indicator.id,
+          ),
+        )
+  const rules =
+    indicator === undefined
+      ? []
+      : data.rules.filter((rule) => rule.indicatorId === indicator.id)
+  const latest = rows[0] ?? null
+  // The backend median covers the window the state rule uses: the last 14
+  // readings in the same context (docs/API.md). Without an answer, or without
+  // a baseline there, the sentence compares the readings of this device.
+  const answer = useIndicatorState(
+    client,
+    latest === null || indicator === undefined
+      ? null
+      : {
+          personId,
+          indicatorId: indicator.id,
+          value: latest.value,
+          context: latest.context,
+        },
+  )
+  const comparison =
+    latest === null
+      ? null
+      : answer !== null && answer.median !== null
+        ? comparisonFromBaseline(latest, answer.median, answer.n)
+        : compareToOwnHistory(rows)
 
   if (indicator === undefined) {
     return (
@@ -46,16 +90,6 @@ export default function History({
       </section>
     )
   }
-
-  // The person's rows only: another person's readings never count, even when
-  // both people share the browser.
-  const rows = newestFirst(
-    entries.filter(
-      (entry) => entry.personId === personId && entry.indicatorId === indicator.id,
-    ),
-  )
-  const rules = data.rules.filter((rule) => rule.indicatorId === indicator.id)
-  const comparison = compareToOwnHistory(rows)
 
   return (
     <section aria-labelledby={headingId} className="history">
