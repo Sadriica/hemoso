@@ -195,6 +195,98 @@ if (status.attention !== null) {
 The values above are placeholders in a synthetic history (REQ-14); no real crew
 data and no clinical limit is stored in this endpoint.
 
+### GET /people/{person_id}/conditions
+
+Returns the evidence score of every possible condition in
+`config/rules/conditions.csv` (REQ-06), one entry per row, in file order. The
+score is evidence from what the person recorded, not a probability: it says how
+much of what is known points at that condition, and the CMO or the flight
+surgeon confirms (`docs/findings/bio2-02-evidence-score.md`). Nothing in the
+response says the person has the condition.
+
+Path parameter: `person_id` (same lowercase `snake_case` rule).
+
+The rule is FORMATS.md section 3, "How each value is compared", point 3:
+
+| Question | Answer |
+| --- | --- |
+| Which reading is scored? | The newest stored entry of the signal. Its `context` decides what it is compared with. |
+| What is its baseline? | `state.py`'s: the last 14 readings before the newest one in that same context, median and spread with the indicator's `min_spread`. |
+| What does one signal add? | `1` when the value crossed a row of `config/rules/attention.csv` whose `side` is the signal's side. `0.5` when it is outside the baseline on that side. `0` otherwise, including a value on the wrong side of the condition, whatever its distance from the baseline: a glucose of 180 mg/dL adds nothing to `hypoglycaemia`. |
+| When is a signal not usable? | With no reading, no baseline (fewer than 3 readings in that context, or no row in `config/data/indicators.csv`), or no side in `based_on`. It is listed, with `contribution` and `value` null, and left out of the mean. |
+| How is the score computed? | The mean of the usable signals, from 0 to 1, shown with three decimals. Fewer than 2 usable signals gives `score` null and `label` `no_data`, never a low score. |
+
+Labels:
+
+| Score | `label` | What the astronaut reads |
+| --- | --- | --- |
+| 0 to 0.3 | `low` | "Not likely with what you have recorded" |
+| 0.3 to 0.6 | `possible` | "Possible. These signals point to it: ..." |
+| 0.6 to 1 | `review` | "Ask your CMO or flight surgeon to check this" |
+| null | `no_data` | "Not enough data yet", with the signals still missing |
+
+Four points the finding does not settle, resolved here:
+
+- The bands are written in the finding with both ends (`0 to 0.3`, `0.3 to
+  0.6`, `0.6 to 1`). They are read closed at the lower end, so exactly 0.3 is
+  `possible` and exactly 0.6 is `review`.
+- The context is the newest reading's own: heart rate after exercise is
+  compared with readings after exercise, and a context with fewer than 3
+  readings leaves the signal without a baseline.
+- A signal without a baseline is not usable even when its value crossed an
+  attention row, as the finding leaves such a signal out of the score.
+- The finding's fourth vector gives a diastolic of 120 the baseline point for
+  `orthostatic_intolerance`, whose diastolic signal is `below`, and reads 0.667
+  `review`. With the side it adds 0, and the condition scores 0.5 `possible`.
+  Open with Bio 2; the rule in words, FORMATS.md and this route agree on the
+  side.
+
+Responses: `200` (a JSON array, empty when `config/rules/conditions.csv` does
+not exist); `422` when `person_id` breaks the `snake_case` rule; `502` when the
+upstream store (Supabase) is unreachable or returns an error. There is no `404`:
+the route does not look up an indicator.
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `condition_id` | string | the id from `config/rules/conditions.csv` |
+| `name` | string | the plain name from that row |
+| `score` | number or null | the mean of the usable signals, 0 to 1, three decimals |
+| `label` | string | `no_data`, `low`, `possible` or `review` |
+| `signals` | array | one object per signal in `based_on`, in file order |
+| `source` | string | the row's link or `Assumption` |
+
+Each signal object:
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `indicator_id` | string | the signal's indicator |
+| `side` | string or null | `above` or `below`, the side that counts for this condition; null when `based_on` has no side |
+| `contribution` | number or null | `1`, `0.5` or `0`, the point the signal added; null while it is not usable |
+| `value` | number or null | the newest reading, or null when there is none |
+
+```bash
+curl "$VITE_API_BASE_URL/people/demo_astronaut_1/conditions"
+# 200 [{"condition_id":"orthostatic_intolerance","name":"Orthostatic intolerance","score":0.5,"label":"possible","signals":[{"indicator_id":"hr_bpm","side":"above","contribution":1.0,"value":112.0},{"indicator_id":"bp_sys_mmhg","side":"below","contribution":0.5,"value":95.0},{"indicator_id":"bp_dia_mmhg","side":"below","contribution":0.0,"value":74.0}],"source":"http://humanresearchroadmap.nasa.gov/Evidence/reports/ORTHO.pdf"}]
+```
+
+```js
+const response = await fetch(
+  `${VITE_API_BASE_URL}/people/demo_astronaut_1/conditions`
+);
+const conditions = await response.json(); // one entry per condition, in file order
+for (const condition of conditions) {
+  if (condition.score === null) {
+    // condition.label is "no_data": show the name and which signals are still
+    // missing (contribution === null), never a low score
+    continue;
+  }
+  // show condition.name, condition.label and condition.score as a bar,
+  // never as a percentage; the CMO or the flight surgeon confirms
+}
+```
+
+The values above are placeholders in a synthetic history (REQ-14).
+
 ## Errors
 
 `POST /entries` returns `422` in two cases.
@@ -229,6 +321,10 @@ this person, indicator, day and time already exists with a different value`.
 plain-string `detail` when `person_id` or `indicator_id` breaks the `snake_case`
 rule, and `502` with `detail` `upstream storage error` when the Supabase store
 is unreachable or returns an error.
+
+`GET /people/{person_id}/conditions` returns `422` with the plain-string
+`detail` `person_id must be lowercase snake_case`, and the same `502` with the
+same `detail` as the routes above.
 
 ## CORS
 
