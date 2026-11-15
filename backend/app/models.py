@@ -82,3 +82,17 @@ class IndicatorState(BaseModel):
     spread: float | None
     n: int
     attention: AttentionRow | None
+
+
+class BloodPressureState(BaseModel):
+    """One blood pressure reading: the worse of its systolic and diastolic state.
+
+    `systolic` and `diastolic` are the same body the single-indicator state
+    route returns, one against `bp_sys_mmhg`'s history and one against
+    `bp_dia_mmhg`'s; `state` is the worse of the two states
+    (`docs/findings/bio2-01-pressure-state-rule.md`).
+    """
+
+    state: StateName
+    systolic: IndicatorState
+    diastolic: IndicatorState

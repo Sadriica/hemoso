@@ -16,7 +16,7 @@ import pytest
 from app import storage
 from app.main import app
 from app.models import Entry
-from app.state import attention_for, baseline, state_for, window
+from app.state import attention_for, baseline, state_for, window, worse_state
 
 FIXTURES = (
     Path(__file__).resolve().parents[2] / "scripts" / "fixtures" / "format_rules"
@@ -34,6 +34,23 @@ ATTENTION_CSV = (
     "indicator_id,side,threshold,attention_level,notify,source\n"
     "example_indicator,above,84,example_level_high,crew,Assumption\n"
     "example_indicator,below,56,example_level_low,cmo,Assumption\n"
+)
+
+BLOOD_PRESSURE_INDICATORS_CSV = (
+    "id,name,unit,direction,measured_on_board,hazards,min_spread,tier,system,source\n"
+    "bp_sys_mmhg,Systolic blood pressure,mmHg,both,arm cuff,gravity_fields,"
+    "5,A,cardiovascular,Assumption\n"
+    "bp_dia_mmhg,Diastolic blood pressure,mmHg,both,arm cuff,gravity_fields,"
+    "4,A,cardiovascular,Assumption\n"
+)
+
+# The rows of config/rules/attention.csv for the two blood pressure indicators.
+BLOOD_PRESSURE_ATTENTION_CSV = (
+    "indicator_id,side,threshold,attention_level,notify,source\n"
+    "bp_sys_mmhg,above,140,consult,cmo,Assumption\n"
+    "bp_sys_mmhg,above,180,urgent,flight_surgeon,Assumption\n"
+    "bp_dia_mmhg,above,90,consult,cmo,Assumption\n"
+    "bp_dia_mmhg,above,120,urgent,flight_surgeon,Assumption\n"
 )
 
 ENTRY = {
@@ -301,3 +318,170 @@ def test_state_route_upstream_error_becomes_502(client, tmp_path):
 
     assert response.status_code == 502
     assert response.json()["detail"] == "upstream storage error"
+
+
+# The worse of two states (FORMATS.md section 3, F-bio2-01).
+
+
+@pytest.mark.parametrize(
+    "first, second, expected",
+    [
+        ("in_range", "in_range", "in_range"),
+        ("no_data", "in_range", "in_range"),
+        ("in_range", "outside_range", "outside_range"),
+        ("outside_range", "needs_review", "needs_review"),
+        ("needs_review", "no_data", "needs_review"),
+    ],
+)
+def test_worse_state_follows_the_state_order(first, second, expected):
+    assert worse_state(first, second) == expected
+    assert worse_state(second, first) == expected
+
+
+def bp_entry(indicator_id: str, day: int, value: float) -> dict:
+    return {
+        "person_id": "demo_astronaut_1",
+        "indicator_id": indicator_id,
+        "value": value,
+        "unit": "mmHg",
+        "mission_day": day,
+        "time": "08:00",
+        "context": "rest",
+    }
+
+
+def write_blood_pressure_config(tmp_path: Path) -> None:
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data" / "indicators.csv").write_text(BLOOD_PRESSURE_INDICATORS_CSV)
+    (tmp_path / "rules").mkdir()
+    (tmp_path / "rules" / "attention.csv").write_text(BLOOD_PRESSURE_ATTENTION_CSV)
+
+
+def post_blood_pressure_history(client, systolic: float = 115.0, diastolic: float = 75.0):
+    """Three earlier readings on each side, so both windows hold a baseline."""
+    for day in (1, 2, 3):
+        for indicator_id, value in (
+            ("bp_sys_mmhg", systolic),
+            ("bp_dia_mmhg", diastolic),
+        ):
+            response = client.post("/entries", json=bp_entry(indicator_id, day, value))
+            assert response.status_code == 201
+
+
+PRESSURE_VECTORS = [
+    # systolic, diastolic, worse state, side carrying the attention row,
+    # attention level, notify (F-bio2-01, "Test vectors").
+    (118, 75, "in_range", None, None, None),
+    (120, 95, "needs_review", "diastolic", "consult", "cmo"),
+    (150, 70, "needs_review", "systolic", "consult", "cmo"),
+    (145, 118, "needs_review", "systolic", "consult", "cmo"),
+    (185, 100, "needs_review", "systolic", "urgent", "flight_surgeon"),
+    (120, 125, "needs_review", "diastolic", "urgent", "flight_surgeon"),
+]
+
+
+@pytest.mark.parametrize(
+    "systolic, diastolic, expected, side, level, notify",
+    PRESSURE_VECTORS,
+    ids=lambda value: str(value),
+)
+def test_blood_pressure_vectors(
+    client, tmp_path, systolic, diastolic, expected, side, level, notify
+):
+    write_blood_pressure_config(tmp_path)
+    post_blood_pressure_history(client)
+
+    response = client.get(
+        "/people/demo_astronaut_1/blood_pressure/state"
+        f"?systolic={systolic}&diastolic={diastolic}"
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["state"] == expected
+    if side is None:
+        assert body["systolic"]["attention"] is None
+        assert body["diastolic"]["attention"] is None
+    else:
+        assert body[side]["attention"]["attention_level"] == level
+        assert body[side]["attention"]["notify"] == notify
+
+
+def test_blood_pressure_without_history_is_no_data(client, tmp_path):
+    write_blood_pressure_config(tmp_path)
+
+    response = client.get(
+        "/people/demo_astronaut_1/blood_pressure/state?systolic=185&diastolic=125"
+    )
+
+    assert response.json() == {
+        "state": "no_data",
+        "systolic": {
+            "state": "no_data",
+            "median": None,
+            "spread": None,
+            "n": 0,
+            "attention": None,
+        },
+        "diastolic": {
+            "state": "no_data",
+            "median": None,
+            "spread": None,
+            "n": 0,
+            "attention": None,
+        },
+    }
+
+
+def test_blood_pressure_uses_each_indicators_own_window(client, tmp_path):
+    write_blood_pressure_config(tmp_path)
+    post_blood_pressure_history(client)
+    for day in (4, 5, 6):
+        response = client.post("/entries", json=bp_entry("bp_sys_mmhg", day, 120.0))
+        assert response.status_code == 201
+
+    response = client.get(
+        "/people/demo_astronaut_1/blood_pressure/state?systolic=120&diastolic=75"
+    )
+
+    assert response.json()["systolic"]["median"] == 117.5
+    assert response.json()["systolic"]["n"] == 6
+    assert response.json()["diastolic"]["n"] == 3
+
+
+def test_blood_pressure_unknown_indicator_is_404(client, tmp_path):
+    write_config(tmp_path)
+
+    response = client.get(
+        "/people/demo_astronaut_1/blood_pressure/state?systolic=120&diastolic=75"
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "unknown indicator"
+
+
+@pytest.mark.parametrize(
+    "query",
+    [
+        "?diastolic=75",
+        "?systolic=120",
+        "?systolic=NaN&diastolic=75",
+        "?systolic=120&diastolic=75&context=running",
+    ],
+)
+def test_blood_pressure_bad_query_is_422(client, tmp_path, query):
+    write_blood_pressure_config(tmp_path)
+
+    response = client.get("/people/demo_astronaut_1/blood_pressure/state" + query)
+
+    assert response.status_code == 422
+
+
+def test_blood_pressure_invalid_person_id_is_422(client, tmp_path):
+    write_blood_pressure_config(tmp_path)
+
+    response = client.get(
+        "/people/Bad-id/blood_pressure/state?systolic=120&diastolic=75"
+    )
+
+    assert response.status_code == 422

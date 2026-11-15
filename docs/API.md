@@ -195,6 +195,60 @@ if (status.attention !== null) {
 The values above are placeholders in a synthetic history (REQ-14); no real crew
 data and no clinical limit is stored in this endpoint.
 
+### GET /people/{person_id}/blood_pressure/state
+
+One blood pressure reading shows the worse of its systolic and diastolic state
+(FORMATS.md section 3 and `docs/findings/bio2-01-pressure-state-rule.md`). Each
+side is computed like the state route, against its own history: `systolic`
+against `bp_sys_mmhg`, `diastolic` against `bp_dia_mmhg`.
+
+Path parameter: `person_id`, a string (same lowercase `snake_case` rule).
+
+Query parameters:
+
+| Name | Type | Rule |
+| --- | --- | --- |
+| `systolic` | number | required; a finite number, in the unit of `bp_sys_mmhg` (mmHg) |
+| `diastolic` | number | required; a finite number, in the unit of `bp_dia_mmhg` (mmHg) |
+| `context` | string | `rest` (default), `after_exercise`, `on_waking` or `before_sleep` |
+
+The worse state is the one furthest along `no_data` < `in_range` <
+`outside_range` < `needs_review`. A reading of 120/95 is therefore
+`needs_review`, because the diastolic side crossed the attention row of
+`config/rules/attention.csv` while the systolic side stayed in range; 118/75 with
+a usual baseline is `in_range`. When both sides need review, each side's
+`attention` object carries its own level and who is notified.
+
+Responses: `200` (a `BloodPressureState`); `404` when `bp_sys_mmhg` or
+`bp_dia_mmhg` has no row in `config/data/indicators.csv` (also while that file
+does not exist); `422` under the same rules as the state route, with `systolic`
+or `diastolic` in place of `value`; `502` when the upstream store (Supabase) is
+unreachable or returns an error.
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `state` | string | the worse of the two states |
+| `systolic` | object | the same body the state route returns, for `bp_sys_mmhg` |
+| `diastolic` | object | the same body the state route returns, for `bp_dia_mmhg` |
+
+```bash
+curl "$VITE_API_BASE_URL/people/demo_astronaut_1/blood_pressure/state?systolic=120&diastolic=95&context=rest"
+# 200 {"state":"needs_review","systolic":{"state":"in_range","median":115.0,"spread":5.0,"n":14,"attention":null},"diastolic":{"state":"needs_review","median":75.0,"spread":4.0,"n":14,"attention":{"attention_level":"consult","notify":"cmo","source":"https://www.who.int/news-room/fact-sheets/detail/hypertension"}}}
+```
+
+```js
+const params = new URLSearchParams({ systolic: "120", diastolic: "95", context: "rest" });
+const response = await fetch(
+  `${VITE_API_BASE_URL}/people/demo_astronaut_1/blood_pressure/state?${params}`
+);
+const pressure = await response.json();
+// show both numbers and pressure.state; the source of the attention row sits
+// next to it, and the CMO or flight surgeon confirms.
+```
+
+The numbers above are placeholders in a synthetic history (REQ-14); the states
+come from the store, never from a fixed range in the code.
+
 ## Errors
 
 `POST /entries` returns `422` in two cases.

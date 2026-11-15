@@ -51,6 +51,8 @@ SPREAD_SCALE = 1.4826
 BAND = 3.0
 # Who acts on an attention row, least severe first (FORMATS.md section 3).
 NOTIFY_ORDER = ("crew", "cmo", "flight_surgeon")
+# The four states, least to most serious (FORMATS.md section 3).
+STATE_ORDER = ("no_data", "in_range", "outside_range", "needs_review")
 
 
 def window(entries: Iterable[Entry], context: str) -> list[Entry]:
@@ -99,6 +101,19 @@ def state_for(
     if abs(value - median) <= BAND * spread:
         return "in_range"
     return "outside_range"
+
+
+def worse_state(first: str, second: str) -> str:
+    """The worse of two states, by `STATE_ORDER`.
+
+    One blood pressure reading shows the worse of its systolic and diastolic
+    state (`docs/findings/bio2-01-pressure-state-rule.md`), so a reading of
+    120/95 is `needs_review` and not `in_range`. The finding orders its own
+    attention levels (none < consult < urgent); the four states of FORMATS.md
+    are ordered here, with `needs_review` last because an attention row is a
+    cited clinical boundary.
+    """
+    return max(first, second, key=STATE_ORDER.index)
 
 
 def attention_for(rows: Sequence[dict], value: float) -> dict | None:
