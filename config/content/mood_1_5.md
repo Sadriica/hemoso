@@ -27,30 +27,35 @@ what your CMO needs to see.
 
 ## Status and next steps
 
-### at_baseline
-
-Your mood is at your baseline this week.
+Your mood is in your usual range this week.
 
 No action today. Answer again before you sleep.
 
 No one is notified for now.
 
-### outside_baseline
+### watch
 
-Your mood has been below your baseline for a week.
+Your mood has been below your usual range for a week.
 
 Write two lines about your day. Talk to someone on the crew today. Assumption.
 
-Your CMO is notified on board.
+Your CMO checks your record on board.
 
-### needs_flight_surgeon
+### consult
 
-Your mood has stayed below your baseline for several days.
+Your mood has stayed below your usual range for several days.
 
-Tell your CMO today. Keep your sleep schedule and talk to your family at the next
-link. Assumption.
+Tell your CMO today. Keep your sleep schedule. Assumption.
 
-Your CMO tells the flight surgeon at the next link with Earth.
+Your CMO checks you in person.
+
+### urgent
+
+Your mood is very low and it has stayed there for days.
+
+Tell your CMO now. Do not stay alone today. Assumption.
+
+Your CMO contacts the flight surgeon at once.
 
 ## How to prevent problems
 

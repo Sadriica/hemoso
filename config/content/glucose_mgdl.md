@@ -23,29 +23,35 @@ this project. Assumption.
 
 ## Status and next steps
 
-### at_baseline
-
-Your blood glucose is at your baseline today.
+Your blood glucose is in your usual range today.
 
 No action today. Measure again at the same time tomorrow.
 
 No one is notified for now.
 
-### outside_baseline
+### watch
 
-Your blood glucose has been above your baseline for 2 days.
+Your blood glucose has been above your usual range for 2 days.
 
 Eat your next meal at the usual time and measure again before it. Assumption.
 
-Your CMO is notified on board.
+Your CMO checks your record on board.
 
-### needs_flight_surgeon
+### consult
 
-Your blood glucose is far from your baseline and it has stayed there.
+Your blood glucose is far from your usual range and it has stayed there.
 
 Tell your CMO today. Drink fluids and measure again in 2 hours. Assumption.
 
-Your CMO tells the flight surgeon at the next link with Earth.
+Your CMO checks you in person.
+
+### urgent
+
+Your blood glucose is well outside your usual range.
+
+Tell your CMO now. Do not exercise. Assumption.
+
+Your CMO contacts the flight surgeon at once.
 
 ## How to prevent problems
 

@@ -21,30 +21,36 @@ faint. Sleep loss and stress raise your resting heart rate too.
 
 ## Status and next steps
 
-### at_baseline
-
-Your resting heart rate is at your baseline today.
+Your resting heart rate is in your usual range today.
 
 No action today. Measure again at the same hour tomorrow.
 
 No one is notified for now.
 
-### outside_baseline
+### watch
 
-Your resting heart rate has been above your baseline for 3 days.
+Your resting heart rate has been above your usual range for 3 days.
 
 Rest 10 minutes and measure again. Check your temperature, how you slept last
 night and your fluid intake. Assumption.
 
-Your CMO is notified on board.
+Your CMO checks your record on board.
 
-### needs_flight_surgeon
+### consult
 
-Your resting heart rate is far above your baseline and today it is still high.
+Your resting heart rate is far above your usual range and today it is still high.
 
 Tell your CMO today. Rest, drink fluids and measure again in 2 hours. Assumption.
 
-Your CMO tells the flight surgeon at the next link with Earth.
+Your CMO checks you in person.
+
+### urgent
+
+Your resting heart rate is well outside your usual range.
+
+Tell your CMO now. Rest and skip your exercise session. Assumption.
+
+Your CMO contacts the flight surgeon at once.
 
 ## How to prevent problems
 

@@ -22,29 +22,35 @@ on purpose.
 
 ## Status and next steps
 
-### at_baseline
-
-You slept at your baseline last night.
+You slept in your usual range last night.
 
 No action today. Keep the same sleep and wake times.
 
 No one is notified for now.
 
-### outside_baseline
+### watch
 
-You slept less than your baseline for 3 nights.
+You slept less than your usual range for 3 nights.
 
 Go to bed at your usual time today. Ask your CMO about light and rest. Assumption.
 
-Your CMO is notified on board.
+Your CMO checks your record on board.
 
-### needs_flight_surgeon
+### consult
 
-You have slept much less than your baseline for several nights.
+You have slept much less than your usual range for several nights.
 
 Tell your CMO today. Keep the rest of your day light. Assumption.
 
-Your CMO tells the flight surgeon at the next link with Earth.
+Your CMO checks you in person.
+
+### urgent
+
+You have slept very little for several nights and you feel it in your work.
+
+Tell your CMO now. Stop your tasks for today. Assumption.
+
+Your CMO contacts the flight surgeon at once.
 
 ## How to prevent problems
 

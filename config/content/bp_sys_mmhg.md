@@ -25,31 +25,37 @@ reading.
 
 ## Status and next steps
 
-### at_baseline
-
-Your systolic blood pressure is at your baseline today.
+Your systolic blood pressure is in your usual range today.
 
 No action today. Measure again at the same hour tomorrow.
 
 No one is notified for now.
 
-### outside_baseline
+### watch
 
-Your systolic blood pressure has been below your baseline for 3 days.
+Your systolic blood pressure has been below your usual range for 3 days.
 
 Rest 10 minutes and measure again. Check your fluid intake and how you slept
 last night. Assumption.
 
-Your CMO is notified on board.
+Your CMO checks your record on board.
 
-### needs_flight_surgeon
+### consult
 
-Your systolic blood pressure is far below your baseline.
+Your systolic blood pressure is far below your usual range.
 
 Sit down and tell your CMO today. Drink fluids and measure again in 1 hour.
 Assumption.
 
-Your CMO tells the flight surgeon at the next link with Earth.
+Your CMO checks you in person.
+
+### urgent
+
+Your systolic blood pressure is well below your usual range.
+
+Sit or lie down now and call your CMO. Drink fluids. Assumption.
+
+Your CMO contacts the flight surgeon at once.
 
 ## How to prevent problems
 

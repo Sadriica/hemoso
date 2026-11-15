@@ -9,9 +9,9 @@ more energy, so it matters for how you eat, sleep and perform.
 ## How spaceflight affects it
 
 In space there is no moving air to carry heat away, so heat builds up. Crews
-report feeling hot during exercise. Your in-flight baseline is about 1 °C above
-your Earth baseline, and it comes back down slowly after landing. A temperature
-far above your own baseline can also be the first sign of an infection.
+report feeling hot during exercise. Your usual range in space is about 1 °C
+higher than on Earth, and it comes back down slowly after landing. A temperature
+far above your own usual range can also be the first sign of an infection.
 Assumption.
 
 ## Measurement steps
@@ -24,30 +24,36 @@ Assumption.
 
 ## Status and next steps
 
-### at_baseline
-
-Your temperature is at your baseline today.
+Your temperature is in your usual range today.
 
 No action today. Measure again at the same hour tomorrow.
 
 No one is notified for now.
 
-### outside_baseline
+### watch
 
-Your temperature has been above your baseline for 2 days.
+Your temperature has been above your usual range for 2 days.
 
 Measure again in 4 hours. Check your fluid intake and how you slept. Assumption.
 
-Your CMO is notified on board.
+Your CMO checks your record on board.
 
-### needs_flight_surgeon
+### consult
 
-Your temperature is far above your baseline and it has stayed high.
+Your temperature is far above your usual range.
 
 Tell your CMO today. Rest, drink fluids and measure again in 2 hours.
 Assumption.
 
-Your CMO tells the flight surgeon at the next link with Earth.
+Your CMO checks you in person.
+
+### urgent
+
+Your temperature is well above your usual range.
+
+Tell your CMO now. Rest and drink fluids. Assumption.
+
+Your CMO contacts the flight surgeon at once.
 
 ## How to prevent problems
 
