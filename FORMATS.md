@@ -112,7 +112,7 @@ values.
 ### How each value is compared (team decision, Sat 14 Nov 15:37)
 
 1. **Own baseline:** the median and spread of that person's entries for the
-   indicator over the last 14 days (rolling window). The spread is
+   indicator over the last 14 readings (moving window; team decision Sat 18:45). The spread is
    `max(1.4826 × median absolute deviation, min_spread)`; with fewer than 3
    entries the state is "no data yet", and a value more than 3 spreads from the
    median is "outside your usual range" (`docs/findings/phys-02-baseline-state-rule.md`).

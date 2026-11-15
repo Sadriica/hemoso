@@ -1,30 +1,19 @@
 /// <reference types="node" />
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
+import { COLORS, type ThemeMode } from './theme/tokens'
 
-// The stylesheet is the only place where colours exist, so this test reads it
-// instead of keeping a second copy of the numbers. Every pair below appears on
-// screen; a pair under the WCAG minimum fails here.
-//
-// The file is read as text from the project root because Vitest turns any CSS
-// import, even with ?raw, into an empty module.
+// Every pair below appears on screen; a pair under the WCAG minimum fails here.
+// The colours come from src/theme/tokens.ts, which is the only place the theme
+// reads them from, so the test cannot drift from what the screens paint.
 
-const stylesheet = readFileSync('src/styles.css', 'utf8')
-
-const LIGHT_THEME_AT = '@media (prefers-color-scheme: light)'
-
-const ROOT_BLOCK = /:root\s*\{([^}]*)\}/
-const COLOR_DECLARATION = /--([a-z0-9-]+):\s*#([0-9a-f]{6})\s*;/gi
-
-// Dark is the default theme, so its tokens sit in the first :root block and the
-// light theme overrides them further down the file.
-type Theme = 'dark' | 'light'
+type ColorToken = keyof (typeof COLORS)['dark']
 
 interface ColorPair {
   /** What the pair is, in the words of the screen. */
   name: string
-  front: string
-  back: string
+  front: ColorToken
+  back: ColorToken
 }
 
 // Text and badge colours: at least 4.5:1 (WCAG 2.1 AA for normal text).
@@ -46,6 +35,10 @@ const TEXT_PAIRS: ColorPair[] = [
   { name: 'attention badge', front: 'status-attention-text', back: 'status-attention-bg' },
   { name: 'no data badge', front: 'status-no-data-text', back: 'status-no-data-bg' },
   { name: 'signal red on a card', front: 'color-signal', back: 'color-surface' },
+  // The face panel (T-58): its sentences and its one destructive action sit on
+  // the panel surface, which is the card surface.
+  { name: 'face panel text', front: 'color-text', back: 'color-surface' },
+  { name: 'face panel delete action', front: 'color-signal', back: 'color-surface' },
 ]
 
 // Non-text contrast (WCAG 1.4.11): the focus outline and the edge of a control
@@ -58,22 +51,6 @@ const UI_PAIRS: ColorPair[] = [
   { name: 'control border on a card', front: 'color-border-control', back: 'color-surface' },
   { name: 'control border on the header band', front: 'color-border-control', back: 'color-bg-raised' },
 ]
-
-function themeSections(css: string): Record<Theme, string> {
-  const lightAt = css.indexOf(LIGHT_THEME_AT)
-  if (lightAt < 0) throw new Error('styles.css has no light theme block')
-  return { dark: css.slice(0, lightAt), light: css.slice(lightAt) }
-}
-
-function readColors(section: string): Map<string, string> {
-  const root = ROOT_BLOCK.exec(section)
-  if (!root) throw new Error('styles.css has no :root block here')
-  const colors = new Map<string, string>()
-  for (const match of root[1].matchAll(COLOR_DECLARATION)) {
-    colors.set(match[1], `#${match[2].toLowerCase()}`)
-  }
-  return colors
-}
 
 function channel(value: number): number {
   const fraction = value / 255
@@ -97,21 +74,10 @@ function contrastRatio(first: string, second: string): number {
   return (lighter + 0.05) / (darker + 0.05)
 }
 
-const sections = themeSections(stylesheet)
-const colors: Record<Theme, Map<string, string>> = {
-  dark: readColors(sections.dark),
-  light: readColors(sections.light),
-}
-const themes: Theme[] = ['dark', 'light']
+const themes: ThemeMode[] = ['dark', 'light']
 
-function token(theme: Theme, name: string): string {
-  const value = colors[theme].get(name)
-  if (!value) throw new Error(`the ${theme} theme has no --${name}`)
-  return value
-}
-
-function ratio(theme: Theme, pair: ColorPair): number {
-  return contrastRatio(token(theme, pair.front), token(theme, pair.back))
+function ratio(theme: ThemeMode, pair: ColorPair): number {
+  return contrastRatio(COLORS[theme][pair.front], COLORS[theme][pair.back])
 }
 
 describe('theme colours', () => {
@@ -123,7 +89,7 @@ describe('theme colours', () => {
           pair.back,
         ])
         for (const name of new Set(used)) {
-          expect(colors[theme].has(name), `--${name}`).toBe(true)
+          expect(COLORS[theme][name], name).toMatch(/^#[0-9a-f]{6}$/i)
         }
       })
 
@@ -137,6 +103,44 @@ describe('theme colours', () => {
         it(`keeps 3:1 for ${pair.name}`, () => {
           expect(ratio(theme, pair)).toBeGreaterThanOrEqual(3)
         })
+      }
+    })
+  }
+})
+
+// While the screens still paint themselves from styles.css (57b moves them to
+// MUI), the two places must agree: a colour changed in one and not in the other
+// would put a pair that passes here on a screen that fails.
+describe('styles.css during the move to MUI', () => {
+  const stylesheet = readFileSync('src/styles.css', 'utf8')
+  const lightAt = stylesheet.indexOf('@media (prefers-color-scheme: light)')
+  const sections: Record<ThemeMode, string> = {
+    dark: stylesheet.slice(0, lightAt),
+    light: stylesheet.slice(lightAt),
+  }
+  const ROOT_BLOCK = /:root\s*\{([^}]*)\}/
+  const COLOR_DECLARATION = /--([a-z0-9-]+):\s*#([0-9a-f]{6})\s*;/gi
+
+  function readColors(section: string): Map<string, string> {
+    const root = ROOT_BLOCK.exec(section)
+    if (!root) throw new Error('styles.css has no :root block here')
+    const colors = new Map<string, string>()
+    for (const match of root[1].matchAll(COLOR_DECLARATION)) {
+      colors.set(match[1], `#${match[2]}`)
+    }
+    return colors
+  }
+
+  for (const theme of themes) {
+    it(`carries the ${theme} colours of tokens.ts`, () => {
+      const colors = readColors(sections[theme])
+      for (const [name, value] of Object.entries(COLORS[theme])) {
+        // The grid is a translucent line, not a hex colour, and it has no rule
+        // in styles.css beyond the background image.
+        if (!value.startsWith('#')) continue
+        expect(colors.get(name)?.toLowerCase(), `--${name}`).toBe(
+          value.toLowerCase(),
+        )
       }
     })
   }

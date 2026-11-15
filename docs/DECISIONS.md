@@ -64,7 +64,21 @@ explained (tier C), never an input. Ids in `FORMATS.md` section 2.
 
 **Demo format:** video of 30 s or less, or 7 slides (the other one is plan B).
 
-**Third-party code and assets we plan to use:** name, licence, what for.
+**Third-party code and assets we use:** name, licence, what for. Backend libraries and face-api also have their own rows below.
+
+| Name | Licence | What for |
+| --- | --- | --- |
+| React 19.3.1, React DOM | MIT | The app's screens |
+| MUI 9.5.0, Emotion 11.14 | MIT | Theme, header and tabs |
+| @vladmandic/face-api 1.7.15 and its models | MIT | Face sign-in on the device (REQ-36) |
+| Vite 8.3.8, TypeScript 6.0.3 | MIT, Apache-2.0 | Build and types (development only) |
+| Vitest, Testing Library, jsdom | MIT | Frontend tests (development only) |
+| Playwright, axe-core | Apache-2.0, MPL-2.0 | End-to-end and accessibility tests (development only) |
+| ESLint, typescript-eslint | MIT | Lint (development only) |
+| FastAPI, Pydantic, httpx, uvicorn | MIT, MIT, BSD-3-Clause, BSD-3-Clause | The API (rows below) |
+| uv, Python 3.13 image | MIT or Apache-2.0, PSF | Backend install and container |
+| Vercel, Railway, Supabase | Hosted services (free plans) | Frontend hosting, backend hosting, database |
+| NASA and CSA pages in `docs/sources.md` | Public pages, credited | Sources for indicators, hazards and thresholds |
 
 **Where AI tools helped:** reading and summarising sources, requirements and
 planning, wording, and code. Not the base idea. Kept in `team/eng1/notes/si-use-log.md`.
@@ -75,13 +89,13 @@ planning, wording, and code. Not the base idea. Kept in `team/eng1/notes/si-use-
 | Decision | What | Why | Serves |
 | --- | --- | --- | --- |
 | Use | The app works with a network connection: React frontend on Vercel under the team's domain, Supabase for stored data, FastAPI backend (Wambi, Sat 14 12:45) | A public link with no login (REQ-32) and a history that survives a reload (REQ-27); the team already has the domain | REQ-27, REQ-32 |
-| Use | Each indicator compared with the person's own baseline over a rolling 14-day window; clinical or assumed limits from `rules/attention.csv`; possible conditions as probabilities with their basis | Team decision Sat 15:37, combining Phys's finding F-phys-01 with the team's probabilities decision | REQ-05, REQ-06, REQ-12, REQ-27 |
+| Use | Each indicator compared with the person's own baseline over a moving window of the last 14 readings (changed from 14 days on Sat 18:45: the store keeps mission day and time, and phys-02 and the API count readings); clinical or assumed limits from `rules/attention.csv`; possible conditions as probabilities with their basis | Team decision Sat 15:37, combining Phys's finding F-phys-01 with the team's probabilities decision | REQ-05, REQ-06, REQ-12, REQ-27 |
 | Use | The 3D body is built by layers in this order: body zones, then muscles, then bones, then ligaments, then organs, until the full body | Team decision Sat 15:37: the full body stays the goal; each layer ships on its own | REQ-01, REQ-09 |
 | Use | Indicators grouped by tier (A measured, B self-reported, C explained) and by body system, as columns of `data/indicators.csv` | From Phys's proposal (`team/phys/notes/indicators-proposal.md`) | REQ-03, REQ-07 |
 | Use | `min_spread` column in `data/indicators.csv`: the smallest spread the baseline uses per indicator (Assumption values from F-phys-02); mood scale 1 = very low to 5 = very good, answered before sleep | Phys's format v2 proposal, accepted Sat 16:10; without a floor a flat history flags every small change | REQ-05, REQ-27 |
 | Rejected | Separate `reference-bands.csv`, `baseline.csv` and `demo-astronaut.csv` | Limits already live in `rules/attention.csv` (Bio 2), the baseline is computed from history, and demo data is `data/demo_data.csv` | REQ-05, REQ-27, REQ-29 |
-| Open | Where the FastAPI backend runs; Railway is the candidate | Vercel serves the frontend; the backend needs its own host | REQ-27 |
-| Open | REQ-13 and REQ-28 (working with delayed or no contact with Earth) now that the app needs a network: entries kept in the browser and sent later, or left out on purpose | `docs/STACK.md` rule 5 asked for offline-friendly; the network decision changes it | REQ-13, REQ-28 |
+| Use | The FastAPI backend runs on Railway from `backend/Dockerfile`, deployed on every push to `main` that touches `backend/` or `config/`, health check `/health`, storage in Supabase (Sat 17:30) | Railway runs the existing Dockerfile with no cold start; Vercel keeps the frontend; Supabase keeps the history | REQ-27, REQ-32 |
+| Use | Working with delayed or no contact with Earth: every entry is saved in the browser first and waits in an outbox; the app sends it one at a time when there is a network, and the API stores a re-sent entry once (200 the same, 201 new, 409 a different value for the same person, indicator, day and time) (Sat 17:35) | The crew keeps recording when the link is down; nothing is lost or counted twice when it comes back | REQ-13, REQ-28 |
 | Use | Only synthetic data in Supabase and in every public deployment | The deployed app and its database are public infrastructure; no real personal data anywhere | REQ-14, REQ-29 |
 | Use | fastapi 0.162.7, MIT | The web framework for the entries and history routes | REQ-27 |
 | Use | pydantic 2.14.3, MIT | The `Entry` model and its validation | REQ-27 |
@@ -90,3 +104,13 @@ planning, wording, and code. Not the base idea. Kept in `team/eng1/notes/si-use-
 | Use | pytest 9.2.0, MIT | The backend tests | REQ-27 |
 | Use | ruff 0.17.5, MIT | The backend lint | REQ-27 |
 | Use | No Supabase client library: the backend calls the Supabase REST API with httpx | One dependency less; its licence row is httpx's | REQ-27 |
+| Use | Face sign-in on the device (REQ-36), off unless the URL has `?face=1`: consent first, the descriptor stays in the person's own browser, never sent to the backend; exception to REQ-14 limited to that | Juli's proposal (team/eng2/notes/face-login-proposal.md), accepted by Wambi Sat 18:25; first step toward the team's face and eye analysis | REQ-36, REQ-14 |
+| Use | @vladmandic/face-api 1.7.15, MIT, with its tiny detector, tiny 68-point landmark and recognition models copied to `frontend/public/models/` with the licence | Runs in the browser with no external service and no CDN; loaded only when the face panel opens | REQ-36 |
+| Use | @mui/material 9.5.0 with @emotion/react 11.14.0 and @emotion/styled 11.14.1, MIT | The app's theme, header and tabs (Juli, Sat 19:00); split into its own `vendor-mui` file so the browser keeps it cached when only the app changes | REQ-01, REQ-15, REQ-30 |
+| Use | Colour coding: one colour per status, always paired with an icon and the status in words, so colour is never the only signal (REQ-15) | Team decision (Wambi), Sat 18:45; the badge already pairs colour, icon and words | REQ-09, REQ-15 |
+| Use | Dynamic charts over time: the History tab draws each indicator against the person's earlier values (`frontend/src/components/IndicatorChart.tsx`, merged in #67) | Team decision (Wambi), Sat 18:45; the chart is what REQ-12 compares against | REQ-09, REQ-12 |
+| Use | Routine prompts: the app asks for the measurement that fits the moment of the mission routine (on waking, after exercise, before sleep), using the `context` values | Team decision (Wambi), Sat 18:45; it turns `context` into the crew's daily routine | REQ-09, REQ-02 |
+| Use | Gamification without rankings: progress for keeping the routine (for example days in a row with a complete record), never a reward for a value or a comparison between crew members | Team decision (Wambi), Sat 18:45; rewarding the routine and not the result keeps the data honest | REQ-09 |
+| Use | Mission environments: the crew member picks where the mission runs (station, spacecraft, lunar or Mars base) and the interface names and frames it | Team decision (Wambi), Sat 18:45 | REQ-09 |
+| Use | Animations, kept short: transitions that show a change of state, all switched off under `prefers-reduced-motion` | Team decision (Wambi), Sat 18:45; they must not slow the 30 s demo | REQ-09, REQ-15 |
+| Use | Camera input: face sign-in on the device (REQ-36) and, later, face and eye analysis; the form keeps working on a device without a camera | Team decision (Wambi), Sat 18:45 | REQ-09, REQ-36 |
