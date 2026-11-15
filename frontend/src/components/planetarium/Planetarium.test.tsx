@@ -130,4 +130,24 @@ describe('Planetarium', () => {
     }
     expect(document.querySelectorAll('.planetarium__tag')).toHaveLength(n)
   })
+
+  it('can start in the orbit view with the right toggle label and no list', () => {
+    vi.stubGlobal('matchMedia', (q: string) => ({ matches: q.includes('min-width'), addEventListener: () => {}, removeEventListener: () => {} }))
+    render(<Planetarium items={items} labels={labels} selectedId={null} onSelect={() => {}} initialView="orbits" />)
+    expect(screen.queryByRole('list')).toBeNull()
+    expect(screen.getByRole('group', { name: 'Indicators' })).toBeInTheDocument()
+    expect(toggle()).toHaveTextContent('List')
+    expect(toggle()).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('reads the settling duration and easing from the tokens', async () => {
+    document.documentElement.style.setProperty('--motion-cinematic', '800ms')
+    document.documentElement.style.setProperty('--ease-standard', 'linear')
+    setup(true)
+    await userEvent.click(toggle())
+    const opts = (Element.prototype.animate as unknown as ReturnType<typeof vi.fn>).mock.calls[0][1]
+    expect(opts).toMatchObject({ duration: 800, easing: 'linear' })
+    document.documentElement.style.removeProperty('--motion-cinematic')
+    document.documentElement.style.removeProperty('--ease-standard')
+  })
 })
