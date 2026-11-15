@@ -507,8 +507,12 @@ legend {
   border-left-color: var(--status-in-range-text);
 }
 
-.indicator-card--attention {
-  border-left-color: var(--status-attention-text);
+.indicator-card--review {
+  border-left-color: var(--status-review-text);
+}
+
+.indicator-card--selected {
+  box-shadow: 0 0 0 1px var(--color-accent);
 }
 
 /* Title and badge: the badge always takes its own row under the name, so every
@@ -516,9 +520,17 @@ legend {
    the name. */
 .indicator-card__top {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   gap: var(--space-2);
+}
+
+.indicator-card__icon {
+  display: inline-flex;
+  flex: none;
+}
+
+.indicator-card__state {
+  display: flex;
 }
 
 .indicator-card__name {
@@ -531,10 +543,18 @@ legend {
 
 .indicator-card__reading {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
   padding-bottom: var(--space-2);
   border-bottom: var(--border-subtle);
+}
+
+.indicator-card__figures {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
 }
 
 .indicator-card__value {
@@ -616,8 +636,8 @@ legend {
 }
 
 .attention-badge--attention {
-  color: var(--status-attention-text);
-  background: var(--status-attention-bg);
+  color: var(--status-review-text);
+  background: var(--status-review-bg);
 }
 
 .attention-badge--no_data {

@@ -128,6 +128,7 @@ export default function App() {
             personId={personId}
             data={teamView ? data : { ...data, problems: [] }}
             entries={entries}
+            motionReduced={motionReduced}
             onBack={() => setPhase('report')}
             onRestart={() => {
               setPersonId(null)

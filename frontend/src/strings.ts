@@ -75,9 +75,23 @@ export const strings = {
       headline: ['YOUR', 'STATUS', 'TODAY.'],
       intro: 'Each reading against your own usual values. Decisions stay with your CMO and flight surgeon.',
       historyHeading: 'History',
+      historyToggle: 'History and readings table',
       back: 'Back to the report',
       restart: 'Start a new check',
     },
+  },
+  // The status board: the planetarium (or its list) and the body zone of the
+  // indicator that is selected. Only labels; no health wording.
+  board: {
+    planetarium: {
+      center: 'You',
+      viewOrbits: 'Orbit view',
+      viewList: 'List view',
+      orbitsHeading: 'Overview of every reading',
+    },
+    bodyLabel: (name: string): string => `Body zone: ${name}`,
+    bodyNone: 'No body zone for this indicator',
+    loading: 'Loading the overview.',
   },
   // The bar along the top of every phase (style guide 5, 7.1).
   topbar: {

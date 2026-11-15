@@ -1,8 +1,8 @@
+import { lazy, Suspense, useState } from 'react'
 import { attentionFor } from '../domain/attention'
 import { latestEntry } from '../domain/entries'
 import type {
   Attention,
-  AttentionRule,
   Entry,
   Indicator,
   IndicatorContent,
@@ -13,22 +13,66 @@ import Disclosure from '../components/Disclosure'
 import IndicatorDetails from '../components/IndicatorDetails'
 import Notice from '../components/Notice'
 import type { LoadedContent } from '../content/load'
+import { IndicatorIcon, StatusIcon, systemColor, systemOf } from '../icons'
+import { useCountUp, useMotionAllowed } from '../motion'
+import { attentionText } from '../components/attentionText'
 import { strings } from '../strings'
+
+// The three figures are chunks of their own, so the first load stays small.
+// Each one waits in a box of its final size, so nothing moves when it arrives.
+const Planetarium = lazy(() =>
+  import('../components/planetarium').then((m) => ({ default: m.Planetarium })),
+)
+const Instrument = lazy(() => import('../components/instruments'))
+const BodySilhouette = lazy(() =>
+  import('../components/body').then((m) => ({ default: m.BodySilhouette })),
+)
+
+type StateKind = 'in_range' | 'review' | 'no_data'
+
+// The visual state of an attention result. Only the states the app already
+// computes are drawn: "outside your usual range" is not one of them yet.
+function stateKind(attention: Attention): StateKind {
+  if (attention.kind === 'in_range') return 'in_range'
+  if (attention.kind === 'attention') return 'review'
+  return 'no_data'
+}
 
 // One screen: the status of each indicator and a clear next step (REQ-01).
 export default function Home({
   personId,
   data,
   entries,
+  motionReduced = false,
 }: {
   personId: string
   data: LoadedContent
   // The entries from the store, so a reading saved on the Entry screen shows
   // here at once (REQ-02).
   entries: Entry[]
+  // The top bar switch; the system setting is read as well.
+  motionReduced?: boolean
 }) {
   const personEntries = entries.filter((entry) => entry.personId === personId)
   const waitingFor = waitingForFrom(data)
+  const [chosenId, setChosenId] = useState<string | null>(null)
+  const selectedId =
+    data.indicators.find((item) => item.id === chosenId)?.id ??
+    data.indicators[0]?.id ??
+    null
+
+  // One result per indicator, shared by the planetarium and the cards.
+  const rows = data.indicators.map((indicator) => {
+    const own = personEntries.filter((entry) => entry.indicatorId === indicator.id)
+    const rules = data.rules.filter((rule) => rule.indicatorId === indicator.id)
+    const latest = latestEntry(own)
+    const attention: Attention = latest
+      ? attentionFor(latest.value, rules)
+      : { kind: 'no_data' }
+    return { indicator, latest, attention, content: data.contents[indicator.id] }
+  })
+  const selected = rows.find((row) => row.indicator.id === selectedId)
+  const selectedSystem = selected ? systemOf(selected.indicator.id) : null
 
   return (
     <section aria-labelledby="home-heading">
@@ -53,18 +97,58 @@ export default function Home({
           </Disclosure>
         </Notice>
       )}
+      {rows.length > 0 && (
+        <div className="board">
+          <div className="board__orbit">
+            <Suspense fallback={<BoardLoading />}>
+              <Planetarium
+                items={rows.map(({ indicator, latest, attention }) => {
+                  const kind = stateKind(attention)
+                  const system = systemOf(indicator.id)
+                  return {
+                    id: indicator.id,
+                    name: indicator.name,
+                    stateText: attentionText(attention),
+                    state: kind,
+                    valueText: latest
+                      ? `${latest.value} ${strings.cardUnit(indicator.unit)}`
+                      : strings.badge.noData,
+                    icon: <IndicatorIcon indicatorId={indicator.id} />,
+                    stateIcon: <StatusIcon kind={kind} size={16} />,
+                    systemColor: system ? systemColor(system) : 'var(--color-text-muted)',
+                  }
+                })}
+                labels={strings.board.planetarium}
+                selectedId={selectedId}
+                onSelect={setChosenId}
+                reducedMotion={motionReduced}
+              />
+            </Suspense>
+          </div>
+          <div className="board__body">
+            <Suspense fallback={<div className="board__body-slot" aria-hidden="true" />}>
+              <BodySilhouette
+                system={selectedSystem}
+                label={
+                  selected && selectedSystem
+                    ? strings.board.bodyLabel(selected.indicator.name)
+                    : strings.board.bodyNone
+                }
+              />
+            </Suspense>
+          </div>
+        </div>
+      )}
       <ul className="indicator-list">
-        {data.indicators.map((indicator) => (
+        {rows.map(({ indicator, latest, attention, content }) => (
           <IndicatorRow
             key={indicator.id}
             indicator={indicator}
-            entries={personEntries.filter(
-              (entry) => entry.indicatorId === indicator.id,
-            )}
-            rules={data.rules.filter(
-              (rule) => rule.indicatorId === indicator.id,
-            )}
-            content={data.contents[indicator.id]}
+            latest={latest}
+            attention={attention}
+            content={content}
+            selected={indicator.id === selectedId}
+            motionReduced={motionReduced}
           />
         ))}
       </ul>
@@ -72,42 +156,96 @@ export default function Home({
   )
 }
 
+// A box where the planetarium will be, in words, so the area is never blank.
+function BoardLoading() {
+  return (
+    <p className="board__loading" role="status">
+      {strings.board.loading}
+    </p>
+  )
+}
+
+// The value counts up from the old one when a new reading arrives, and shows
+// the final number at once when motion is off.
+function ReadingValue({
+  value,
+  unit,
+  motionReduced,
+}: {
+  value: number
+  unit: string
+  motionReduced: boolean
+}) {
+  const allowed = useMotionAllowed(motionReduced)
+  const decimals = String(value).split('.')[1]?.length ?? 0
+  const shown = useCountUp(value, allowed, undefined, decimals)
+  return (
+    <span className="indicator-card__value">
+      {shown}
+      <span className="indicator-card__unit"> {strings.cardUnit(unit)}</span>
+    </span>
+  )
+}
+
 function IndicatorRow({
   indicator,
-  entries,
-  rules,
+  latest,
+  attention,
   content,
+  selected,
+  motionReduced,
 }: {
   indicator: Indicator
-  entries: Entry[]
-  rules: AttentionRule[]
+  latest: Entry | null
+  attention: Attention
   content: IndicatorContent | undefined
+  selected: boolean
+  motionReduced: boolean
 }) {
-  const latest = latestEntry(entries)
-  const attention: Attention = latest
-    ? attentionFor(latest.value, rules)
-    : { kind: 'no_data' }
   const sources = sourcesFor(indicator, attention, content)
+  const system = systemOf(indicator.id)
 
   return (
-    <li className={`indicator-card indicator-card--${attention.kind}`}>
+    <li
+      className={`indicator-card indicator-card--${stateKind(attention)}${
+        selected ? ' indicator-card--selected' : ''
+      }`}
+    >
       <div className="indicator-card__top">
+        <span
+          className="indicator-card__icon"
+          style={{ color: system ? systemColor(system) : 'var(--color-text-muted)' }}
+          aria-hidden="true"
+        >
+          <IndicatorIcon indicatorId={indicator.id} />
+        </span>
         <h3 className="indicator-card__name">{indicator.name}</h3>
+      </div>
+      <div className="indicator-card__state">
         <AttentionBadge attention={attention} />
       </div>
       {latest && (
-        <p className="indicator-card__reading">
-          <span className="indicator-card__value">
-            {latest.value}
-            <span className="indicator-card__unit">
-              {' '}
-              {strings.cardUnit(indicator.unit)}
+        <div className="indicator-card__reading">
+          <p className="indicator-card__figures">
+            <ReadingValue
+              value={latest.value}
+              unit={indicator.unit}
+              motionReduced={motionReduced}
+            />
+            <span className="indicator-card__time">
+              {strings.timeLabel(latest.missionDay, latest.time)}
             </span>
-          </span>
-          <span className="indicator-card__time">
-            {strings.timeLabel(latest.missionDay, latest.time)}
-          </span>
-        </p>
+          </p>
+          {system && (
+            <Suspense fallback={<span className="instrument-slot" aria-hidden="true" />}>
+              <Instrument
+                indicatorId={indicator.id}
+                value={latest.value}
+                reducedMotion={motionReduced}
+              />
+            </Suspense>
+          )}
+        </div>
       )}
       <p className="indicator-card__next-step">
         {nextStepFor(attention, content)}

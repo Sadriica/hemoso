@@ -84,8 +84,11 @@ describe('guided check', () => {
     expect(currentStep()).toHaveTextContent(copy.status.name)
     // The status of the indicators and the history are on the last phase.
     expect(screen.getByText(strings.personHeading(PERSON))).toBeInTheDocument()
+    // The history waits behind a closed disclosure.
+    expect(screen.queryByText(/Your earlier median|Not enough earlier entries/)).toBeNull()
+    await user.click(screen.getByRole('button', { name: copy.status.historyToggle }))
     expect(
-      screen.getByText(/Your earlier median|Not enough earlier entries/),
+      await screen.findByText(/Your earlier median|Not enough earlier entries/),
     ).toBeInTheDocument()
   })
 

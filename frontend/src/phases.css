@@ -611,3 +611,65 @@ html {
   animation: none;
   transition: none;
 }
+
+/* Status board: the planetarium (or its list) with the lit body zone beside
+   it on wide screens; the cards come right after. */
+.board {
+  display: grid;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+.board__orbit {
+  min-width: 0;
+  min-height: 320px;
+}
+
+.board__loading {
+  padding: var(--space-3);
+  border: var(--border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+.board__body {
+  display: none;
+}
+
+.board__body-slot {
+  width: 200px;
+  height: 440px;
+}
+
+@media (min-width: 900px) {
+  .board {
+    grid-template-columns: minmax(0, 1fr) 240px;
+    align-items: start;
+  }
+
+  .board__body {
+    display: block;
+    padding: var(--space-3);
+    border: var(--border-subtle);
+    border-radius: var(--radius-card);
+    background: var(--color-surface);
+  }
+
+  .board__body svg {
+    display: block;
+    width: 100%;
+    max-height: 440px;
+  }
+}
+
+/* The figure of a card sits beside its value, in a box of its final size. */
+.instrument-slot {
+  display: inline-block;
+  width: 96px;
+  height: 96px;
+}

@@ -343,7 +343,7 @@ describe('Home', () => {
     const noRules: LoadedContent = { ...data, rules: [] }
     renderHome(noRules)
 
-    expect(screen.getByText('No threshold yet')).toBeInTheDocument()
+    expect(screen.getAllByText('No threshold yet').length).toBeGreaterThan(0)
     expect(
       screen.getByText(
         'No attention rule for this indicator yet. Check with your CMO if you are unsure.',
