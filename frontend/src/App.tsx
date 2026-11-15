@@ -169,6 +169,7 @@ export default function App() {
             serverConfigured={client.isConfigured()}
             onBack={() => setPhase('identify')}
             onDone={() => setPhase('status')}
+            still={motionReduced}
           />
         )}
         {phase === 'status' && personId && (

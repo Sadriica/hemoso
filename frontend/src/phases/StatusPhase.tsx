@@ -78,7 +78,7 @@ export default function StatusPhase({
 
       <div className="scene-band scene-band--status" data-enter="scene" aria-hidden="true">
         <Suspense fallback={null}>
-          <OrbitalScene variant="status" />
+          <OrbitalScene variant="status" still={motionReduced} />
         </Suspense>
       </div>
 

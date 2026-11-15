@@ -21,6 +21,8 @@ interface ReportPhaseProps {
   serverConfigured: boolean
   onBack: () => void
   onDone: () => void
+  /** The top bar switch is on: the scene stands still. */
+  still?: boolean
 }
 
 // Phase 2: today's readings, one at a time with the entry form (REQ-02). The
@@ -35,6 +37,7 @@ export default function ReportPhase({
   serverConfigured,
   onBack,
   onDone,
+  still = false,
 }: ReportPhaseProps) {
   const copy = strings.phases.report
   // Entries present when the phase opened; the rest were logged in this check.
@@ -51,7 +54,7 @@ export default function ReportPhase({
 
       <div className="scene-band scene-band--report" data-enter="scene" aria-hidden="true">
         <Suspense fallback={null}>
-          <OrbitalScene variant="report" />
+          <OrbitalScene variant="report" still={still} />
         </Suspense>
       </div>
 

@@ -129,7 +129,7 @@ export default function IdentifyPhase({
     const chosen = document.querySelector<HTMLInputElement>(
       `#${CREW_PICKER_ID} input:checked, #${CREW_PICKER_ID} input`,
     )
-    chosen?.focus()
+    chosen?.focus({ preventScroll: true })
   }
 
   const askPin = (personId: string) => {
