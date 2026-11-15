@@ -3,8 +3,8 @@ import { FACE_STORAGE_KEY } from '../src/face/descriptors'
 import { strings } from '../src/strings'
 
 // The face panel with a camera behind it (REQ-36). The plain page is the other
-// half of this: face-off.spec.ts checks that a page without ?face=1 has no face
-// control and asks for no model.
+// half of this: face-off.spec.ts checks that the face option is there from the
+// start and asks for no model until it is chosen.
 //
 // The camera is Chromium's fake device: a moving test pattern with no person in
 // it, and the permission already granted. It is set in this file only, so the
@@ -48,7 +48,7 @@ function crewPicker(page: Page) {
 }
 
 async function openFacePanel(page: Page) {
-  await page.goto('/?face=1')
+  await page.goto('/')
   await page.getByRole('button', { name: copy.buttonLabel }).click()
   const panel = page.getByRole('region', { name: copy.heading })
   await expect(panel).toBeVisible()
@@ -98,7 +98,7 @@ async function goOnWithPicker(page: Page) {
   await expect(page.getByText(strings.topbar.onDuty(personId))).toBeVisible()
 }
 
-test('?face=1: the consent comes before any camera, and Cancel leaves the picker working', async ({
+test('face: the consent comes before any camera, and Cancel leaves the picker working', async ({
   page,
 }) => {
   const models = collectModelRequests(page)
@@ -127,7 +127,7 @@ test('?face=1: the consent comes before any camera, and Cancel leaves the picker
   await expect(page.getByText(strings.topbar.onDuty(personId))).toBeVisible()
 })
 
-test('?face=1: a camera that shows no face registers nobody and names nobody', async ({
+test('face: a camera that shows no face registers nobody and names nobody', async ({
   page,
 }) => {
   const models = collectModelRequests(page)
@@ -173,13 +173,13 @@ test('?face=1: a camera that shows no face registers nobody and names nobody', a
   await goOnWithPicker(page)
 })
 
-test('?face=1: deleting the saved face leaves nothing behind for faces', async ({
+test('face: deleting the saved face leaves nothing behind for faces', async ({
   page,
 }) => {
   // A descriptor of the shape the panel saves, with no face behind it: 128
   // numbers, which is all this test needs to have something to delete.
   const descriptor = Array.from({ length: 128 }, (_, index) => index / 128)
-  await page.goto('/?face=1')
+  await page.goto('/')
   const personId = await pickFirstCrew(page)
   await page.evaluate(
     ([key, value]) => window.localStorage.setItem(key, value),

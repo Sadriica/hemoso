@@ -16,13 +16,24 @@ import pytest
 from app import storage
 from app.main import app
 from app.models import Entry
-from app.state import attention_for, baseline, state_for, window, worse_state
+from app.state import (
+    attention_for,
+    baseline,
+    cited_rows,
+    is_cited,
+    state_for,
+    window,
+    worse_state,
+)
 
 FIXTURES = (
     Path(__file__).resolve().parents[2] / "scripts" / "fixtures" / "format_rules"
 )
 BASELINE = json.loads((FIXTURES / "baseline.json").read_text(encoding="utf-8"))
 ATTENTION = json.loads((FIXTURES / "attention.json").read_text(encoding="utf-8"))
+
+# A source with a link: only these rows can raise needs_review (phys-02).
+CITED = "https://example.org/limit"
 
 INDICATORS_CSV = (
     "id,name,unit,direction,measured_on_board,hazards,min_spread,tier,system,source\n"
@@ -31,6 +42,13 @@ INDICATORS_CSV = (
 )
 
 ATTENTION_CSV = (
+    "indicator_id,side,threshold,attention_level,notify,source\n"
+    f"example_indicator,above,84,example_level_high,crew,{CITED}\n"
+    f"example_indicator,below,56,example_level_low,cmo,{CITED}\n"
+)
+
+# The same two rows with no link: they never raise needs_review (phys-02).
+ASSUMPTION_ATTENTION_CSV = (
     "indicator_id,side,threshold,attention_level,notify,source\n"
     "example_indicator,above,84,example_level_high,crew,Assumption\n"
     "example_indicator,below,56,example_level_low,cmo,Assumption\n"
@@ -47,10 +65,10 @@ BLOOD_PRESSURE_INDICATORS_CSV = (
 # The rows of config/rules/attention.csv for the two blood pressure indicators.
 BLOOD_PRESSURE_ATTENTION_CSV = (
     "indicator_id,side,threshold,attention_level,notify,source\n"
-    "bp_sys_mmhg,above,140,consult,cmo,Assumption\n"
-    "bp_sys_mmhg,above,180,urgent,flight_surgeon,Assumption\n"
-    "bp_dia_mmhg,above,90,consult,cmo,Assumption\n"
-    "bp_dia_mmhg,above,120,urgent,flight_surgeon,Assumption\n"
+    f"bp_sys_mmhg,above,140,consult,cmo,{CITED}\n"
+    f"bp_sys_mmhg,above,180,urgent,flight_surgeon,{CITED}\n"
+    f"bp_dia_mmhg,above,90,consult,cmo,{CITED}\n"
+    f"bp_dia_mmhg,above,120,urgent,flight_surgeon,{CITED}\n"
 )
 
 ENTRY = {
@@ -95,7 +113,7 @@ def attention_row(boundary: float, median: float) -> dict:
         "threshold": boundary,
         "attention_level": "example_level",
         "notify": "crew",
-        "source": "Assumption",
+        "source": CITED,
     }
 
 
@@ -122,6 +140,61 @@ def test_attention_vectors(case):
     )
 
     assert got == case["expected"]
+
+
+def temperature_row(source: str) -> dict:
+    """The limit of phys-02's new vectors: core temperature above 39.0."""
+    return {
+        "indicator_id": "temp_core_c",
+        "side": "above",
+        "threshold": 39.0,
+        "attention_level": "example_level",
+        "notify": "cmo",
+        "source": source,
+    }
+
+
+@pytest.mark.parametrize(
+    ("value", "source", "expected"),
+    [
+        (39.5, CITED, "needs_review"),
+        (39.5, "Assumption", "no_data"),
+        (37.0, CITED, "no_data"),
+    ],
+    ids=[
+        "no baseline, cited limit crossed",
+        "no baseline, Assumption limit crossed",
+        "no baseline, below any limit",
+    ],
+)
+def test_safety_order_vectors(value, source, expected):
+    rows = cited_rows([temperature_row(source)])
+
+    got = state_for(value, None, None, attention_for(rows, value))
+
+    assert got == expected
+
+
+def test_an_assumption_row_never_raises_needs_review_on_its_own():
+    row = temperature_row("Assumption")
+
+    assert state_for(39.5, None, None, row) == "no_data"
+    assert state_for(39.5, 37.0, 0.2, row) == "outside_range"
+
+
+@pytest.mark.parametrize(
+    ("source", "expected"),
+    [
+        (CITED, True),
+        (f"{CITED} https://example.org/other", True),
+        ("Assumption", False),
+        (f"{CITED} Assumption", False),
+        ("", False),
+        ("example.org", False),
+    ],
+)
+def test_is_cited(source, expected):
+    assert is_cited({"source": source}) is expected
 
 
 def test_two_entries_give_no_baseline():
@@ -166,14 +239,45 @@ def test_state_route_no_data_with_two_entries(client, tmp_path):
     }
 
 
-def test_state_route_no_data_stops_before_attention(client, tmp_path):
+def test_state_route_cited_limit_without_baseline_needs_review(client, tmp_path):
     write_config(tmp_path)
 
     response = client.get(
         "/people/demo_astronaut_1/indicators/example_indicator/state?value=90"
     )
 
+    assert response.json()["state"] == "needs_review"
+    assert response.json()["median"] is None
+    assert response.json()["n"] == 0
+    assert response.json()["attention"] == {
+        "attention_level": "example_level_high",
+        "notify": "crew",
+        "source": CITED,
+    }
+
+
+def test_state_route_assumption_limit_without_baseline_is_no_data(client, tmp_path):
+    write_config(tmp_path, ASSUMPTION_ATTENTION_CSV)
+
+    response = client.get(
+        "/people/demo_astronaut_1/indicators/example_indicator/state?value=90"
+    )
+
     assert response.json()["state"] == "no_data"
+    assert response.json()["attention"] is None
+
+
+def test_state_route_assumption_limit_with_baseline_is_not_needs_review(
+    client, tmp_path
+):
+    write_config(tmp_path, ASSUMPTION_ATTENTION_CSV)
+    post_entries(client, [70.0, 70.0, 70.0])
+
+    response = client.get(
+        "/people/demo_astronaut_1/indicators/example_indicator/state?value=90"
+    )
+
+    assert response.json()["state"] == "outside_range"
     assert response.json()["attention"] is None
 
 
@@ -225,7 +329,7 @@ def test_state_route_returns_the_attention_row_that_matched(client, tmp_path):
     assert response.json()["attention"] == {
         "attention_level": "example_level_high",
         "notify": "crew",
-        "source": "Assumption",
+        "source": CITED,
     }
 
 
@@ -407,11 +511,30 @@ def test_blood_pressure_vectors(
         assert body[side]["attention"]["notify"] == notify
 
 
-def test_blood_pressure_without_history_is_no_data(client, tmp_path):
+def test_blood_pressure_first_reading_past_cited_limits_needs_review(
+    client, tmp_path
+):
+    """phys-02 safety order: 185/125 on the first day is not "no data yet"."""
     write_blood_pressure_config(tmp_path)
 
     response = client.get(
         "/people/demo_astronaut_1/blood_pressure/state?systolic=185&diastolic=125"
+    )
+
+    body = response.json()
+    assert body["state"] == "needs_review"
+    assert body["systolic"]["state"] == "needs_review"
+    assert body["systolic"]["median"] is None
+    assert body["systolic"]["attention"]["notify"] == "flight_surgeon"
+    assert body["diastolic"]["state"] == "needs_review"
+    assert body["diastolic"]["attention"]["attention_level"] == "urgent"
+
+
+def test_blood_pressure_without_history_is_no_data(client, tmp_path):
+    write_blood_pressure_config(tmp_path)
+
+    response = client.get(
+        "/people/demo_astronaut_1/blood_pressure/state?systolic=120&diastolic=80"
     )
 
     assert response.json() == {
@@ -518,20 +641,20 @@ def test_window_drops_entries_from_the_same_day_after_the_time():
 def test_state_route_leaves_out_the_stored_reading_being_tested(client, tmp_path):
     write_config(tmp_path)
     post_entries(client, [70.0, 71.0], first_day=1)
-    stored = client.post("/entries", json={**ENTRY, "value": 90.0, "mission_day": 3})
+    stored = client.post("/entries", json={**ENTRY, "value": 80.0, "mission_day": 3})
     assert stored.status_code == 201
 
     tested = client.get(
         "/people/demo_astronaut_1/indicators/example_indicator/state"
-        "?value=90&mission_day=3&time=08:00"
+        "?value=80&mission_day=3&time=08:00"
     )
     plain = client.get(
-        "/people/demo_astronaut_1/indicators/example_indicator/state?value=90"
+        "/people/demo_astronaut_1/indicators/example_indicator/state?value=80"
     )
 
     assert tested.json()["state"] == "no_data"
     assert tested.json()["n"] == 2
-    assert plain.json()["state"] == "needs_review"
+    assert plain.json()["state"] == "in_range"
     assert plain.json()["n"] == 3
 
 

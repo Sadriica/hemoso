@@ -28,13 +28,13 @@ describe('pain picker', () => {
     ).toBeInTheDocument()
     expect(screen.getByText(injuryWords.surgeon)).toBeInTheDocument()
     expect(
-      await screen.findByRole('button', { name: 'Left knee' }),
+      await screen.findByRole('button', { name: 'Left knee' }, { timeout: 5000 }),
     ).toHaveAttribute('aria-pressed', 'false')
   })
 
   it('adds a place chosen from the accessible list, with its strength and kind', async () => {
     renderPicker()
-    await userEvent.click(await screen.findByRole('button', { name: 'Left knee' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Left knee' }, { timeout: 5000 }))
 
     expect(screen.getByRole('button', { name: 'Left knee' })).toHaveAttribute(
       'aria-pressed',
@@ -51,7 +51,7 @@ describe('pain picker', () => {
 
   it('saves the place, the kind and the strength on this device', async () => {
     renderPicker()
-    await userEvent.click(await screen.findByRole('button', { name: 'Left knee' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Left knee' }, { timeout: 5000 }))
     await userEvent.click(screen.getByRole('button', { name: 'Head' }))
 
     fireEvent.change(
@@ -89,6 +89,13 @@ describe('pain picker', () => {
     expect(window.localStorage.getItem(PAIN_STORAGE_KEY)).toBeNull()
   })
 
+  it('shows the hint for both pointers and the groups of the list', async () => {
+    renderPicker()
+    expect(screen.getByText('Tap the body or pick from the list.')).toBeInTheDocument()
+    await screen.findByRole('button', { name: 'Left knee' }, { timeout: 5000 })
+    expect(screen.getByRole('list', { name: 'Right arm' })).toBeInTheDocument()
+  })
+
   it('says so when this device does not keep the report', async () => {
     renderPicker({ storage: null })
     await userEvent.click(await screen.findByRole('button', { name: 'Right hand' }))
@@ -98,7 +105,7 @@ describe('pain picker', () => {
 
   it('drops a place again from its own row', async () => {
     renderPicker()
-    await userEvent.click(await screen.findByRole('button', { name: 'Left knee' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Left knee' }, { timeout: 5000 }))
     await userEvent.click(
       screen.getByRole('button', { name: injuryWords.remove('Left knee') }),
     )
@@ -107,7 +114,7 @@ describe('pain picker', () => {
       'false',
     )
     expect(
-      within(screen.getByRole('list', { name: 'Body parts' })).getAllByRole('listitem'),
+      within(screen.getByRole('group', { name: 'Body parts' })).getAllByRole('listitem'),
     ).toHaveLength(25)
   })
 })

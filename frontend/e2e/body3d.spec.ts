@@ -86,3 +86,49 @@ async function pickFirstPerson(page: Page): Promise<void> {
   await page.keyboard.press('Space')
   await expect(first).toBeChecked()
 }
+
+// A browser that gives a WebGL context and cannot draw with it (a blocked GPU,
+// some headless browsers): three.js throws while it builds the renderer. The
+// status phase must stay on screen with the flat body in its place.
+for (const kind of ['broken', 'missing'] as const) {
+  test(`the status phase stays up when WebGL is ${kind}`, async ({ page }) => {
+    await page.addInitScript((mode) => {
+      const original = HTMLCanvasElement.prototype.getContext
+      HTMLCanvasElement.prototype.getContext = function (
+        this: HTMLCanvasElement,
+        type: string,
+        ...rest: unknown[]
+      ) {
+        if (type === 'webgl' || type === 'webgl2') {
+          // A context object with nothing behind it, or no context at all.
+          return mode === 'broken' ? { getExtension: () => null } : null
+        }
+        return (original as (...args: unknown[]) => unknown).call(this, type, ...rest)
+      } as typeof original
+    }, kind)
+    const pageErrors: string[] = []
+    page.on('pageerror', (error) => pageErrors.push(error.message))
+
+    await page.goto('/')
+    await pickFirstPerson(page)
+    await page.getByRole('button', { name: copy.identify.next }).press('Enter')
+    await page.getByRole('button', { name: copy.report.next }).press('Enter')
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(
+      copy.status.headline[0],
+    )
+
+    // The picker brings the body on every screen size.
+    const toggle = page.locator('button[aria-controls="pain-panel"]')
+    await toggle.press('Enter')
+    await expect(page.locator('.pain-picker .body3d--flat')).toBeVisible()
+    await expect(
+      page.getByRole('button', { name: 'Left knee', exact: true }),
+    ).toBeVisible()
+
+    // Nothing was unmounted: the heading, the card and the rail are all there.
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
+    await expect(page.locator('.indicator-card').first()).toBeVisible()
+    await expect(page.locator('#root > *')).not.toHaveCount(0)
+    expect(pageErrors).toEqual([])
+  })
+}

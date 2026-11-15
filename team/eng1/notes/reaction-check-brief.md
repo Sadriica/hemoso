@@ -1,7 +1,7 @@
-# Brief: reaction check (REQ-38, T-71) — v2, Sat 23:25
+# Brief: reaction check (REQ-38, T-71) — v3, Sat 23:40
 
 For Wambi's frontend agent. Team decision Sat 22:41 (docs/DECISIONS.md);
-method and numbers from Phys (T-72, branch phys, commit c02f42a).
+method and numbers from Phys (T-72, docs/findings/phys-06-reaction-time-pvtb.md).
 
 ```text
 Build the reaction check in the frontend (card T-71, REQ-38). The team chose it;
@@ -18,17 +18,18 @@ SETUP
   frontend/src/phases/ReportPhase.tsx, frontend/src/screens/Entry.tsx,
   frontend/src/screens/entryDraft.ts (readingRows), frontend/src/data/entryStore.ts.
 
-FIXED NUMBERS (from Phys, NASA Reaction Self Test; put them in ONE constants file)
+FIXED NUMBERS (from Phys, phys-06: the 3-minute PVT-B of the ISS Reaction Self
+Test, Dev et al. 2024; put them in ONE constants file)
 - Duration: 3 minutes of trials (also a 30-second DEMO length, behind a clearly
   named constant, used only by the demo path and e2e).
-- Random wait before each stimulus: 2 to 10 s (uniform).
+- Random wait before each stimulus: 2 to 5 s (uniform).
 - A press before the stimulus = false start: count it, show "Too early", restart
   that wait. False starts are not saved as an indicator.
-- A trial above 500 ms = lapse. No answer within 500 ms still waits up to 2 s,
+- A trial of 355 ms or more = lapse. No answer still waits up to 2 s,
   then counts as a lapse and moves on.
 - Valid trials: 100 ms or more (below that is a false start).
 - Result: reaction_median_ms = median of valid trials (ms, integer);
-  reaction_lapses = count of trials above 500 ms.
+  reaction_lapses = count of trials of 355 ms or more.
 
 IMPORTANT: indicators.csv drives readingRows(). Once phys is merged the two
 reaction ids would appear as fields to type by hand. Exclude them from the typed

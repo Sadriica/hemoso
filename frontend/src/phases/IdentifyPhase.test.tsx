@@ -49,15 +49,20 @@ function accounts(): AccountClient {
 
 // The phase with the real session hook behind it: what a face match does to the
 // person on duty is the point, so the hook is never faked.
-function Harness({ onDone }: { onDone: () => void }) {
+function Harness({
+  onDone,
+  personIds = [PERSON],
+}: {
+  onDone: () => void
+  personIds?: string[]
+}) {
   const session = useSession(accounts())
   const headingRef = useRef<HTMLHeadingElement>(null)
   return (
     <IdentifyPhase
       headingRef={headingRef}
-      personIds={[PERSON]}
+      personIds={personIds}
       session={session}
-      faceEnabled
       onDone={onDone}
     />
   )
@@ -77,6 +82,9 @@ async function matchFace(user: ReturnType<typeof userEvent.setup>) {
 }
 
 beforeEach(() => {
+  // The carry to the next phase takes half a second; these tests are about what
+  // the phase does, so motion is off (src/motion/carry.test.tsx covers the carry).
+  vi.stubGlobal('matchMedia', () => ({ matches: true, addEventListener() {}, removeEventListener() {} }))
   localStorage.clear()
   engine.descriptorFrom.mockReset()
   Object.defineProperty(HTMLMediaElement.prototype, 'readyState', {
@@ -100,13 +108,64 @@ afterEach(() => {
   })
 })
 
+// The username and PIN form waits behind a closed row.
+async function openMore(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole('button', { name: strings.signIn.moreToggle }))
+}
+
+// The face is the first sign-in method: its button comes before the row that
+// opens the username and PIN form.
+function expectFaceBeforeUsernameForm() {
+  const face = screen.getByRole('button', { name: strings.face.buttonLabel })
+  const more = screen.getByRole('button', { name: strings.signIn.moreToggle })
+  expect(
+    face.compareDocumentPosition(more) & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy()
+}
+
 describe('Identify', () => {
+  it('shows the face option first even with no face saved, and says how to add one', () => {
+    render(<Harness onDone={vi.fn()} />)
+
+    expectFaceBeforeUsernameForm()
+    expect(screen.getByText(strings.signIn.faceNone)).toBeInTheDocument()
+    // Not a dead button: it opens the consent, the camera stays off.
+    expect(
+      screen.getByRole('button', { name: strings.face.buttonLabel }),
+    ).toBeEnabled()
+  })
+
+  it('offers to add a face after a PIN sign-in, consent first, or to go on', async () => {
+    fakeCamera()
+    const onDone = vi.fn()
+    const user = userEvent.setup()
+    render(<Harness onDone={onDone} />)
+
+    await openMore(user)
+    await user.type(screen.getByLabelText(strings.signIn.username), 'cadet_okoro')
+    await user.type(screen.getByLabelText(strings.signIn.pin, { exact: true }), '4821')
+    await user.click(screen.getByRole('button', { name: strings.signIn.action }))
+
+    expect(
+      await screen.findByRole('heading', { name: strings.signIn.faceOfferHeading }),
+    ).toBeInTheDocument()
+    expect(onDone).not.toHaveBeenCalled()
+
+    await user.click(
+      screen.getByRole('button', { name: strings.signIn.faceOfferAction }),
+    )
+    expect(await screen.findByText(strings.face.consent)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: strings.face.cancelLabel }))
+
+    await user.click(screen.getByRole('button', { name: strings.signIn.faceOfferSkip }))
+    expect(onDone).toHaveBeenCalledTimes(1)
+  })
+
   it('shows a face first when one is saved on this device', () => {
     saveFace({ personId: 'cadet_okoro', descriptor: [1, 1] })
     render(<Harness onDone={vi.fn()} />)
 
-    const cards = screen.getAllByRole('heading', { level: 2 })
-    expect(cards[0]).toHaveTextContent(strings.signIn.faceHeading)
+    expectFaceBeforeUsernameForm()
     expect(screen.getByRole('button', { name: strings.face.buttonLabel })).toHaveAttribute(
       'aria-expanded',
       'false',
@@ -145,6 +204,32 @@ describe('Identify', () => {
     expect(onDone).not.toHaveBeenCalled()
   })
 
+  it('asks for the PIN when a name is picked, even with a stored session', async () => {
+    saveSession({ personId: 'cadet_okoro', token: 'kept', expiresAt: FAR })
+    const onDone = vi.fn()
+    const user = userEvent.setup()
+    render(<Harness onDone={onDone} personIds={[PERSON, 'cadet_okoro']} />)
+
+    await user.click(screen.getByRole('radio', { name: 'cadet_okoro' }))
+
+    expect(
+      await screen.findByText(strings.signIn.askPin('cadet_okoro')),
+    ).toBeVisible()
+    expect(onDone).not.toHaveBeenCalled()
+  })
+
+  it('keeps the username and PIN form closed until its row is opened', async () => {
+    const user = userEvent.setup()
+    render(<Harness onDone={vi.fn()} />)
+
+    expect(screen.queryByLabelText(strings.signIn.username)).toBeNull()
+    expect(
+      screen.getByRole('button', { name: strings.signIn.moreToggle }),
+    ).toHaveAttribute('aria-expanded', 'false')
+    await openMore(user)
+    expect(screen.getByLabelText(strings.signIn.username)).toBeInTheDocument()
+  })
+
   it('opens the demo with no PIN at all', async () => {
     const onDone = vi.fn()
     const user = userEvent.setup()
@@ -153,6 +238,19 @@ describe('Identify', () => {
     await user.click(screen.getByRole('button', { name: strings.signIn.demoAction }))
 
     expect(onDone).toHaveBeenCalledTimes(1)
+  })
+
+  it('adds nothing above the panel while the carry runs, then switches', async () => {
+    vi.unstubAllGlobals() // motion on: the carry takes about 500 ms
+    const onDone = vi.fn()
+    const user = userEvent.setup()
+    render(<Harness onDone={onDone} />)
+
+    await user.click(screen.getByRole('button', { name: strings.signIn.demoAction }))
+
+    expect(screen.queryByText(strings.signIn.signedInAs(PERSON))).toBeNull()
+    expect(onDone).not.toHaveBeenCalled()
+    await waitFor(() => expect(onDone).toHaveBeenCalledTimes(1))
   })
 
   it('names the person on duty and offers the way out', async () => {
@@ -170,6 +268,7 @@ describe('Identify', () => {
     const user = userEvent.setup()
     render(<Harness onDone={vi.fn()} />)
 
+    await openMore(user)
     await user.type(screen.getByLabelText(strings.signIn.username), 'cadet_okoro')
     await user.type(screen.getByLabelText(strings.signIn.pin), '11')
     await user.click(screen.getByRole('button', { name: strings.signIn.action }))

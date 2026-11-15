@@ -10,13 +10,21 @@
 
 import './body3d.css'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react'
 import { BodySilhouette, BODY_ZONES } from '../body'
 import type { BodySystem } from '../body/zones'
 import type { InjuryKind } from '../../data/painStore'
 import type { StatusKind } from '../../icons/meta'
-import { BODY_REGIONS, bodyRegionName, bodyRegionSystem, regionsOfSystem } from './regions'
-import { MARKER_TOKENS, statusColor, systemColor, themeColors } from './palette'
+import { bodyRegionGroups, bodyRegionName, bodyRegionSystem, regionsOfSystem } from './regions'
+import { BODY_BASE_TOKEN, MARKER_TOKENS, sceneColors, statusColor, systemColor } from './palette'
 import { createBodyScene, type BodyScene, type SceneColors, type SceneState } from './scene'
 import { bodyWords } from './words'
 
@@ -44,6 +52,7 @@ export interface Body3DProps {
 
 /** WebGL, once per session: two contexts asked for one is a waste. */
 let webglSupport: boolean | null = null
+const webglListeners = new Set<() => void>()
 
 function hasWebGL(): boolean {
   if (webglSupport !== null) return webglSupport
@@ -58,6 +67,18 @@ function hasWebGL(): boolean {
     webglSupport = false
   }
   return webglSupport
+}
+
+// The probe can say yes for a context that cannot draw. The first renderer
+// that throws settles it for the session, and every figure on screen hears it.
+function markWebGLBroken(): void {
+  webglSupport = false
+  for (const listener of webglListeners) listener()
+}
+
+function subscribeWebGL(listener: () => void): () => void {
+  webglListeners.add(listener)
+  return () => webglListeners.delete(listener)
 }
 
 function iconSystem(system: string | null | undefined): BodySystem | null {
@@ -90,8 +111,11 @@ export default function Body3D({
   onSelect,
 }: Body3DProps) {
   const still = useStillMotion(reducedMotion)
-  const [webgl] = useState<boolean | null>(() =>
-    typeof document === 'undefined' ? null : hasWebGL(),
+  const listId = useId()
+  const webgl = useSyncExternalStore<boolean | null>(
+    subscribeWebGL,
+    hasWebGL,
+    () => null,
   )
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const hoverRef = useRef<HTMLSpanElement>(null)
@@ -103,16 +127,15 @@ export default function Body3D({
   const rippleId = useRef(0)
 
   const colors = useMemo<SceneColors>(() => {
-    const theme = themeColors()
+    // One palette for both themes: see sceneColors() for the contrast pairs.
+    const theme = sceneColors()
     const mark = {} as Record<InjuryKind, string>
     for (const [kind, token] of Object.entries(MARKER_TOKENS)) {
       mark[kind as InjuryKind] = theme[token]
     }
     return {
-      // The control-edge step of the palette: a mid slate that keeps its form
-      // under the key light in the dark theme and stays clear of the page in
-      // the light one. One token, both themes, no second colour.
-      base: theme['color-border-control'],
+      // A dark slate: the glow colours of the palette all read on it at 3:1.
+      base: theme[BODY_BASE_TOKEN],
       accent: theme['color-accent'],
       muted: theme['color-text-muted'],
       mark,
@@ -128,10 +151,10 @@ export default function Body3D({
     [mode, regionSystem],
   )
   const litColor = useMemo(() => {
-    if (state !== null) return statusColor(themeColors(), state)
+    if (state !== null) return statusColor(sceneColors(), state)
     return regionSystem === null
       ? colors.muted
-      : systemColor(themeColors(), regionSystem)
+      : systemColor(sceneColors(), regionSystem)
   }, [state, regionSystem, colors.muted])
 
   const sceneState = useMemo<SceneState>(
@@ -184,11 +207,20 @@ export default function Body3D({
     if (webgl !== true) return
     const canvas = canvasRef.current
     if (canvas === null) return
-    const scene = createBodyScene(canvas, colors, {
-      onSelect: (regionId) => selectRef.current?.(regionId),
-      onHover: writeHover,
-      onPulse: addRipple,
-    })
+    // A browser can hand out a context and still fail to draw with it (a
+    // blocked GPU, a headless browser, a lost driver). The renderer then
+    // throws; the figure falls back to the flat body and the page stays up.
+    let scene: BodyScene
+    try {
+      scene = createBodyScene(canvas, colors, {
+        onSelect: (regionId) => selectRef.current?.(regionId),
+        onHover: writeHover,
+        onPulse: addRipple,
+      })
+    } catch {
+      markWebGLBroken()
+      return
+    }
     sceneRef.current = scene
     scene.apply(stateRef.current)
     return () => {
@@ -203,39 +235,57 @@ export default function Body3D({
       ? ''
       : bodyWords.selected(selected.map(bodyRegionName).join(', '))
 
-  const list = (
-    <ul
-      className={`body3d__regions${webgl === true ? ' body3d__regions--sr' : ''}`}
-      aria-label={bodyWords.regionsLabel}
-    >
-      {BODY_REGIONS.map((region) => (
-        <li key={region.id}>
-          {onSelect === undefined ? (
-            <span>{region.name}</span>
-          ) : (
-            <button
-              type="button"
-              className="body3d__region"
-              aria-pressed={selected.includes(region.id)}
-              onClick={() => onSelect(region.id)}
-            >
-              {region.name}
-            </button>
-          )}
-        </li>
-      ))}
-    </ul>
-  )
+  // Pain mode: the list of body parts is a way to choose, as first-class as the
+  // mesh (an elbow is a few pixels wide on a phone). Status mode has no list:
+  // 25 inert names are noise for a screen reader, so only the lit places are
+  // named, in text that is visually hidden.
+  const list =
+    onSelect === undefined ? null : (
+      <div className="body3d__parts" role="group" aria-label={bodyWords.regionsLabel}>
+        {bodyRegionGroups().map((group) => (
+          <section key={group.id} className="body3d__group">
+            <h4 id={`${listId}-${group.id}`} className="body3d__group-name">
+              {bodyWords.groups[group.id]}
+            </h4>
+            <ul className="body3d__regions" aria-labelledby={`${listId}-${group.id}`}>
+              {group.regions.map((region) => (
+                <li key={region.id}>
+                  <button
+                    type="button"
+                    className="body3d__region"
+                    aria-pressed={selected.includes(region.id)}
+                    onClick={() => onSelect(region.id)}
+                  >
+                    <span className="body3d__check" aria-hidden="true">
+                      ✓
+                    </span>
+                    {region.name}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
+      </div>
+    )
+  const litNames = lit.map(bodyRegionName).join(', ')
+  const litText =
+    mode === 'status' && lit.length > 0 ? (
+      <p className="body3d__hint">{bodyWords.lit(litNames)}</p>
+    ) : null
 
   if (webgl === false) {
     return (
       <figure className="body3d body3d--flat" data-mode={mode}>
         <BodySilhouette system={iconSystem(system)} label={label ?? bodyWords.figure} />
         {list}
+        {litText}
         <p className="body3d__live" role="status">
           {announcement}
         </p>
-        <figcaption className="body3d__note">{bodyWords.noWebgl}</figcaption>
+        {list !== null && (
+          <figcaption className="body3d__note">{bodyWords.noWebgl}</figcaption>
+        )}
       </figure>
     )
   }
@@ -293,6 +343,7 @@ export default function Body3D({
         </div>
       ) : null}
       {list}
+      {litText}
       <p className="body3d__live" role="status">
         {announcement}
       </p>

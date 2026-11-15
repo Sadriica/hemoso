@@ -1,0 +1,57 @@
+/* The orbital scene: decorative, sized by its parent at 1:1. Colours and
+   durations are tokens (styles.css); the angles below are small on purpose. */
+.orbital {
+  --orbital-glow: var(--glow-accent);
+  --px: 0;
+  --py: 0;
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  pointer-events: none;
+  contain: layout paint;
+  container-type: inline-size;
+}
+.orbital svg { display: block; width: 100%; height: 100%; overflow: visible; }
+
+.orbital__layer { transition: transform var(--motion-base) var(--ease-out); transform-box: view-box; transform-origin: 50% 50%; }
+.orbital__layer--far { transform: translate(calc(var(--px) * 2px), calc(var(--py) * 2px)); }
+.orbital__layer--object { transform: translate(calc(var(--px) * 6px), calc(var(--py) * 6px)) rotate(calc(var(--px) * 3deg)); }
+
+.orbital__orbit { fill: none; stroke: var(--color-border-control); stroke-width: 1; stroke-opacity: 0.55; stroke-dasharray: 1; stroke-dashoffset: 0; }
+.orbital__orbit--accent { stroke: var(--color-accent); stroke-opacity: 0.9; }
+.orbital__dot { fill: var(--color-text); }
+.orbital__core { stroke: var(--color-accent); stroke-width: 1.5; }
+.orbital__band, .orbital__ring { fill: none; stroke: var(--color-accent); stroke-width: 1.5; stroke-linecap: round; stroke-opacity: 0.7; }
+.orbital__progress { fill: none; stroke: var(--color-accent); stroke-width: 3; stroke-linecap: round; transition: stroke-dashoffset var(--motion-slow) var(--ease-standard); }
+
+/* Default motion: orbits draw in once, bodies turn a few degrees back and forth. */
+.orbital:not(.orbital--still) .orbital__orbit {
+  animation: orbital-draw var(--motion-draw) var(--ease-settle) both;
+}
+.orbital:not(.orbital--still) .orbital__turn {
+  transform-box: view-box;
+  transform-origin: 50% 50%;
+  animation: orbital-turn 30s ease-in-out infinite alternate;
+}
+@keyframes orbital-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes orbital-turn { from { transform: rotate(-3deg); } to { transform: rotate(3deg); } }
+
+.orbital--still .orbital__layer, .orbital--still .orbital__progress { transition: none; }
+@media (prefers-reduced-motion: reduce) {
+  .orbital .orbital__orbit, .orbital .orbital__turn { animation: none; }
+  .orbital .orbital__layer, .orbital .orbital__progress { transition: none; }
+}
+
+/* A tinted disc behind the object: none on the dark stage (the glow carries it),
+   about 9 % accent on the light one, with a stronger local glow. */
+.orbital__tint { opacity: 0; }
+@media (prefers-color-scheme: light) {
+  .orbital { --orbital-glow: color-mix(in srgb, var(--color-accent) 26%, transparent); }
+  .orbital__tint { opacity: 0.1; }
+  .orbital__orbit { stroke-opacity: 0.75; }
+}
+/* On a small stage (a band on a phone) the lines are stronger, so it still reads. */
+@container (max-width: 260px) {
+  .orbital__orbit { stroke-opacity: 0.9; stroke-width: 3; }
+  .orbital__tint { opacity: 0.16; }
+}

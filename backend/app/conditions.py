@@ -20,9 +20,12 @@ Where the decision leaves room, this module resolves it as follows:
   readings before it in that same context, median and spread with the
   indicator's noise floor. A reading after exercise is compared with readings
   after exercise, and the newest reading decides which context that is.
-- A signal with no reading or no baseline is not usable, even when its value
-  crossed an attention row: the finding leaves a signal with no baseline out of
-  the score, and FORMATS.md counts the signal as unusable.
+- A cited limit does not need a baseline (bio2-02, phys-02 safety order): a
+  newest reading past a row of `rules/attention.csv` whose source is a link adds
+  1 even on the first day. A signal with no baseline and no cited limit crossed
+  is not usable and stays out of the denominator. Rows marked `Assumption` are
+  dropped (`app.state.cited_rows`), so they never add the attention point; a
+  value past one can still add the baseline point.
 - "On the signal's side" applies to the baseline too, not only to the attention
   rows: a high value adds nothing to a `below` condition, whatever its distance
   from the baseline. The finding says this in words ("a value on the wrong side
@@ -46,7 +49,7 @@ from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 
 from .models import ConditionScore, ConditionSignal, Entry
-from .state import attention_for, baseline, state_for, window
+from .state import attention_for, baseline, cited_rows, state_for, window
 
 # One signal whose newest value crossed an attention row on its side.
 ATTENTION_POINT = 1.0
@@ -71,9 +74,9 @@ SIDES = ("above", "below")
 class LatestValue:
     """The newest reading of one indicator and the baseline it is compared with.
 
-    `median`, `spread` and `attention` are empty while the reading has no
-    baseline; `attention` holds the indicator's rows of `rules/attention.csv`
-    only when a baseline exists, as the state route stops before them.
+    `median` and `spread` are empty while the reading has no baseline;
+    `attention` holds the indicator's cited rows of `rules/attention.csv`, with
+    or without a baseline, as the state route checks them first.
     """
 
     value: float
@@ -104,7 +107,7 @@ def latest_value(
         return LatestValue(newest.value, newest.context, None, None, ())
     recent = window(readings[:-1], newest.context)
     median, spread = baseline([entry.value for entry in recent], min_spread)
-    rows = tuple(attention_rows) if median is not None else ()
+    rows = tuple(cited_rows(attention_rows))
     return LatestValue(newest.value, newest.context, median, spread, rows)
 
 
@@ -125,11 +128,12 @@ def parse_signals(based_on: str) -> list[tuple[str, str | None]]:
 def signal_point(latest: LatestValue | None, side: str | None) -> float | None:
     """The point one signal adds, or None while the signal is not usable.
 
-    A signal is usable with a reading, a side and a baseline. The point is 1
-    when the value crossed a row of `rules/attention.csv` on the signal's side,
-    0.5 when it is outside the baseline on that side, and 0 otherwise.
+    A signal is usable with a reading, a side, and either a baseline or a cited
+    limit crossed on that side. The point is 1 when the value crossed a cited
+    row of `rules/attention.csv` on the signal's side, 0.5 when it is outside
+    the baseline on that side, and 0 otherwise.
     """
-    if latest is None or side is None or latest.median is None:
+    if latest is None or side is None:
         return None
     rows = [row for row in latest.attention if row["side"] == side]
     state = state_for(
@@ -137,6 +141,8 @@ def signal_point(latest: LatestValue | None, side: str | None) -> float | None:
     )
     if state == "needs_review":
         return ATTENTION_POINT
+    if state == "no_data":
+        return None
     if state != "outside_range":
         return 0.0
     if side == "above" and latest.value < latest.median:

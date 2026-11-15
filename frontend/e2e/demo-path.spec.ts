@@ -1,5 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test'
 import { SCALE_UNIT, hazardName, strings } from '../src/strings'
+import { isReactionIndicator } from '../src/reaction/ids'
 import { expectNoBlockingA11yIssues } from './axe'
 import { readIndicatorRows } from './config'
 
@@ -11,8 +12,14 @@ import { readIndicatorRows } from './config'
 //
 // Keyboard only on purpose: if a step needs a mouse, an astronaut on a laptop
 // with a broken trackpad cannot do it either.
-const { names, units, measuredOnBoard, hazards, scaleIndex } =
+const { ids, names, units, measuredOnBoard, hazards, scaleIndex } =
   readIndicatorRows()
+
+// The reaction check measures its two indicators itself (reaction/ids.ts), so
+// the Entry screen has no row for them: the count below leaves them out.
+const typedNames = names.filter(
+  (_, index) => !isReactionIndicator(ids[index] ?? ''),
+)
 
 const FIRST_VALUE = '72'
 const SCALE_VALUE = 3
@@ -63,17 +70,17 @@ test('guided check by keyboard with axe on every phase', async ({ page }) => {
   await test.step('Report: one row per indicator, with its icon and its unit', async () => {
     // Every indicator of the file has a row; the two blood pressures share one.
     const rows = page.getByRole('listitem').filter({
-      has: page.locator('.reading__body'),
+      has: page.locator('.rep-row__body'),
     })
     const paired = names.filter((name) => /systolic|diastolic/i.test(name)).length
-    await expect(rows).toHaveCount(names.length - (paired === 2 ? 1 : 0))
-    await expect(page.getByLabel(names[0])).toBeVisible()
+    await expect(rows).toHaveCount(typedNames.length - (paired === 2 ? 1 : 0))
+    await expect(page.getByLabel(typedNames[0], { exact: true })).toBeVisible()
     await expect(
       page.getByRole('group', { name: strings.entry.bloodPressure }),
     ).toBeVisible()
     await expect(page.getByLabel(strings.entry.missionDay)).toBeVisible()
     await expect(
-      page.getByRole('group', { name: strings.entry.context }),
+      page.getByRole('group', { name: strings.entry.applyToAll }),
     ).toBeVisible()
   })
 
@@ -94,10 +101,10 @@ test('guided check by keyboard with axe on every phase', async ({ page }) => {
     scaleDay = readingDay
 
     await page.keyboard.press('Tab')
-    await expect(page.getByLabel(strings.entry.time)).toBeFocused()
+    await expect(page.getByLabel(strings.entry.time, { exact: true })).toBeFocused()
 
     // The measured row, typed with the keyboard only.
-    await focusByTab(page, page.getByLabel(names[0]))
+    await focusByTab(page, page.getByLabel(names[0], { exact: true }))
     await page.keyboard.type(FIRST_VALUE)
 
     // The mood row is five choices: two arrow presses reach the third one.
@@ -159,7 +166,7 @@ test('guided check by keyboard with axe on every phase', async ({ page }) => {
     ).toBeVisible()
     await expect(statusRegion.getByRole('heading', { level: 3 })).toHaveCount(1)
     const measured = cardFor(statusRegion, names[0])
-    await expect(measured.getByText(`${FIRST_VALUE} ${units[0]}`)).toBeVisible()
+    await expect(measured.getByText(`${FIRST_VALUE} ${units[0]}`, { exact: true })).toBeVisible()
     await expect(measured.getByText(new RegExp(`^DAY ${readingDay} · `))).toBeVisible()
 
     for (const name of names.slice(1)) {
@@ -171,7 +178,9 @@ test('guided check by keyboard with axe on every phase', async ({ page }) => {
     await selectIndicator(page, names[scaleIndex])
     const scale = cardFor(statusRegion, names[scaleIndex])
     await expect(
-      scale.getByText(`${SCALE_VALUE} ${strings.cardUnit(SCALE_UNIT)}`),
+      scale
+        .locator('.indicator-card__value')
+        .filter({ hasText: `${SCALE_VALUE} ${strings.cardUnit(SCALE_UNIT)}` }),
     ).toBeVisible()
     await expect(scale.getByText(new RegExp(`^DAY ${scaleDay} · `))).toBeVisible()
     await selectIndicator(page, names[0])
@@ -247,7 +256,7 @@ test('status: one indicator history, its table and the comparison sentence', asy
       name: strings.history.tableCaption(chosenName),
     })
     await expect(table).toBeVisible()
-    await expect(table.getByRole('columnheader')).toHaveCount(4)
+    await expect(table.getByRole('columnheader')).toHaveCount(5)
     await expect(table.locator('tbody tr').first()).toBeVisible()
   })
 

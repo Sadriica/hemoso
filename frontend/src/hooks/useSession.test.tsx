@@ -138,19 +138,40 @@ describe('useSession', () => {
     }
   })
 
-  it('opens a demo person at once and a person with a stored session with it', () => {
+  it('opens a demo person at once, by name or by face', () => {
+    const { result } = renderHook(() => useSession(fakeAccounts()))
+
+    act(() => {
+      expect(result.current.openByName('demo_astronaut_1')).toBe('opened')
+    })
+    expect(result.current.kind).toBe('demo')
+
+    act(() => result.current.reset())
+    act(() => {
+      expect(result.current.openByFace('demo_astronaut_1')).toBe('opened')
+    })
+    expect(result.current.kind).toBe('demo')
+  })
+
+  it('opens a stored session by face, without the PIN', () => {
     saveSession({ personId: 'cadet_okoro', token: 'kept', expiresAt: FAR })
     const { result } = renderHook(() => useSession(fakeAccounts()))
 
     act(() => {
-      expect(result.current.openPerson('demo_astronaut_1')).toBe('opened')
-    })
-    expect(result.current.kind).toBe('demo')
-
-    act(() => {
-      expect(result.current.openPerson('cadet_okoro')).toBe('opened')
+      expect(result.current.openByFace('cadet_okoro')).toBe('opened')
     })
     expect(result.current.kind).toBe('account')
+    expect(readSession('cadet_okoro')?.token).toBe('kept')
+  })
+
+  it('asks for the PIN when a name is picked, even with a stored session', () => {
+    saveSession({ personId: 'cadet_okoro', token: 'kept', expiresAt: FAR })
+    const { result } = renderHook(() => useSession(fakeAccounts()))
+
+    act(() => {
+      expect(result.current.openByName('cadet_okoro')).toBe('pin')
+    })
+    expect(result.current.personId).toBeNull()
     expect(readSession('cadet_okoro')?.token).toBe('kept')
   })
 
@@ -158,7 +179,7 @@ describe('useSession', () => {
     const { result } = renderHook(() => useSession(fakeAccounts()))
 
     act(() => {
-      expect(result.current.openPerson('cadet_okoro')).toBe('pin')
+      expect(result.current.openByFace('cadet_okoro')).toBe('pin')
     })
     expect(result.current.personId).toBeNull()
   })
@@ -169,7 +190,7 @@ describe('useSession', () => {
     const { result } = renderHook(() => useSession(fakeAccounts()))
 
     act(() => {
-      result.current.openPerson('cadet_okoro')
+      result.current.openByFace('cadet_okoro')
     })
     act(() => result.current.signOut())
 

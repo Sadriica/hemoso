@@ -1,3 +1,5 @@
 export { useMotionAllowed, useCountUp, animateIn } from './motion'
 export { default as Intro } from './Intro'
 export { default as PhaseTransition } from './PhaseTransition'
+export { useEntrance, INTRO_DONE } from './entrance'
+export { useCarry } from './carry'

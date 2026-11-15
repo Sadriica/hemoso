@@ -10,18 +10,22 @@ import { bodyRegionName } from '../components/body3d/regions'
 import { bodyWords, injuryWords } from '../components/body3d/words'
 import type { LoadedContent } from '../content/load'
 import { missionNow } from '../domain/clock'
-import { readPainReports } from '../data/painStore'
+import { readPainReports, removePainReport } from '../data/painStore'
 import type { EntryStore } from '../data/entryStore'
 import type { Entry } from '../domain/types'
 import Notice from '../components/Notice'
 import Disclosure from '../components/Disclosure'
+import './status.css'
 import Home from '../screens/Home'
 import PsychologicalState from '../reaction/PsychologicalState'
 import { strings } from '../strings'
+import '../screens/scene-grammar.css'
 
 // The history (chart and the full table) is a chunk of its own: it loads when
 // the person opens it, never on the first screen. The pain picker brings the
 // 3D body, so it is a chunk too, and it loads on the tap that opens it.
+// The quiet scene band beside the heading: decoration only, its own chunk.
+const OrbitalScene = lazy(() => import('../components/orbital'))
 const History = lazy(() => import('../screens/History'))
 const PainPicker = lazy(() => import('../components/body3d/PainPicker'))
 
@@ -55,6 +59,8 @@ export default function StatusPhase({
   const copy = strings.phases.status
   const clock = missionNow(entries)
   const [painOpen, setPainOpen] = useState(false)
+  // The indicator the card shows; the History panel follows it.
+  const [selectedId, setSelectedId] = useState<string | null>(null)
   // The reports of the person on duty, newest first (data/painStore.ts). The
   // read is local and small, so the list is read from the store on every
   // render: no second copy of it to keep in step. A saved report bumps the
@@ -70,18 +76,31 @@ export default function StatusPhase({
     <section className="phase phase--status" aria-labelledby="phase-heading">
       <PhaseHeading ref={headingRef} eyebrow={copy.eyebrow} lines={copy.headline} intro={copy.intro} />
 
+      <div className="scene-band scene-band--status" data-enter="scene" aria-hidden="true">
+        <Suspense fallback={null}>
+          <OrbitalScene variant="status" still={motionReduced} />
+        </Suspense>
+      </div>
+
       <div className="status">
         <Home
           personId={personId}
           data={data}
           entries={entries}
           motionReduced={motionReduced}
+          selectedId={selectedId}
+          onSelect={setSelectedId}
         />
         <PsychologicalState personId={personId} indicators={data.indicators} />
         <div className="status__history">
           <Disclosure label={copy.historyToggle}>
             <Suspense fallback={<Notice tone="info">{strings.board.loading}</Notice>}>
-              <History store={store} personId={personId} data={data} />
+              <History
+                store={store}
+                personId={personId}
+                data={data}
+                indicatorId={selectedId ?? undefined}
+              />
             </Suspense>
           </Disclosure>
         </div>
@@ -137,6 +156,19 @@ export default function StatusPhase({
                   {report.note !== '' && (
                     <p className="pain-reports__note">{report.note}</p>
                   )}
+                  <button
+                    type="button"
+                    className="text-link pain-reports__remove"
+                    aria-label={injuryWords.removeReport(
+                      injuryWords.reportWhen(report.missionDay, report.time),
+                    )}
+                    onClick={() => {
+                      removePainReport(report.id)
+                      refreshReports()
+                    }}
+                  >
+                    {injuryWords.removeReportShort}
+                  </button>
                 </li>
               ))}
             </ul>

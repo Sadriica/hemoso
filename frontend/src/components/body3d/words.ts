@@ -3,17 +3,28 @@
 // a strength, and the CMO or flight surgeon reads it.
 
 import type { InjuryKind } from '../../data/painStore'
+import type { BodyGroupId } from './regions'
 
 export const bodyWords = {
   /** The name of the figure when the screen gives no label of its own. */
   figure: 'Body',
   regionsLabel: 'Body parts',
-  listHint: 'Tab to the list of body parts; Enter or Space chooses one.',
+  listHint: 'Tap the body or pick from the list.',
+  groups: {
+    head_trunk: 'Head and trunk',
+    left_arm: 'Left arm',
+    right_arm: 'Right arm',
+    left_leg: 'Left leg',
+    right_leg: 'Right leg',
+  } as const satisfies Record<BodyGroupId, string>,
+  lit: (names: string): string => `Lit: ${names}`,
   turnLeft: 'Turn left',
   turnRight: 'Turn right',
   resetView: 'Reset view',
   selected: (names: string): string => `Selected: ${names}`,
   loading: 'Loading the body.',
+  // The figure could not be drawn at all; the note below still saves.
+  failed: 'The body could not be shown here. Write where it hurts in the note.',
   noWebgl: 'The 3D body is not open here, so the body parts are listed.',
 }
 
@@ -46,5 +57,7 @@ export const injuryWords = {
   markLine: (region: string, kind: string, intensity: number): string =>
     `${region}: ${kind.toLowerCase()}, ${intensity} of 10`,
   open: 'Where does it hurt?',
-  close: 'Close',
+  close: 'Close the body',
+  removeReportShort: 'Remove',
+  removeReport: (when: string): string => `Remove the report of ${when}`,
 }

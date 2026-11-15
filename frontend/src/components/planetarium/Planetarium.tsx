@@ -63,16 +63,20 @@ const mq = (q: string) =>
   typeof window !== 'undefined' && typeof window.matchMedia === 'function' ? window.matchMedia(q) : null
 
 /**
- * Position of body i of n, in percent of the square. Deterministic: bodies
+ * Position of body i of n, in percent of the stage. Deterministic: bodies
  * alternate right and left of the astronaut, spread evenly from top to bottom
- * on each side, so every tag has its own band and sits on the outer side.
+ * on each side, so every tag has its own band and sits on the outer side. The
+ * distance from the centre steps through three values, so the orbits are
+ * visibly different rings while every tag still fits between its body and the
+ * stage edge. r is the orbit radius in the same percent units (the stage is
+ * wider than tall, so the rings draw as concentric ellipses).
  */
 function place(i: number, n: number) {
   const left = i % 2 === 1
   const k = Math.floor(i / 2)
   const m = Math.ceil((n - (left ? 1 : 0)) / 2)
   const dy = m < 2 ? 0 : -36 + (k * 72) / (m - 1)
-  const dx = 18 + (k % 2) * 6
+  const dx = 8 + (k % 3) * 2.5
   return { r: Math.hypot(dx, dy), x: 50 + (left ? -dx : dx), y: 50 + dy, left }
 }
 
@@ -110,7 +114,7 @@ export function Planetarium({ items, labels, selectedId, onSelect, reducedMotion
   useLayoutEffect(() => {
     const box = stage.current
     if (!orbits || still || root.current?.closest('.app--still') || !box || typeof box.animate !== 'function') return
-    const size = box.getBoundingClientRect().width
+    const { width, height } = box.getBoundingClientRect()
     const css = getComputedStyle(box)
     const raw = css.getPropertyValue('--motion-cinematic').trim()
     const num = parseFloat(raw)
@@ -118,8 +122,8 @@ export function Planetarium({ items, labels, selectedId, onSelect, reducedMotion
     const ease = css.getPropertyValue('--ease-standard').trim() || 'cubic-bezier(0.2, 0.7, 0.1, 1)'
     const anims = Array.from(box.querySelectorAll<HTMLElement>('.planetarium__body')).map((el, i) => {
       const p = place(i, items.length)
-      const dx = ((50 - p.x) / 100) * size
-      const dy = ((50 - p.y) / 100) * size
+      const dx = ((50 - p.x) / 100) * width
+      const dy = ((50 - p.y) / 100) * height
       return el.animate(
         [
           { transform: `translate(${dx}px, ${dy}px) translate(-50%, -50%)`, opacity: 0 },
@@ -149,7 +153,7 @@ export function Planetarium({ items, labels, selectedId, onSelect, reducedMotion
       toggle.current?.focus()
       return
     }
-    if (!orbits || !items.length) return
+    if (!items.length) return
     const at = Math.max(0, items.findIndex((it) => it.id === active))
     const last = items.length - 1
     const to =
@@ -186,7 +190,7 @@ export function Planetarium({ items, labels, selectedId, onSelect, reducedMotion
 
       {orbits ? (
         <div className="planetarium__stage" ref={stage} role="group" aria-label={labels.orbitsHeading}>
-          <svg className="planetarium__lines" viewBox="0 0 100 100" aria-hidden="true" focusable="false">
+          <svg className="planetarium__lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
             {items.map((_, i) => (
               <circle key={i} cx="50" cy="50" r={place(i, items.length).r} vectorEffect="non-scaling-stroke" />
             ))}
@@ -223,9 +227,9 @@ export function Planetarium({ items, labels, selectedId, onSelect, reducedMotion
                   <span className="planetarium__tag-name">{it.name}</span>
                   <span className="planetarium__tag-state">
                     {it.stateIcon}
-                    {it.stateText}
+                    <span>{it.stateText}</span>
+                    {it.valueText !== '' && <span className="planetarium__tag-value">{it.valueText}</span>}
                   </span>
-                  <span>{it.valueText}</span>
                 </span>
               </div>
             )
@@ -250,7 +254,7 @@ export function Planetarium({ items, labels, selectedId, onSelect, reducedMotion
                   {it.stateIcon}
                   {it.stateText}
                 </span>
-                <span className="planetarium__row-value">{it.valueText}</span>
+                {it.valueText !== '' && <span className="planetarium__row-value">{it.valueText}</span>}
               </button>
             </li>
           ))}

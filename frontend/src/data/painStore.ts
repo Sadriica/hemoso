@@ -98,14 +98,8 @@ function newestFirst(a: PainReport, b: PainReport): number {
   return a.time < b.time ? 1 : -1
 }
 
-/**
- * The reports kept on this device for one person, newest first. A blocked,
- * missing or unreadable storage gives an empty list; nothing is thrown.
- */
-export function readPainReports(
-  personId: string,
-  storage: PainStorage | null = browserStorage(),
-): PainReport[] {
+/** Every valid report on this device, whoever it belongs to, in stored order. */
+function readAllReports(storage: PainStorage | null): PainReport[] {
   if (storage === null) return []
   let raw: string | null
   try {
@@ -129,8 +123,32 @@ export function readPainReports(
   return candidate.reports
     .map(readReport)
     .filter((report): report is PainReport => report !== null)
+}
+
+/**
+ * The reports kept on this device for one person, newest first. A blocked,
+ * missing or unreadable storage gives an empty list; nothing is thrown.
+ */
+export function readPainReports(
+  personId: string,
+  storage: PainStorage | null = browserStorage(),
+): PainReport[] {
+  return readAllReports(storage)
     .filter((report) => report.personId === personId)
     .sort(newestFirst)
+}
+
+function writeReports(
+  reports: PainReport[],
+  storage: PainStorage,
+): boolean {
+  const payload: StoredPayload = { version: STORAGE_VERSION, reports }
+  try {
+    storage.setItem(PAIN_STORAGE_KEY, JSON.stringify(payload))
+    return true
+  } catch {
+    return false
+  }
 }
 
 /**
@@ -151,17 +169,25 @@ export function savePainReport(
     })),
   }
   if (storage === null) return { report, saved: false }
-  const others = readPainReports(report.personId, storage).filter(
-    (kept) => kept.id !== report.id,
+  // Every other report stays, whoever it belongs to: saving one never drops
+  // the reports of another person on the same device.
+  const others = readAllReports(storage).filter((kept) => kept.id !== report.id)
+  return { report, saved: writeReports([...others, report], storage) }
+}
+
+/**
+ * Removes one report by id and tells whether the device kept the change. An id
+ * that is not stored changes nothing and counts as removed.
+ */
+export function removePainReport(
+  id: string,
+  storage: PainStorage | null = browserStorage(),
+): boolean {
+  if (storage === null) return false
+  const all = readAllReports(storage)
+  if (!all.some((report) => report.id === id)) return true
+  return writeReports(
+    all.filter((report) => report.id !== id),
+    storage,
   )
-  const payload: StoredPayload = {
-    version: STORAGE_VERSION,
-    reports: [...others, report],
-  }
-  try {
-    storage.setItem(PAIN_STORAGE_KEY, JSON.stringify(payload))
-    return { report, saved: true }
-  } catch {
-    return { report, saved: false }
-  }
 }

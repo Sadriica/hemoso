@@ -52,6 +52,8 @@ export type UtilityKind =
   | 'check' // a step already walked
   | 'chevron' // a disclosure is closed
   | 'info' // something to read, nothing to fix
+  | 'wifi' // the browser is online
+  | 'wifi-off' // the browser is offline
   | 'motion' // motion is running
   | 'still'; // motion is off
 
@@ -63,6 +65,8 @@ const UTILITY: Record<UtilityKind, () => ReactNode> = {
     P('M12 11v5.5', 'p'),
     <circle key="d" cx="12" cy="7.8" r="1.1" fill="currentColor" stroke="none" />,
   ],
+  wifi: () => [...paths('M5.8 11.6a9 9 0 0 1 12.4 0', 'M8.6 14.9a5.2 5.2 0 0 1 6.8 0'), <circle key="d" cx="12" cy="18.4" r="1.1" fill="currentColor" stroke="none" />],
+  'wifi-off': () => [...paths('M5.8 11.6a9 9 0 0 1 12.4 0', 'M8.6 14.9a5.2 5.2 0 0 1 6.8 0', 'M4.5 4.5l15 15'), <circle key="d" cx="12" cy="18.4" r="1.1" fill="currentColor" stroke="none" />],
   motion: () => paths('M3.5 13.5c2.4 0 2.4-5 4.6-5s2.4 8 4.6 8 2.4-6.5 4.6-6.5 1.6 2.2 3.2 2.2', 'M14.5 5.5l4 2-3 2.6'),
   still: () => paths('M9 6.5v11', 'M15 6.5v11'),
 };
@@ -110,4 +114,19 @@ export function StatusIcon({ kind, size = ICON_SIZES.card }: { kind: StatusKind;
 /** Control and navigation glyph, on the same grid as every other icon. */
 export function UtilityIcon({ kind, size = ICON_SIZES.inline }: { kind: UtilityKind; size?: number }) {
   return <Svg size={size} kind={kind}>{UTILITY[kind]()}</Svg>;
+}
+
+/** Trend of a reading over its last entries: up, down, steady (two bars), or none when there is no trend yet. */
+export type TrendKind = 'up' | 'down' | 'steady' | 'none';
+
+const TREND: Record<TrendKind, string[]> = {
+  up: ['M12 19V5M6 11l6-6 6 6'],
+  down: ['M12 5v14M6 13l6 6 6-6'],
+  steady: ['M5 9h14M5 15h14'],
+  none: ['M8 12h8'],
+};
+
+/** Trend glyph for the card trend row: shape only, no colour of its own. `size` in px (default 16). */
+export function TrendIcon({ kind, size = ICON_SIZES.inline }: { kind: TrendKind; size?: number }) {
+  return <Svg size={size} kind={`trend-${kind}`}>{paths(...TREND[kind])}</Svg>;
 }

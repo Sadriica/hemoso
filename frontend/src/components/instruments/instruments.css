@@ -4,6 +4,21 @@
   width: calc(var(--space-6) * 2);
   height: calc(var(--space-6) * 2);
   line-height: 0;
+  transition: color var(--motion-base) var(--ease-out);
+}
+/* With a state the whole figure is drawn in the state colour: the outline at
+   full strength, the track quieter. The system colour stays on the small icon
+   next to the name. */
+.instrument--state .ins-outline {
+  stroke: currentColor;
+}
+.instrument--state .ins-track {
+  stroke: currentColor;
+  stroke-opacity: 0.45;
+}
+.instrument--state path.ins-outline:not([fill='none']) {
+  stroke-width: 2;
+  stroke-linejoin: round;
 }
 .instrument svg {
   display: block;
@@ -25,7 +40,7 @@
   transform-box: view-box;
 }
 .instrument--anim .ins-settle {
-  animation: ins-settle var(--motion-slow) var(--ease-standard) both;
+  animation: ins-settle var(--motion-base) var(--ease-standard) both;
 }
 .instrument--anim .ins-beat {
   transform-box: fill-box;
@@ -55,11 +70,13 @@
 }
 .app--still .instrument *,
 .app--still .instrument,
+.instrument--still,
 .instrument--still * {
   animation: none !important;
   transition: none !important;
 }
 @media (prefers-reduced-motion: reduce) {
+  .instrument,
   .instrument * {
     animation: none !important;
     transition: none !important;

@@ -5,12 +5,18 @@ import type { Entry as EntryRecord, Indicator } from '../domain/types'
 import type { EntryStore } from '../data/entryStore'
 import { useMotionAllowed } from '../motion/motion'
 import { createTonePlayer, type TonePlayer } from './audio'
-import { REACTION_RESPONSE_WINDOW_MS } from './constants'
+import {
+  REACTION_DEMO_DURATION_MS,
+  REACTION_TRIAL_WINDOW_MS,
+  reactionLength,
+} from './constants'
 import { REACTION_LAPSES_ID, REACTION_MEDIAN_ID } from './ids'
 import {
+  elapsedMs,
   initialReactionState,
   randomWait,
   reactionReducer,
+  remainingMs,
   summarize,
   type ReactionModality,
 } from './timing'
@@ -22,6 +28,10 @@ import './reaction.css'
 // fake timer does not move performance.now.
 const defaultClock = (): number => performance.now()
 
+// How often the bar of the time left is redrawn, in ms. One timer for the bar
+// and one for the end of the run: the measurement itself never reads either.
+const BAR_MS = 250
+
 export interface ReactionCheckProps {
   store: EntryStore
   personId: string
@@ -30,14 +40,17 @@ export interface ReactionCheckProps {
   entries: EntryRecord[]
   serverConfigured?: boolean
   clock?: () => number
+  /** The query string of the page; a test passes one instead of the window's. */
+  search?: string
 }
 
 // The optional reaction check of the report phase (REQ-38, T-71). A light or a
 // tone appears after a random wait and the person answers with a tap on the
 // test area or the space bar; the median reaction time and the lapses are saved
 // as two entries of the existing store, so the outbox sends them like any other
-// reading. The step is hidden while Phys has not added the two indicators
-// (T-72), so a missing row is never a crash.
+// reading. A run of the demo length shows the result and saves nothing. The
+// step is hidden while Phys has not added the two indicators (T-72), so a
+// missing row is never a crash.
 export default function ReactionCheck({
   store,
   personId,
@@ -45,18 +58,25 @@ export default function ReactionCheck({
   entries,
   serverConfigured = false,
   clock = defaultClock,
+  search,
 }: ReactionCheckProps) {
   const copy = reactionStrings
+  const [length] = useState(() =>
+    reactionLength(search ?? window.location.search),
+  )
   const [modality, setModality] = useState<ReactionModality>('light')
   const [state, dispatch] = useReducer(
     reactionReducer,
     'light' as ReactionModality,
-    initialReactionState,
+    (initial) => initialReactionState(initial, length),
   )
   // Skipped or finished and dismissed: the step takes no more room.
   const [hidden, setHidden] = useState(false)
   const [savedCount, setSavedCount] = useState(0)
   const [toneMissing, setToneMissing] = useState(false)
+  // The clock of the progress bar, raised by its own timer: the bar moves
+  // without re-measuring anything.
+  const [barAt, setBarAt] = useState(0)
   const headingId = useId()
   const areaRef = useRef<HTMLDivElement>(null)
   const tone = useRef<TonePlayer | null>(null)
@@ -90,7 +110,7 @@ export default function ReactionCheck({
     if (state.phase !== 'stimulus' || state.stimulusAt === null) return
     const left = Math.max(
       0,
-      state.stimulusAt + REACTION_RESPONSE_WINDOW_MS - clock(),
+      state.stimulusAt + REACTION_TRIAL_WINDOW_MS - clock(),
     )
     const timer = window.setTimeout(
       () => dispatch({ type: 'timeout', at: clock() }),
@@ -99,13 +119,32 @@ export default function ReactionCheck({
     return () => window.clearTimeout(timer)
   }, [state.phase, state.stimulusAt, clock])
 
-  // 3. The tone, once per stimulus. A light-only run never loads audio.
+  // 3. The end of the run: one timer for the length, so the check stops even
+  // while it waits for a stimulus.
+  useEffect(() => {
+    if (!running || state.endsAt === null) return
+    const left = Math.max(0, state.endsAt - clock())
+    const timer = window.setTimeout(
+      () => dispatch({ type: 'tick', at: clock() }),
+      left,
+    )
+    return () => window.clearTimeout(timer)
+  }, [running, state.endsAt, clock])
+
+  // 4. The bar of the time left, redrawn a few times a second.
+  useEffect(() => {
+    if (!running) return
+    const timer = window.setInterval(() => setBarAt(clock()), BAR_MS)
+    return () => window.clearInterval(timer)
+  }, [running, clock])
+
+  // 5. The tone, once per stimulus. A light-only run never loads audio.
   useEffect(() => {
     if (state.phase !== 'stimulus') return
     tone.current?.play()
   }, [state.phase, state.stimulusAt])
 
-  // 4. The keyboard path: the space bar answers wherever the focus is, and
+  // 6. The keyboard path: the space bar answers wherever the focus is, and
   // Escape stops the check (REQ-15).
   useEffect(() => {
     if (!running) return
@@ -126,7 +165,7 @@ export default function ReactionCheck({
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [running, clock])
 
-  // 5. The focus goes to the test area when the run starts, so the space bar
+  // 7. The focus goes to the test area when the run starts, so the space bar
   // and a screen reader are both on the thing being tested.
   useEffect(() => {
     if (began.current || state.phase !== 'waiting') return
@@ -134,11 +173,16 @@ export default function ReactionCheck({
     areaRef.current?.focus()
   }, [state.phase])
 
-  // 6. The result is saved once, through the store: the outbox sends it like
-  // any other reading, so nothing here needs the network (REQ-28).
+  // 8. The result is saved once, through the store: the outbox sends it like
+  // any other reading, so nothing here needs the network (REQ-28). A run
+  // stopped with Escape is thrown away on purpose, and so is a run of the demo
+  // length: 30 seconds is a demonstration of the screen, and its two entries
+  // would sit in the mission record as a check nobody took (T-76).
   useEffect(() => {
     if (state.phase !== 'finished' || saved.current) return
     saved.current = true
+    if (state.stopped) return
+    if (state.durationMs === REACTION_DEMO_DURATION_MS) return
     const run = summarize(state)
     if (run.trials === 0) return
     const { store, personId, entries, indicators } = latest.current
@@ -176,7 +220,7 @@ export default function ReactionCheck({
     setSavedCount(written)
   }, [state])
 
-  // 7. The audio context does not outlive the screen.
+  // 9. The audio context does not outlive the screen.
   useEffect(() => () => tone.current?.close(), [])
 
   const medianRow = indicators.find((item) => item.id === REACTION_MEDIAN_ID)
@@ -196,7 +240,8 @@ export default function ReactionCheck({
     saved.current = false
     began.current = false
     setSavedCount(0)
-    dispatch({ type: 'start', modality: chosen })
+    setBarAt(clock())
+    dispatch({ type: 'start', modality: chosen, at: clock() })
   }
 
   function again() {
@@ -205,6 +250,11 @@ export default function ReactionCheck({
     setSavedCount(0)
     dispatch({ type: 'reset', modality: state.modality })
   }
+
+  const left = remainingMs(state, barAt)
+  const elapsed = elapsedMs(state, barAt)
+  const leftShare =
+    state.durationMs > 0 ? Math.min(1, Math.max(0, left / state.durationMs)) : 0
 
   return (
     <section className="reaction" aria-labelledby={headingId}>
@@ -215,6 +265,9 @@ export default function ReactionCheck({
       {state.phase === 'idle' && (
         <>
           <p className="reaction__intro">{copy.intro}</p>
+          {length === REACTION_DEMO_DURATION_MS && (
+            <p className="reaction__meta">{copy.demoLength}</p>
+          )}
           <fieldset className="reaction__choice">
             <legend>{copy.modalityLegend}</legend>
             <label>
@@ -259,9 +312,21 @@ export default function ReactionCheck({
 
       {running && (
         <>
-          <p className="reaction__progress" role="status">
-            {copy.trial(state.done + 1, state.total)}
-          </p>
+          <p className="reaction__progress">{copy.trial(state.done + 1)}</p>
+          <div
+            className="reaction__bar"
+            role="progressbar"
+            aria-label={copy.timeLeft}
+            aria-valuemin={0}
+            aria-valuemax={state.durationMs}
+            aria-valuenow={elapsed}
+            aria-valuetext={copy.hasLeft(Math.ceil(left / 1000))}
+          >
+            <div
+              className="reaction__bar-fill"
+              style={{ width: `${leftShare * 100}%` }}
+            />
+          </div>
           <div
             ref={areaRef}
             className={`reaction__area reaction__area--${state.phase}${
@@ -289,10 +354,8 @@ export default function ReactionCheck({
                 <span className="reaction__cue">{copy.cue[state.modality]}</span>
               </span>
             ) : null}
-            <p className="reaction__hint">
-              {state.phase === 'stimulus'
-                ? copy.now
-                : copy.wait[state.modality]}
+            <p className="reaction__hint" role="status">
+              {state.phase === 'stimulus' ? copy.now : copy.wait}
             </p>
             {state.tooEarly && (
               <p className="reaction__early" role="status">
@@ -319,8 +382,10 @@ export default function ReactionCheck({
 
       {state.phase === 'finished' && (
         <>
-          {summary.trials === 0 ? (
-            <p className="reaction__result">{copy.stoppedNothing}</p>
+          {state.stopped ? (
+            <p className="reaction__result">{copy.stopped}</p>
+          ) : summary.trials === 0 ? (
+            <p className="reaction__result">{copy.empty}</p>
           ) : (
             <>
               <p className="reaction__result" data-reaction-result="median">
@@ -329,14 +394,13 @@ export default function ReactionCheck({
               <p className="reaction__meta">
                 {copy.falseStarts(summary.falseStarts)}
               </p>
-              {state.stopped && (
-                <p className="reaction__meta">{copy.stopped}</p>
-              )}
+              <p className="reaction__meta" role="status">
+                {state.durationMs === REACTION_DEMO_DURATION_MS
+                  ? copy.demoNotSaved
+                  : copy.saved(savedCount, serverConfigured)}
+              </p>
             </>
           )}
-          <p className="reaction__meta" role="status">
-            {copy.saved(savedCount, serverConfigured)}
-          </p>
           <div className="reaction__actions">
             <button
               type="button"

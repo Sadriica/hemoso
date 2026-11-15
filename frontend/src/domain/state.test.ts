@@ -129,6 +129,35 @@ describe('localState', () => {
     expect(state.rule?.attentionLevel).toBe('example_level')
   })
 
+  describe('without a baseline (phys-02 vectors)', () => {
+    const cited: AttentionRule = {
+      ...above,
+      sources: [{ title: 'Example', url: 'https://example.org' }],
+    }
+    const rows = (value: number) => [entry(1, 10), entry(2, 10), entry(10, value)]
+
+    it('needs review when the crossed row has a link', () => {
+      const list = rows(150)
+      const state = localState(latestOf(list), list, [cited], 1)
+      expect(state.state).toBe('needs_review')
+      expect(state.rule).toBe(cited)
+      expect(state.median).toBeNull()
+    })
+
+    it('stays no_data when the crossed row is only an Assumption', () => {
+      const list = rows(150)
+      const state = localState(latestOf(list), list, [above], 1)
+      expect(state.state).toBe('no_data')
+      expect(state.rule).toBeNull()
+    })
+
+    it('stays no_data below any limit', () => {
+      const list = rows(50)
+      const state = localState(latestOf(list), list, [cited], 1)
+      expect(state.state).toBe('no_data')
+    })
+  })
+
   it('windows the last fourteen readings', () => {
     const rows = [
       ...Array.from({ length: 20 }, (_, index) => entry(index + 1, 500)),

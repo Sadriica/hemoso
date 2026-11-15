@@ -358,3 +358,31 @@ export function bodyRegionSystem(id: string | null): BodyRegionSystem | null {
 export function regionsOfSystem(system: BodyRegionSystem): BodyRegion[] {
   return BODY_REGIONS.filter((region) => region.systems.includes(system))
 }
+
+export const BODY_GROUP_IDS = [
+  'head_trunk',
+  'left_arm',
+  'right_arm',
+  'left_leg',
+  'right_leg',
+] as const
+
+export type BodyGroupId = (typeof BODY_GROUP_IDS)[number]
+
+const ARM_PARTS = ['shoulder', 'upper_arm', 'elbow', 'forearm', 'hand']
+
+/** The group a region is listed under: the centre line, or one limb. */
+export function bodyRegionGroup(region: BodyRegion): BodyGroupId {
+  if (region.side === 'center') return 'head_trunk'
+  const part = region.id.slice(region.side.length + 1)
+  const limb = ARM_PARTS.includes(part) ? 'arm' : 'leg'
+  return `${region.side}_${limb}`
+}
+
+/** Every region under its group, in the order the figure reads, top down. */
+export function bodyRegionGroups(): { id: BodyGroupId; regions: BodyRegion[] }[] {
+  return BODY_GROUP_IDS.map((id) => ({
+    id,
+    regions: BODY_REGIONS.filter((region) => bodyRegionGroup(region) === id),
+  }))
+}

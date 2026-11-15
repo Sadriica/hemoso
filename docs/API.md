@@ -234,22 +234,29 @@ The rule is FORMATS.md section 3, "How each value is compared", and
 - `median` is the median of the window; `spread` is
   `max(1.4826 × median absolute deviation, min_spread)`, with `min_spread` from
   that indicator's row in `config/data/indicators.csv`.
-- Fewer than 3 entries gives `no_data`; then `median`, `spread` and `attention`
-  are null and `n` counts the entries available.
-- A matching row of `config/rules/attention.csv` gives `needs_review` and the
-  row, with the most severe `notify` (`crew` < `cmo` < `flight_surgeon`) when
-  several rows match. `attention` is null otherwise.
-- With no attention row, a value at most 3 spreads from the median is
-  `in_range`, anything further is `outside_range`.
+The checks run in this order (phys-02, safety decision of Sat 14 Nov):
+
+1. A matching row of `config/rules/attention.csv` whose `source` is a link
+   gives `needs_review` and the row, with or without a baseline. When several
+   rows match, the most severe `notify` wins (`crew` < `cmo` <
+   `flight_surgeon`). A row marked `Assumption` is ignored: it never gives
+   `needs_review` and never appears in `attention`.
+2. Otherwise, fewer than 3 entries gives `no_data`; `median` and `spread` are
+   null and `n` counts the entries available.
+3. Otherwise, a value at most 3 spreads from the median is `in_range`, and
+   anything further is `outside_range`. `attention` is null.
+
+So a core temperature of 39.5 °C on the first day, past a cited limit, is
+`needs_review` and not `no_data`, while the same value past an `Assumption`
+limit is `no_data`.
 
 Four points the decision does not settle, resolved here and reported as open
 questions in `team/eng1/`:
 
 - The window counts entries, not days: entries carry a mission day and a time,
   not a date, so "the last 14 days" cannot be measured from the store.
-- `no_data` is checked before `attention.csv`, as `phys-02` orders the checks,
-  so a value crossing an attention threshold is still `no_data` until the
-  window holds 3 entries.
+- A row's `source` counts as a link when every word in it starts with
+  `https://` or `http://`; a cell that mixes a link and `Assumption` does not.
 - A value exactly on an attention threshold does not trigger that row.
 - Two matching rows with the same `notify` are not defined by FORMATS.md; the
   more extreme threshold wins, as the shared vectors in
@@ -368,8 +375,8 @@ The rule is FORMATS.md section 3, "How each value is compared", point 3:
 | --- | --- |
 | Which reading is scored? | The newest stored entry of the signal. Its `context` decides what it is compared with. |
 | What is its baseline? | `state.py`'s: the last 14 readings before the newest one in that same context, median and spread with the indicator's `min_spread`. |
-| What does one signal add? | `1` when the value crossed a row of `config/rules/attention.csv` whose `side` is the signal's side. `0.5` when it is outside the baseline on that side. `0` otherwise, including a value on the wrong side of the condition, whatever its distance from the baseline: a glucose of 180 mg/dL adds nothing to `hypoglycaemia`. |
-| When is a signal not usable? | With no reading, no baseline (fewer than 3 readings in that context, or no row in `config/data/indicators.csv`), or no side in `based_on`. It is listed, with `contribution` and `value` null, and left out of the mean. |
+| What does one signal add? | `1` when the value crossed a row of `config/rules/attention.csv` whose `side` is the signal's side and whose `source` is a link, with or without a baseline. Rows marked `Assumption` never add this point. `0.5` when it is outside the baseline on that side. `0` otherwise, including a value on the wrong side of the condition, whatever its distance from the baseline: a glucose of 180 mg/dL adds nothing to `hypoglycaemia`. |
+| When is a signal not usable? | With no reading, no side in `based_on`, or no baseline (fewer than 3 readings in that context, or no row in `config/data/indicators.csv`) and no cited limit crossed. It is listed, with `contribution` and `value` null, and left out of the mean. |
 | How is the score computed? | The mean of the usable signals, from 0 to 1, shown with three decimals. Fewer than 2 usable signals gives `score` null and `label` `no_data`, never a low score. |
 
 Labels:
@@ -389,8 +396,9 @@ Four points the finding does not settle, resolved here:
 - The context is the newest reading's own: heart rate after exercise is
   compared with readings after exercise, and a context with fewer than 3
   readings leaves the signal without a baseline.
-- A signal without a baseline is not usable even when its value crossed an
-  attention row, as the finding leaves such a signal out of the score.
+- A signal without a baseline still adds 1 when its value crossed a cited
+  attention row on its side (bio2-02: "a clinical boundary does not need a
+  baseline"); with no cited row crossed it is left out of the score.
 - The finding's fourth vector gives a diastolic of 120 the baseline point for
   `orthostatic_intolerance`, whose diastolic signal is `below`, and reads 0.667
   `review`. With the side it adds 0, and the condition scores 0.5 `possible`.
@@ -443,6 +451,119 @@ for (const condition of conditions) {
 
 The values above are placeholders in a synthetic history (REQ-14).
 
+### POST /people/{person_id}/pain
+
+Stores one pain report from the 3D body (B-3): the region the astronaut
+selected, the intensity from 0 to 10, the mission day and the time, with an
+optional note. The intensity is kept as the astronaut set it. This route does
+not read it, does not compare it with anything and adds no text about it: what
+it means is for the CMO or the flight surgeon to say, not for the API.
+
+The same report can be re-sent (the frontend re-sends what waits in its outbox,
+REQ-13) without adding a second row: one report is kept per `person_id`,
+`region_id`, `mission_day` and `time`.
+
+Path parameter: `person_id`, a string (same lowercase `snake_case` rule).
+
+Request body: one report. Every field is required except `note`.
+
+| Field | Type | Rule |
+| --- | --- | --- |
+| `region_id` | string | at most 64 characters, lowercase `snake_case`: letters, digits and underscores, starts with a letter; the id from the frontend's region list. The API does not check it against a file, because `config/content/body_regions.csv` does not exist yet. |
+| `intensity` | integer | 0 to 10; booleans, decimals and strings are rejected |
+| `mission_day` | integer | greater than 0, at most 100000, "day N"; booleans and strings are rejected |
+| `time` | string | `HH:MM`, 24-hour clock |
+| `note` | string | optional, at most 280 characters |
+
+Responses:
+
+| Code | Meaning |
+| --- | --- |
+| `201` | A new report was stored; the stored report is returned, with `person_id` taken from the path and `note` null when it was not given. |
+| `200` | A report with the same `person_id`, `region_id`, `mission_day` and `time` already exists with the same `intensity` and `note`; that stored report is returned and nothing is added. |
+| `409` | A report with that key already exists with a different `intensity` or `note`; `detail` is a short plain message. |
+| `422` | A field breaks a rule, or `person_id` in the path breaks the id rule. |
+| `401` / `403` | The token rule below, when that person has an account. |
+| `502` | The upstream store (Supabase) is unreachable or returns an error. |
+
+```bash
+curl -X POST "$VITE_API_BASE_URL/people/demo_astronaut_1/pain" \
+  -H "Content-Type: application/json" \
+  -d '{"region_id":"left_knee","intensity":4,"mission_day":1,"time":"13:30","note":"After the treadmill run"}'
+# 201 {"region_id":"left_knee","intensity":4,"mission_day":1,"time":"13:30","note":"After the treadmill run","person_id":"demo_astronaut_1"}
+# re-sending the same body returns 200 with the same stored report
+```
+
+```js
+const response = await fetch(
+  `${VITE_API_BASE_URL}/people/demo_astronaut_1/pain`,
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${session.token}`, // only when that person has an account
+    },
+    body: JSON.stringify({
+      region_id: "left_knee",
+      intensity: 4,
+      mission_day: 1,
+      time: "13:30",
+      note: "After the treadmill run",
+    }),
+  }
+);
+if (response.status === 201 || response.status === 200) {
+  // stored: the report waits no more in the outbox
+}
+if (response.status === 409) {
+  // this person, region, day and time already hold another report: do not
+  // retry, ask the astronaut which one is right
+}
+const report = await response.json(); // {"region_id":"left_knee","intensity":4,"mission_day":1,"time":"13:30","note":"After the treadmill run","person_id":"demo_astronaut_1"}
+```
+
+### GET /people/{person_id}/pain
+
+Returns one person's pain reports, ordered by `mission_day` then `time`, oldest
+first. A person with no report gets an empty array, never a `404`: the route
+does not look the person up.
+
+Path parameter: `person_id` (same lowercase `snake_case` rule).
+
+Query parameters:
+
+| Name | Type | Rule |
+| --- | --- | --- |
+| `region_id` | string | optional; only the reports of that region, same id rule as in the body. An id with no report gives an empty array. |
+
+Each object has the fields of the body above plus `person_id`. The API does not
+add a state, a threshold or a text about the intensity.
+
+Responses: `200` (a JSON array, empty when there is no report); `422` when
+`person_id` or `region_id` breaks the `snake_case` rule; `401` / `403` as below
+when that person has an account; `502` when the upstream store (Supabase) is
+unreachable or returns an error.
+
+```bash
+curl "$VITE_API_BASE_URL/people/demo_astronaut_1/pain?region_id=left_knee"
+# 200 [{"region_id":"left_knee","intensity":4,"mission_day":1,"time":"13:30","note":"After the treadmill run","person_id":"demo_astronaut_1"}]
+```
+
+```js
+const params = new URLSearchParams({ region_id: "left_knee" });
+const response = await fetch(
+  `${VITE_API_BASE_URL}/people/demo_astronaut_1/pain?${params}`
+);
+const reports = await response.json(); // array, oldest report first
+for (const report of reports) {
+  // show report.region_id on the 3D body and report.intensity as the number
+  // the astronaut chose; nothing else is attached to it
+}
+```
+
+The reports above are in a synthetic history (REQ-14); no real crew data is
+stored in this endpoint.
+
 ## Sessions and the Authorization header
 
 Every route that names a person checks who is asking before it answers:
@@ -454,6 +575,8 @@ Every route that names a person checks who is asking before it answers:
 | `GET /people/{person_id}/indicators/{indicator_id}/state` | the path |
 | `GET /people/{person_id}/blood_pressure/state` | the path |
 | `GET /people/{person_id}/conditions` | the path |
+| `POST /people/{person_id}/pain` | the path |
+| `GET /people/{person_id}/pain` | the path |
 
 The rule depends on whether that person has an account:
 
@@ -533,6 +656,26 @@ is unreachable or returns an error.
 `detail` `person_id must be lowercase snake_case`, and the same `502` with the
 same `detail` as the routes above.
 
+`POST /people/{person_id}/pain` returns `422` with the field array when the body
+breaks a rule:
+
+| Cause | `msg` |
+| --- | --- |
+| `intensity` is below 0 or above 10 | `Input should be greater than or equal to 0` / `Input should be less than or equal to 10` |
+| `intensity` is a boolean, a decimal or a string | `Input should be a valid integer` |
+| `mission_day` is 0 or negative, or above 100000 | `Input should be greater than 0` / `Input should be less than or equal to 100000` |
+| `region_id` is longer than 64 characters | `String should have at most 64 characters` |
+| `note` is longer than 280 characters | `String should have at most 280 characters` |
+| `region_id` breaks the id rule | `Value error, must be lowercase snake_case` |
+| `time` is not `HH:MM` 24-hour | `Value error, time must be HH:MM (24-hour)` |
+| a field is missing | `Field required` |
+
+It returns `409` with the plain string `a pain report for this person, region,
+day and time already exists with a different intensity or note` when that key
+already holds another report. Both pain routes return `422` with a plain-string
+`detail` when `person_id`, or the `region_id` filter, breaks the `snake_case`
+rule, and the same `502` as the routes above.
+
 `POST /accounts` and `POST /sessions` return `422` with the field array when the
 body breaks a rule:
 
@@ -548,7 +691,7 @@ and with `detail` `this person already has an account` when the account exists.
 `POST /sessions` returns `401` with `detail` `wrong username or PIN`
 and `429` with `detail` `too many wrong PINs, try again later`.
 
-The five routes that name a person return `401` with `detail` `missing or
+The seven routes that name a person return `401` with `detail` `missing or
 invalid token` and `403` with `detail` `this token belongs to another person`;
 both come from the rule above, before the route does its own work.
 
@@ -605,7 +748,7 @@ and a restart clears every window.
 - No endpoint lists indicators.
 - No change of PIN, no sign-out and no refresh of a token: a token works until
   `expires_at`.
-- No update or delete of entries.
+- No update or delete of entries or pain reports.
 
 These are facts about the current code, not proposals.
 
