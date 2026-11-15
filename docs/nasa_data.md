@@ -36,6 +36,18 @@ solution uses, what we took and where it is used. Filled on Sat 14 Nov for cp3.
 - **NTRS 20230006919:** shows that in-flight blood analysis exists. It is not a dataset and gives no glucose range.
 - **Bio-Monitor:** describes the device. It measures **skin** temperature, not core, and publishes no precision.
 
+## Synthetic demo data
+
+`config/data/demo_data.csv`, `demo_ranges.csv` and `symptom_log.csv` hold
+synthetic values, not NASA data. `symptom_log.csv` has 8 reports for
+`demo_astronaut_1` over the 30 demo days: 5 at severity 1 and 3 at severity 2,
+none at severity 3, and none a red flag. Only day 12 holds two symptoms of one
+condition (thirst and frequent urination), and that day's glucose, 105 mg/dL, sits
+inside the person's usual range, so the score stops at Possible and the demo never
+shows a false emergency. Day 3 has a single symptom and no glucose baseline yet
+(two earlier readings), so it stays "no data". The log was generated on Sun 15 Nov
+for Phys to review. The values are invented, not measured.
+
 ## The other challenge resources
 
 The challenge page lists five resources. Two are used above (Hazards and Risks). The
