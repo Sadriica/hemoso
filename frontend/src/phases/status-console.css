@@ -385,3 +385,12 @@
     align-self: stretch;
   }
 }
+
+/* Round of Sun 07:35. The pain picker had a frame of its own inside the new
+   block: one frame is enough. */
+.phase--status .pain .pain-picker {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+}
