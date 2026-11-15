@@ -482,6 +482,14 @@ export const strings = {
     openCard: (text: string): string => `Show the reading. ${text}`,
     source: 'Source:',
     notEnough: (count: number): string => `Not enough data yet (${count})`,
+    // Urgent symptoms lead the board; the action is the one the symptom list
+    // already says (strings.symptoms.callCmo).
+    urgentHeading: 'Urgent symptoms reported',
+    overlap: 'These possibilities may overlap. Your CMO or flight surgeon confirms.',
+    // On a row whose measured readings do not point to it.
+    bySymptom: 'Urgent because of a symptom you reported.',
+    // Phone: the quieter groups behind one line with their count.
+    showMore: (count: number): string => `Show ${count} more`,
   },
   // The optional symptom list of the Report (T-80). Plain names come from
   // config/data/symptoms.csv; nothing here names a condition.
