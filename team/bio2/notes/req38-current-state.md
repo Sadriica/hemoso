@@ -6,12 +6,33 @@ for the neurobehavioural state, raised by reaction time, lapses, mood and sleep.
 ## The row, ready to paste
 
 ```csv
-current_state,How you are today,reaction_median_ms:above reaction_lapses:above mood_1_5:below sleep_h:below,Assumption
+current_state,How you are today,reaction_median_ms:above reaction_lapses:above mood_1_5:below sleep_h:below,https://pmc.ncbi.nlm.nih.gov/articles/PMC7198903/
 ```
 
 Blocked: `reaction_median_ms` and `reaction_lapses` are not in
 `config/data/indicators.csv` yet. The checker rejects any `based_on` id that is
 not an indicator, so this row cannot enter the file until Phys adds both.
+
+## The source, and what it does not cover
+
+The link is Nasrini et al. 2020, *Cognitive Performance During Confinement and
+Sleep Restriction in NASA's Human Exploration Research Analog (HERA)*, Frontiers
+in Physiology, open access: https://pmc.ncbi.nlm.nih.gov/articles/PMC7198903/
+
+It supports the two reaction signals and their direction: in the study, a night
+of total sleep deprivation significantly decreased PVT response speed and
+accuracy, and across the mission the number of lapses moved with sleep duration
+and efficiency. So "slower median" and "more lapses" are the signs of a worse
+neurobehavioural state, and sleep is one of the drivers.
+
+It does **not** state that mood belongs in the same score, and it does not
+combine the four signals into one. That combination is the team's decision.
+
+`parse_sources` in `scripts/format_rules.py` accepts either links or the single
+word `Assumption`, never both. With one source cell, the link stays and the
+combination is recorded as an assumption here and in `team/bio2/LOG.md`. If the
+team wants it visible in the file, the format needs a second column such as
+`combination_status`, which is Eng 1's call.
 
 What Phys has to add, per row of `indicators.csv`: `id`, `name`, `unit` (`ms`
 and a count), `direction` (`higher` for both), `measured_on_board` (the test and
