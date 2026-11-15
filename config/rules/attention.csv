@@ -15,4 +15,4 @@ reaction_median_ms,above,500,watch,crew,Assumption
 reaction_lapses,above,3,watch,crew,Assumption
 appetite_1_5,below,3,watch,crew,Assumption
 fluid_intake_ml,below,2500,watch,crew,https://www.nasa.gov/wp-content/uploads/2023/12/ochmo-tb-027-water.pdf
-body_mass_kg,below,70,watch,crew,Assumption
+body_mass_kg,below,45,watch,crew,Assumption
