@@ -38,7 +38,17 @@ export default function TrendRow({
   const { median, spread, n } = baseline
   if (median === null || spread === null || spread <= 0) {
     return (
-      <div className="trend">
+      <div className="trend trend--waiting">
+        {/* How far the baseline is: one mark per reading it still needs. The
+            sentence beside it says the same in words. */}
+        <span className="trend__pips" aria-hidden="true">
+          {Array.from({ length: MIN_WINDOW }, (_, index) => (
+            <span
+              key={index}
+              className={`trend__pip${index < n ? ' trend__pip--on' : ''}`}
+            />
+          ))}
+        </span>
         <p className="trend__words">
           {strings.trend.notEnough(
             n,
