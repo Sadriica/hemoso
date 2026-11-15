@@ -353,6 +353,48 @@ export const strings = {
     rule: (side: string, value: string, level: string): string =>
       `${side} ${value}: ${level}.`,
   },
+  // The possible conditions of config/rules/conditions.csv (REQ-06): an
+  // evidence score from 0 to 1 with a three-step label and the signals behind
+  // it. Never a percentage, never a statement about the person; the names come
+  // from the file.
+  conditions: {
+    heading: 'Possible conditions',
+    intro: 'What your readings point to, scored as evidence from 0 to 1.',
+    confirms: 'Your CMO or flight surgeon confirms.',
+    // The three steps, as one word and as one sentence.
+    label: {
+      review: 'Review',
+      possible: 'Possible',
+      low: 'Low',
+      no_data: 'Not enough data yet',
+    },
+    sentence: {
+      review: 'Ask your CMO or flight surgeon to check this.',
+      possible: 'Some of your readings point to it.',
+      low: 'Your readings do not point to it.',
+      no_data: 'It needs at least two readings that can be compared.',
+    },
+    // The bar: its name, the value as text, and what a screen reader hears.
+    meterName: (name: string): string => `Evidence for ${name}`,
+    evidence: (score: string): string => `Evidence ${score} of 1`,
+    evidenceSpoken: (score: string, label: string): string =>
+      `${score} of 1, ${label.toLowerCase()}`,
+    // One signal: the indicator, then what its newest reading says.
+    signalsLabel: (name: string): string => `Readings behind ${name}`,
+    side: { above: 'above', below: 'below' },
+    signal: {
+      limit: (name: string, side: string): string => `${name}: ${side} a set limit`,
+      outside: (name: string, side: string): string => `${name}: ${side} your usual`,
+      inside: (name: string, side: string): string => `${name}: not ${side} your usual`,
+      notComparable: (name: string): string =>
+        `${name}: not enough readings to compare`,
+      noReading: (name: string): string => `${name}: no reading yet`,
+    },
+    // What a tap on a signal does, for its accessible name.
+    openCard: (text: string): string => `Show the reading. ${text}`,
+    source: 'Source:',
+    notEnough: (count: number): string => `Not enough data yet (${count})`,
+  },
   problems: {
     label: 'Content problems (for the team)',
   },
