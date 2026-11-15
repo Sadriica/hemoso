@@ -291,10 +291,11 @@ def test_a_row_on_the_other_side_does_not_count():
     assert signal_point(latest, "above") == 1.0
 
 
-def test_a_value_on_the_threshold_does_not_cross_the_row():
+def test_a_value_on_the_threshold_crosses_the_row():
+    """Q4: the threshold counts, so 100 bpm on a cited "above 100" row adds 1."""
     latest = LatestValue(100.0, "rest", 70.0, 4.0, HR_ROWS)
 
-    assert signal_point(latest, "above") == 0.5
+    assert signal_point(latest, "above") == 1.0
 
 
 def test_a_cited_limit_counts_without_a_baseline():
