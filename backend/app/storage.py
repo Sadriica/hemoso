@@ -1,4 +1,4 @@
-"""Storage for entries: memory, sqlite and supabase, chosen by STORAGE (REQ-27)."""
+"""Storage for entries and pain reports: memory, sqlite and supabase (REQ-27)."""
 
 from __future__ import annotations
 
@@ -11,16 +11,21 @@ from typing import Protocol
 
 import httpx
 
-from .models import Account, Entry, entry_key
+from .models import Account, Entry, PainReport, entry_key, pain_key
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 
 _COLUMNS = ("person_id", "indicator_id", "value", "unit", "mission_day", "time", "context")
 _ACCOUNT_COLUMNS = ("person_id", "salt", "pin_hash")
+_PAIN_COLUMNS = ("person_id", "region_id", "intensity", "mission_day", "time", "note")
 
 
 class EntryConflict(Exception):
     """The natural key already holds an entry with a different value or unit."""
+
+
+class PainConflict(Exception):
+    """The natural key already holds a pain report with another intensity or note."""
 
 
 def _same_value(left: Entry, right: Entry) -> bool:
@@ -31,10 +36,20 @@ def _same_value(left: Entry, right: Entry) -> bool:
     )
 
 
+def _same_pain(left: PainReport, right: PainReport) -> bool:
+    return left.intensity == right.intensity and left.note == right.note
+
+
 class Storage(Protocol):
     def add(self, entry: Entry) -> tuple[Entry, bool]: ...
 
     def history(self, person_id: str, indicator_id: str) -> list[Entry]: ...
+
+    def add_pain(self, report: PainReport) -> tuple[PainReport, bool]: ...
+
+    def pain_reports(
+        self, person_id: str, region_id: str | None = None
+    ) -> list[PainReport]: ...
 
     def account(self, person_id: str) -> Account | None: ...
 
@@ -47,11 +62,16 @@ def _ordered(entries: list[Entry]) -> list[Entry]:
     return sorted(entries, key=lambda entry: (entry.mission_day, entry.time))
 
 
+def _ordered_pain(reports: list[PainReport]) -> list[PainReport]:
+    return sorted(reports, key=lambda report: (report.mission_day, report.time))
+
+
 class MemoryStorage:
-    """Holds entries and accounts in memory; used by tests."""
+    """Holds entries, pain reports and accounts in memory; used by tests."""
 
     def __init__(self) -> None:
         self._entries: list[Entry] = []
+        self._pain: list[PainReport] = []
         self._accounts: dict[str, Account] = {}
 
     def add(self, entry: Entry) -> tuple[Entry, bool]:
@@ -69,6 +89,26 @@ class MemoryStorage:
             entry
             for entry in self._entries
             if entry.person_id == person_id and entry.indicator_id == indicator_id
+        )
+
+    def add_pain(self, report: PainReport) -> tuple[PainReport, bool]:
+        key = pain_key(report)
+        for existing in self._pain:
+            if pain_key(existing) == key:
+                if _same_pain(existing, report):
+                    return existing, False
+                raise PainConflict
+        self._pain.append(report)
+        return report, True
+
+    def pain_reports(
+        self, person_id: str, region_id: str | None = None
+    ) -> list[PainReport]:
+        return _ordered_pain(
+            report
+            for report in self._pain
+            if report.person_id == person_id
+            and (region_id is None or report.region_id == region_id)
         )
 
     def account(self, person_id: str) -> Account | None:
@@ -137,6 +177,22 @@ class SqliteStorage:
                 "salt TEXT NOT NULL,"
                 "pin_hash TEXT NOT NULL,"
                 "created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)"
+            )
+            # Pain reports from the 3D body (B-3), one per person, region, day
+            # and time so the frontend's outbox can re-send one.
+            self._conn.execute(
+                "CREATE TABLE IF NOT EXISTS pain_reports ("
+                "person_id TEXT NOT NULL,"
+                "region_id TEXT NOT NULL,"
+                "intensity INTEGER NOT NULL,"
+                "mission_day INTEGER NOT NULL,"
+                "time TEXT NOT NULL,"
+                "note TEXT,"
+                "created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)"
+            )
+            self._conn.execute(
+                "CREATE UNIQUE INDEX IF NOT EXISTS pain_reports_natural_key_idx"
+                " ON pain_reports (person_id, region_id, mission_day, time)"
             )
             self._conn.commit()
 
@@ -216,6 +272,58 @@ class SqliteStorage:
                 (person_id,),
             ).fetchall()
         return bool(rows)
+
+    def add_pain(self, report: PainReport) -> tuple[PainReport, bool]:
+        with self._lock:
+            try:
+                self._conn.execute(
+                    "INSERT INTO pain_reports (person_id, region_id, intensity,"
+                    " mission_day, time, note) VALUES (?, ?, ?, ?, ?, ?)",
+                    (
+                        report.person_id,
+                        report.region_id,
+                        report.intensity,
+                        report.mission_day,
+                        report.time,
+                        report.note,
+                    ),
+                )
+                self._conn.commit()
+            except sqlite3.IntegrityError:
+                self._conn.rollback()
+                existing = self._find_pain(pain_key(report))
+                if existing is None:
+                    raise
+                if _same_pain(existing, report):
+                    return existing, False
+                raise PainConflict from None
+        return report, True
+
+    def _find_pain(self, key: tuple[str, str, int, str]) -> PainReport | None:
+        """The stored pain report for `key`, or None. Call under the lock."""
+        rows = self._conn.execute(
+            "SELECT person_id, region_id, intensity, mission_day, time, note"
+            " FROM pain_reports WHERE person_id = ? AND region_id = ?"
+            " AND mission_day = ? AND time = ?",
+            key,
+        ).fetchall()
+        return PainReport(**dict(zip(_PAIN_COLUMNS, rows[0]))) if rows else None
+
+    def pain_reports(
+        self, person_id: str, region_id: str | None = None
+    ) -> list[PainReport]:
+        sql = (
+            "SELECT person_id, region_id, intensity, mission_day, time, note"
+            " FROM pain_reports WHERE person_id = ?"
+        )
+        params: tuple[str, ...] = (person_id,)
+        if region_id is not None:
+            sql += " AND region_id = ?"
+            params += (region_id,)
+        sql += " ORDER BY mission_day, time"
+        with self._lock:
+            rows = self._conn.execute(sql, params).fetchall()
+        return [PainReport(**dict(zip(_PAIN_COLUMNS, row))) for row in rows]
 
 
 class SupabaseStorage:
@@ -331,6 +439,65 @@ class SupabaseStorage:
         )
         response.raise_for_status()
         return bool(response.json())
+
+    def add_pain(self, report: PainReport) -> tuple[PainReport, bool]:
+        # Read before write, as `add` does: the unique index in
+        # supabase/schema.sql is the backstop, but a read first returns the
+        # exact stored report so the API can answer 200 or 409.
+        existing = self._find_pain(report)
+        if existing is not None:
+            if _same_pain(existing, report):
+                return existing, False
+            raise PainConflict
+        response = self._client.post(
+            f"{self.url}/rest/v1/pain_reports",
+            json=report.model_dump(),
+            headers=self._headers(),
+        )
+        if response.status_code == 409:
+            # A concurrent request inserted this key between our read and write.
+            existing = self._find_pain(report)
+            if existing is not None:
+                if _same_pain(existing, report):
+                    return existing, False
+                raise PainConflict
+        response.raise_for_status()
+        return report, True
+
+    def _find_pain(self, report: PainReport) -> PainReport | None:
+        """The stored report with the same natural key, or None."""
+        response = self._client.get(
+            f"{self.url}/rest/v1/pain_reports",
+            params={
+                "person_id": f"eq.{report.person_id}",
+                "region_id": f"eq.{report.region_id}",
+                "mission_day": f"eq.{report.mission_day}",
+                "time": f"eq.{report.time}",
+                "select": ",".join(_PAIN_COLUMNS),
+            },
+            headers=self._headers(),
+        )
+        response.raise_for_status()
+        rows = response.json()
+        return PainReport(**rows[0]) if rows else None
+
+    def pain_reports(
+        self, person_id: str, region_id: str | None = None
+    ) -> list[PainReport]:
+        params = {
+            "person_id": f"eq.{person_id}",
+            "order": "mission_day.asc,time.asc",
+            "select": ",".join(_PAIN_COLUMNS),
+        }
+        if region_id is not None:
+            params["region_id"] = f"eq.{region_id}"
+        response = self._client.get(
+            f"{self.url}/rest/v1/pain_reports",
+            params=params,
+            headers=self._headers(),
+        )
+        response.raise_for_status()
+        return [PainReport(**row) for row in response.json()]
 
 
 _storage: Storage | None = None
