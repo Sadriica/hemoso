@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import SourceList, { sourceLabel } from './SourceList'
+import SourceList from './SourceList'
+import { sourceLabel } from './sourceLabel'
 
 describe('sourceLabel', () => {
   it('uses the title, or the host and last segment when there is none', () => {
