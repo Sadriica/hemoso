@@ -27,7 +27,7 @@ from pathlib import Path
 OWNED = {
     # Paths match the agent files. If FORMATS.md moves the config folders on
     # Saturday, update both the same hour.
-    "bio1": ["config/content/*", "submission/script.md", "submission/slides.md", "submission/video.md",
+    "bio1": ["config/content/*", "submission/script.md", "submission/slides.md", "submission/video.md", "submission/subs.srt",
              "submission/slides/*", "team/bio1/*", "docs/findings/bio1-*.md"],
     "bio2": ["config/rules/*", "submission/submission.md", "submission/README.md", "team/bio2/*",
              "docs/findings/bio2-*.md"],
