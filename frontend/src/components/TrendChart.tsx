@@ -17,7 +17,7 @@ import {
 } from '../domain/trend'
 import type { Status } from '../domain/state'
 import type { AttentionRule, Entry } from '../domain/types'
-import { strings } from '../strings'
+import { SCALE_UNIT, strings } from '../strings'
 
 // One indicator over Flight Days, as a telemetry trace (REQ-15, REQ-27): the
 // person's readings as marks joined by a line, their usual band as a soft
@@ -44,6 +44,8 @@ export interface TrendSeriesInput {
   key: string
   // The series name shown beside a value; null when the chart has one series.
   label: string | null
+  // A short form of the name for the threshold labels, where room is tight.
+  shortLabel?: string
   unit: string
   rules: AttentionRule[]
   // Oldest first.
@@ -207,7 +209,12 @@ export default function TrendChart({
       data-draw={drawKey}
       ref={figureRef}
     >
-      <p className="tc__readout" id={readoutId} aria-live="polite">
+      {/* The visible readout is hidden from the accessibility tree; the group
+          still points at it as its description. What a screen reader hears
+          when the person moves is the hidden live line below, which only
+          holds a reading that was picked, so opening the panel or changing a
+          filter announces nothing. */}
+      <p className="tc__readout" id={readoutId} aria-hidden="true">
         {readout === null ? (
           newest === null ? (
             <span className="tc__readout-idle">
@@ -235,6 +242,15 @@ export default function TrendChart({
           </>
         )}
       </p>
+
+      <span className="sr-only" aria-live="polite" aria-atomic="true">
+        {readout === null || activeSeries === undefined
+          ? ''
+          : `${readout}. ${strings.history.trend.point({
+              index: activeIndex + 1,
+              count: activeSeries.points.length,
+            })}`}
+      </span>
 
       <div
         className="tc__focus"
@@ -522,10 +538,9 @@ function buildModel(series: TrendSeriesInput[], plot: Plot): Model {
   const marks: number[] = [
     ...series.flatMap((item) => item.points.map((p) => p.entry.value)),
     ...cited.map(({ rule }) => rule.threshold),
-    ...series.flatMap((item) =>
-      item.band === null ? [] : [item.band.low, item.band.high],
-    ),
   ]
+  // The usual band is clipped to the plot instead of stretching the value axis:
+  // a wide band (three spreads, with the noise floor) would flatten the line.
   const times = series.flatMap((item) =>
     item.points.map((p) => flightTime(p.entry)),
   )
@@ -533,9 +548,13 @@ function buildModel(series: TrendSeriesInput[], plot: Plot): Model {
   const low = marks.length === 0 ? 0 : Math.min(...marks)
   const high = marks.length === 0 ? 1 : Math.max(...marks)
   const span = high === low ? Math.abs(high) * 0.2 || 1 : high - low
-  const step = niceStep(span, Y_TICKS)
-  const yMin = Math.floor((low - span * 0.08) / step) * step
-  const yMax = Math.ceil((high + span * 0.08) / step) * step
+  // The 1 to 5 scales (mood, appetite) always draw their whole scale: 1 to 5,
+  // one tick per step, never a value outside it.
+  const scale =
+    series.length > 0 && series.every((item) => item.unit === SCALE_UNIT)
+  const step = scale ? 1 : niceStep(span, Y_TICKS)
+  const yMin = scale ? 1 : Math.floor((low - span * 0.08) / step) * step
+  const yMax = scale ? 5 : Math.ceil((high + span * 0.08) / step) * step
   const decimals = Math.max(
     decimalsOf(step),
     ...series.flatMap((item) => item.points.map((p) => decimalsOf(p.entry.value))),
@@ -544,7 +563,14 @@ function buildModel(series: TrendSeriesInput[], plot: Plot): Model {
   const yPosition = (value: number): number =>
     plot.bottom - ((value - yMin) / (yMax - yMin)) * (plot.bottom - plot.top)
 
-  const first = times.length === 0 ? 0 : Math.min(...times)
+  // The axis starts at the start of the first reading's Flight Day, so that
+  // day's label sits inside the plot, not left of it.
+  const first =
+    times.length === 0
+      ? 0
+      : times.length === 1
+        ? times[0]
+        : Math.floor(Math.min(...times))
   const last = times.length === 0 ? 0 : Math.max(...times)
   const xPosition = (time: number): number =>
     last === first
@@ -602,7 +628,10 @@ function buildModel(series: TrendSeriesInput[], plot: Plot): Model {
   const thresholds = thresholdLines(
     cited.map(({ item, rule }) => ({
       key: `${item.key}:${rule.attentionLevel}:${rule.side}:${rule.threshold}`,
-      text: strings.history.trend.thresholdLabel(item.label, rule.attentionLevel),
+      text: strings.history.trend.thresholdLabel(
+        item.shortLabel ?? item.label,
+        rule.attentionLevel,
+      ),
       y: yPosition(rule.threshold),
       above: rule.side === 'above',
     })),

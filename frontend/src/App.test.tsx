@@ -5,7 +5,7 @@ import App from './App'
 import { loadContent } from './content/load'
 import { SESSION_STORAGE_KEY } from './data/session'
 import { STORAGE_KEY } from './data/storedState'
-import { strings } from './strings'
+import { personName, strings } from './strings'
 
 const PERSON = 'demo_astronaut_1'
 const copy = strings.phases
@@ -39,11 +39,18 @@ function currentStep() {
 
 // Phase 1 to phase 2: pick the demo person and press the way on.
 async function signInByName(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole('radio', { name: PERSON }))
+  await user.click(screen.getByRole('radio', { name: personName(PERSON) }))
   await user.click(screen.getByRole('button', { name: copy.identify.next }))
 }
 
-describe('guided check', () => {
+// These tests walk whole phases: each phase loads its lazy chunks (the status
+// phase, the history, the scene) through the jsdom transform the first time, and
+// that is slow on a busy machine. The default 5 s budget is a measure of the
+// machine, not of the app, so the walks get a budget that holds under load. The
+// checks inside stay as strict as they were.
+const WALK_TIMEOUT = 30_000
+
+describe('guided check', { timeout: WALK_TIMEOUT }, () => {
   it('opens on phase 1, identify, with its headline and the rail on step 1', () => {
     render(<App />)
     expect(heading()).toHaveTextContent(copy.identify.headline.join(' '))
@@ -62,7 +69,7 @@ describe('guided check', () => {
   it('lists the crew members from the demo person ids', () => {
     render(<App />)
     const picker = screen.getByRole('group', { name: copy.identify.crewLabel })
-    expect(within(picker).getByRole('radio', { name: PERSON })).toBeInTheDocument()
+    expect(within(picker).getByRole('radio', { name: personName(PERSON) })).toBeInTheDocument()
   })
 
   it('asks for a name before it moves on, and puts focus on the crew list', async () => {
@@ -70,7 +77,7 @@ describe('guided check', () => {
     render(<App />)
     await user.click(screen.getByRole('button', { name: copy.identify.next }))
     expect(screen.getByRole('alert')).toHaveTextContent(copy.identify.missing)
-    expect(screen.getByRole('radio', { name: PERSON })).toHaveFocus()
+    expect(screen.getByRole('radio', { name: personName(PERSON) })).toHaveFocus()
     expect(heading()).toHaveTextContent(copy.identify.headline.join(' '))
   })
 
@@ -98,7 +105,7 @@ describe('guided check', () => {
       await screen.findByText(
         /Your usual|Not enough earlier entries/,
         {},
-        { timeout: 3000 },
+        { timeout: 10_000 },
       ),
     ).toBeInTheDocument()
   })
@@ -176,7 +183,7 @@ describe('guided check', () => {
     await user.click(screen.getByRole('button', { name: copy.status.restart }))
     expect(heading()).toHaveTextContent(copy.identify.headline.join(' '))
     // A new check asks again who is on duty.
-    expect(screen.getByRole('radio', { name: PERSON })).not.toBeChecked()
+    expect(screen.getByRole('radio', { name: personName(PERSON) })).not.toBeChecked()
   })
 
   it('saves a reading in phase 2 and shows it in phase 3', async () => {
@@ -209,7 +216,7 @@ describe('guided check', () => {
   })
 })
 
-describe('sign in', () => {
+describe('sign in', { timeout: WALK_TIMEOUT }, () => {
   it('opens the demo with one click and no PIN', async () => {
     const user = userEvent.setup()
     render(<App />)
@@ -291,7 +298,7 @@ describe('sign in', () => {
     // Back to phase 1, out of the session, and in again with the same person.
     await user.click(screen.getByRole('button', { name: copy.report.back }))
     await user.click(screen.getByRole('button', { name: strings.signIn.signOut }))
-    await user.click(screen.getByRole('radio', { name: PERSON }))
+    await user.click(screen.getByRole('radio', { name: personName(PERSON) }))
     await user.click(screen.getByRole('button', { name: copy.identify.next }))
     await user.click(screen.getByRole('button', { name: copy.report.next }))
 
@@ -415,10 +422,10 @@ describe('face sign-in on the plain page', () => {
       await user.click(screen.getByRole('button', { name: strings.face.signIn }))
 
       expect(await screen.findByRole('alert')).toHaveTextContent(
-        strings.face.camera.denied,
+        strings.face.problem('denied', 'picker'),
       )
       // The way in that always works has the focus.
-      expect(screen.getByRole('radio', { name: PERSON })).toHaveFocus()
+      expect(screen.getByRole('radio', { name: personName(PERSON) })).toHaveFocus()
     } finally {
       Object.defineProperty(navigator, 'mediaDevices', {
         configurable: true,

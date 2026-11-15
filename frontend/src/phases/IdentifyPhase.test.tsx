@@ -13,10 +13,14 @@ import IdentifyPhase from './IdentifyPhase'
 // the person it recognised, and the demo that needs neither. The camera and the
 // model are faked: no test opens a camera (REQ-36).
 
-const engine = vi.hoisted(() => ({ descriptorFrom: vi.fn() }))
+const engine = vi.hoisted(() => ({
+  descriptorFrom: vi.fn(),
+  loadModels: vi.fn().mockResolvedValue('webgl'),
+}))
 
 vi.mock('../face/engine', () => ({
   descriptorFrom: engine.descriptorFrom,
+  loadModels: engine.loadModels,
 }))
 
 const ORIGINAL_MEDIA_DEVICES = navigator.mediaDevices
@@ -138,7 +142,7 @@ describe('Identify', () => {
     ).toBeEnabled()
   })
 
-  it('offers to add a face after a PIN sign-in, consent first, or to go on', async () => {
+  it('goes straight on to the report after a PIN sign-in, with no face step', async () => {
     fakeCamera()
     const onDone = vi.fn()
     const user = userEvent.setup()
@@ -148,19 +152,10 @@ describe('Identify', () => {
     await user.type(screen.getByLabelText(strings.signIn.pin, { exact: true }), '4821')
     await user.click(screen.getByRole('button', { name: strings.signIn.action }))
 
+    await waitFor(() => expect(onDone).toHaveBeenCalledTimes(1))
     expect(
-      await screen.findByRole('heading', { name: strings.signIn.faceOfferHeading }),
-    ).toBeInTheDocument()
-    expect(onDone).not.toHaveBeenCalled()
-
-    await user.click(
-      screen.getByRole('button', { name: strings.signIn.faceOfferAction }),
-    )
-    expect(await screen.findByText(strings.face.consent)).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: strings.face.cancelLabel }))
-
-    await user.click(screen.getByRole('button', { name: strings.signIn.faceOfferSkip }))
-    expect(onDone).toHaveBeenCalledTimes(1)
+      screen.queryByRole('button', { name: strings.signIn.faceOfferAction }),
+    ).toBeNull()
   })
 
   it('shows a face first when one is saved on this device', () => {
@@ -185,6 +180,23 @@ describe('Identify', () => {
     await matchFace(user)
 
     await waitFor(() => expect(onDone).toHaveBeenCalledTimes(1))
+  })
+
+  it('points at the Sign in tab, and focuses it, when the face check cannot run', async () => {
+    fakeCamera()
+    engine.descriptorFrom.mockRejectedValue(new Error('webgl lost'))
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const user = userEvent.setup()
+    render(<Harness onDone={vi.fn()} />)
+
+    const panel = await matchFace(user)
+
+    expect(await within(panel).findByRole('alert')).toHaveTextContent(
+      strings.face.problem('failed', 'tab'),
+    )
+    expect(
+      screen.getByRole('tab', { name: strings.signIn.signInTab }),
+    ).toHaveFocus()
   })
 
   it('asks for the PIN of a face with no session on this device', async () => {
@@ -212,7 +224,7 @@ describe('Identify', () => {
     const user = userEvent.setup()
     render(<Harness onDone={onDone} personIds={[PERSON, 'cadet_okoro']} />)
 
-    await user.click(screen.getByRole('radio', { name: 'cadet_okoro' }))
+    await user.click(screen.getByRole('radio', { name: personName('cadet_okoro') }))
 
     expect(
       await screen.findByText(strings.signIn.askPin('cadet_okoro')),
@@ -268,7 +280,7 @@ describe('Identify', () => {
     const user = userEvent.setup()
     render(<Harness onDone={vi.fn()} />)
 
-    await user.click(screen.getByRole('radio', { name: PERSON }))
+    await user.click(screen.getByRole('radio', { name: personName(PERSON) }))
     expect(screen.getByText(strings.signIn.signedInAs(PERSON))).toBeVisible()
 
     await user.click(screen.getByRole('button', { name: strings.signIn.signOut }))
@@ -323,7 +335,7 @@ describe('Identify', () => {
     await waitFor(() => expect(sent.create).toEqual(['wambi']))
   })
 
-  it('offers to add a face right after the account is created', async () => {
+  it('goes straight on to the report right after the account is created', async () => {
     fakeCamera()
     const onDone = vi.fn()
     const user = userEvent.setup()
@@ -335,13 +347,7 @@ describe('Identify', () => {
     await user.type(screen.getByLabelText(strings.signIn.confirmPin), '4821')
     await user.click(screen.getByRole('button', { name: strings.signIn.createAction }))
 
-    expect(
-      await screen.findByRole('heading', { name: strings.signIn.faceOfferHeading }),
-    ).toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: strings.signIn.faceOfferAction }),
-    ).toBeEnabled()
-    expect(onDone).not.toHaveBeenCalled()
+    await waitFor(() => expect(onDone).toHaveBeenCalledTimes(1))
   })
 
   it('shows no preview for a name that is already an id', async () => {

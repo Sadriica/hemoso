@@ -12,6 +12,9 @@ const COLOR: Record<string, string> = {
   reaction_median_ms: 'neuro',
   reaction_lapses: 'neuro',
   glucose_mgdl: 'metabolic',
+  appetite_1_5: 'metabolic',
+  fluid_intake_ml: 'metabolic',
+  // Body mass has no body-system colour yet (DESIGN.md 2.3): it takes the accent.
 }
 
 const r2 = (n: number) => Math.round(n * 100) / 100
@@ -133,6 +136,83 @@ function Drop({ value }: { value: number }) {
   )
 }
 
+// The 1 to 5 self-rating as five steps of rising height, like the mood steps of
+// the report: the steps up to the value are filled.
+function Steps5({ id, value }: { id: string; value: number }) {
+  const on = Math.round(SCALES[id].min + fraction(id, value) * (SCALES[id].max - SCALES[id].min))
+  return (
+    <>
+      {[1, 2, 3, 4, 5].map((step) => {
+        const filled = step <= on
+        const height = 16 + step * 11
+        return (
+          <rect
+            key={step}
+            className={filled ? undefined : 'ins-track'}
+            x={10 + (step - 1) * 16}
+            y={84 - height}
+            width={11}
+            height={height}
+            rx={4}
+            fill={filled ? 'currentColor' : 'none'}
+            strokeWidth={3}
+          />
+        )
+      })}
+    </>
+  )
+}
+
+// A glass that fills to the water drunk. Drawing bounds only.
+function Cup({ value }: { value: number }) {
+  const clip = 'ins-' + useId().replace(/\W/g, '')
+  const f = fraction('fluid_intake_ml', value)
+  const offset = r2((1 - f) * 72)
+  const d = 'M22 14h52l-6 68H28z'
+  return (
+    <>
+      <clipPath id={clip}>
+        <path d={d} />
+      </clipPath>
+      <path className="ins-track" d={d} strokeWidth={4} strokeLinejoin="round" />
+      <g clipPath={`url(#${clip})`}>
+        <rect
+          className="ins-settle ins-level"
+          data-offset={offset}
+          x="16"
+          y="12"
+          width="64"
+          height="72"
+          fill="currentColor"
+          style={settle({ transform: `translateY(${offset}px)` }, 'translateY(72px)')}
+        />
+      </g>
+    </>
+  )
+}
+
+// The dial of a body scale: a half circle with ticks, a needle and a flat base.
+function Dial({ value }: { value: number }) {
+  const angle = r2(-90 + fraction('body_mass_kg', value) * 180)
+  return (
+    <>
+      <path className="ins-track" d="M12 62a36 36 0 0 1 72 0" strokeWidth={4} strokeLinecap="round" />
+      {[-90, -54, -18, 18, 54, 90].map((a) => (
+        <path key={a} d="M48 20v6" stroke="currentColor" strokeWidth={3} strokeLinecap="round" transform={`rotate(${a} 48 62)`} />
+      ))}
+      <g
+        className="ins-settle ins-needle"
+        data-angle={angle}
+        style={settle({ transform: `rotate(${angle}deg)`, transformOrigin: '48px 62px' }, 'rotate(-90deg)')}
+      >
+        <path d="M48 62V34" {...STROKE} />
+      </g>
+      <circle cx="48" cy="62" r="5" fill="currentColor" />
+      <path className="ins-track" d="M14 78h68" strokeWidth={4} strokeLinecap="round" />
+    </>
+  )
+}
+
 /** Status of the reading, for colour only; the shapes never change with it. */
 export type InstrumentState = 'in_range' | 'outside' | 'review' | 'no_data'
 
@@ -174,7 +254,7 @@ function Tally({ value }: { value: number }) {
 /**
  * Props of `Instrument`.
  * - `indicatorId`: one of hr_bpm, bp_sys_mmhg, bp_dia_mmhg, temp_core_c,
- *   sleep_h, mood_1_5, glucose_mgdl, reaction_median_ms, reaction_lapses. Any
+ *   sleep_h, mood_1_5, glucose_mgdl, reaction_median_ms, reaction_lapses, appetite_1_5, fluid_intake_ml, body_mass_kg. Any
  *   other id renders nothing.
  * - `value`: the number the card already shows; it only sets the drawing.
  * - `reducedMotion`: draw the final state with no animation.
@@ -223,10 +303,19 @@ export default function Instrument({ indicatorId, value, reducedMotion = false, 
     case 'reaction_lapses':
       figure = <Tally value={value} />
       break
+    case 'appetite_1_5':
+      figure = <Steps5 id={indicatorId} value={value} />
+      break
+    case 'fluid_intake_ml':
+      figure = <Cup value={value} />
+      break
+    case 'body_mass_kg':
+      figure = <Dial value={value} />
+      break
     default:
       return null
   }
-  const system = `var(--system-${COLOR[indicatorId]})`
+  const system = COLOR[indicatorId] ? `var(--system-${COLOR[indicatorId]})` : 'var(--color-accent)'
   const tint = state && STATE_TOKEN[state]
   return (
     <span

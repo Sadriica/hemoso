@@ -21,7 +21,7 @@ reading.
 4. Measure once. Assumption.
 5. Wait one minute.
 6. Measure again. Assumption.
-7. Write the top number.
+7. Add the two top numbers and divide by two. Write that average.
 
 ## Status and next steps
 
@@ -49,7 +49,8 @@ No one is notified for now.
 
 ### consult
 
-Your systolic blood pressure is far outside your usual range.
+Your systolic blood pressure is outside your usual range, or past the line your
+CMO uses: a top number of 140 mmHg or more.
 
 Sit down and tell your CMO today. Drink fluids and measure again in 1 hour.
 Assumption.
@@ -58,7 +59,8 @@ Your CMO checks you in person.
 
 ### urgent
 
-Your systolic blood pressure is well above your usual range.
+Your systolic blood pressure is past the emergency line your CMO uses: a top
+number of 180 mmHg or more.
 
 Sit down now and call your CMO. Do not exercise. Assumption.
 

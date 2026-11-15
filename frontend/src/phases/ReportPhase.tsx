@@ -1,4 +1,7 @@
 import { lazy, Suspense, useCallback, useState, type RefObject } from 'react'
+import FaceOffer from '../components/FaceOffer'
+import { isDemoPerson } from '../hooks/useSession'
+import { SERVER_ID_PREFIX } from '../data/historyClient'
 import PhaseHeading from '../components/PhaseHeading'
 import type { EntryStore } from '../data/entryStore'
 import type {
@@ -51,8 +54,13 @@ export default function ReportPhase({
 }: ReportPhaseProps) {
   const copy = strings.phases.report
   // Entries present when the phase opened; the rest were logged in this check.
-  const [startCount] = useState(entries.length)
-  const logged = Math.max(entries.length - startCount, 0)
+  // A reading the server sends back while the phase is open (the history of
+  // the person, read once after sign-in) was not logged here, so it is left
+  // out: it carries a server id.
+  const [openIds] = useState(() => new Set(entries.map((entry) => entry.id)))
+  const logged = entries.filter(
+    (entry) => !openIds.has(entry.id) && !entry.id.startsWith(SERVER_ID_PREFIX),
+  ).length
   // How many rows are done in this check, for the ring of the scene.
   const [progress, setProgress] = useState({ done: 0, total: 0 })
   const onProgress = useCallback(
@@ -62,8 +70,9 @@ export default function ReportPhase({
   // The optional reaction check stays one closed line. When it has run in this
   // check, the line says the result; the demo run saves nothing, so it never
   // does.
-  const [startIds] = useState(() => new Set(entries.map((entry) => entry.id)))
-  const fresh = entries.filter((entry) => !startIds.has(entry.id))
+  const fresh = entries.filter(
+    (entry) => !openIds.has(entry.id) && !entry.id.startsWith(SERVER_ID_PREFIX),
+  )
   const median = fresh.find((entry) => entry.indicatorId === REACTION_MEDIAN_ID)
   const lapses = fresh.find((entry) => entry.indicatorId === REACTION_LAPSES_ID)
   // Without both rows in the indicator file the check has nowhere to save, and
@@ -79,6 +88,12 @@ export default function ReportPhase({
   return (
     <section className="phase phase--report" aria-labelledby="phase-heading">
       <PhaseHeading ref={headingRef} eyebrow={copy.eyebrow} lines={copy.headline} intro={copy.intro} />
+
+      {/* Signed in with a PIN: adding the face for next time is one quiet line
+          here, not a step before the check. The demo astronaut has no account. */}
+      {serverConfigured && !isDemoPerson(personId) && (
+        <FaceOffer personId={personId} />
+      )}
 
       <div className="scene-band scene-band--report" data-enter="scene" aria-hidden="true">
         <Suspense fallback={null}>
@@ -103,7 +118,9 @@ export default function ReportPhase({
             onNext={onDone}
           />
         </div>
-        <p className="report__count" role="status">
+        {/* Not a live region: the save result of the form is the one status
+            announced when a reading is saved. */}
+        <p className="report__count">
           {copy.logged(logged)}
         </p>
       </div>

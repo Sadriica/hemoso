@@ -1290,6 +1290,8 @@ input.reading__input::-webkit-inner-spin-button {
   inset: 0;
   z-index: 100;
   background: var(--color-bg);
+  /* Like the intro it stands in for: a click goes through it. */
+  pointer-events: none;
 }
 
 /* Round 3 shape grammar (DESIGN.md 6.1): one wide main panel per screen, with
@@ -1412,5 +1414,13 @@ input.reading__input::-webkit-inner-spin-button {
 @media (max-width: 1099px) {
   .topbar__stamp:has(+ .topbar__duty)::after {
     content: ' ·';
+  }
+}
+
+/* Round of Sun 07:55: under 400 px the person always starts a new line, so
+   the dot that closes the day and the clock has nothing to join. */
+@media (max-width: 399px) {
+  .topbar__stamp:has(+ .topbar__duty)::after {
+    content: none;
   }
 }

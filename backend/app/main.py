@@ -13,12 +13,20 @@ from fastapi import Depends, FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 from . import accounts, storage
-from .conditions import condition_result, latest_value, parse_signals
+from .conditions import (
+    condition_result,
+    latest_value,
+    parse_signals,
+    shared_ids,
+    symptom_ids,
+)
 from .indicators import (
     load_attention_rows,
     load_condition_rows,
     load_indicator_rows,
+    load_symptom_rows,
     validate_against_indicators,
+    validate_against_symptoms,
 )
 from .models import (
     CONTEXTS,
@@ -30,9 +38,14 @@ from .models import (
     Credentials,
     Entry,
     IndicatorState,
+    MissionStartIn,
+    NewAccount,
     PainReport,
     PainReportIn,
+    ProfileOut,
     SessionOut,
+    SymptomReport,
+    SymptomReportIn,
     is_valid_id,
     is_valid_time,
 )
@@ -41,6 +54,7 @@ from .state import (
     attention_for,
     baseline,
     cited_rows,
+    daily_values,
     state_for,
     window,
     worse_state,
@@ -68,7 +82,7 @@ app.add_middleware(RateLimitMiddleware, limiter=limiter)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins(),
-    allow_methods=["GET", "POST"],
+    allow_methods=["GET", "POST", "PUT"],
     allow_headers=["Content-Type", "Authorization"],
 )
 
@@ -144,16 +158,18 @@ def state_of(
     min_spread: float,
     before: tuple[int, str] | None,
 ) -> IndicatorState:
-    """One value against the stored entries before it (FORMATS.md section 3)."""
+    """One value against the stored history before it (FORMATS.md section 3)."""
     recent = window(entries, context, before)
-    median, spread = baseline([entry.value for entry in recent], min_spread)
+    daily = daily_values(recent)
+    median, spread = baseline(daily, min_spread)
     # Cited limits first, with or without a baseline (phys-02 safety order).
     attention = attention_for(cited_rows(load_attention_rows(indicator_id)), value)
     return IndicatorState(
         state=state_for(value, median, spread, attention),
         median=median,
         spread=spread,
-        n=len(recent),
+        n=len(daily),
+        readings=len(recent),
         attention=(
             None
             if attention is None
@@ -181,7 +197,7 @@ def health() -> dict[str, str]:
         }
     },
 )
-def create_account(body: Credentials, store: Store) -> AccountOut:
+def create_account(body: NewAccount, store: Store) -> AccountOut:
     """Create one account (REQ-37): the PIN is kept only as a salted hash."""
     if accounts.name_taken(body.person_id, store):
         raise HTTPException(status_code=409, detail=accounts.TAKEN_NAME)
@@ -190,6 +206,7 @@ def create_account(body: Credentials, store: Store) -> AccountOut:
         person_id=body.person_id,
         salt=salt,
         pin_hash=accounts.hash_pin(body.pin, salt),
+        mission_start=body.mission_start,
     )
     try:
         created = store.create_account(account)
@@ -232,6 +249,59 @@ def create_session(body: Credentials, store: Store) -> SessionOut:
     accounts.wrong_pins.clear(body.person_id)
     token, expires_at = accounts.issue_token(body.person_id)
     return SessionOut(token=token, person_id=body.person_id, expires_at=expires_at)
+
+
+@app.get(
+    "/people/{person_id}/profile",
+    responses={
+        404: {"description": "This person has no account."},
+    },
+)
+def get_profile(person_id: str, store: Store, request: Request) -> ProfileOut:
+    """The account's own settings (REQ-37): today only the mission start date.
+
+    The mission start is what the frontend counts Flight Day 1 from, so it
+    follows the person to another device instead of staying on one. A person
+    without an account has no settings to read: 404, not an empty profile.
+    """
+    check_id("person_id", person_id)
+    accounts.authorize(request, person_id, store)
+    try:
+        account = store.account(person_id)
+    except httpx.HTTPError as error:
+        raise HTTPException(
+            status_code=502, detail=accounts.STORAGE_ERROR
+        ) from error
+    if account is None:
+        raise HTTPException(status_code=404, detail=accounts.NO_ACCOUNT)
+    return ProfileOut(person_id=person_id, mission_start=account.mission_start)
+
+
+@app.put(
+    "/people/{person_id}/mission_start",
+    responses={
+        404: {"description": "This person has no account."},
+    },
+)
+def put_mission_start(
+    person_id: str, body: MissionStartIn, store: Store, request: Request
+) -> ProfileOut:
+    """Set or change the mission start of an account (REQ-37).
+
+    The date is per person, so a change here moves the Flight Day of that
+    person on every device; nothing is stored for a person without an account.
+    """
+    check_id("person_id", person_id)
+    accounts.authorize(request, person_id, store)
+    try:
+        stored = store.set_mission_start(person_id, body.mission_start)
+    except httpx.HTTPError as error:
+        raise HTTPException(
+            status_code=502, detail=accounts.STORAGE_ERROR
+        ) from error
+    if not stored:
+        raise HTTPException(status_code=404, detail=accounts.NO_ACCOUNT)
+    return ProfileOut(person_id=person_id, mission_start=body.mission_start)
 
 
 @app.post(
@@ -369,16 +439,24 @@ def get_blood_pressure_state(
     )
 
 
-@app.get("/people/{person_id}/conditions")
+@app.get("/people/{person_id}/conditions", response_model_exclude_unset=True)
 def get_conditions(
     person_id: str, store: Store, request: Request
 ) -> list[ConditionScore]:
     """The evidence score of every condition in config/rules/conditions.csv.
 
-    One point per signal: 1 when the newest reading crossed an attention row on
-    the signal's side, 0.5 when it is outside the person's baseline on that
-    side (both from `app.state`), 0 otherwise; the score is the mean of the
-    usable signals (bio2-02, FORMATS.md section 3 point 3).
+    The score is a weighted mean over the usable signals (T-78, FORMATS.md
+    section 3 point 3): an indicator signal weighs 1, with evidence 1 when the
+    newest reading crossed a cited attention row on the signal's side and 0.5
+    when it is outside the person's baseline on that side (both from
+    `app.state`); a reported symptom weighs 0.5 when `data/symptoms.csv` marks
+    it specific and 0.25 when it marks it shared. Fewer than two usable signals
+    is `no_data` unless an indicator crossed a cited boundary, a symptom-only
+    score stops at 0.5, and a reported red flag makes the label `urgent`.
+
+    Fields a condition leaves unset are left out of the answer, so a
+    four-column `conditions.csv` returns exactly the body it returned before
+    the symptom layer: no `kind` on an indicator signal, no `red_flag`.
     """
     if not is_valid_id(person_id):
         raise HTTPException(
@@ -387,6 +465,7 @@ def get_conditions(
     accounts.authorize(request, person_id, store)
     rows = load_condition_rows()
     indicators = load_indicator_rows()
+    symptom_rows = load_symptom_rows()
     indicator_ids = list(
         dict.fromkeys(
             indicator_id
@@ -394,11 +473,15 @@ def get_conditions(
             for indicator_id, _ in parse_signals(row["based_on"])
         )
     )
+    # A person's reports are read only when some row lists a symptom: with the
+    # four-column file the route asks the store for nothing new.
+    wants_symptoms = any(symptom_ids(row) for row in rows)
     try:
         histories = {
             indicator_id: store.history(person_id, indicator_id)
             for indicator_id in indicator_ids
         }
+        reports = store.symptom_reports(person_id) if wants_symptoms else []
     except httpx.HTTPError as error:
         raise HTTPException(
             status_code=502, detail="upstream storage error"
@@ -411,7 +494,10 @@ def get_conditions(
             None if indicator is None else float(indicator["min_spread"]),
             load_attention_rows(indicator_id),
         )
-    return [condition_result(row, latest) for row in rows]
+    shared = shared_ids(symptom_rows)
+    return [
+        condition_result(row, latest, reports, symptom_rows, shared) for row in rows
+    ]
 
 
 @app.post(
@@ -421,7 +507,7 @@ def get_conditions(
         200: {"description": "The exact same pain report was already stored."},
         409: {
             "description": "A pain report for this person, region, day and "
-            "time exists with a different intensity or note."
+            "time exists with a different kind, intensity or note."
         },
     },
 )
@@ -436,9 +522,10 @@ def create_pain(
 
     The person is in the path, so the same report sent twice from the
     frontend's outbox answers 200 with the stored report and adds nothing; a
-    different intensity or note for the same person, region, day and time is a
-    409. The intensity is kept as the astronaut set it: this route does not
-    read it as a sign of anything.
+    different kind, intensity or note for the same person, region, day and
+    time is a 409. `kind` is what the astronaut marked there and defaults to
+    `pain` when the body does not carry it. The intensity is kept as the
+    astronaut set it: this route does not read it as a sign of anything.
     """
     check_id("person_id", person_id)
     accounts.authorize(request, person_id, store)
@@ -450,7 +537,7 @@ def create_pain(
             status_code=409,
             detail=(
                 "a pain report for this person, region, day and time already"
-                " exists with a different intensity or note"
+                " exists with a different kind, intensity or note"
             ),
         ) from error
     except httpx.HTTPError as error:
@@ -479,6 +566,81 @@ def list_pain(
         check_id("region_id", region_id)
     try:
         return store.pain_reports(person_id, region_id)
+    except httpx.HTTPError as error:
+        raise HTTPException(
+            status_code=502, detail="upstream storage error"
+        ) from error
+
+
+@app.post(
+    "/people/{person_id}/symptoms",
+    status_code=201,
+    responses={
+        200: {"description": "The exact same symptom report was already stored."},
+        409: {
+            "description": "A symptom report for this person, day, time and "
+            "symptom exists with a different severity."
+        },
+    },
+)
+def create_symptom(
+    person_id: str,
+    body: SymptomReportIn,
+    store: Store,
+    request: Request,
+    response: Response,
+) -> SymptomReport:
+    """Store one symptom report (T-79; the format is in FORMATS.md section 3).
+
+    The person is in the path, so the same report sent twice from the
+    frontend's outbox answers 200 with the stored report and adds nothing; a
+    different severity for the same person, day, time and symptom is a 409.
+    While `config/data/symptoms.csv` exists the symptom id must be one of its
+    rows; without that file any lowercase `snake_case` id is accepted. The
+    severity is stored as the astronaut set it and adds nothing to the score.
+    """
+    check_id("person_id", person_id)
+    accounts.authorize(request, person_id, store)
+    error = validate_against_symptoms(body.symptom_id)
+    if error is not None:
+        raise HTTPException(status_code=422, detail=error)
+    report = SymptomReport(person_id=person_id, **body.model_dump())
+    try:
+        stored, created = store.add_symptom(report)
+    except storage.SymptomConflict as conflict:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "a symptom report for this person, day, time and symptom"
+                " already exists with a different severity"
+            ),
+        ) from conflict
+    except httpx.HTTPError as error:
+        raise HTTPException(
+            status_code=502, detail="upstream storage error"
+        ) from error
+    if not created:
+        response.status_code = 200
+    return stored
+
+
+@app.get("/people/{person_id}/symptoms")
+def list_symptoms(
+    person_id: str,
+    store: Store,
+    request: Request,
+    symptom_id: str | None = None,
+) -> list[SymptomReport]:
+    """One person's symptom reports, oldest first, optionally for one symptom.
+
+    `symptom_id` filters; an unknown person is an empty list, not a 404.
+    """
+    check_id("person_id", person_id)
+    accounts.authorize(request, person_id, store)
+    if symptom_id is not None:
+        check_id("symptom_id", symptom_id)
+    try:
+        return store.symptom_reports(person_id, symptom_id)
     except httpx.HTTPError as error:
         raise HTTPException(
             status_code=502, detail="upstream storage error"

@@ -5,17 +5,17 @@
 Blood glucose is the sugar your body uses for energy. Astronauts often do not eat
 enough to keep their body weight, and the body can respond less well to insulin
 in flight and in bed rest. That makes blood sugar a useful signal to follow.
-https://humanresearchroadmap.nasa.gov/Evidence/other/Nutrition%20ER_human_adaptation_2020_final.pdf
+https://nasa.gov/wp-content/uploads/2023/03/human-adaptation-2020-final.pdf
 
 ## How spaceflight affects it
 
 The NASA nutrition report says carbohydrate needs in flight are thought to be
 similar to those on Earth. Few studies look at how microgravity changes
 carbohydrate use, and they do not agree.
-https://humanresearchroadmap.nasa.gov/Evidence/other/Nutrition%20ER_human_adaptation_2020_final.pdf
+https://nasa.gov/wp-content/uploads/2023/03/human-adaptation-2020-final.pdf
 
-No in-flight device is confirmed in the sources we read, so HeMoSo takes this
-value by hand. Assumption.
+On board, blood glucose is measured with a blood analyser such as the i-STAT,
+not with a wrist watch. https://ntrs.nasa.gov/citations/20230006919
 
 ## Measurement steps
 
@@ -51,7 +51,8 @@ No one is notified for now.
 
 ### consult
 
-Your blood glucose is far outside your usual range.
+Your blood glucose is outside your usual range, or past the line your CMO uses:
+126 mg/dL or more, or 70 mg/dL or less.
 
 Tell your CMO today. Drink fluids and measure again in 2 hours. Assumption.
 
@@ -64,5 +65,5 @@ dizzy or thirsty. Assumption.
 
 ## Sources
 
-- NASA, Human Adaptation to Spaceflight: The Role of Nutrition (2020): https://humanresearchroadmap.nasa.gov/Evidence/other/Nutrition%20ER_human_adaptation_2020_final.pdf
+- NASA, Human Adaptation to Spaceflight: The Role of Nutrition (2020): https://nasa.gov/wp-content/uploads/2023/03/human-adaptation-2020-final.pdf
 - Challenge statement: https://www.spaceappschallenge.org/2026/challenges/health-monitoring-software/

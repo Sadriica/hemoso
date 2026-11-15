@@ -71,6 +71,10 @@ function renderChart(series: TrendSeriesInput[] = [single()]) {
   )
 }
 
+const main = (): HTMLElement =>
+  document.querySelector('.tc__readout-main') as HTMLElement
+const live = (): HTMLElement =>
+  document.querySelector('[aria-live="polite"]') as HTMLElement
 const group = () => screen.getByRole('group', { name: 'Trend of Heart rate' })
 
 describe('TrendChart', () => {
@@ -131,17 +135,17 @@ describe('TrendChart', () => {
     expect(group()).toHaveFocus()
     // First key lands on the newest reading.
     await user.keyboard('{ArrowLeft}')
-    expect(screen.getByText(/105 bpm · FD 4 · GMT 09:30/)).toBeInTheDocument()
+    expect(main()).toHaveTextContent(/105 bpm · FD 4 · GMT 09:30/)
     await user.keyboard('{ArrowLeft}')
-    expect(screen.getByText(/75 bpm · FD 3/)).toBeInTheDocument()
+    expect(main()).toHaveTextContent(/75 bpm · FD 3/)
     await user.keyboard('{Home}')
-    expect(screen.getByText(/58 bpm · FD 1/)).toBeInTheDocument()
+    expect(main()).toHaveTextContent(/58 bpm · FD 1/)
     await user.keyboard('{ArrowLeft}')
-    expect(screen.getByText(/58 bpm · FD 1/)).toBeInTheDocument()
+    expect(main()).toHaveTextContent(/58 bpm · FD 1/)
     await user.keyboard('{End}')
-    expect(screen.getByText(/105 bpm · FD 4/)).toBeInTheDocument()
+    expect(main()).toHaveTextContent(/105 bpm · FD 4/)
     await user.keyboard('{ArrowRight}')
-    expect(screen.getByText(/105 bpm · FD 4/)).toBeInTheDocument()
+    expect(main()).toHaveTextContent(/105 bpm · FD 4/)
     await user.keyboard('{Escape}')
     expect(screen.getByText('Newest reading')).toBeInTheDocument()
   })
@@ -200,11 +204,11 @@ describe('TrendChart', () => {
     expect(container.querySelectorAll('.tc__line')).toHaveLength(2)
     await user.tab()
     await user.keyboard('{End}')
-    expect(screen.getByText(/^Systolic: 122 mmHg/)).toBeInTheDocument()
+    expect(main()).toHaveTextContent(/^Systolic: 122 mmHg/)
     await user.keyboard('{ArrowDown}')
-    expect(screen.getByText(/^Diastolic: 81 mmHg/)).toBeInTheDocument()
+    expect(main()).toHaveTextContent(/^Diastolic: 81 mmHg/)
     await user.keyboard('{ArrowUp}')
-    expect(screen.getByText(/^Systolic: 122 mmHg/)).toBeInTheDocument()
+    expect(main()).toHaveTextContent(/^Systolic: 122 mmHg/)
   })
 
   it('pauses its motion while the tab is hidden', () => {
@@ -230,5 +234,49 @@ describe('readoutText', () => {
     expect(text).toBe(
       'Systolic: 118 mmHg · FD 12 · GMT 08:30 · Post-sleep · on waking · In your usual range',
     )
+  })
+})
+
+describe('TrendChart announcements', () => {
+  it('announces a reading only once it is picked, not the newest one at rest', async () => {
+    const user = userEvent.setup()
+    renderChart()
+    expect(live()).toHaveTextContent('')
+    expect(document.querySelector('.tc__readout')).toHaveAttribute('aria-hidden', 'true')
+    await user.tab()
+    await user.keyboard('{End}')
+    expect(live()).toHaveTextContent(/105 bpm · FD 4 · GMT 09:30 · At rest · Needs review · consult\. Reading 4 of 4/)
+    await user.keyboard('{Escape}')
+    expect(live()).toHaveTextContent('')
+  })
+})
+
+describe('TrendChart threshold labels', () => {
+  it('uses the short series name when there is one', () => {
+    const rule = { ...cited, attentionLevel: 'urgent' }
+    const { container } = renderChart([
+      single({ label: 'Systolic', shortLabel: 'Sys', rules: [rule] }),
+    ])
+    expect(container.querySelector('.tc__threshold-label')?.textContent).toBe('Sys: urgent')
+  })
+})
+
+describe('TrendChart axes', () => {
+  it('draws the 1 to 5 scale as 1 to 5 and keeps every Flight Day label inside the plot', () => {
+    const points = [
+      { entry: entry(1, '21:10', 4, { unit: '1 to 5' }), status: inRange },
+      { entry: entry(2, '21:10', 2, { unit: '1 to 5' }), status: inRange },
+      { entry: entry(3, '21:10', 3, { unit: '1 to 5' }), status: inRange },
+    ]
+    const { container } = renderChart([
+      single({ unit: '1 to 5', rules: [], points, band: { median: 3, spread: 0.5, low: 1.5, high: 4.5 } }),
+    ])
+    const ticks = [...container.querySelectorAll('.tc__tick')].map((n) => n.textContent)
+    expect(ticks).toEqual(expect.arrayContaining(['1', '2', '3', '4', '5']))
+    expect(ticks).not.toContain('0')
+    expect(ticks).not.toContain('10')
+    const first = container.querySelector('.tc__axis ~ g text.tc__tick[text-anchor="middle"]')
+    expect(first?.textContent).toBe('1')
+    expect(Number(first?.getAttribute('x'))).toBeGreaterThan(50)
   })
 })

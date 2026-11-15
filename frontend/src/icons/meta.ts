@@ -1,5 +1,5 @@
 /** Body systems that have an indicator today (names match `--system-*` tokens). */
-export type BodySystemId = 'cardiovascular' | 'thermoregulation' | 'sleep' | 'neuro' | 'metabolic';
+export type BodySystemId = 'cardiovascular' | 'thermoregulation' | 'sleep' | 'neuro' | 'metabolic' | 'musculoskeletal';
 /** The five state shapes of DESIGN.md 2.2. */
 export type StatusKind = 'in_range' | 'outside' | 'review' | 'no_data' | 'warning';
 
@@ -17,6 +17,10 @@ const SYSTEMS: Record<string, BodySystemId> = {
   reaction_median_ms: 'neuro',
   reaction_lapses: 'neuro',
   glucose_mgdl: 'metabolic',
+  // Added on Sun 15 Nov, with the system their row of indicators.csv names.
+  appetite_1_5: 'metabolic',
+  fluid_intake_ml: 'metabolic',
+  body_mass_kg: 'musculoskeletal',
 };
 
 /** Body system of an indicator id, or null when the id is unknown. */

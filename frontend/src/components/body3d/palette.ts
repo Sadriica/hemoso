@@ -82,6 +82,7 @@ const SYSTEM_TOKENS: Partial<Record<BodyRegionSystem, keyof ColorTokens>> = {
   sleep: 'system-sleep',
   neuro_behavioural: 'system-neuro',
   metabolic: 'system-metabolic',
+  musculoskeletal: 'system-musculoskeletal',
 }
 
 /** The colour of one state, for the regions a status view lights. */

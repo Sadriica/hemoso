@@ -16,6 +16,7 @@ import pytest
 from app import storage
 from app.conditions import (
     LatestValue,
+    SignalScore,
     condition_result,
     label_for,
     latest_value,
@@ -210,6 +211,14 @@ def test_finding_vector_four_reads_the_diastolic_on_its_own_side():
 
 
 def test_finding_vector_with_one_signal_is_no_data():
+    """A row without symptoms keeps the score it had before T-79.
+
+    HR 112 crossed the cited row above 100, but it is the only usable signal of
+    a four-cell row: `no_data`, as the finding's last vector and the T-78
+    vector "four-cell row after the change: same score as before" say. The
+    single-boundary exception of T-78 rule 3 applies only to rows that list
+    symptoms (`test_one_crossed_boundary_scores_alone_in_a_row_with_symptoms`).
+    """
     latest = {
         "hr_bpm": LatestValue(112.0, "rest", 70.0, 4.0, HR_ROWS),
         "bp_sys_mmhg": LatestValue(95.0, "rest", None, None, ()),
@@ -220,6 +229,35 @@ def test_finding_vector_with_one_signal_is_no_data():
 
     assert tuple(signal.contribution for signal in result.signals) == (1.0, None, None)
     assert tuple(signal.value for signal in result.signals) == (112.0, 95.0, None)
+    assert result.score is None
+    assert result.label == "no_data"
+
+
+def test_one_crossed_boundary_scores_alone_in_a_row_with_symptoms():
+    """T-78 rule 3: in a row that lists symptoms, one crossed boundary scores."""
+    latest = {
+        "hr_bpm": LatestValue(112.0, "rest", 70.0, 4.0, HR_ROWS),
+        "bp_sys_mmhg": LatestValue(95.0, "rest", None, None, ()),
+        "bp_dia_mmhg": None,
+    }
+    row = {**orthostatic_row(), "symptoms": "dizziness"}
+
+    result = condition_result(row, latest)
+
+    assert result.score == 1.0
+    assert result.label == "review"
+
+
+def test_one_usable_signal_without_a_boundary_is_no_data():
+    """One reading, no boundary crossed, nothing else: `no_data`, never a score."""
+    latest = {
+        "hr_bpm": LatestValue(88.0, "rest", 70.0, 4.0, HR_ROWS),
+        "bp_sys_mmhg": None,
+        "bp_dia_mmhg": None,
+    }
+
+    result = condition_result(orthostatic_row(), latest)
+
     assert result.score is None
     assert result.label == "no_data"
 
@@ -310,20 +348,39 @@ def test_labels(score, label):
     assert label_for(score) == label
 
 
+def test_one_crossed_boundary_scores_alone_with_single_boundary():
+    assert score_for([SignalScore(1.0, 1.0)], single_boundary=True) == 1.0
+    assert score_for([SignalScore(1.0, 0.5)], single_boundary=True) is None
+
+
 @pytest.mark.parametrize(
-    ("points", "expected"),
+    ("signals", "expected"),
     [
         ([], None),
-        ([0.5], None),
-        ([1.0], None),
-        ([None, None], None),
-        ([0.0, 1.0], 0.5),
-        ([0.0, 0.5, 1.0], 0.5),
-        ([0.0, 0.0, 0.0], 0.0),
+        ([SignalScore(1.0, 0.5)], None),
+        ([SignalScore(1.0, 0.0)], None),
+        ([SignalScore(1.0, None), SignalScore(1.0, None)], None),
+        # One crossed boundary alone: no_data unless the row lists symptoms.
+        ([SignalScore(1.0, 1.0)], None),
+        ([SignalScore(1.0, 0.0), SignalScore(1.0, 1.0)], 0.5),
+        ([SignalScore(1.0, 0.0), SignalScore(1.0, 1.0), SignalScore(1.0, 0.5)], 0.5),
+        ([SignalScore(1.0, 0.0), SignalScore(1.0, 0.0), SignalScore(1.0, 0.0)], 0.0),
+        # The weighted mean: 0 * 1 + 1 * 0.5 over 1.5.
+        ([SignalScore(1.0, 0.0), SignalScore(0.5, 1.0, "symptom")], 1 / 3),
+        # A symptom-only score stops at the cap.
+        (
+            [
+                SignalScore(0.5, 1.0, "symptom"),
+                SignalScore(0.5, 1.0, "symptom"),
+            ],
+            0.5,
+        ),
+        # One symptom alone is no_data, capped or not.
+        ([SignalScore(0.5, 1.0, "symptom")], None),
     ],
 )
-def test_score_is_the_mean_of_the_usable_points(points, expected):
-    assert score_for(points) == expected
+def test_score_is_the_weighted_mean_of_the_usable_signals(signals, expected):
+    assert score_for(signals) == expected
 
 
 def test_parse_signals_keeps_the_side_and_flags_a_missing_one():
@@ -341,16 +398,32 @@ def test_no_entries_has_no_latest_value():
     assert latest_value([], 4.0, HR_ROWS) is None
 
 
-def test_latest_value_uses_the_last_fourteen_before_the_reading():
+def test_latest_value_uses_the_last_fourteen_days_before_the_reading():
     entries = [entry(day, float(day)) for day in range(1, 21)]
 
     latest = latest_value(entries, 4.0, HR_ROWS)
 
     assert latest is not None
     assert latest.value == 20.0
-    # The reading is not part of its own window: days 6 to 19 are 14 entries.
+    # The reading is not part of its own window: days 6 to 19 are 14 days.
     assert latest.median == pytest.approx(12.5)
     assert latest.spread == pytest.approx(1.4826 * 3.5)
+
+
+def test_latest_value_averages_each_day():
+    entries = (
+        [entry(1, 60.0)]
+        + [entry(1, 120.0)] * 9
+        + [entry(2, 61.0), entry(3, 62.0), entry(4, 70.0)]
+    )
+
+    latest = latest_value(entries, 4.0, HR_ROWS)
+
+    assert latest is not None
+    # Day 1 is 114, day 2 is 61 and day 3 is 62: the median of the days is 62,
+    # while the median of the twelve readings would be 120.
+    assert latest.median == 62.0
+    assert latest.spread == 4.0
 
 
 def test_latest_value_is_not_part_of_its_own_window():

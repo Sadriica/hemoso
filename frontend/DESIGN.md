@@ -80,10 +80,11 @@ planetarium orbit. Always next to the indicator name in words.
 | `--system-thermoregulation` | thermoregulation (amber) | `temp_core_c` | `#F5A524` | `#A85D00` |
 | `--system-sleep` | sleep (indigo) | `sleep_h` | `#9AA5FF` | `#4F46E5` |
 | `--system-neuro` | neuro-behavioural (violet) | `mood_1_5` | `#C39BFF` | `#7C3AED` |
-| `--system-metabolic` | metabolic (teal) | `glucose_mgdl` | `#3ED1C0` | `#0F766E` |
+| `--system-metabolic` | metabolic (teal) | `glucose_mgdl`, `appetite_1_5`, `fluid_intake_ml` | `#3ED1C0` | `#0F766E` |
+| `--system-musculoskeletal` | musculoskeletal (rose; decoration, as every system colour) | `body_mass_kg` | `#F28CC8` | `#B4237A` |
 
-The respiratory, musculoskeletal and radiation systems have no indicator in the
-demo. They have no colour until one exists; propose it to Eng 1 first.
+The respiratory and radiation systems have no indicator in the demo. They have
+no colour until one exists; propose it to Eng 1 first.
 
 ### 2.4 Console accents (Sun 15 Nov)
 
@@ -141,6 +142,8 @@ re-checks them on each test run.
 | Neuro-behavioural | card | 7.80 | 5.70 | 3:1 |
 | Metabolic | page | 10.42 | 4.95 | 3:1 |
 | Metabolic | card | 9.15 | 5.47 | 3:1 |
+| Musculoskeletal | page | 8.79 | 5.49 | 3:1 |
+| Musculoskeletal | card | 7.72 | 6.07 | 3:1 |
 | In range | card | 9.38 | 9.11 | 3:1 |
 | Attention | card | 10.68 | 9.40 | 3:1 |
 | Needs review | card | 7.53 | 7.73 | 3:1 |
@@ -257,7 +260,7 @@ Rules:
   change of state; it never decorates.
 - Cinematic moments (first load, phase change, planetarium settling) never
   block input, last at most 1.2 s, and skip with any key or tap. The intro is
-  the one exception: it runs about 3.4 s (`--motion-intro`), and any key or tap
+  the one exception: it runs about 5.2 s (`--motion-intro`), and any key or tap
   ends it at once.
 - Ambient motion is allowed only in the stage (scene layers drifting, orbits
   turning slowly, the object answering the pointer), never in the panel, and
@@ -377,7 +380,7 @@ Do not:
 Used by the screens subagent; every one starts with "Follow DESIGN.md tokens;
 no new behaviour".
 
-- **Intro.** First load only, about 3.4 s, skippable with any key or tap: the
+- **Intro.** First load only, about 5.2 s, skippable with any key or tap: the
   sky drifts, the mark draws itself, the name types in, then the first phase:
   the HeMoSo mark and the real mission day and clock, then the first phase. No
   invented status text.

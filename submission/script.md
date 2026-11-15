@@ -14,7 +14,8 @@ translate, not to rewrite.
 ## Demo format (REQ-17)
 
 Chosen on Sat 14 at 19:45: **a video of 30 seconds or less**, with English
-subtitles, hosted outside Space Apps. The seven slides stay as plan B.
+subtitles, hosted outside Space Apps. It is the only demo format; there is no
+slide deck.
 
 Why the video: its structure is in `submission/video.md`, and it does not depend
 on the app answering live. The limit is hard, and the subtitles are burned in,
@@ -58,16 +59,16 @@ Neither can watch every crew member every day.
 ### 0:20–0:40 · Who uses it, and when
 
 HeMoSo is for the astronaut, on the days between contacts with Earth. A daily
-check of a few numbers and symptoms, compared with that person's own baseline,
+check of a few numbers and symptoms, compared with that person's own usual range,
 so a change is visible while it is still small.
 
 ### 0:40–1:20 · The story
 
-Day 41. Elena logs her resting heart rate: three days above her baseline. HeMoSo
+Day 41. Elena logs her resting heart rate: three days above her usual range. HeMoSo
 suggests a mild infection is possible, with the probability and what it is based
 on, and asks her to repeat the measurement and answer two questions. Her CMO on
 board is notified. Day 42: fever of 38.5 °C and a sore throat, so the flight
-surgeon is told at the next link. Day 46: both back inside her baseline.
+surgeon is told at the next link. Day 46: both back inside her usual range.
 
 ### 1:20–1:35 · What it does not do
 
@@ -92,7 +93,7 @@ surgeon would sign off, and a longer test inside a real mission routine.
 | Criterion | Where it is in the script |
 | --- | --- |
 | Impact | 0:00: a crew that cannot wait for Earth |
-| Creativity | 0:40: the app compares one person with their own baseline, and suggests with a probability, not a label |
+| Creativity | 0:40: the app compares one person with their own usual range, and suggests with a probability, not a label |
 | Validity | 1:35: NASA sources named, thresholds linked or marked Assumption, the gap stated |
 | Relevance | 0:20 and 0:40: the astronaut's own assessment, on a real mission day |
 | Presentation | The demo path is fixed and under 40 seconds; the limit is said out loud |
@@ -120,7 +121,7 @@ surgeon would sign off, and a longer test inside a real mission routine.
 - NASA, Risk of Altered Immune System Responses:
   https://www.nasa.gov/reference/risk-of-altered-immune-system-responses/
 - NASA, Human Adaptation to Spaceflight: The Role of Nutrition (2020):
-  https://humanresearchroadmap.nasa.gov/Evidence/other/Nutrition%20ER_human_adaptation_2020_final.pdf
+  https://nasa.gov/wp-content/uploads/2023/03/human-adaptation-2020-final.pdf
 - Canadian Space Agency, Why do we conduct science experiments in space?:
   https://www.asc-csa.gc.ca/eng/iss/science/why-do-we-conduct-science-experiments-in-space.asp
 - NASA-STD-3001 Volume 1, Revision C: https://www.nasa.gov/wp-content/uploads/2023/11/nasa-std-3001-vol-1-rev-c-with-signature.pdf

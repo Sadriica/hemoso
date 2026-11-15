@@ -88,6 +88,7 @@
   --system-sleep: #9aa5ff;
   --system-neuro: #c39bff;
   --system-metabolic: #3ed1c0;
+  --system-musculoskeletal: #f28cc8;
 
   /* Type families (DESIGN.md 4.1) */
   --font-display: 'Barlow Condensed', 'Arial Narrow', 'Roboto Condensed', system-ui, sans-serif;
@@ -163,9 +164,9 @@
   --motion-fast: 150ms;
   --motion-base: 250ms;
   --motion-slow: 400ms;
-  /* The intro is the one long moment: about three and a half seconds, and any
+  /* The intro is the one long moment: about five seconds, and any
      key or tap ends it (DESIGN.md 7). */
-  --motion-intro: 3400ms;
+  --motion-intro: 5200ms;
   --motion-cinematic: 1200ms;
   /* Choreography (DESIGN.md 7.2): every piece is short; the whole sequence of
      a phase entrance stays under --motion-cinematic and ends on any key. */
@@ -213,6 +214,7 @@
     --system-sleep: #4f46e5;
     --system-neuro: #7c3aed;
     --system-metabolic: #0f766e;
+    --system-musculoskeletal: #b4237a;
 
     --shadow-raised: 0 0 0 1px var(--color-border), 0 8px 24px rgb(8 11 18 / 12%);
     --shadow-float: 0 18px 48px rgb(8 11 18 / 16%);
@@ -1378,8 +1380,14 @@ legend {
   justify-items: start;
 }
 
+/* Not display: none: Safari does not decode a hidden video, so the first frame
+   never arrives and the camera looks broken (T-70). Off screen, with a size. */
 .face-panel__camera[hidden] {
-  display: none;
+  display: grid;
+  position: absolute;
+  left: -9999px;
+  width: 320px;
+  pointer-events: none;
 }
 
 .face-panel__video {
