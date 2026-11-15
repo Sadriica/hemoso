@@ -1414,3 +1414,11 @@ input.reading__input::-webkit-inner-spin-button {
     content: ' ·';
   }
 }
+
+/* Round of Sun 07:55: under 400 px the person always starts a new line, so
+   the dot that closes the day and the clock has nothing to join. */
+@media (max-width: 399px) {
+  .topbar__stamp:has(+ .topbar__duty)::after {
+    content: none;
+  }
+}
