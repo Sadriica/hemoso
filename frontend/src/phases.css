@@ -1468,3 +1468,43 @@ input.reading__input::-webkit-inner-spin-button {
     letter-spacing: 0;
   }
 }
+
+/* Sun 10:20 (Wambi): on a wide screen the three steps were spread across the
+   whole width with long lines between them, so the rail read as three loose
+   pieces. The steps now sit together in the middle, joined by short
+   connectors as on a phone, and every step keeps its name. */
+@media (min-width: 600px) {
+  .phase-rail__track {
+    display: none;
+  }
+
+  .phase-rail__steps {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .phase-rail__step {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .phase-rail__label {
+    padding-inline: 0;
+    background: none;
+  }
+
+  .phase-rail__step + .phase-rail__step::before {
+    content: '';
+    width: 64px;
+    height: 2px;
+    margin-inline: var(--space-3);
+    background: var(--color-border-control);
+  }
+
+  .phase-rail__step + .phase-rail__step--done::before,
+  .phase-rail__step + .phase-rail__step--current::before {
+    background: var(--color-accent);
+  }
+}

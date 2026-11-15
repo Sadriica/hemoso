@@ -9,6 +9,7 @@ import {
 } from '../face/descriptors'
 import { describeError } from '../face/backends'
 import { strings, type FaceFallback } from '../strings'
+import './face-scan.css'
 
 // Signing in by looking at the camera, on this device only (REQ-36, T-58,
 // T-59). The panel opens from the header button and never opens the camera
@@ -28,6 +29,25 @@ const FRAME_INTERVAL_MS = 400
 
 type Stage = 'consent' | 'ready' | 'registering' | 'signingIn'
 
+// How the check ended, for the picture only: the words come from `message`.
+type Outcome = 'success' | 'failure'
+
+// The success mark stays this long before the session opens (about 600 to
+// 900 ms, never more than a second), and the result stays on the frame this
+// long after the camera has been released.
+const RESULT_HOLD_MS = 750
+const RESULT_SHOWN_MS = 1800
+const STILL_HOLD_MS = 300
+
+// Motion is off with the top bar switch (.app--still) or the system setting.
+function motionIsOff(): boolean {
+  if (document.querySelector('.app--still') !== null) return true
+  return (
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  )
+}
+
 type Message = { text: string; alert: boolean }
 
 export interface FaceSignInProps {
@@ -43,6 +63,8 @@ export interface FaceSignInProps {
   fallback?: FaceFallback
   // Tests open the panel with 0 so five frames do not wait two seconds.
   frameIntervalMs?: number
+  // How long the success mark shows before the session opens. Tests use 0.
+  resultHoldMs?: number
 }
 
 export default function FaceSignIn({
@@ -52,10 +74,12 @@ export default function FaceSignIn({
   onFocusPicker,
   fallback = 'tab',
   frameIntervalMs = FRAME_INTERVAL_MS,
+  resultHoldMs = RESULT_HOLD_MS,
 }: FaceSignInProps) {
   const [stage, setStage] = useState<Stage>('consent')
   const [message, setMessage] = useState<Message | null>(null)
   const [cameraOn, setCameraOn] = useState(false)
+  const [outcome, setOutcome] = useState<Outcome | null>(null)
   const [loadingPercent, setLoadingPercent] = useState<number | null>(null)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [savedIds, setSavedIds] = useState<string[]>(() =>
@@ -73,6 +97,16 @@ export default function FaceSignIn({
   const sessionRef = useRef<CameraSession | null>(null)
 
   const busy = stage === 'registering' || stage === 'signingIn'
+  // The frame stays after the camera is released, to show how the check ended.
+  const showFrame = cameraOn || outcome !== null
+
+  // A result left on the frame after the camera is released goes away by
+  // itself; during a sign-in the session opens first.
+  useEffect(() => {
+    if (outcome === null || busy) return undefined
+    const timer = setTimeout(() => setOutcome(null), RESULT_SHOWN_MS)
+    return () => clearTimeout(timer)
+  }, [outcome, busy])
 
   // The consent text comes first, so its button takes the focus.
   useEffect(() => {
@@ -190,17 +224,20 @@ export default function FaceSignIn({
     if (busy || personId === '') return
     setConfirmingDelete(false)
     setMessage(null)
+    setOutcome(null)
     setStage('registering')
     try {
       const video = await openCameraAndModels()
       const frames = await captureFrames(video, FRAME_COUNT)
       const descriptor = averageDescriptors(frames)
       if (descriptor === null) {
+        setOutcome('failure')
         setMessage({ text: strings.face.status.noFace, alert: true })
         return
       }
       const records = saveFace({ personId, descriptor })
       setSavedIds(records.map((record) => record.personId))
+      setOutcome('success')
       setMessage({
         text: strings.face.status.registered(personId),
         alert: false,
@@ -218,6 +255,7 @@ export default function FaceSignIn({
     if (busy) return
     setConfirmingDelete(false)
     setMessage(null)
+    setOutcome(null)
     setStage('signingIn')
     try {
       const video = await openCameraAndModels()
@@ -225,6 +263,7 @@ export default function FaceSignIn({
       const probe = frames[0] ?? null
       const match = probe === null ? null : bestMatch(loadFaces(), probe)
       if (match === null) {
+        setOutcome('failure')
         setMessage({
           text: strings.face.problem('notRecognised', fallback),
           alert: true,
@@ -232,6 +271,11 @@ export default function FaceSignIn({
         onFocusPicker()
         return
       }
+      // The ring closes and the check draws before the session opens.
+      setOutcome('success')
+      await wait(
+        motionIsOff() ? Math.min(resultHoldMs, STILL_HOLD_MS) : resultHoldMs,
+      )
       onPersonSelected(match.personId)
       onClose()
     } catch (error) {
@@ -361,17 +405,22 @@ export default function FaceSignIn({
               of the panel, so the element is never an unlabelled video. */}
           <div
             className="face-panel__camera"
-            hidden={!cameraOn}
-            aria-hidden={!cameraOn}
+            hidden={!showFrame}
+            aria-hidden={!showFrame}
           >
-            <video
-              ref={videoRef}
-              className="face-panel__video"
-              aria-labelledby={videoLabelId}
-              autoPlay
-              playsInline
-              muted
-            />
+            <div className="face-panel__frame">
+              <video
+                ref={videoRef}
+                className="face-panel__video"
+                aria-labelledby={videoLabelId}
+                autoPlay
+                playsInline
+                muted
+              />
+              {showFrame && (
+                <FaceScan state={outcome ?? 'scanning'} still={motionIsOff()} />
+              )}
+            </div>
             <p className="face-panel__camera-label" id={videoLabelId}>
               {strings.face.videoLabel}
             </p>
@@ -410,4 +459,75 @@ function wait(milliseconds: number): Promise<void> {
   return new Promise((resolve) => {
     setTimeout(resolve, milliseconds)
   })
+}
+
+// The picture of the check, over the video. Decoration: the words are in the
+// status line, so a screen reader hears nothing from here.
+export function FaceScan({
+  state,
+  still,
+}: {
+  state: 'scanning' | 'success' | 'failure'
+  still: boolean
+}) {
+  return (
+    <div
+      className="face-scan"
+      data-state={state}
+      data-motion={still ? 'still' : 'moving'}
+      aria-hidden="true"
+    >
+      {state === 'scanning' && <div className="face-scan__line" />}
+      <svg className="face-scan__svg" viewBox="0 0 320 240">
+        <ellipse
+          className="face-scan__ring"
+          cx="160"
+          cy="120"
+          rx="84"
+          ry="104"
+        />
+        {state === 'scanning' && (
+          <ellipse
+            className="face-scan__arc"
+            cx="160"
+            cy="120"
+            rx="84"
+            ry="104"
+            pathLength="100"
+          />
+        )}
+        {state !== 'scanning' && (
+          <ellipse
+            className="face-scan__done"
+            cx="160"
+            cy="120"
+            rx="84"
+            ry="104"
+            pathLength="100"
+          />
+        )}
+        {state === 'success' && (
+          <path
+            className="face-scan__mark"
+            d="M122 122 L150 150 L204 94"
+            pathLength="100"
+          />
+        )}
+        {state === 'failure' && (
+          <>
+            <path
+              className="face-scan__mark"
+              d="M132 92 L188 148"
+              pathLength="100"
+            />
+            <path
+              className="face-scan__mark"
+              d="M188 92 L132 148"
+              pathLength="100"
+            />
+          </>
+        )}
+      </svg>
+    </div>
+  )
 }
