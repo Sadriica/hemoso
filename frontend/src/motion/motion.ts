@@ -16,6 +16,15 @@ function prefersReduced(): boolean {
  * read too and followed live. False means: show the final state at once.
  */
 export function useMotionAllowed(still: boolean): boolean {
+  const reduced = useReducedMotion()
+  return !still && !reduced
+}
+
+/**
+ * The system setting, followed live: a person who turns "reduce motion" on in
+ * the OS while the app is open stops the motion at once.
+ */
+export function useReducedMotion(): boolean {
   const [reduced, setReduced] = useState(prefersReduced)
   useEffect(() => {
     if (typeof matchMedia !== 'function') return
@@ -24,7 +33,7 @@ export function useMotionAllowed(still: boolean): boolean {
     mq.addEventListener?.('change', on)
     return () => mq.removeEventListener?.('change', on)
   }, [])
-  return !still && !reduced
+  return reduced
 }
 
 /** Reads a duration token such as `--motion-slow` (ms) from the element; `fallback` mirrors DESIGN.md. */

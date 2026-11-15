@@ -99,10 +99,10 @@ describe('Intro', () => {
     rerender(<Intro onDone={() => {}} still={false} />)
     expect(container.querySelector('.intro__clock')).toBeNull()
   })
-  it('calls onDone once within 1200 ms', () => {
+  it('calls onDone once at the end of the intro, about three and a half seconds', () => {
     const onDone = vi.fn()
     render(<Intro onDone={onDone} still={false} />)
-    act(() => void vi.advanceTimersByTime(1199))
+    act(() => void vi.advanceTimersByTime(3399))
     expect(onDone).not.toHaveBeenCalled()
     act(() => void vi.advanceTimersByTime(1))
     expect(onDone).toHaveBeenCalledOnce()
@@ -134,7 +134,7 @@ describe('Intro', () => {
     })
     const onDone = vi.fn()
     expect(() => render(<Intro onDone={onDone} still={false} />)).not.toThrow()
-    act(() => void vi.advanceTimersByTime(1200))
+    act(() => void vi.advanceTimersByTime(3400))
     expect(onDone).toHaveBeenCalledOnce()
   })
   it('renders a named skip button only with skipLabel', () => {

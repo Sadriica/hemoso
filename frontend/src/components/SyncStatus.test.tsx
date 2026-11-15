@@ -5,6 +5,7 @@ import SyncStatus from './SyncStatus'
 import { LocalEntryStore } from '../data/entryStore'
 import { HttpSync, NoopSync, type FetchLike, type SyncClient } from '../data/sync'
 import type { Entry } from '../domain/types'
+import { strings } from '../strings'
 
 // The client only reads `status`; a plain object keeps the test independent of
 // the Response implementation of the test runner.
@@ -50,6 +51,12 @@ function renderStatus(
   return store
 }
 
+// The chip is found by its title, which is the whole sentence: the visible text
+// splits the count from its word on a narrow screen.
+function chipOf(state: string, detail: string): HTMLElement {
+  return screen.getByTitle(strings.sync.chip(state, detail))
+}
+
 function setOnline(value: boolean) {
   Object.defineProperty(navigator, 'onLine', {
     configurable: true,
@@ -63,52 +70,73 @@ afterEach(() => {
 })
 
 describe('SyncStatus', () => {
-  it('says nothing is waiting, nothing was sent and the browser is online', () => {
+  it('says there is no server and that the readings stay here', () => {
     renderStatus()
-    expect(screen.getByText('Nothing waiting to be sent')).toBeInTheDocument()
-    expect(screen.getByText('Not sent yet')).toBeInTheDocument()
-    expect(screen.getByText('Online')).toBeInTheDocument()
+    const chip = chipOf(strings.sync.noServer, strings.sync.savedHere)
+    expect(chip).toHaveTextContent(
+      strings.sync.chip(strings.sync.noServer, strings.sync.savedHere),
+    )
+    expect(screen.queryByRole('button', { name: strings.sync.sendNow })).toBeNull()
   })
 
   it('counts the entries that wait for a server', () => {
     renderStatus(new NoopSync(), [newEntry(), newEntry(57)])
-    expect(screen.getByText('2 waiting to be sent')).toBeInTheDocument()
-    expect(screen.getByText('Not sent yet')).toBeInTheDocument()
+    const chip = chipOf(
+      strings.sync.noServer,
+      strings.sync.waiting(2),
+    )
+    expect(chip).toHaveTextContent(strings.sync.waiting(2))
   })
 
-  it('empty outbox, then the last sent time after a round', async () => {
+  it('turns to all sent once the outbox is empty', async () => {
     const fake = fakeFetch()
     const store = renderStatus(new HttpSync('https://api.test', fake.fetchFn), [
       newEntry(),
     ])
     await waitFor(() => expect(store.pending()).toHaveLength(0))
-    expect(await screen.findByText('Nothing waiting to be sent')).toBeInTheDocument()
-    expect(screen.getByText(/^Last sent: Day \d+ \d\d:\d\d$/)).toBeInTheDocument()
-    expect(screen.queryByText('Not sent yet')).toBeNull()
+    expect(
+      await screen.findByTitle(
+        strings.sync.chip(strings.sync.online, strings.sync.allSent),
+      ),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: strings.sync.sendNow })).toBeNull()
   })
 
-  it('says how many entries the server did not accept', async () => {
+  it('says how many readings the server did not accept', async () => {
     const fake = fakeFetch([409, 422])
     renderStatus(new HttpSync('https://api.test', fake.fetchFn), [
       newEntry(58),
       newEntry(57),
     ])
-    expect(
-      await screen.findByText('2 not accepted by the server'),
-    ).toBeInTheDocument()
-    expect(screen.queryByText('Nothing waiting to be sent')).toBeInTheDocument()
+    const chip = await screen.findByTitle(
+      strings.sync.chip(strings.sync.online, strings.sync.notAccepted(2)),
+    )
+    expect(chip).toHaveTextContent(strings.sync.notAccepted(2))
   })
 
-  it('offers no Send button and says why when no server is set up', () => {
-    renderStatus()
-    expect(screen.getByText('No server set up for this demo')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Send now' })).toBeNull()
-  })
+  it('offers Send now only while something waits', async () => {
+    const fake = fakeFetch([201])
+    const store = renderStatus(new HttpSync('https://api.test', fake.fetchFn), [
+      newEntry(),
+    ])
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('button', { name: strings.sync.sendNow }),
+      ).toBeNull(),
+    )
 
-  it('offers Send now when a server is set up', () => {
-    renderStatus(new HttpSync('https://api.test', fakeFetch().fetchFn))
-    expect(screen.getByRole('button', { name: 'Send now' })).toBeEnabled()
-    expect(screen.queryByText('No server set up for this demo')).toBeNull()
+    act(() => {
+      store.add(newEntry(57))
+    })
+    const send = screen.getByRole('button', { name: strings.sync.sendNow })
+    send.focus()
+    await userEvent.setup().keyboard('{Enter}')
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('button', { name: strings.sync.sendNow }),
+      ).toBeNull(),
+    )
+    expect(store.pending()).toHaveLength(0)
   })
 
   it('sends what was waiting when the status appears', async () => {
@@ -131,13 +159,17 @@ describe('SyncStatus', () => {
     act(() => {
       store.add(newEntry(57))
     })
-    const send = screen.getByRole('button', { name: 'Send now' })
+    const send = screen.getByRole('button', { name: strings.sync.sendNow })
     send.focus()
     expect(send).toHaveFocus()
     await user.keyboard('{Enter}')
 
     await waitFor(() => expect(fake.calls()).toBe(2))
-    expect(await screen.findByText('Nothing waiting to be sent')).toBeInTheDocument()
+    expect(
+      await screen.findByTitle(
+        strings.sync.chip(strings.sync.online, strings.sync.allSent),
+      ),
+    ).toBeInTheDocument()
   })
 
   it('sends again on the online event', async () => {
@@ -159,19 +191,39 @@ describe('SyncStatus', () => {
     })
     await waitFor(() => expect(fake.calls()).toBe(2))
     expect(store.pending()).toHaveLength(0)
-    expect(screen.getByText('Online')).toBeInTheDocument()
+    expect(
+      screen.getByTitle(
+        strings.sync.chip(strings.sync.online, strings.sync.allSent),
+      ),
+    ).toBeInTheDocument()
   })
 
   it('says Offline in words on the offline event', async () => {
     renderStatus()
-    expect(screen.getByText('Online')).toBeInTheDocument()
+    expect(
+      screen.getByTitle(
+        strings.sync.chip(strings.sync.noServer, strings.sync.savedHere),
+      ),
+    ).toBeInTheDocument()
 
     setOnline(false)
     await act(async () => {
       window.dispatchEvent(new Event('offline'))
     })
-    expect(screen.getByText('Offline')).toBeInTheDocument()
-    expect(screen.queryByText('Online')).toBeNull()
+
+    const offline = screen.getByTitle(
+      strings.sync.chip(strings.sync.noServer, strings.sync.savedHere),
+    )
+    // No server: the state stays "No server", which is the one that matters.
+    expect(offline).toHaveTextContent(strings.sync.noServer)
+    expect(screen.queryByText(strings.sync.online)).toBeNull()
+
+    // With a server, the same event turns the same chip to Offline.
+    renderStatus(new HttpSync('https://api.test', fakeFetch().fetchFn))
+    const offlineChip = screen.getAllByTitle(
+      strings.sync.chip(strings.sync.offline, strings.sync.allSent),
+    )
+    expect(offlineChip.length).toBeGreaterThan(0)
   })
 
   it('runs one round at a time', async () => {
@@ -186,7 +238,7 @@ describe('SyncStatus', () => {
     ])
     await waitFor(() => expect(calls).toBe(1))
 
-    const send = screen.getByRole('button', { name: 'Send now' })
+    const send = screen.getByRole('button', { name: strings.sync.sendNow })
     send.focus()
     await userEvent.setup().keyboard('{Enter}')
     expect(calls).toBe(1)

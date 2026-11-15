@@ -38,8 +38,6 @@ export interface ColorTokens {
   'status-attention-bg': string
   'status-no-data-text': string
   'status-no-data-bg': string
-  'status-outside-text': string
-  'status-outside-bg': string
   'status-review-text': string
   'status-review-bg': string
   /** One colour per body system: icons, body zones and planetarium orbits. */
@@ -66,8 +64,6 @@ export const COLORS: Record<ThemeMode, ColorTokens> = {
     'color-grid': 'rgba(255, 255, 255, 0.04)',
     'status-in-range-text': '#5FD49A',
     'status-in-range-bg': '#0D2A1F',
-    'status-outside-text': '#8EC5FF',
-    'status-outside-bg': '#0F2339',
     'status-attention-text': '#F5C542',
     'status-attention-bg': '#2C2407',
     'status-review-text': '#FF8A70',
@@ -95,8 +91,6 @@ export const COLORS: Record<ThemeMode, ColorTokens> = {
     'color-grid': 'transparent',
     'status-in-range-text': '#14532D',
     'status-in-range-bg': '#DCFCE7',
-    'status-outside-text': '#0B4AA8',
-    'status-outside-bg': '#DBEAFE',
     'status-attention-text': '#6B3A06',
     'status-attention-bg': '#FEF3C7',
     'status-review-text': '#9A2A14',
