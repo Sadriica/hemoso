@@ -11,7 +11,8 @@ HeMoSo · a health monitor for astronauts
 ## One-line summary
 
 HeMoSo reads each astronaut's own measurements, compares them with that
-person's history and with sourced clinical limits, and says in plain words what
+person's history and with fixed limits that cite their source or are marked
+Assumption, and says in plain words what
 to do next and who should know.
 
 ## The problem
@@ -29,7 +30,8 @@ an astronaut records health indicators and understands the result.
 - Compares each reading with the person's own earlier readings, not with a
   population range: compared with the person's own recent readings, in a moving
   window.
-- Compares it again with published clinical limits, each one with its source.
+- Compares it again with fixed limits: each one cites its source or is marked
+  Assumption, and only a limit with a source can raise a review.
 - Returns one of four states in plain words: no data yet, in your usual range,
   outside your usual range, or needs review, and names who acts: the crew, the
   crew medical officer on board, or the flight surgeon on the ground.
@@ -41,6 +43,56 @@ an astronaut records health indicators and understands the result.
 - Readings are saved on the device without a connection and sent when the link
   returns, with a notice while the app is offline.
 - Uses synthetic data only, labelled in the interface.
+
+### Why you can trust what it says
+
+1. **Every threshold shows its source.** Each row of
+   [`config/rules/attention.csv`](https://github.com/Sadriica/hemoso/blob/main/config/rules/attention.csv) holds a link
+   or the word Assumption, and the app shows it in the Details panel of each
+   card. The links
+   are collected in [`docs/sources.md`](https://github.com/Sadriica/hemoso/blob/main/docs/sources.md).
+2. **Your own baseline, one rule in two places.** The API
+   ([`backend/app/state.py`](https://github.com/Sadriica/hemoso/blob/main/backend/app/state.py)) and the app
+   ([`frontend/src/domain/state.ts`](https://github.com/Sadriica/hemoso/blob/main/frontend/src/domain/state.ts)) apply
+   the rule written in
+   [`phys-02`](https://github.com/Sadriica/hemoso/blob/main/docs/findings/phys-02-baseline-state-rule.md), and the app is
+   tested against that finding's vectors in
+   [`window.json`](https://github.com/Sadriica/hemoso/blob/main/scripts/fixtures/format_rules/window.json).
+3. **A sourced limit is checked before the baseline.** A core temperature of
+   39.5 °C on the first day already needs review (the 38.0 °C row cites NIH
+   MedlinePlus, 38 °C measured rectally, the reading closest to core, and the
+   WHO case definitions, measured fever of 38 °C or more; see [`FORMATS.md`](https://github.com/Sadriica/hemoso/blob/main/FORMATS.md) section 3). A limit marked
+   Assumption never raises an alarm on its own
+   ([`phys-02`](https://github.com/Sadriica/hemoso/blob/main/docs/findings/phys-02-baseline-state-rule.md)).
+
+What is not validated: `min_spread`, the smallest spread the baseline uses, is
+an engineering default, and the 90-second reaction check is adapted from the
+3-minute PVT-B with no study of the shorter run
+([`phys-06`](https://github.com/Sadriica/hemoso/blob/main/docs/findings/phys-06-reaction-time-pvtb.md)). The findings mark
+both as Assumption, and so does every threshold with no source.
+
+### Built for a real mission
+
+- **Built on instruments documented for the ISS.** The instruments named in
+  [`config/data/indicators.csv`](https://github.com/Sadriica/hemoso/blob/main/config/data/indicators.csv), each with a
+  source link: Bio-Monitor smart shirt, T-Mini core temperature headband,
+  Actiwatch, i-STAT blood analyser, the ISS Reaction Self Test (our check is a
+  90-second adaptation), the metered galley dispenser and SLAMMD. The values are
+  typed into the app; it does not connect to those devices. Mood and appetite are
+  daily questions.
+- **Works without contact with Earth.** Readings are saved on the device and
+  an outbox sends them when the link returns
+  ([`docs/API.md`](https://github.com/Sadriica/hemoso/blob/main/docs/API.md), REQ-13 in
+  [`docs/requirements.md`](https://github.com/Sadriica/hemoso/blob/main/docs/requirements.md)).
+- **Crew, then crew medical officer, then flight surgeon.** The `notify`
+  column of [`attention.csv`](https://github.com/Sadriica/hemoso/blob/main/config/rules/attention.csv) names who acts,
+  possible conditions are an evidence score
+  ([`bio2-02`](https://github.com/Sadriica/hemoso/blob/main/docs/findings/bio2-02-evidence-score.md)), and the tool is
+  never a diagnosis or a replacement for either doctor (REQ-11).
+- **NASA crew terms.** Flight Day, GMT and Post-sleep, with plain words beside
+  them ([`STANDARDS.md`](https://github.com/Sadriica/hemoso/blob/main/STANDARDS.md) glossary).
+
+The same daily check works wherever the doctor is far away: Antarctic stations, offshore rigs, rural clinics.
 
 ## What is not in the demo yet
 
@@ -88,8 +140,13 @@ Two rules make the result reproducible and explainable:
   https://www.asc-csa.gc.ca/eng/sciences/bio-monitor.asp
 - NASA-STD-3001 Volume 1, Revision C (monitoring and trending, limits relative
   to pre-mission values): https://www.nasa.gov/wp-content/uploads/2023/11/nasa-std-3001-vol-1-rev-c-with-signature.pdf
-- JSC 22538 Rev F, Health Stabilization Program (fever defined as 100.4 °F):
+- JSC 22538 Rev F, Health Stabilization Program (the fever condition in
+  `config/rules/conditions.csv`):
   https://ntrs.nasa.gov/api/citations/20230012738/downloads/JSC%2022538%20Health%20Stabilization%20Program%20Rev%20F%20Clean.pdf
+- NIH MedlinePlus, Fever (38 °C measured rectally; the core temperature limit):
+  https://medlineplus.gov/ency/article/003090.htm
+- WHO, surveillance case definitions for ILI and SARI (measured fever of 38 °C
+  or more): https://cdn.who.int/media/docs/default-source/influenza/who_ili_sari_case_definitions_2014.pdf
 - NASA, In-Situ Laboratory Analysis Capability (point-of-care blood analysis in
   flight): https://ntrs.nasa.gov/citations/20230006919
 - Assessment of a portable clinical blood analyzer during space flight,
@@ -110,8 +167,8 @@ Every library is listed with its licence and the reason it is there in
 generated with AI, so none carries a watermark, and no NASA logo, flag or
 mission identifier appears in the interface.
 
-**TODO:** add the live app URL, the repository URL, the demo video or slides
-link, and the team page URL.
+**TODO:** add the demo video or slides link (the app, repository and team
+URLs are under Links).
 
 ## AI (SI) use
 

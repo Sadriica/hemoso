@@ -111,8 +111,8 @@ once the solution exists; the pitch and the page use it (REQ-21).
 
 | Criterion | What judges look for | How HeMoSo answers it |
 | --- | --- | --- |
-| Impact | Potential to improve astronaut health monitoring and life on Earth | |
-| Creativity | A fresh perspective or inventive execution | |
-| Validity | Grounded in scientific principles; technically and logically feasible | |
-| Relevance | Answers the challenge statement directly | |
-| Presentation | Clear story, demo and page | |
+| Impact | Potential to improve astronaut health monitoring and life on Earth | A reading becomes one plain next step and names who acts: the crew, the CMO on board or the flight surgeon (`config/rules/attention.csv`, `notify`); the same daily check helps wherever the doctor is far away |
+| Creativity | A fresh perspective or inventive execution | Each person's own baseline, fixed limits checked first, and possible conditions as an evidence score with its signals, never a diagnosis (`docs/findings/phys-02-baseline-state-rule.md`, `docs/findings/bio2-02-evidence-score.md`) |
+| Validity | Grounded in scientific principles; technically and logically feasible | Every limit cites its source or is marked Assumption, and only a sourced limit raises a review; the baseline rule is pinned by shared test vectors (`docs/sources.md`, `scripts/fixtures/format_rules/window.json`) |
+| Relevance | Answers the challenge statement directly | Records the indicators the statement names, explains why each matters and how spaceflight affects it, and works without contact with Earth through an outbox (REQ-03 to REQ-08, REQ-13) |
+| Presentation | Clear story, demo and page | Three phases, Identify, Report and Status; one scene in the video and the pitch: two readings, the evidence, who to tell (`submission/video.md`, `submission/script.md`) |
