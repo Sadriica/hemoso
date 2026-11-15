@@ -14,6 +14,9 @@ HeMoSo reads each astronaut's own measurements, compares them with that
 person's history and with sourced clinical limits, and says in plain words what
 to do next and who should know.
 
+HeMoSo helps you assess your own health. Your CMO and the flight surgeon confirm
+every decision.
+
 ## The problem
 
 A crew member on a long mission cannot walk into a clinic. Care today depends
@@ -25,7 +28,8 @@ an astronaut records health indicators and understands the result.
 ## What HeMoSo does
 
 - Records a measurement per indicator (heart rate, both blood pressures, core
-  temperature, blood glucose, sleep hours, mood, reaction time and lapses).
+  temperature, blood glucose, sleep hours, mood, reaction time and lapses,
+  appetite, fluid intake and body mass).
 - Compares each reading with the person's own earlier readings, not with a
   population range: compared with the person's own recent readings, in a moving
   window.
@@ -34,13 +38,24 @@ an astronaut records health indicators and understands the result.
   outside your usual range, or needs review, and names who acts: the crew, the
   crew medical officer on board, or the flight surgeon on the ground.
 - Shows the next step for that state, written for someone who is not a doctor,
-  for seven of the nine indicators.
+  for all twelve indicators.
 - Suggests possible conditions as an evidence score with the signals behind it,
   never as a percentage and never as a certainty. The crew medical officer or
   the flight surgeon confirms.
 - Readings are saved on the device without a connection and sent when the link
   returns, with a notice while the app is offline.
 - Uses synthetic data only, labelled in the interface.
+
+## Tools and stack
+
+- **Frontend:** React 19, TypeScript, Vite 8, three.js for the 3D body, plain CSS.
+- **Backend:** Python 3.13, FastAPI, Pydantic, uvicorn; PostgreSQL on Supabase for
+  storage; the API runs on a container host; the frontend on Vercel.
+- **Tests and checks:** Vitest and Playwright for the interface, pytest and ruff
+  for the API, and a content check (`scripts/check_content.py`) that validates
+  every CSV and every page of text before a merge.
+- **Data files:** four plain CSV/Markdown files that a biologist can edit without
+  touching code; no external AI service runs inside the product.
 
 ## What is not in the demo yet
 
@@ -62,7 +77,7 @@ content without touching code:
 | File | What it holds |
 | --- | --- |
 | `config/data/indicators.csv` | the indicators, unit, direction, how each is measured in flight, and the instrument |
-| `config/rules/attention.csv` | the clinical limits: indicator, side, threshold, level, who is notified, source |
+| `config/rules/attention.csv` | the clinical or assumed limits: indicator, side, threshold, level, who is notified, source |
 | `config/rules/conditions.csv` | the possible conditions and the signals each rests on (with their side) |
 | `config/content/<indicator>.md` | the text the astronaut reads: why it matters, how spaceflight affects it, steps, status and next step |
 
@@ -110,8 +125,8 @@ Every library is listed with its licence and the reason it is there in
 generated with AI, so none carries a watermark, and no NASA logo, flag or
 mission identifier appears in the interface.
 
-**TODO:** add the live app URL, the repository URL, the demo video or slides
-link, and the team page URL.
+**TODO:** add the demo video link. The app, repository and team links are in
+the Links section below.
 
 ## AI (SI) use
 
@@ -142,9 +157,10 @@ rejects a row with no source, a non-monotonic escalation, or an unknown
 indicator. The rule that a sourced limit wins over the baseline is written in a
 finding with test vectors.
 
-**Relevance.** The indicators are the six the challenge names plus three that
-matter in flight, and each one is measured with hardware that exists on the ISS
-today. The rules answer the five questions the statement asks per indicator:
+**Relevance.** The indicators are the six the challenge names, with blood
+pressure read as two numbers, plus the reaction check and the three nutrition
+signals. Each one is measured with hardware that exists on the ISS today. The
+rules answer the five questions the statement asks per indicator:
 how it is measured, why it matters, how spaceflight affects it, when it needs
 attention and what prevents a problem.
 
@@ -157,7 +173,7 @@ repository, the app and the demo are in English.
 
 - Repository: https://github.com/Sadriica/hemoso
 - Live app: https://www.hemoso.space/
-- Demo (video 30 s or 7 slides): **TODO**
+- Demo (video 30 s): **TODO**
 - Team: https://www.spaceappschallenge.org/2026/find-a-team/tardis2/
 
 ## Team
