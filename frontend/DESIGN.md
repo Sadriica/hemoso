@@ -447,3 +447,10 @@ arranges the tokens of sections 2 to 7.
   bar switch, and while the tab is hidden.
 - **Phone.** At 390 px the console is one column of panels, each in the same
   reading order; nothing sits side by side inside a panel.
+- **Status.** The same grammar. A system strip over the overview counts the
+  channels and how many are in each state (icon and words, from the statuses
+  on screen). The indicator card and the 3D body are two framed panels side by
+  side from 900 px: the card with its state on the top edge, the body wider
+  and named "Digital twin", lighting the zone of the selected indicator. The
+  possible conditions are an evidence board: one framed tile per condition,
+  its step on the top edge.

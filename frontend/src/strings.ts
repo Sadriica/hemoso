@@ -141,6 +141,22 @@ export const strings = {
     noReadings:
       'No readings yet. Log your first readings in the report, then come back here.',
     loading: 'Loading the overview.',
+    // The system strip of the console: counts only, from the statuses on
+    // screen. No health wording.
+    strip: {
+      label: 'System summary',
+      channels: (count: number): string =>
+        `${count} ${count === 1 ? 'channel' : 'channels'}`,
+      count: {
+        review: (count: number): string =>
+          `${count} ${count === 1 ? 'needs' : 'need'} review`,
+        outside: (count: number): string => `${count} outside usual range`,
+        in_range: (count: number): string => `${count} in usual range`,
+        no_data: (count: number): string => `${count} with no data yet`,
+      },
+    },
+    // The label over the 3D body beside the card.
+    twin: 'Digital twin',
     // The overview figure failed to draw; the cards and the history still work.
     overviewFailed: 'The overview could not be drawn. Reload the page to try again.',
   },
@@ -372,6 +388,7 @@ export const strings = {
   // it. Never a percentage, never a statement about the person; the names come
   // from the file.
   conditions: {
+    eyebrow: 'Evidence board',
     heading: 'Possible conditions',
     intro: 'What your readings point to, scored as evidence from 0 to 1.',
     confirms: 'Your CMO or flight surgeon confirms.',
