@@ -1350,3 +1350,32 @@ input.reading__input::-webkit-inner-spin-button {
     box-shadow: none;
   }
 }
+
+/* Round of Sun 07:00: the rail on a wide screen. At 88 px it covered a tenth
+   of the screen under every phase. The name of each step now sits beside its
+   node, on the track, so the rail is one row of 60 px; the label paints the
+   raised band over the line, as the node does. */
+@media (min-width: 600px) {
+  :root:root {
+    --rail-height: 60px;
+  }
+
+  .phase-rail {
+    padding-block: var(--space-2);
+  }
+
+  .phase-rail__step {
+    grid-template-rows: var(--rail-row);
+    grid-template-columns: auto auto;
+    justify-content: center;
+    column-gap: 0;
+    row-gap: 0;
+  }
+
+  .phase-rail__label {
+    position: relative;
+    z-index: 1;
+    padding-inline: var(--space-2) var(--space-3);
+    background: var(--color-bg-raised);
+  }
+}
