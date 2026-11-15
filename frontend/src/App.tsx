@@ -4,6 +4,7 @@ import { createAccountClient } from './data/accountClient'
 import { LocalEntryStore } from './data/entryStore'
 import { createHistoryClient } from './data/historyClient'
 import { createPainClient } from './data/painClient'
+import { createSymptomClient } from './data/symptomClient'
 import { createProfileClient } from './data/profileClient'
 import { createSyncClient } from './data/sync'
 import { missionClockFor } from './domain/clock'
@@ -12,6 +13,7 @@ import { useEntries } from './hooks/useEntries'
 import { useHistorySync } from './hooks/useHistorySync'
 import { useMissionStartSync } from './hooks/useMissionStartSync'
 import { usePainSync } from './hooks/usePainSync'
+import { useSymptomSync } from './hooks/useSymptomSync'
 import { isDemoPerson, useSession } from './hooks/useSession'
 import ErrorBoundary from './components/ErrorBoundary'
 import Notice from './components/Notice'
@@ -55,6 +57,7 @@ export default function App() {
   // both travel for a person with an account, and both stay on the device
   // without a server.
   const [painClient] = useState(() => createPainClient())
+  const [symptomClient] = useState(() => createSymptomClient())
   const [profileClient] = useState(() => createProfileClient())
   const session = useSession(accounts)
   const personId = session.personId
@@ -126,6 +129,7 @@ export default function App() {
   // and the reports of the 3D body travel with the account too.
   useMissionStartSync(profileClient, personId, session.kind)
   usePainSync(painClient, personId, session.kind)
+  useSymptomSync(symptomClient, personId, session.kind)
   const clock =
     phase !== 'identify' && personId ? missionClockFor(entries, personId, missionStart) : null
 
@@ -213,6 +217,7 @@ export default function App() {
             rules={data.rules}
             entries={personEntries}
             serverConfigured={client.isConfigured()}
+            symptoms={data.symptoms}
             onBack={() => setPhase('identify')}
             onDone={() => setPhase('status')}
             still={motionReduced}

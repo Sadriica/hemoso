@@ -441,12 +441,19 @@ export const strings = {
       possible: 'Possible',
       low: 'Low',
       no_data: 'Not enough data yet',
+      urgent: 'Urgent',
     },
     sentence: {
       review: 'Ask your CMO or flight surgeon to check this.',
       possible: 'Some of your readings point to it.',
       low: 'Your readings do not point to it.',
       no_data: 'It needs at least two readings that can be compared.',
+      urgent: 'Call your CMO now',
+    },
+    // One symptom signal: the plain name, then whether it was reported today.
+    symptom: {
+      reported: (name: string): string => `${name}: you reported it`,
+      notReported: (name: string): string => `${name}: not reported`,
     },
     // The bar: its name, the value as text, and what a screen reader hears.
     meterName: (name: string): string => `Evidence for ${name}`,
@@ -468,6 +475,23 @@ export const strings = {
     openCard: (text: string): string => `Show the reading. ${text}`,
     source: 'Source:',
     notEnough: (count: number): string => `Not enough data yet (${count})`,
+  },
+  // The optional symptom list of the Report (T-80). Plain names come from
+  // config/data/symptoms.csv; nothing here names a condition.
+  symptoms: {
+    toggle: 'Symptoms, optional',
+    legend: 'Do you feel any of these now?',
+    hint: 'Tick what applies. Leave the rest empty. Your CMO or flight surgeon reads what you report.',
+    strength: (name: string): string => `How strong: ${name}`,
+    severity: { 1: 'Mild', 2: 'Moderate', 3: 'Severe' } as const,
+    save: 'Save symptoms',
+    nothingTicked: 'Tick at least one symptom to save.',
+    saved: (count: number): string =>
+      `${count} ${count === 1 ? 'symptom' : 'symptoms'} saved.`,
+    notSaved: 'Could not save on this device. Tell your CMO what you feel.',
+    callCmo: 'Call your CMO now',
+    callCmoWhy: (names: string): string => `You reported: ${names}.`,
+    confirms: 'Your CMO or flight surgeon confirms.',
   },
   problems: {
     label: 'Content problems (for the team)',
