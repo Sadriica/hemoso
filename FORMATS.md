@@ -45,8 +45,8 @@ new ones without updating this table and the owner named in it.
 | `sleep_h` | Sleep duration | h | `lower` | Tier A · system `sleep` |
 | `mood_1_5` | Mood | 1 to 5 | `lower` | Tier B · system `neuro_behavioural`; 1 = very low, 2 = low, 3 = neutral, 4 = good, 5 = very good, about the whole day, answered before sleep (our scale, Assumption: NASA asks about mood before sleep and publishes no fixed scale) |
 | `glucose_mgdl` | Blood glucose | mg/dL | `both` | Tier A · system `metabolic`; measured on board with the i-STAT blood analyser from a fingerstick sample, so a value exists only when the crew takes one (Bio 2, `team/bio2/notes/indicators-review.md`; changed from tier C on Sat 19:40) |
-| `reaction_median_ms` | Median reaction time | ms | `higher` | Tier A · system `neuro_behavioural`; the median of one in-app reaction check (REQ-38, T-71). Proposed by Eng 1 on Sat 23:10; Phys confirms the unit, direction and method in T-72 |
-| `reaction_lapses` | Reaction lapses | lapses | `higher` | Tier A · system `neuro_behavioural`; the count of late answers in one reaction check (REQ-38, T-71). Proposed by Eng 1 on Sat 23:10; Phys confirms the cut-off in T-72 |
+| `reaction_median_ms` | Reaction time median | ms | `higher` | Tier A · system `neuro_behavioural`; the median of one in-app reaction check (REQ-38, T-71). Proposed by Eng 1 on Sat 23:10; Phys confirmed it in T-72 (3-minute test, NASA Reaction Self Test) |
+| `reaction_lapses` | Reaction lapses | count | `higher` | Tier A · system `neuro_behavioural`; the count of late answers in one reaction check (REQ-38, T-71). Proposed by Eng 1 on Sat 23:10; Phys confirmed it in T-72: a trial above 500 ms is a lapse (NTRS 20090029851) |
 | `<condition_id>` | to be filled by Bio 2 (REQ-06) | — (a condition has an evidence score from 0 to 1, not a unit) | — | One row per possible condition; example id `example_condition`. |
 | `<body_region_id>` | to be filled by the owner (open question) | — | — | One row per selectable body region; example id `example_body_region`. |
 
