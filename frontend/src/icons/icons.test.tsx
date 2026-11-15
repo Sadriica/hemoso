@@ -4,7 +4,7 @@ import type { ReactElement } from 'react';
 import { ICON_SIZES, IndicatorIcon, StatusIcon, TrendIcon, UtilityIcon, systemColor, systemOf } from './index';
 import type { StatusKind, TrendKind, UtilityKind } from './index';
 
-const IDS = ['hr_bpm', 'bp_sys_mmhg', 'bp_dia_mmhg', 'temp_core_c', 'sleep_h', 'mood_1_5', 'glucose_mgdl', 'nope'];
+const IDS = ['hr_bpm', 'bp_sys_mmhg', 'bp_dia_mmhg', 'temp_core_c', 'sleep_h', 'mood_1_5', 'glucose_mgdl', 'appetite_1_5', 'fluid_intake_ml', 'body_mass_kg', 'nope'];
 const KINDS: StatusKind[] = ['in_range', 'outside', 'review', 'no_data', 'warning'];
 const UTILITIES: UtilityKind[] = ['check', 'chevron', 'info', 'motion', 'still'];
 
@@ -19,6 +19,11 @@ describe('icons', () => {
     expect(systemOf('toString')).toBeNull();
     expect(systemOf('x')).toBeNull();
     expect(systemColor('neuro')).toBe('var(--system-neuro)');
+    // The indicators added later take the system their row names; a system
+    // with no colour token yet gives none.
+    expect(systemOf('appetite_1_5')).toBe('metabolic');
+    expect(systemOf('fluid_intake_ml')).toBe('metabolic');
+    expect(systemOf('body_mass_kg')).toBeNull();
   });
 
   it('draws a different glyph for each indicator, and one for the unknown id', () => {

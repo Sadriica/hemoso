@@ -17,9 +17,10 @@ Where the decision leaves room, this module resolves it as follows:
 
 - The value under test is the newest stored reading of the signal, in its own
   context, and the baseline is `app.state`'s rule applied to it: the last 14
-  readings before it in that same context, median and spread with the
-  indicator's noise floor. A reading after exercise is compared with readings
-  after exercise, and the newest reading decides which context that is.
+  mission days before it in that same context, one value per day, then median
+  and spread with the indicator's noise floor. A reading after exercise is
+  compared with readings after exercise, and the newest reading decides which
+  context that is.
 - A cited limit does not need a baseline (bio2-02, phys-02 safety order): a
   newest reading past a row of `rules/attention.csv` whose source is a link adds
   1 even on the first day. A signal with no baseline and no cited limit crossed
@@ -49,7 +50,7 @@ from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 
 from .models import ConditionScore, ConditionSignal, Entry
-from .state import attention_for, baseline, cited_rows, state_for, window
+from .state import attention_for, baseline, cited_rows, daily_values, state_for, window
 
 # One signal whose newest value crossed an attention row on its side.
 ATTENTION_POINT = 1.0
@@ -94,10 +95,11 @@ def latest_value(
     """The newest reading, its context and its own baseline; None without entries.
 
     `entries` arrives oldest first, as the store returns it. The window is the
-    last 14 readings before the newest one, in the newest one's context, so the
-    reading under test is not part of its own baseline. `min_spread` is the
-    indicator's noise floor from `config/data/indicators.csv`; None means the
-    indicator has no row there, so the reading has no baseline.
+    last 14 mission days before the newest one, in the newest one's context,
+    with one value per day, so the reading under test is not part of its own
+    baseline. `min_spread` is the indicator's noise floor from
+    `config/data/indicators.csv`; None means the indicator has no row there, so
+    the reading has no baseline.
     """
     readings = list(entries)
     if not readings:
@@ -106,7 +108,7 @@ def latest_value(
     if min_spread is None:
         return LatestValue(newest.value, newest.context, None, None, ())
     recent = window(readings[:-1], newest.context)
-    median, spread = baseline([entry.value for entry in recent], min_spread)
+    median, spread = baseline(daily_values(recent), min_spread)
     rows = tuple(cited_rows(attention_rows))
     return LatestValue(newest.value, newest.context, median, spread, rows)
 
