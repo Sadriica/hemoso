@@ -85,6 +85,9 @@ export interface SceneCallbacks {
 }
 
 const IDLE_TURN = 0.16 // radians per second
+// The idle turn stops after this many seconds, so a body left on screen does
+// not keep the GPU busy (performance review, Sun 15 Nov).
+const IDLE_TURN_SECONDS = 10
 const BUTTON_TURN = Math.PI / 3
 const HOME = { distance: 3.5, y: 0.93 }
 const FOCUS_DISTANCE = 2.8
@@ -179,6 +182,7 @@ export function createBodyScene(
   let pitch = 0
   let goalPitch = 0
   let interacted = false
+  let idleTurned = 0
   let dragging = false
   let dragStart = { x: 0, y: 0 }
   let dragMoved = 0
@@ -387,7 +391,12 @@ export function createBodyScene(
 
   /** One frame of `dt` seconds; true while the picture still moves. */
   function step(dt: number): boolean {
-    if (!interacted && !state.reducedMotion) goalYaw += IDLE_TURN * dt
+    const idleTurning =
+      !interacted && !state.reducedMotion && idleTurned < IDLE_TURN_SECONDS
+    if (idleTurning) {
+      goalYaw += IDLE_TURN * dt
+      idleTurned += dt
+    }
     const turnStep = state.reducedMotion ? 1 : 1 - Math.exp(-dt / 0.12)
     yaw += (goalYaw - yaw) * turnStep
     pitch += (goalPitch - pitch) * turnStep
@@ -403,10 +412,10 @@ export function createBodyScene(
     const glowMoving = paintRegions(dt)
     renderer.render(scene, camera)
 
-    // The idle turn never arrives, so it keeps the loop; every other motion
+    // The idle turn keeps the loop for its first seconds; every other motion
     // ends one frame after it reaches its goal.
     return (
-      (!interacted && !state.reducedMotion) ||
+      idleTurning ||
       Math.abs(goalYaw - yaw) > REST_ANGLE ||
       Math.abs(goalPitch - pitch) > REST_ANGLE ||
       VIEW_AXES.some((axis) => Math.abs(viewGoal[axis] - viewNow[axis]) > REST_VIEW) ||
