@@ -135,6 +135,13 @@
 .rep.rep--console .rep-row__state {
   margin: 0;
   margin-right: auto;
+  /* The state always has its own line, so every panel reads name, last value
+     and context, then state, whatever the width of the card. */
+  flex-basis: 100%;
+}
+
+.rep.rep--console .rep-row__state > * {
+  justify-self: start;
 }
 
 /* The window the live figure is drawn in: a faint grid behind it, so it reads
@@ -239,7 +246,6 @@
 
   .rep.rep--console .rep-row__state {
     margin-right: 0;
-    flex-basis: 100%;
   }
 
   /* The sparkline over its caption: the caption gets the full width and
@@ -258,4 +264,9 @@
    empty card says why it has no trend. */
 .rep.rep--console .rep-row__history--empty {
   padding-inline: var(--space-1);
+}
+
+/* A little air between the name, the last value and the state. */
+.rep.rep--console .rep-row__head {
+  row-gap: var(--space-1);
 }

@@ -7,12 +7,6 @@ import { SESSION_STORAGE_KEY } from './data/session'
 import { STORAGE_KEY } from './data/storedState'
 import { strings } from './strings'
 
-// These tests render the whole app and wait for chunks that load on demand
-// (the overview, the history, the body). On a loaded machine one of them can
-// take longer than the default 5 s; the checks are about what arrives, not
-// how fast, so every test here is given 20 s.
-vi.setConfig({ testTimeout: 20_000 })
-
 const PERSON = 'demo_astronaut_1'
 const copy = strings.phases
 
@@ -49,7 +43,14 @@ async function signInByName(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('button', { name: copy.identify.next }))
 }
 
-describe('guided check', () => {
+// These tests walk whole phases: each phase loads its lazy chunks (the status
+// phase, the history, the scene) through the jsdom transform the first time, and
+// that is slow on a busy machine. The default 5 s budget is a measure of the
+// machine, not of the app, so the walks get a budget that holds under load. The
+// checks inside stay as strict as they were.
+const WALK_TIMEOUT = 30_000
+
+describe('guided check', { timeout: WALK_TIMEOUT }, () => {
   it('opens on phase 1, identify, with its headline and the rail on step 1', () => {
     render(<App />)
     expect(heading()).toHaveTextContent(copy.identify.headline.join(' '))
@@ -100,17 +101,14 @@ describe('guided check', () => {
     // The history waits behind a closed disclosure.
     expect(screen.queryByText(/Your usual|Not enough earlier entries/)).toBeNull()
     await user.click(screen.getByRole('button', { name: copy.status.historyToggle }))
-    // The history is a chunk of its own. On a loaded machine its import can
-    // take several seconds, so the wait and the test are given room: the
-    // check is that it arrives, not how fast.
     expect(
       await screen.findByText(
         /Your usual|Not enough earlier entries/,
         {},
-        { timeout: 12_000 },
+        { timeout: 10_000 },
       ),
     ).toBeInTheDocument()
-  }, 20_000)
+  })
 
   it('reads the stored history of every indicator for the chosen person', async () => {
     vi.stubEnv('VITE_API_BASE_URL', 'https://api.example.test')
@@ -218,7 +216,7 @@ describe('guided check', () => {
   })
 })
 
-describe('sign in', () => {
+describe('sign in', { timeout: WALK_TIMEOUT }, () => {
   it('opens the demo with one click and no PIN', async () => {
     const user = userEvent.setup()
     render(<App />)
