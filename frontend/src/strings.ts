@@ -339,6 +339,8 @@ export const strings = {
       hint: 'Arrow keys move between readings. Home and End jump to the first and last.',
       hintPair: 'Up and down switch between the two series.',
       noneInContext: 'No readings in this context yet.',
+      // The contexts that do have readings, so the person knows where to look.
+      readingsIn: (contexts: string): string => `Readings are in: ${contexts}.`,
       usualBand: (series: string | null): string =>
         series === null ? 'Usual band' : `${series} usual band`,
       noBand: 'The usual band needs 3 earlier readings in this context.',
