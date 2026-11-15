@@ -652,7 +652,13 @@ html {
   text-transform: uppercase;
 }
 
-.board__body {
+/* The selected card, with the body zone beside it on wide screens. */
+.detail {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.detail__body {
   display: none;
 }
 
@@ -662,12 +668,12 @@ html {
 }
 
 @media (min-width: 900px) {
-  .board {
+  .detail {
     grid-template-columns: minmax(0, 1fr) 240px;
     align-items: start;
   }
 
-  .board__body {
+  .detail__body {
     display: block;
     padding: var(--space-3);
     border: var(--border-subtle);
@@ -675,7 +681,7 @@ html {
     background: var(--color-surface);
   }
 
-  .board__body svg {
+  .detail__body svg {
     display: block;
     width: 100%;
     max-height: 440px;
@@ -687,4 +693,9 @@ html {
   display: inline-block;
   width: 96px;
   height: 96px;
+}
+
+/* One card at a time: it takes the full width of its column. */
+.detail .indicator-list {
+  grid-template-columns: minmax(0, 1fr);
 }
