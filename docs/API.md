@@ -40,12 +40,13 @@ Request body:
 | --- | --- | --- |
 | `person_id` | string | at most 64 characters, lowercase `snake_case`, the same rule as everywhere else |
 | `pin` | string | 4 to 8 digits, nothing else |
+| `mission_start` | string, optional | the date Flight Day 1 is counted from: `YYYY-MM-DD`, a real calendar date, from `2000-01-01` up to tomorrow in UTC. Left out, the account starts without a date and `PUT /people/{person_id}/mission_start` sets it later |
 
 What the backend stores, and nothing more: `person_id`, a random 16-byte salt
-(hex) and the `hashlib.scrypt` digest of the PIN with that salt (`n` = 2**14,
-`r` = 8, `p` = 1), hex. The PIN itself is never stored, never logged and never
-returned. Two accounts with the same PIN get different hashes, because each has
-its own salt.
+(hex), the `hashlib.scrypt` digest of the PIN with that salt (`n` = 2**14,
+`r` = 8, `p` = 1), hex, and `mission_start` when the body carried one. The PIN
+itself is never stored, never logged and never returned. Two accounts with the
+same PIN get different hashes, because each has its own salt.
 
 Responses: `201` with `{"person_id": "..."}`; `409` when the name is taken
 (`detail` `this username is taken` for `smoke_test_1`, for any `person_id` of
@@ -117,6 +118,90 @@ if (response.status === 429) {
   // too many wrong PINs: wait ten minutes before trying again
 }
 const session = await response.json(); // keep session.token and session.expires_at
+```
+
+### GET /people/{person_id}/profile
+
+Returns one person's account settings. Today that is the mission start date,
+the date Flight Day 1 is counted from: each astronaut has their own, and the
+day shown is counted from it (docs/DECISIONS.md, Sat 23:08). It is stored with
+the account, so any device that reads this route gets the same date.
+
+Path parameter: `person_id` (same lowercase `snake_case` rule).
+
+Responses:
+
+| Code | Meaning |
+| --- | --- |
+| `200` | `{"person_id": "...", "mission_start": "YYYY-MM-DD"}`, or `mission_start` `null` while no date is set |
+| `404` | This person has no account; `detail` is `this person has no account`. The route reads the account, it does not create one |
+| `422` | `person_id` breaks the `snake_case` rule |
+| `401` / `403` | As in "Sessions and the Authorization header" below |
+| `502` | The upstream store (Supabase) is unreachable or returns an error |
+
+```bash
+curl "$VITE_API_BASE_URL/people/demo_crew_2/profile" \
+  -H "Authorization: Bearer $TOKEN"
+# 200 {"person_id":"demo_crew_2","mission_start":"2026-11-01"}
+```
+
+```js
+const response = await fetch(`${VITE_API_BASE_URL}/people/${personId}/profile`, {
+  headers: { Authorization: `Bearer ${session.token}` },
+});
+if (response.ok) {
+  const profile = await response.json(); // { person_id, mission_start }
+  // mission_start is null while the astronaut has not set the date: show no
+  // Flight Day, and never count one from today instead
+}
+```
+
+### PUT /people/{person_id}/mission_start
+
+Sets or changes the mission start of one account (REQ-37). The date belongs to
+the person, so a change here moves their Flight Day on every device that reads
+it; it changes no entry and no mission day already stored.
+
+Path parameter: `person_id` (same lowercase `snake_case` rule).
+
+Request body:
+
+| Field | Type | Rule |
+| --- | --- | --- |
+| `mission_start` | string | required; `YYYY-MM-DD`, a real calendar date, from `2000-01-01` up to tomorrow in UTC. A date further ahead is a typing mistake or a clock that is off |
+
+The answer is the same object as `GET /people/{person_id}/profile`, with the
+date the account now holds.
+
+Responses: `200`; `404` `this person has no account` (a person without an
+account has nothing to store a date on); `422` when `person_id` or
+`mission_start` breaks a rule; `401` / `403` as below; `502` when the upstream
+store (Supabase) is unreachable or returns an error.
+
+```bash
+curl -X PUT "$VITE_API_BASE_URL/people/demo_crew_2/mission_start" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"mission_start":"2026-11-01"}'
+# 200 {"person_id":"demo_crew_2","mission_start":"2026-11-01"}
+```
+
+```js
+const response = await fetch(
+  `${VITE_API_BASE_URL}/people/${personId}/mission_start`,
+  {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${session.token}`,
+    },
+    body: JSON.stringify({ mission_start: "2026-11-01" }),
+  }
+);
+if (response.status === 422) {
+  // not a real date, before 2000-01-01, or more than a day ahead: ask again
+}
+const profile = await response.json(); // { person_id, mission_start }
 ```
 
 ### POST /entries
@@ -454,22 +539,26 @@ The values above are placeholders in a synthetic history (REQ-14).
 ### POST /people/{person_id}/pain
 
 Stores one pain report from the 3D body (B-3): the region the astronaut
-selected, the intensity from 0 to 10, the mission day and the time, with an
-optional note. The intensity is kept as the astronaut set it. This route does
-not read it, does not compare it with anything and adds no text about it: what
-it means is for the CMO or the flight surgeon to say, not for the API.
+selected, what it is, the intensity from 0 to 10, the mission day and the time,
+with an optional note. The intensity is kept as the astronaut set it. This
+route does not read it, does not compare it with anything and adds no text
+about it: what it means is for the CMO or the flight surgeon to say, not for
+the API.
 
 The same report can be re-sent (the frontend re-sends what waits in its outbox,
 REQ-13) without adding a second row: one report is kept per `person_id`,
-`region_id`, `mission_day` and `time`.
+`region_id`, `mission_day` and `time`. `kind` is part of the report but not of
+that key: the same key with another kind is a `409`, as with any other changed
+field.
 
 Path parameter: `person_id`, a string (same lowercase `snake_case` rule).
 
-Request body: one report. Every field is required except `note`.
+Request body: one report. Every field is required except `kind` and `note`.
 
 | Field | Type | Rule |
 | --- | --- | --- |
 | `region_id` | string | at most 64 characters, lowercase `snake_case`: letters, digits and underscores, starts with a letter; the id from the frontend's region list. The API does not check it against a file, because `config/content/body_regions.csv` does not exist yet. |
+| `kind` | string | optional, `pain` when absent; one of `pain`, `swelling`, `bruise`, `cut_or_scrape`, `burn`, `sprain_or_strain`, the ids of the frontend's picker. Any other value is a `422`. |
 | `intensity` | integer | 0 to 10; booleans, decimals and strings are rejected |
 | `mission_day` | integer | greater than 0, at most 100000, "day N"; booleans and strings are rejected |
 | `time` | string | `HH:MM`, 24-hour clock |
@@ -479,9 +568,9 @@ Responses:
 
 | Code | Meaning |
 | --- | --- |
-| `201` | A new report was stored; the stored report is returned, with `person_id` taken from the path and `note` null when it was not given. |
-| `200` | A report with the same `person_id`, `region_id`, `mission_day` and `time` already exists with the same `intensity` and `note`; that stored report is returned and nothing is added. |
-| `409` | A report with that key already exists with a different `intensity` or `note`; `detail` is a short plain message. |
+| `201` | A new report was stored; the stored report is returned, with `person_id` taken from the path, `kind` defaulted to `pain` when the body had none, and `note` null when it was not given. |
+| `200` | A report with the same `person_id`, `region_id`, `mission_day` and `time` already exists with the same `kind`, `intensity` and `note`; that stored report is returned and nothing is added. |
+| `409` | A report with that key already exists with a different `kind`, `intensity` or `note`; `detail` is a short plain message. |
 | `422` | A field breaks a rule, or `person_id` in the path breaks the id rule. |
 | `401` / `403` | The token rule below, when that person has an account. |
 | `502` | The upstream store (Supabase) is unreachable or returns an error. |
@@ -489,8 +578,8 @@ Responses:
 ```bash
 curl -X POST "$VITE_API_BASE_URL/people/demo_astronaut_1/pain" \
   -H "Content-Type: application/json" \
-  -d '{"region_id":"left_knee","intensity":4,"mission_day":1,"time":"13:30","note":"After the treadmill run"}'
-# 201 {"region_id":"left_knee","intensity":4,"mission_day":1,"time":"13:30","note":"After the treadmill run","person_id":"demo_astronaut_1"}
+  -d '{"region_id":"left_knee","kind":"pain","intensity":4,"mission_day":1,"time":"13:30","note":"After the treadmill run"}'
+# 201 {"region_id":"left_knee","kind":"pain","intensity":4,"mission_day":1,"time":"13:30","note":"After the treadmill run","person_id":"demo_astronaut_1"}
 # re-sending the same body returns 200 with the same stored report
 ```
 
@@ -505,6 +594,7 @@ const response = await fetch(
     },
     body: JSON.stringify({
       region_id: "left_knee",
+      kind: "pain",
       intensity: 4,
       mission_day: 1,
       time: "13:30",
@@ -519,7 +609,7 @@ if (response.status === 409) {
   // this person, region, day and time already hold another report: do not
   // retry, ask the astronaut which one is right
 }
-const report = await response.json(); // {"region_id":"left_knee","intensity":4,"mission_day":1,"time":"13:30","note":"After the treadmill run","person_id":"demo_astronaut_1"}
+const report = await response.json(); // {"region_id":"left_knee","kind":"pain","intensity":4,"mission_day":1,"time":"13:30","note":"After the treadmill run","person_id":"demo_astronaut_1"}
 ```
 
 ### GET /people/{person_id}/pain
@@ -536,8 +626,9 @@ Query parameters:
 | --- | --- | --- |
 | `region_id` | string | optional; only the reports of that region, same id rule as in the body. An id with no report gives an empty array. |
 
-Each object has the fields of the body above plus `person_id`. The API does not
-add a state, a threshold or a text about the intensity.
+Each object has the fields of the body above plus `person_id`. `kind` is always
+present: a report stored before the field existed reads as `pain`. The API does
+not add a state, a threshold or a text about the intensity.
 
 Responses: `200` (a JSON array, empty when there is no report); `422` when
 `person_id` or `region_id` breaks the `snake_case` rule; `401` / `403` as below
@@ -546,7 +637,7 @@ unreachable or returns an error.
 
 ```bash
 curl "$VITE_API_BASE_URL/people/demo_astronaut_1/pain?region_id=left_knee"
-# 200 [{"region_id":"left_knee","intensity":4,"mission_day":1,"time":"13:30","note":"After the treadmill run","person_id":"demo_astronaut_1"}]
+# 200 [{"region_id":"left_knee","kind":"pain","intensity":4,"mission_day":1,"time":"13:30","note":"After the treadmill run","person_id":"demo_astronaut_1"}]
 ```
 
 ```js
@@ -577,6 +668,8 @@ Every route that names a person checks who is asking before it answers:
 | `GET /people/{person_id}/conditions` | the path |
 | `POST /people/{person_id}/pain` | the path |
 | `GET /people/{person_id}/pain` | the path |
+| `GET /people/{person_id}/profile` | the path |
+| `PUT /people/{person_id}/mission_start` | the path |
 
 The rule depends on whether that person has an account:
 
@@ -667,23 +760,29 @@ breaks a rule:
 | `region_id` is longer than 64 characters | `String should have at most 64 characters` |
 | `note` is longer than 280 characters | `String should have at most 280 characters` |
 | `region_id` breaks the id rule | `Value error, must be lowercase snake_case` |
+| `kind` is not one of the six ids, or is not a string (a number, a boolean, null) | `Input should be 'pain', 'swelling', 'bruise', 'cut_or_scrape', 'burn' or 'sprain_or_strain'` |
 | `time` is not `HH:MM` 24-hour | `Value error, time must be HH:MM (24-hour)` |
 | a field is missing | `Field required` |
 
 It returns `409` with the plain string `a pain report for this person, region,
-day and time already exists with a different intensity or note` when that key
-already holds another report. Both pain routes return `422` with a plain-string
-`detail` when `person_id`, or the `region_id` filter, breaks the `snake_case`
-rule, and the same `502` as the routes above.
+day and time already exists with a different kind, intensity or note` when that
+key already holds another report. Both pain routes return `422` with a
+plain-string `detail` when `person_id`, or the `region_id` filter, breaks the
+`snake_case` rule, and the same `502` as the routes above.
 
-`POST /accounts` and `POST /sessions` return `422` with the field array when the
-body breaks a rule:
+`POST /accounts`, `POST /sessions` and `PUT /people/{person_id}/mission_start`
+return `422` with the field array when the body breaks a rule:
 
 | Cause | `msg` |
 | --- | --- |
 | `person_id` breaks the id rule | `Value error, must be lowercase snake_case` |
 | `pin` is not 4 to 8 digits | `Value error, pin must be 4 to 8 digits` |
 | `person_id` or `pin` is missing | `Field required` |
+| `mission_start` is not `YYYY-MM-DD` | `Value error, mission_start must be YYYY-MM-DD` |
+| `mission_start` is not a real calendar date (month 13, 30 February) | `Value error, mission_start must be a real calendar date` |
+| `mission_start` is before 2000-01-01 | `Value error, mission_start must be 2000-01-01 or later` |
+| `mission_start` is more than a day ahead | `Value error, mission_start cannot be more than one day ahead` |
+| `mission_start` is missing on the `PUT` | `Field required` |
 
 `POST /accounts` returns `409` with `detail` `this username is taken` when the
 name belongs to the demo data, the smoke test or a person with stored entries,
@@ -691,16 +790,19 @@ and with `detail` `this person already has an account` when the account exists.
 `POST /sessions` returns `401` with `detail` `wrong username or PIN`
 and `429` with `detail` `too many wrong PINs, try again later`.
 
-The seven routes that name a person return `401` with `detail` `missing or
+The nine routes that name a person return `401` with `detail` `missing or
 invalid token` and `403` with `detail` `this token belongs to another person`;
-both come from the rule above, before the route does its own work.
+both come from the rule above, before the route does its own work. The two that
+read or write account settings, `GET /people/{person_id}/profile` and
+`PUT /people/{person_id}/mission_start`, also return `404` with `detail`
+`this person has no account` when the person has none.
 
 ## CORS
 
 The backend reads `ALLOWED_ORIGINS`, a comma-separated list of origins. When it
 is unset or empty, the default is `http://localhost:5173` (the Vite dev server).
-Allowed methods are `GET` and `POST`; allowed headers are `Content-Type` and
-`Authorization`, so the frontend can send the bearer token. A preflight
+Allowed methods are `GET`, `POST` and `PUT`; allowed headers are `Content-Type`
+and `Authorization`, so the frontend can send the bearer token. A preflight
 `OPTIONS` request returns `200` with `access-control-allow-origin` set to the
 allowed origin.
 

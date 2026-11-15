@@ -16,8 +16,8 @@ from .models import Account, Entry, PainReport, entry_key, pain_key
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 
 _COLUMNS = ("person_id", "indicator_id", "value", "unit", "mission_day", "time", "context")
-_ACCOUNT_COLUMNS = ("person_id", "salt", "pin_hash")
-_PAIN_COLUMNS = ("person_id", "region_id", "intensity", "mission_day", "time", "note")
+_ACCOUNT_COLUMNS = ("person_id", "salt", "pin_hash", "mission_start")
+_PAIN_COLUMNS = ("person_id", "region_id", "kind", "intensity", "mission_day", "time", "note")
 
 
 class EntryConflict(Exception):
@@ -25,7 +25,7 @@ class EntryConflict(Exception):
 
 
 class PainConflict(Exception):
-    """The natural key already holds a pain report with another intensity or note."""
+    """The natural key already holds a pain report with another kind, intensity or note."""
 
 
 def _same_value(left: Entry, right: Entry) -> bool:
@@ -37,7 +37,11 @@ def _same_value(left: Entry, right: Entry) -> bool:
 
 
 def _same_pain(left: PainReport, right: PainReport) -> bool:
-    return left.intensity == right.intensity and left.note == right.note
+    return (
+        left.kind == right.kind
+        and left.intensity == right.intensity
+        and left.note == right.note
+    )
 
 
 class Storage(Protocol):
@@ -54,6 +58,8 @@ class Storage(Protocol):
     def account(self, person_id: str) -> Account | None: ...
 
     def create_account(self, account: Account) -> bool: ...
+
+    def set_mission_start(self, person_id: str, mission_start: str) -> bool: ...
 
     def has_person(self, person_id: str) -> bool: ...
 
@@ -120,6 +126,15 @@ class MemoryStorage:
         self._accounts[account.person_id] = account
         return True
 
+    def set_mission_start(self, person_id: str, mission_start: str) -> bool:
+        account = self._accounts.get(person_id)
+        if account is None:
+            return False
+        self._accounts[person_id] = account.model_copy(
+            update={"mission_start": mission_start}
+        )
+        return True
+
     def has_person(self, person_id: str) -> bool:
         return any(entry.person_id == person_id for entry in self._entries)
 
@@ -176,20 +191,40 @@ class SqliteStorage:
                 "person_id TEXT PRIMARY KEY,"
                 "salt TEXT NOT NULL,"
                 "pin_hash TEXT NOT NULL,"
+                "mission_start TEXT,"
                 "created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)"
             )
+            # A database written before accounts kept a mission start gets the
+            # column added: its accounts read with no date and still sign in.
+            account_columns = [
+                row[1] for row in self._conn.execute("PRAGMA table_info(accounts)")
+            ]
+            if "mission_start" not in account_columns:
+                self._conn.execute(
+                    "ALTER TABLE accounts ADD COLUMN mission_start TEXT"
+                )
             # Pain reports from the 3D body (B-3), one per person, region, day
-            # and time so the frontend's outbox can re-send one.
+            # and time so the frontend's outbox can re-send one. `kind` is what
+            # the astronaut marked there; a report stored before the column
+            # existed reads as a plain pain report.
             self._conn.execute(
                 "CREATE TABLE IF NOT EXISTS pain_reports ("
                 "person_id TEXT NOT NULL,"
                 "region_id TEXT NOT NULL,"
+                "kind TEXT NOT NULL DEFAULT 'pain',"
                 "intensity INTEGER NOT NULL,"
                 "mission_day INTEGER NOT NULL,"
                 "time TEXT NOT NULL,"
                 "note TEXT,"
                 "created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)"
             )
+            pain_columns = [
+                row[1] for row in self._conn.execute("PRAGMA table_info(pain_reports)")
+            ]
+            if "kind" not in pain_columns:
+                self._conn.execute(
+                    "ALTER TABLE pain_reports ADD COLUMN kind TEXT NOT NULL DEFAULT 'pain'"
+                )
             self._conn.execute(
                 "CREATE UNIQUE INDEX IF NOT EXISTS pain_reports_natural_key_idx"
                 " ON pain_reports (person_id, region_id, mission_day, time)"
@@ -246,7 +281,8 @@ class SqliteStorage:
     def account(self, person_id: str) -> Account | None:
         with self._lock:
             rows = self._conn.execute(
-                "SELECT person_id, salt, pin_hash FROM accounts WHERE person_id = ?",
+                "SELECT person_id, salt, pin_hash, mission_start FROM accounts"
+                " WHERE person_id = ?",
                 (person_id,),
             ).fetchall()
         return Account(**dict(zip(_ACCOUNT_COLUMNS, rows[0]))) if rows else None
@@ -255,15 +291,29 @@ class SqliteStorage:
         with self._lock:
             try:
                 self._conn.execute(
-                    "INSERT INTO accounts (person_id, salt, pin_hash)"
-                    " VALUES (?, ?, ?)",
-                    (account.person_id, account.salt, account.pin_hash),
+                    "INSERT INTO accounts (person_id, salt, pin_hash, mission_start)"
+                    " VALUES (?, ?, ?, ?)",
+                    (
+                        account.person_id,
+                        account.salt,
+                        account.pin_hash,
+                        account.mission_start,
+                    ),
                 )
                 self._conn.commit()
             except sqlite3.IntegrityError:
                 self._conn.rollback()
                 return False
         return True
+
+    def set_mission_start(self, person_id: str, mission_start: str) -> bool:
+        with self._lock:
+            updated = self._conn.execute(
+                "UPDATE accounts SET mission_start = ? WHERE person_id = ?",
+                (mission_start, person_id),
+            ).rowcount
+            self._conn.commit()
+        return updated > 0
 
     def has_person(self, person_id: str) -> bool:
         with self._lock:
@@ -277,11 +327,12 @@ class SqliteStorage:
         with self._lock:
             try:
                 self._conn.execute(
-                    "INSERT INTO pain_reports (person_id, region_id, intensity,"
-                    " mission_day, time, note) VALUES (?, ?, ?, ?, ?, ?)",
+                    "INSERT INTO pain_reports (person_id, region_id, kind, intensity,"
+                    " mission_day, time, note) VALUES (?, ?, ?, ?, ?, ?, ?)",
                     (
                         report.person_id,
                         report.region_id,
+                        report.kind,
                         report.intensity,
                         report.mission_day,
                         report.time,
@@ -302,7 +353,7 @@ class SqliteStorage:
     def _find_pain(self, key: tuple[str, str, int, str]) -> PainReport | None:
         """The stored pain report for `key`, or None. Call under the lock."""
         rows = self._conn.execute(
-            "SELECT person_id, region_id, intensity, mission_day, time, note"
+            "SELECT person_id, region_id, kind, intensity, mission_day, time, note"
             " FROM pain_reports WHERE person_id = ? AND region_id = ?"
             " AND mission_day = ? AND time = ?",
             key,
@@ -313,7 +364,7 @@ class SqliteStorage:
         self, person_id: str, region_id: str | None = None
     ) -> list[PainReport]:
         sql = (
-            "SELECT person_id, region_id, intensity, mission_day, time, note"
+            "SELECT person_id, region_id, kind, intensity, mission_day, time, note"
             " FROM pain_reports WHERE person_id = ?"
         )
         params: tuple[str, ...] = (person_id,)
@@ -406,7 +457,7 @@ class SupabaseStorage:
             f"{self.url}/rest/v1/accounts",
             params={
                 "person_id": f"eq.{person_id}",
-                "select": "person_id,salt,pin_hash",
+                "select": "person_id,salt,pin_hash,mission_start",
             },
             headers=self._headers(),
         )
@@ -426,6 +477,18 @@ class SupabaseStorage:
             return False
         response.raise_for_status()
         return True
+
+    def set_mission_start(self, person_id: str, mission_start: str) -> bool:
+        # `return=representation` answers empty when the person has no account,
+        # which is the only way this route learns there is nothing to update.
+        response = self._client.patch(
+            f"{self.url}/rest/v1/accounts",
+            params={"person_id": f"eq.{person_id}", "select": "person_id"},
+            json={"mission_start": mission_start},
+            headers=self._headers() | {"Prefer": "return=representation"},
+        )
+        response.raise_for_status()
+        return bool(response.json())
 
     def has_person(self, person_id: str) -> bool:
         response = self._client.get(

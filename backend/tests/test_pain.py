@@ -9,6 +9,8 @@ intensity: it is a number the astronaut chose, not a medical statement.
 
 from __future__ import annotations
 
+import sqlite3
+
 import httpx
 import pytest
 
@@ -29,7 +31,7 @@ PAIN = {
 
 CONFLICT = (
     "a pain report for this person, region, day and time already exists"
-    " with a different intensity or note"
+    " with a different kind, intensity or note"
 )
 
 
@@ -39,7 +41,7 @@ def report(**changes) -> dict:
 
 def stored(**changes) -> dict:
     """The body the API returns for a report, with the person in the path."""
-    return {"person_id": PERSON, **PAIN, "note": None, **changes}
+    return {"person_id": PERSON, **PAIN, "kind": "pain", "note": None, **changes}
 
 
 def test_post_files_a_report(client):
@@ -54,6 +56,52 @@ def test_post_keeps_the_note(client):
 
     assert response.status_code == 201
     assert response.json()["note"] == "After the treadmill run"
+
+
+def test_post_without_kind_stores_a_pain_report(client):
+    response = client.post(PATH, json=PAIN)
+
+    assert response.status_code == 201
+    assert response.json()["kind"] == "pain"
+    assert client.get(PATH).json() == [stored()]
+
+
+@pytest.mark.parametrize(
+    "kind",
+    ["pain", "swelling", "bruise", "cut_or_scrape", "burn", "sprain_or_strain"],
+)
+def test_each_kind_is_stored(client, kind):
+    response = client.post(PATH, json=report(kind=kind))
+
+    assert response.status_code == 201
+    assert response.json()["kind"] == kind
+    assert client.get(PATH).json() == [stored(kind=kind)]
+
+
+@pytest.mark.parametrize("kind", ["Pain", "sprain", "cut or scrape", "", "burn "])
+def test_an_unknown_kind_is_422_and_stores_nothing(client, kind):
+    response = client.post(PATH, json=report(kind=kind))
+
+    assert response.status_code == 422, response.text
+    assert "sprain_or_strain" in response.text
+    assert client.get(PATH).json() == []
+
+
+def test_a_kind_that_is_not_a_string_is_422(client):
+    response = client.post(PATH, json=report(kind=5))
+
+    assert response.status_code == 422, response.text
+    assert client.get(PATH).json() == []
+
+
+def test_resend_with_another_kind_is_409(client):
+    client.post(PATH, json=PAIN)
+
+    conflict = client.post(PATH, json=report(kind="bruise"))
+
+    assert conflict.status_code == 409
+    assert conflict.json()["detail"] == CONFLICT
+    assert client.get(PATH).json() == [stored()]
 
 
 def test_resend_returns_200_and_keeps_one_report(client):
@@ -387,6 +435,75 @@ def pain_row(**changes) -> PainReport:
     return PainReport(**{**values, **changes})
 
 
+def test_sqlite_stores_the_kind(tmp_path):
+    store = storage.SqliteStorage(tmp_path / "entries.db")
+    store.add_pain(pain_row(kind="burn"))
+
+    assert [row.kind for row in store.pain_reports(PERSON)] == ["burn"]
+
+
+def test_sqlite_reads_a_report_stored_before_kind_existed(tmp_path):
+    path = tmp_path / "entries.db"
+    conn = sqlite3.connect(path)
+    with conn:
+        conn.execute(
+            "CREATE TABLE pain_reports ("
+            "person_id TEXT NOT NULL,"
+            "region_id TEXT NOT NULL,"
+            "intensity INTEGER NOT NULL,"
+            "mission_day INTEGER NOT NULL,"
+            "time TEXT NOT NULL,"
+            "note TEXT,"
+            "created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)"
+        )
+        conn.execute(
+            "INSERT INTO pain_reports (person_id, region_id, intensity,"
+            " mission_day, time, note) VALUES (?, ?, ?, ?, ?, ?)",
+            (PERSON, "left_knee", 4, 1, "13:30", None),
+        )
+    conn.close()
+
+    rows = storage.SqliteStorage(path).pain_reports(PERSON)
+
+    assert [(row.kind, row.region_id) for row in rows] == [("pain", "left_knee")]
+
+
+def test_supabase_reads_a_row_stored_before_kind_existed():
+    row = pain_row().model_dump()
+    del row["kind"]
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, json=[row])
+
+    store = storage.SupabaseStorage(
+        "https://example.supabase.co",
+        "sb_secret_x",
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    assert [report.kind for report in store.pain_reports(PERSON)] == ["pain"]
+
+
+def test_supabase_add_sends_the_kind():
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        if request.method == "GET":
+            return httpx.Response(200, json=[])
+        return httpx.Response(201)
+
+    store = storage.SupabaseStorage(
+        "https://example.supabase.co",
+        "sb_secret_x",
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+
+    store.add_pain(pain_row(kind="bruise"))
+
+    assert '"kind":"bruise"' in requests[1].content.decode()
+
+
 def test_supabase_add_writes_the_pain_table():
     requests: list[httpx.Request] = []
 
@@ -493,6 +610,7 @@ def test_supabase_list_request_shape():
     assert captured["headers"]["apikey"] == "sb_secret_x"
     assert captured["params"]["person_id"] == f"eq.{PERSON}"
     assert captured["params"]["order"] == "mission_day.asc,time.asc"
+    assert "kind" in captured["params"]["select"]
     assert "region_id" not in captured["params"]
     assert rows == [pain_row()]
 
