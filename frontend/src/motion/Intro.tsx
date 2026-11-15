@@ -1,7 +1,10 @@
+import type { CSSProperties } from 'react'
 import { useEffect, useRef, useState } from 'react'
 import { INTRO_DONE } from './entrance'
 import { tokenMs, useMotionAllowed } from './motion'
 import './motion.css'
+
+const NAME = 'HeMoSo'
 
 // The stars of the intro, drawn from a small fixed set so the sky is the same
 // on every visit and in every screenshot. Decoration only.
@@ -28,7 +31,7 @@ const STARS = [
 
 /**
  * First-load intro, on every full page load: the sky drifts, the mark draws itself and the
- * name types in, in about five seconds. `onDone` runs once, when it
+ * name resolves in under it, in about five seconds. `onDone` runs once, when it
  * ends or on any key, pointer or touch, so a person never waits for it. `still`
  * is the top bar switch. `clockText` is the mission day and time (shown only if
  * given); `skipLabel` is the text of the skip button (rendered only if given).
@@ -116,8 +119,23 @@ export default function Intro({
           <path d="M6 30 C 14 20, 28 14, 37 10" pathLength="1" />
           <circle cx="21" cy="21" r="5" pathLength="1" />
         </svg>
-        <p className="intro__name">HeMoSo</p>
-        {clockText ? <p className="intro__clock">{clockText}</p> : null}
+        <div className="intro__title">
+          <p className="intro__name">
+            <span className="sr-only">{NAME}</span>
+            <span aria-hidden="true">
+              {Array.from(NAME).map((ch, i) => (
+                <span
+                  key={i}
+                  className="intro__letter"
+                  style={{ '--i': i } as CSSProperties}
+                >
+                  {ch}
+                </span>
+              ))}
+            </span>
+          </p>
+          {clockText ? <p className="intro__clock">{clockText}</p> : null}
+        </div>
       </div>
       {skipLabel ? (
         <button type="button" className="intro__skip">
