@@ -240,6 +240,19 @@ describe('Identify', () => {
     expect(onDone).toHaveBeenCalledTimes(1)
   })
 
+  it('adds nothing above the panel while the carry runs, then switches', async () => {
+    vi.unstubAllGlobals() // motion on: the carry takes about 500 ms
+    const onDone = vi.fn()
+    const user = userEvent.setup()
+    render(<Harness onDone={onDone} />)
+
+    await user.click(screen.getByRole('button', { name: strings.signIn.demoAction }))
+
+    expect(screen.queryByText(strings.signIn.signedInAs(PERSON))).toBeNull()
+    expect(onDone).not.toHaveBeenCalled()
+    await waitFor(() => expect(onDone).toHaveBeenCalledTimes(1))
+  })
+
   it('names the person on duty and offers the way out', async () => {
     const user = userEvent.setup()
     render(<Harness onDone={vi.fn()} />)

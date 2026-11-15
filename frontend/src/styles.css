@@ -76,6 +76,8 @@
   --leading-label: 16px;
   --tracking-label: 0.08em;
   --tracking-display: 0.01em;
+  --tracking-wide: 0.16em;
+  --tracking-eyebrow: 0.24em;
 
   /* Spacing, 4 px base (DESIGN.md 5) */
   --space-1: 4px;
@@ -291,7 +293,7 @@ legend {
   font-family: var(--font-mono);
   font-size: var(--text-small);
   font-weight: 600;
-  letter-spacing: 0.16em;
+  letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
   cursor: pointer;
   transition: filter var(--motion-fast) var(--ease-out), border-color var(--motion-fast) var(--ease-out);

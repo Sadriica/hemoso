@@ -27,9 +27,12 @@ function plan(): Step[] {
   const slow = t('--motion-slow', 400)
   const all = (sel: string) => [...document.querySelectorAll(sel)]
   const fade = { opacity: 0 }
+  const lines = all('[data-enter="headline"] .headline__line').length
   const steps: Step[] = [
     { els: all('[data-enter="scene"]'), from: { ...fade, transform: 'scale(0.98)' }, to: { opacity: 1, transform: 'none' }, delay: 0, ms: horizon, stagger: 0 },
     { els: all('[data-enter="headline"] .headline__line'), from: { ...fade, transform: 'translateY(0.4em)' }, to: { opacity: 1, transform: 'none' }, delay: horizon * 0.35, ms: slow, stagger },
+    // The sentence under the headline follows the last line by one stagger.
+    { els: all('[data-enter="headline"] .phase-heading__intro'), from: { ...fade, transform: 'translateY(0.4em)' }, to: { opacity: 1, transform: 'none' }, delay: horizon * 0.35 + lines * stagger, ms: slow, stagger: 0 },
     { els: all('[data-enter="panel"]'), from: { ...fade, transform: 'translateY(24px)' }, to: { opacity: 1, transform: 'none' }, delay: horizon * 0.55, ms: t('--motion-rise', 500), stagger: 0 },
     { els: all('[data-enter="rest"]'), from: fade, to: { opacity: 1 }, delay: horizon * 0.85, ms: slow, stagger: 0 },
   ]

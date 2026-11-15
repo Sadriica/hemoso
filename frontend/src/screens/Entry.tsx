@@ -356,7 +356,10 @@ function ReportForm({
               section 3). One segmented control of radios: the arrow keys
               change it like the scale. */}
           <fieldset className="rep-segment">
-            <legend className="rep-segment__legend">{strings.entry.applyToAll}</legend>
+            <legend className="rep-segment__legend">
+              {strings.entry.applyToAll}
+              <span className="rep-segment__hint" aria-hidden="true">{strings.entry.applyToAllHint}</span>
+            </legend>
             <div className="rep-segment__track">
               {MEASUREMENT_CONTEXTS.map((choice) => (
                 <label key={choice} className="rep-segment__option">
@@ -491,7 +494,7 @@ function ReadingRowField({
 
   return (
     <li
-      className={`rep-row${row.scale ? ' rep-row--scale' : ''}${wide ? ' rep-row--wide' : ''}`}
+      className={`rep-row${row.scale ? ' rep-row--scale' : ''}${wide ? ' rep-row--wide' : ''}${pair ? ' rep-row--pair' : ''}`}
       style={style}
     >
       <span className="rep-row__icon">

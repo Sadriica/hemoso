@@ -1,6 +1,7 @@
 /* The orbital scene: decorative, sized by its parent at 1:1. Colours and
    durations are tokens (styles.css); the angles below are small on purpose. */
 .orbital {
+  --orbital-glow: var(--glow-accent);
   --px: 0;
   --py: 0;
   position: relative;
@@ -8,6 +9,7 @@
   aspect-ratio: 1 / 1;
   pointer-events: none;
   contain: layout paint;
+  container-type: inline-size;
 }
 .orbital svg { display: block; width: 100%; height: 100%; overflow: visible; }
 
@@ -38,4 +40,18 @@
 @media (prefers-reduced-motion: reduce) {
   .orbital .orbital__orbit, .orbital .orbital__turn { animation: none; }
   .orbital .orbital__layer, .orbital .orbital__progress { transition: none; }
+}
+
+/* A tinted disc behind the object: none on the dark stage (the glow carries it),
+   about 9 % accent on the light one, with a stronger local glow. */
+.orbital__tint { opacity: 0; }
+@media (prefers-color-scheme: light) {
+  .orbital { --orbital-glow: color-mix(in srgb, var(--color-accent) 26%, transparent); }
+  .orbital__tint { opacity: 0.1; }
+  .orbital__orbit { stroke-opacity: 0.75; }
+}
+/* On a small stage (a band on a phone) the lines are stronger, so it still reads. */
+@container (max-width: 260px) {
+  .orbital__orbit { stroke-opacity: 0.9; stroke-width: 3; }
+  .orbital__tint { opacity: 0.16; }
 }

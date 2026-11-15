@@ -51,6 +51,7 @@ function page(phase: string, still = false) {
           <span className="headline__line">a</span>
           <span className="headline__line">b</span>
           <span className="headline__line">c</span>
+          <p className="phase-heading__intro">lead</p>
         </div>
         <div data-enter="panel" />
         <div data-enter="rest" />
@@ -59,7 +60,8 @@ function page(phase: string, still = false) {
   )
 }
 
-const kind = (a: Fake) => a.el.getAttribute('data-enter') ?? 'line'
+const kind = (a: Fake) =>
+  a.el.getAttribute('data-enter') ?? (a.el.className === 'phase-heading__intro' ? 'intro' : 'line')
 
 describe('phase entrance', () => {
   it('runs scene, headline lines, panel, rest in order, inside 1200 ms', () => {
@@ -73,6 +75,13 @@ describe('phase entrance', () => {
     expect(lines[1].delay - lines[0].delay).toBeCloseTo(70, 5)
     expect(Math.max(...made.map((a) => a.delay + a.duration))).toBeLessThanOrEqual(1200)
     expect(made.every((a) => a.state === 'running')).toBe(true)
+  })
+
+  it('brings the lead sentence in one stagger after the last headline line', () => {
+    render(page('identify'))
+    const lines = made.filter((a) => kind(a) === 'line')
+    const intro = made.find((a) => kind(a) === 'intro')!
+    expect(intro.delay - lines[2].delay).toBeCloseTo(70, 5)
   })
 
   it('runs again on a phase change and cancels the one before', () => {
