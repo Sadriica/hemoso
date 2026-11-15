@@ -155,8 +155,6 @@ export const strings = {
         no_data: (count: number): string => `${count} with no data yet`,
       },
     },
-    // The label over the 3D body beside the card.
-    twin: 'Digital twin',
     // The overview figure failed to draw; the cards and the history still work.
     overviewFailed: 'The overview could not be drawn. Reload the page to try again.',
   },

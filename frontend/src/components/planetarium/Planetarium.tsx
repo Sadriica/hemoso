@@ -49,6 +49,13 @@ export interface PlanetariumProps {
   reducedMotion?: boolean
   /** View on first paint. Default 'list'. The orbit view still needs a wide screen. */
   initialView?: 'list' | 'orbits'
+  /**
+   * A figure for the centre of the orbits, in place of the astronaut mark. It
+   * is drawn hidden from assistive technology; `centerText` is what is read
+   * instead, after the centre label.
+   */
+  center?: ReactNode
+  centerText?: string
 }
 
 const STATE_CLASS: Record<PlanetState, string> = {
@@ -81,7 +88,7 @@ function place(i: number, n: number) {
 }
 
 /** Status view: a plain list by default, concentric orbits on wide screens. */
-export function Planetarium({ items, labels, selectedId, onSelect, reducedMotion, initialView = 'list' }: PlanetariumProps) {
+export function Planetarium({ items, labels, selectedId, onSelect, reducedMotion, initialView = 'list', center, centerText }: PlanetariumProps) {
   const [view, setView] = useState<'list' | 'orbits'>(initialView)
   const [wide, setWide] = useState(() => mq(WIDE)?.matches ?? false)
   const [stillAncestor, setStillAncestor] = useState(false)
@@ -195,13 +202,26 @@ export function Planetarium({ items, labels, selectedId, onSelect, reducedMotion
               <circle key={i} cx="50" cy="50" r={place(i, items.length).r} vectorEffect="non-scaling-stroke" />
             ))}
           </svg>
-          <div className="planetarium__center">
-            <svg viewBox="0 0 48 48" width="40" height="40" aria-hidden="true" focusable="false">
-              <circle cx="24" cy="24" r="18" fill="none" stroke="currentColor" strokeWidth="1.75" />
-              <rect x="13" y="18" width="22" height="13" rx="6.5" fill="none" stroke="currentColor" strokeWidth="1.75" />
-            </svg>
-            <span>{labels.center}</span>
-          </div>
+          {center === undefined ? (
+            <div className="planetarium__center">
+              <svg viewBox="0 0 48 48" width="40" height="40" aria-hidden="true" focusable="false">
+                <circle cx="24" cy="24" r="18" fill="none" stroke="currentColor" strokeWidth="1.75" />
+                <rect x="13" y="18" width="22" height="13" rx="6.5" fill="none" stroke="currentColor" strokeWidth="1.75" />
+              </svg>
+              <span>{labels.center}</span>
+            </div>
+          ) : (
+            // The body itself stands where the mark was: the indicators circle
+            // it. The drawing is decoration; the words under it are read.
+            <div className="planetarium__center planetarium__center--figure">
+              <div className="planetarium__figure" aria-hidden="true">
+                {center}
+              </div>
+              <span className="planetarium__center-text">
+                {centerText ? `${labels.center}. ${centerText}` : labels.center}
+              </span>
+            </div>
+          )}
           {items.map((it, i) => {
             const p = place(i, items.length)
             return (
