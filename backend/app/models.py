@@ -76,18 +76,35 @@ PAIN_MIN = 0
 PAIN_MAX = 10
 NOTE_MAX = 280
 
+# The kinds the frontend's picker records, in the order of its own list
+# (frontend/src/data/painStore.ts). "pain" is the default so an old client that
+# sends no kind, and a row stored before the column existed, keep working.
+PAIN_KINDS = (
+    "pain",
+    "swelling",
+    "bruise",
+    "cut_or_scrape",
+    "burn",
+    "sprain_or_strain",
+)
+PainKind = Literal[*PAIN_KINDS]
+PAIN_KIND_DEFAULT: PainKind = "pain"
+
 
 class PainFields(BaseModel):
     """The fields of a pain report the astronaut chooses on the 3D body (B-3).
 
     `region_id` is a lowercase `snake_case` id of up to 64 characters from the
     frontend's region list; the API does not check it against a file because
-    `config/content/body_regions.csv` does not exist yet. `intensity` is the
-    0 to 10 the astronaut set, stored as it comes: the API does not read it as
-    a sign of anything. `note` is free text the astronaut may add.
+    `config/content/body_regions.csv` does not exist yet. `kind` is what the
+    astronaut marked there, one of `PAIN_KINDS`, and defaults to `pain`.
+    `intensity` is the 0 to 10 the astronaut set, stored as it comes: the API
+    does not read it as a sign of anything. `note` is free text the astronaut
+    may add.
     """
 
     region_id: str = Field(max_length=64)
+    kind: PainKind = Field(default=PAIN_KIND_DEFAULT)
     intensity: int = Field(ge=PAIN_MIN, le=PAIN_MAX, strict=True)
     mission_day: int = Field(gt=0, le=100000, strict=True)
     time: str

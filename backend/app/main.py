@@ -421,7 +421,7 @@ def get_conditions(
         200: {"description": "The exact same pain report was already stored."},
         409: {
             "description": "A pain report for this person, region, day and "
-            "time exists with a different intensity or note."
+            "time exists with a different kind, intensity or note."
         },
     },
 )
@@ -436,9 +436,10 @@ def create_pain(
 
     The person is in the path, so the same report sent twice from the
     frontend's outbox answers 200 with the stored report and adds nothing; a
-    different intensity or note for the same person, region, day and time is a
-    409. The intensity is kept as the astronaut set it: this route does not
-    read it as a sign of anything.
+    different kind, intensity or note for the same person, region, day and
+    time is a 409. `kind` is what the astronaut marked there and defaults to
+    `pain` when the body does not carry it. The intensity is kept as the
+    astronaut set it: this route does not read it as a sign of anything.
     """
     check_id("person_id", person_id)
     accounts.authorize(request, person_id, store)
@@ -450,7 +451,7 @@ def create_pain(
             status_code=409,
             detail=(
                 "a pain report for this person, region, day and time already"
-                " exists with a different intensity or note"
+                " exists with a different kind, intensity or note"
             ),
         ) from error
     except httpx.HTTPError as error:

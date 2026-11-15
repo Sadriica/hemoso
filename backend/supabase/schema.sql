@@ -70,3 +70,22 @@ create index if not exists pain_reports_person_idx
 -- As with the two tables above: no policy, so only the service role key reaches
 -- the rows and the anon key reads nothing.
 alter table pain_reports enable row level security;
+
+-- The kind the astronaut marked (B-3): pain, swelling, bruise, cut_or_scrape,
+-- burn or sprain_or_strain. This block stands alone and is additive: a project
+-- that already ran the block above gets the column, and a report stored before
+-- it existed reads as 'pain'. The API validates the same list, so a bad value is
+-- a 422 before it reaches this table.
+alter table pain_reports add column if not exists kind text not null default 'pain';
+
+-- The constraint is added once: Postgres has no "add constraint if not exists".
+do $$
+begin
+    if not exists (
+        select 1 from pg_constraint where conname = 'pain_reports_kind_check'
+    ) then
+        alter table pain_reports add constraint pain_reports_kind_check
+            check (kind in ('pain', 'swelling', 'bruise', 'cut_or_scrape',
+                            'burn', 'sprain_or_strain'));
+    end if;
+end $$;

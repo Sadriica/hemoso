@@ -339,6 +339,19 @@
             "title": "Intensity",
             "type": "integer"
           },
+          "kind": {
+            "default": "pain",
+            "enum": [
+              "pain",
+              "swelling",
+              "bruise",
+              "cut_or_scrape",
+              "burn",
+              "sprain_or_strain"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
           "mission_day": {
             "exclusiveMinimum": 0.0,
             "maximum": 100000.0,
@@ -390,6 +403,19 @@
             "minimum": 0.0,
             "title": "Intensity",
             "type": "integer"
+          },
+          "kind": {
+            "default": "pain",
+            "enum": [
+              "pain",
+              "swelling",
+              "bruise",
+              "cut_or_scrape",
+              "burn",
+              "sprain_or_strain"
+            ],
+            "title": "Kind",
+            "type": "string"
           },
           "mission_day": {
             "exclusiveMinimum": 0.0,
@@ -970,7 +996,7 @@
         "summary": "List Pain"
       },
       "post": {
-        "description": "Store one pain report from the 3D body (B-3).\n\nThe person is in the path, so the same report sent twice from the\nfrontend's outbox answers 200 with the stored report and adds nothing; a\ndifferent intensity or note for the same person, region, day and time is a\n409. The intensity is kept as the astronaut set it: this route does not\nread it as a sign of anything.",
+        "description": "Store one pain report from the 3D body (B-3).\n\nThe person is in the path, so the same report sent twice from the\nfrontend's outbox answers 200 with the stored report and adds nothing; a\ndifferent kind, intensity or note for the same person, region, day and\ntime is a 409. `kind` is what the astronaut marked there and defaults to\n`pain` when the body does not carry it. The intensity is kept as the\nastronaut set it: this route does not read it as a sign of anything.",
         "operationId": "create_pain_people__person_id__pain_post",
         "parameters": [
           {
@@ -1008,7 +1034,7 @@
             "description": "Successful Response"
           },
           "409": {
-            "description": "A pain report for this person, region, day and time exists with a different intensity or note."
+            "description": "A pain report for this person, region, day and time exists with a different kind, intensity or note."
           },
           "422": {
             "content": {
