@@ -115,10 +115,16 @@ export default function Starfield({ still: switchedOff, focus = { x: 0.72, y: 0.
       context.globalAlpha = 1
     }
 
+    // The stars drift a few pixels a second, so 30 frames a second look the
+    // same as 60 and cost half (performance review, Sun 15 Nov).
+    let lastDraw = 0
     const loop = (now: number) => {
       elapsed += Math.min((now - last) / 1000, 0.1)
       last = now
-      draw()
+      if (now - lastDraw >= 33) {
+        lastDraw = now
+        draw()
+      }
       animation = window.requestAnimationFrame(loop)
     }
 
