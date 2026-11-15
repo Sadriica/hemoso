@@ -4,7 +4,8 @@ import { createAccountClient } from './data/accountClient'
 import { LocalEntryStore } from './data/entryStore'
 import { createHistoryClient } from './data/historyClient'
 import { createSyncClient } from './data/sync'
-import { missionNow } from './domain/clock'
+import { missionClockFor } from './domain/clock'
+import { setMissionStart, useMissionStart } from './data/missionStart'
 import { useEntries } from './hooks/useEntries'
 import { useHistorySync } from './hooks/useHistorySync'
 import { isDemoPerson, useSession } from './hooks/useSession'
@@ -122,7 +123,10 @@ export default function App() {
     () => new URLSearchParams(window.location.search).get('team') === '1',
   )
 
-  const clock = missionNow(personEntries.length > 0 ? personEntries : entries)
+  // Day and clock belong to the signed-in person: nothing before sign-in.
+  const missionStart = useMissionStart(personId)
+  const clock =
+    phase !== 'identify' && personId ? missionClockFor(entries, personId, missionStart) : null
 
   return (
     <div className={`app${motionReduced ? ' app--still' : ''}`}>
@@ -133,14 +137,20 @@ export default function App() {
           <Intro
             still={motionReduced}
             onDone={() => setIntroOpen(false)}
-            clockText={strings.header.metadata(clock.missionDay, clock.time)}
+            clockText={clock ? strings.header.metadata(clock.missionDay, clock.time) : undefined}
             skipLabel={strings.intro.skip}
           />
         </Suspense>
       )}
       <Topbar
         clock={clock}
-        personId={phase === 'identify' ? null : personId}
+        personId={clock && personId}
+        missionStart={missionStart}
+        onChangeMissionStart={
+          personId && !isDemoPerson(personId)
+            ? (date) => setMissionStart(personId, date)
+            : undefined
+        }
         store={store}
         client={client}
         motionReduced={motionReduced}

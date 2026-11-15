@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { useMotionAllowed } from '../motion/motion'
 
 interface Star {
   x: number
@@ -31,7 +32,9 @@ const STARS = makeStars(180)
 // vignette. It carries no information, so it is hidden from assistive technology,
 // and it stands still when motion is reduced (the system setting or the toggle
 // in the top bar).
-export default function Starfield({ still }: { still: boolean }) {
+export default function Starfield({ still: switchedOff }: { still: boolean }) {
+  // The OS setting is followed live: the sky stops or resumes when it changes.
+  const still = !useMotionAllowed(switchedOff)
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {

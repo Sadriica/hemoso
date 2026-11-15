@@ -124,8 +124,31 @@ export const strings = {
   },
   // The first-load intro (skippable with any key or tap).
   intro: { skip: 'Skip intro' },
+  // The trend row of a card: the latest value against the person's own earlier
+  // readings. Comparison words only, no health wording.
+  trend: {
+    title: (count: number): string =>
+      `Compared with your last ${count} ${count === 1 ? 'reading' : 'readings'}`,
+    above: 'Higher than usual',
+    below: 'Lower than usual',
+    within: 'Close to usual',
+    usual: (median: number, unit: string): string => `Usual: ${median} ${unit}`,
+    notEnough: (count: number, needed: number): string =>
+      `Not enough earlier readings to compare yet (${count} of ${needed}).`,
+  },
   // The bar along the top of every phase: the mark, the mission line, the sync
   // chip and the motion switch, all on one row.
+  // The mission start of an astronaut: asked once with the account, editable
+  // from the signed-in line.
+  mission: {
+    startLabel: 'Mission start date',
+    started: (date: string): string => `Mission started ${date}`,
+    notSet: 'Mission start not set',
+    change: 'change',
+    set: 'set it',
+    save: 'Save',
+    cancel: 'Cancel',
+  },
   topbar: {
     tagline: 'CREW HEALTH',
     onDuty: (personId: string): string => `on duty ${personId}`,
@@ -160,6 +183,9 @@ export const strings = {
     // The last reading of that indicator, under its field.
     lastValue: (reading: string): string => `last ${reading}`,
     save: 'Save readings',
+    // Progress through the rows of the report, and why Save waits.
+    progress: (filled: number, total: number): string => `${filled} of ${total} filled`,
+    saveNeeds: 'Fill in at least one reading to save.',
     // What was saved, one item per reading: "Heart rate 72 bpm, Mood 3 / 5".
     savedList: (items: string): string => `Saved: ${items}`,
     reading: (name: string, value: string): string => `${name} ${value}`,

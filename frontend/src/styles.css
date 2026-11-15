@@ -167,7 +167,7 @@ body {
   background-image:
     linear-gradient(to right, var(--color-grid) 1px, transparent 1px),
     linear-gradient(to bottom, var(--color-grid) 1px, transparent 1px);
-  background-size: 40px 40px;
+  background-size: var(--grid-size) var(--grid-size);
   color: var(--color-text);
   font-family: var(--font-body);
   font-size: var(--text-body);
@@ -570,8 +570,9 @@ legend {
   gap: var(--space-3);
   padding: var(--space-4);
   border: var(--border-subtle);
-  /* A 2 px left edge repeats the status: reinforcement, never the only signal. */
-  border-left: 2px solid var(--status-no-data-text);
+  /* A left edge in the state colour repeats the status: reinforcement, never
+     the only signal (the icon and the words stay). */
+  border-left: var(--space-1) solid var(--status-no-data-text);
   border-radius: var(--radius-card);
   background: var(--color-surface);
 }
@@ -586,6 +587,19 @@ legend {
 
 .indicator-card--review {
   border-left-color: var(--status-review-text);
+}
+
+/* The value takes the state colour; no data stays neutral. */
+.indicator-card--in_range .indicator-card__value {
+  color: var(--status-in-range-text);
+}
+
+.indicator-card--outside .indicator-card__value {
+  color: var(--status-attention-text);
+}
+
+.indicator-card--review .indicator-card__value {
+  color: var(--status-review-text);
 }
 
 /* Title and badge: the badge always takes its own row under the name, so every
@@ -608,6 +622,7 @@ legend {
 
 .indicator-card__name {
   min-width: 0;
+  overflow-wrap: anywhere;
   font-family: var(--font-display);
   font-size: var(--text-h2);
   line-height: var(--leading-h2);
@@ -658,6 +673,68 @@ legend {
 }
 
 /* The next step: the main sentence of the card, body font, sentence case. */
+/* Trend row: the usual band as a bar, the median as a tick, the latest value
+   as a dot, and the same facts in words. */
+.trend {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.trend__title,
+.trend__words {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.trend__track {
+  position: relative;
+}
+
+.trend__shape {
+  display: block;
+  width: 100%;
+  height: var(--space-3);
+}
+
+.trend__band {
+  fill: var(--color-border);
+}
+
+.trend__median {
+  stroke: var(--color-text-muted);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+/* The dot sits on the bar, at the value: a ring so it also reads on the band. */
+.trend__dot {
+  position: absolute;
+  top: 50%;
+  width: var(--space-3);
+  height: var(--space-3);
+  transform: translate(-50%, -50%);
+  border: 3px solid var(--color-text);
+  border-radius: var(--radius-round);
+  background: var(--color-surface);
+}
+
+.indicator-card--in_range .trend__dot {
+  border-color: var(--status-in-range-text);
+}
+
+.indicator-card--outside .trend__dot {
+  border-color: var(--status-attention-text);
+}
+
+.indicator-card--review .trend__dot {
+  border-color: var(--status-review-text);
+}
+
 .indicator-card__next-step {
   font-family: var(--font-body);
   font-size: var(--text-body-l);
@@ -687,7 +764,8 @@ legend {
   padding: var(--space-1) var(--space-2);
   border: 1px solid currentColor;
   border-radius: var(--radius-small);
-  white-space: nowrap;
+  /* A long level name wraps: a state is never cut off. */
+  overflow-wrap: anywhere;
 }
 
 .attention-badge__icon {

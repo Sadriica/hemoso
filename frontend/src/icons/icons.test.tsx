@@ -1,8 +1,8 @@
 import { render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import type { ReactElement } from 'react';
-import { ICON_SIZES, IndicatorIcon, StatusIcon, UtilityIcon, systemColor, systemOf } from './index';
-import type { StatusKind, UtilityKind } from './index';
+import { ICON_SIZES, IndicatorIcon, StatusIcon, TrendIcon, UtilityIcon, systemColor, systemOf } from './index';
+import type { StatusKind, TrendKind, UtilityKind } from './index';
 
 const IDS = ['hr_bpm', 'bp_sys_mmhg', 'bp_dia_mmhg', 'temp_core_c', 'sleep_h', 'mood_1_5', 'glucose_mgdl', 'nope'];
 const KINDS: StatusKind[] = ['in_range', 'outside', 'review', 'no_data', 'warning'];
@@ -73,5 +73,18 @@ describe('icons', () => {
     expect(new Set(marks).size).toBe(UTILITIES.length);
     const big = render(<UtilityIcon kind="check" size={ICON_SIZES.card} />).container.querySelector('svg')!;
     expect(big.getAttribute('width')).toBe('24');
+  });
+
+  it('renders distinct, hidden, uncoloured trend glyphs', () => {
+    const kinds: TrendKind[] = ['up', 'down', 'steady', 'none'];
+    const marks = kinds.map((kind) => {
+      const svg = render(<TrendIcon kind={kind} />).container.querySelector('svg')!;
+      expect(svg.getAttribute('aria-hidden')).toBe('true');
+      expect(svg.getAttribute('stroke-width')).toBe('1.75');
+      expect(svg.getAttribute('stroke')).toBe('currentColor');
+      expect(svg.getAttribute('style')).toBeNull();
+      return svg.innerHTML;
+    });
+    expect(new Set(marks).size).toBe(kinds.length);
   });
 });

@@ -13,7 +13,7 @@ function prefersReduced(): boolean {
 
 /**
  * Whether motion may play. `still` is the top bar switch; the system setting is
- * read too and followed live. False means: show the final state at once.
+ * read too and followed live (a change event flips the result at once). False means: show the final state at once.
  */
 export function useMotionAllowed(still: boolean): boolean {
   const reduced = useReducedMotion()
@@ -30,6 +30,7 @@ export function useReducedMotion(): boolean {
     if (typeof matchMedia !== 'function') return
     const mq = matchMedia(RM)
     const on = () => setReduced(mq.matches)
+    on()
     mq.addEventListener?.('change', on)
     return () => mq.removeEventListener?.('change', on)
   }, [])
