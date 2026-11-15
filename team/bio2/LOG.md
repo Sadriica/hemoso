@@ -4,6 +4,7 @@ One entry per decision. Newest first.
 
 | Time | What | Why | Source | AI used |
 | --- | --- | --- | --- | --- |
+| Sun 01:05 | Added `reaction_median_ms` and `reaction_lapses` to `attention.csv` (500 ms and 3 lapses, `watch`/`crew`) and `current_state` to `conditions.csv` | Phys's two indicators landed on `main`; the two thresholds are engineering defaults marked `Assumption` because no published cut-off exists, and the personal baseline stays the primary comparison | PVT-B definition in `indicators.csv`, Nasrini 2020 | Yes |
 | Sun 00:30 | Reviewed `bio1-03`: its cited link returns HTTP 500; the 2020 report opens at `nasa.gov/wp-content/uploads/2023/03/human-adaptation-2020-final.pdf` | REQ-10 asks for a source the reader can open; a dead link counts as no source | HTTP check of both URLs, Sat 14 | Yes |
 | Sun 00:05 | Sleep shift B (4:30–8:00), awake until 4:30 | Cami works through the night; the 7:45 checkpoint needs a cover | team README template | No |
 | Sun 00:03 | The video says "flags it for the CMO on board", never "alerts the CMO" | The app shows the level and the instruction "Tell the CMO"; it has no notification channel, so "alerts" promises something the demo does not do | `frontend/src/strings.ts`, `config/rules/attention.csv` | Yes |

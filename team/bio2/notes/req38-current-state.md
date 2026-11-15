@@ -9,9 +9,10 @@ for the neurobehavioural state, raised by reaction time, lapses, mood and sleep.
 current_state,How you are today,reaction_median_ms:above reaction_lapses:above mood_1_5:below sleep_h:below,https://pmc.ncbi.nlm.nih.gov/articles/PMC7198903/
 ```
 
-Blocked: `reaction_median_ms` and `reaction_lapses` are not in
-`config/data/indicators.csv` yet. The checker rejects any `based_on` id that is
-not an indicator, so this row cannot enter the file until Phys adds both.
+Unblocked on Sun 15 Nov 01:05: Phys added both indicators to `main`, so the row
+is in `config/rules/conditions.csv` and the two thresholds are in
+`config/rules/attention.csv` (`500 ms` and `3 lapses`, both `watch`/`crew`,
+`Assumption`).
 
 ## The source, and what it does not cover
 
