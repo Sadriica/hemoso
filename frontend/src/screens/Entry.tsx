@@ -33,6 +33,7 @@ import {
   type ReadingRow,
 } from './entryDraft'
 import { strings } from '../strings'
+import { wideRowKeys } from './rowLayout'
 import './entry.css'
 import './telemetry-console.css'
 
@@ -223,10 +224,9 @@ function ReportForm({
   const timeId = `${baseId}-time`
   const timeErrorId = `${timeId}-error`
 
-  // With an odd number of plain rows the last one takes the full width, so the
-  // two-column layout leaves no hole (presentation only).
-  const plain = rows.filter((row) => !row.scale)
-  const lastPlainKey = plain.length % 2 === 1 ? plain[plain.length - 1].key : null
+  // A row left alone on its line takes the full width, so the two-column
+  // layout leaves no hole (presentation only).
+  const wideKeys = wideRowKeys(rows)
   const names = new Map(indicators.map((item) => [item.id, item.name]))
   const errorOf = (row: ReadingRow) =>
     row.fields
@@ -518,7 +518,7 @@ function ReportForm({
               valueRefs={valueRefs}
               choiceRefs={choiceRefs}
               onEnter={onEnter}
-              wide={row.key === lastPlainKey}
+              wide={wideKeys.has(row.key)}
               context={contextOf(row)}
               headerContext={headerContext}
               done={isFilled(row) || savedRows[row.key] === true}
