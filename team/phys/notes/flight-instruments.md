@@ -1,6 +1,6 @@
-# Which instruments actually fly
+﻿# Which instruments actually fly
 
-Sun 15 Nov, 11:55. Answer for the submission page and the mission-concept pitch: one
+Sun 15 Nov, 11:40. Answer for the submission page and the mission-concept pitch: one
 row per indicator in `config/data/indicators.csv`, the instrument that measures it, and
 whether that instrument has flown.
 
@@ -21,16 +21,16 @@ whether that instrument has flown.
 
 ## How to say it in one line
 
-> **Nine of the twelve indicators are measured by instruments that already fly on the
-> ISS**; two are self-reported by the crew; one is measured with a point-of-care
-> analyser that flies but is not a routine monitor.
+> **Eight of the twelve indicators are measured by instruments that already fly on the
+> ISS**; three are logged by the crew (mood, appetite, fluid); one uses a point-of-care
+> analyser that flies but is not a routine monitor (glucose).
 
-Counting: instrument 9 (`hr`, `bp_sys`, `bp_dia`, `temp`, `sleep`, `reaction_median`,
-`reaction_lapses`, `body_mass`, and `fluid` with the metered dispenser counted as
-manual). Self-reported 2 (`mood`, `appetite`). Partial 1 (`glucose`).
+Counting: instruments 8 (`hr`, `bp_sys`, `bp_dia`, `temp`, `sleep`, `reaction_median`,
+`reaction_lapses`, `body_mass`). Logged by the crew 3 (`mood`, `appetite`, `fluid`).
+Partial 1 (`glucose`).
 
-If you count the metered dispenser as manual rather than an instrument, the line becomes
-"eight by instruments, three by the crew". Choose one and keep it.
+If someone counts the metered galley dispenser as an instrument, the line becomes "nine
+by instruments, two by the crew". Choose one and keep it.
 
 ## What not to say
 
@@ -39,3 +39,4 @@ If you count the metered dispenser as manual rather than an instrument, the line
 - Not "continuous monitoring": only the shirt is continuous; sleep, mass and reaction are
   periodic, and glucose is a single sample.
 - Not "NASA-approved": nothing here is certified for operational use.
+
