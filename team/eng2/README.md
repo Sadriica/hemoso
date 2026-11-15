@@ -12,7 +12,7 @@ _Update before every checkpoint and at every shift change._
 - **Done:** #88 T-66 conditions route; #89 T-67 blood pressure state; #95 T-68 state window; #103 T-69 accounts; #119 T-75 safety order (closed by PR #151, merged); B-1 REQ-27 proven in production (entry of Sat 23:56 read back after the #138 deploy); B-3 pain reports on `main` (#138), `/pain` 200 in production
 - **In review:** see "Pull requests" below
 - **Next:** #52 T-16 demo video with English subtitles (block Sun 9:00 to 12:00); production check after each merge
-- **Chat line:** `[eng2] ready · done: 7 (T-66, T-67, T-68, T-69, T-75, B-1, B-3) · review: #152 W-1, #154 T-79 · next: T-16 video 9:00 · blocked: T-16 needs a public demo link without login (T-13), Bio 1's shot map and the NASA line (Phys)`
+- **Chat line:** `[eng2] ready · done: 7 (T-66, T-67, T-68, T-69, T-75, B-1, B-3) · review: #152 W-1, #154 T-79 · next: T-16 video 9:00 from https://www.hemoso.space · blocked: none (T-16 waits for Bio 1's shot map and the NASA line from Phys)`
 
 ## Pull requests
 
@@ -27,7 +27,6 @@ _Update before every checkpoint and at every shift change._
 
 | What | Owner | Blocks |
 | --- | --- | --- |
-| Public demo link without login: `hemoso.vercel.app` serves the Sat 11:58 build; the project that serves `main` asks for a Vercel login | Wambi (T-13) | T-16, REQ-18, REQ-31 |
 | Shot map of the video against today's screens (`team/eng2/notes/t16-recording-plan.md`) | Bio 1 | T-16 |
 | NASA resource line for the video caption | Phys (REQ-19) | T-16 |
 | `ffmpeg` on the recording machine | Juli | T-16 |
@@ -39,7 +38,7 @@ _Update before every checkpoint and at every shift change._
 Done by others since Sun 06:00: `symptoms.csv` and `symptom_log.csv` (Phys, #155); with them and Bio 2's rows the seed loads 368 readings and 8 symptom reports on a test config.
 
 ## Blockers
-- T-16: the public link without login (T-13, Wambi). Everything else on this page is waiting, not blocked.
+- None. The public demo is https://www.hemoso.space: no login, Sun 07:30 build, connected to Railway (checked anonymously at 07:55). `hemoso.vercel.app` is an old project of mine on the Sat 11:58 build; it is not the team's link.
 
 ## Shift
 - Sleep shift: _(A: 1:00–4:30 · B: 4:30–8:00)_
