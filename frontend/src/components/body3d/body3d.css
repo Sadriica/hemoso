@@ -578,8 +578,8 @@
 }
 
 /* Only the figure (the centre of the status orbits): no backplate, no frame,
-   the size of its container, and no pointer event, so it never takes a tap
-   meant for an indicator beside it. */
+   the size of its container, and no pointer event unless it is interactive, so
+   it never takes a tap meant for an indicator beside it. */
 .body3d--bare {
   width: 100%;
   height: 100%;
@@ -593,6 +593,21 @@
   border-radius: 0;
   background: none;
   cursor: default;
+}
+
+/* On a wide screen the figure in the orbits is a control: it turns with a drag
+   and a tap on a place starts a pain report. */
+.body3d--bare.body3d--interactive {
+  pointer-events: auto;
+}
+
+.body3d--bare.body3d--interactive .body3d__stage {
+  cursor: grab;
+  touch-action: none;
+}
+
+.body3d--bare.body3d--interactive .body3d__stage:active {
+  cursor: grabbing;
 }
 
 /* The flat body in the same place: the outline alone, with no tile behind

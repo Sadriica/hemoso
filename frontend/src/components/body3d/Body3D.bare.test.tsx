@@ -31,4 +31,14 @@ describe('Body3D bare', () => {
     const { container } = render(<Body3D bare mode="status" system={null} />)
     expect(container.querySelector('.body3d--flat .body-silhouette')).not.toBeNull()
   })
+
+  it('takes the pointer only when it is interactive', () => {
+    const plain = render(<Body3D bare mode="status" system={null} />)
+    expect(plain.container.querySelector('.body3d')).not.toHaveClass('body3d--interactive')
+    plain.unmount()
+    const live = render(<Body3D bare interactive mode="status" system={null} onSelect={() => {}} />)
+    const figure = live.container.querySelector('.body3d')
+    expect(figure).toHaveClass('body3d--interactive')
+    expect(figure).toHaveAttribute('aria-hidden', 'true')
+  })
 })
