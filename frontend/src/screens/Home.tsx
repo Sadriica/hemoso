@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { latestEntry } from '../domain/entries'
 import type {
   AttentionRule,
@@ -74,6 +74,10 @@ export default function Home({
   const [initialView] = useState<'list' | 'orbits'>(() =>
     window.matchMedia?.('(min-width: 900px)').matches ? 'orbits' : 'list',
   )
+  // The body sits in a column of its own that only exists from 900 px up
+  // (phases.css). Under that width it is not mounted at all, so a phone never
+  // downloads the three.js chunk of a figure it cannot show.
+  const wide = useWideScreen()
   const [chosenId, setChosenId] = useState<string | null>(null)
   const selectedId =
     data.indicators.find((item) => item.id === chosenId)?.id ??
@@ -208,22 +212,41 @@ export default function Home({
             <Suspense
               fallback={<div className="body3d-slot" aria-hidden="true" />}
             >
-              <Body3D
-                mode="status"
-                system={selectedSystem}
-                state={statusBadgeKind(selected.status)}
-                label={
-                  selectedSystem
-                    ? strings.board.bodyLabel(selected.indicator.name)
-                    : strings.board.bodyNone
-                }
-              />
+              {wide && (
+                <Body3D
+                  mode="status"
+                  system={selectedSystem}
+                  state={statusBadgeKind(selected.status)}
+                  label={
+                    selectedSystem
+                      ? strings.board.bodyLabel(selected.indicator.name)
+                      : strings.board.bodyNone
+                  }
+                />
+              )}
             </Suspense>
           </div>
         </div>
       )}
     </section>
   )
+}
+
+// True from 900 px up, the width at which the body column appears (phases.css).
+// Read once and followed on resize, so the figure mounts exactly when the
+// layout has room for it.
+function useWideScreen(): boolean {
+  const [wide, setWide] = useState(
+    () => window.matchMedia?.('(min-width: 900px)').matches ?? false,
+  )
+  useEffect(() => {
+    if (typeof window.matchMedia !== 'function') return
+    const query = window.matchMedia('(min-width: 900px)')
+    const update = (): void => setWide(query.matches)
+    query.addEventListener('change', update)
+    return () => query.removeEventListener('change', update)
+  }, [])
+  return wide
 }
 
 // The status of one indicator: the answer of the state route when it arrives,
