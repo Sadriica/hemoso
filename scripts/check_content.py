@@ -83,7 +83,15 @@ DEMO_RANGES_HEADER = ["indicator_id", "min", "max", "source", "generation_note"]
 DEMO_DATA_HEADER = ["person_id", "indicator_id", "value", "unit", "mission_day", "time", "context"]
 ATTENTION_HEADER = ["indicator_id", "side", "threshold", "attention_level", "notify", "source"]
 
-CONDITIONS_HEADER = ["condition_id", "name", "based_on", "source"]
+# conditions.csv has five columns since T-78; the four-column header of before
+# stays valid, and under the five-column header a row may still have four cells
+# (no symptoms, FORMATS.md section 3).
+CONDITIONS_HEADER = ["condition_id", "name", "based_on", "symptoms", "source"]
+CONDITIONS_HEADER_V1 = ["condition_id", "name", "based_on", "source"]
+SYMPTOMS_HEADER = ["symptom_id", "name", "red_flag", "shared", "source"]
+SYMPTOM_LOG_HEADER = ["person_id", "mission_day", "time", "symptom_id", "severity"]
+YES_NO = {"yes", "no"}
+SEVERITIES = {"1", "2", "3"}
 
 
 class Reporter:
@@ -329,16 +337,42 @@ BASELINE_STATES_REQUIRED = ("in_range", "outside_range")
 SIGNAL_SIDES = ("above", "below")
 
 
+def conditions_header(root: Path) -> list[str]:
+    """The header conditions.csv uses: five columns, or the four of before T-78."""
+    path = root / "config/rules/conditions.csv"
+    try:
+        with path.open(encoding="utf-8-sig", newline="") as fh:
+            first = next(csv.reader(fh), None)
+    except (OSError, UnicodeDecodeError, csv.Error):
+        return CONDITIONS_HEADER
+    return CONDITIONS_HEADER_V1 if first == CONDITIONS_HEADER_V1 else CONDITIONS_HEADER
+
+
 def check_conditions(rep: Reporter, root: Path, state: dict, strict: bool = False) -> None:
-    header = CONDITIONS_HEADER
-    rows = read_table(root, "config/rules/conditions.csv", header, rep)
+    rel = "config/rules/conditions.csv"
+    header = conditions_header(root)
+    rows = read_table(root, rel, header, rep)
     if rows is None:
         return
-    required = set(header)
     seen: set[str] = set()
+    symptoms = state.get("symptoms")
 
-    def row(cells, line_no):
-        rel = "config/rules/conditions.csv"
+    for line_no, row in rows:
+        if len(row) == len(header):
+            cells = dict(zip(header, row))
+            cells.setdefault("symptoms", "")
+        elif header == CONDITIONS_HEADER and len(row) == len(CONDITIONS_HEADER_V1):
+            # A four-cell row under the five-column header: no symptoms.
+            cells = dict(zip(CONDITIONS_HEADER_V1, row))
+            cells["symptoms"] = ""
+        else:
+            expected = "4 or 5" if header == CONDITIONS_HEADER else str(len(header))
+            rep.error(f"{rel}:{line_no} wrong number of columns, expected {expected} got {len(row)}")
+            continue
+        empty = [name for name in CONDITIONS_HEADER_V1 if not cells[name].strip()]
+        if empty:
+            rep.error(f"{rel}:{line_no} empty required cell(s): {', '.join(empty)}")
+
         cid = cells["condition_id"].strip()
         if cid:
             if not ID_RE.match(cid):
@@ -362,11 +396,80 @@ def check_conditions(rep: Reporter, root: Path, state: dict, strict: bool = Fals
             if iid in sides_seen:
                 rep.error(f"{rel}:{line_no} based_on names '{iid}' twice")
             sides_seen[iid] = side
+        listed: set[str] = set()
+        for sid in cells["symptoms"].split():
+            if sid in listed:
+                rep.error(f"{rel}:{line_no} symptoms names '{sid}' twice")
+            listed.add(sid)
+            if symptoms is None:
+                rep.error(f"{rel}:{line_no} symptom '{sid}' but config/data/symptoms.csv is missing")
+            elif sid not in symptoms:
+                rep.error(f"{rel}:{line_no} symptom '{sid}' is not in config/data/symptoms.csv")
         source = cells["source"].strip()
         if source and not valid_source(source):
             rep.error(f"{rel}:{line_no} source must be an http(s) link or 'Assumption'")
 
-    validate_rows(rep, "config/rules/conditions.csv", rows, header, required, row)
+
+def check_symptoms(rep: Reporter, root: Path, state: dict) -> None:
+    """data/symptoms.csv (T-78): optional; when present, conditions read its ids."""
+    rel = "config/data/symptoms.csv"
+    rows = read_table(root, rel, SYMPTOMS_HEADER, rep)
+    if rows is None:
+        return
+    ids: set[str] = set()
+    state["symptoms"] = ids
+    indicators = state.get("indicators") or set()
+
+    def row(cells, line_no):
+        sid = cells["symptom_id"].strip()
+        if sid:
+            if not ID_RE.match(sid):
+                rep.error(f"{rel}:{line_no} invalid symptom_id '{sid}', must be lowercase snake_case")
+            if sid in ids:
+                rep.error(f"{rel}:{line_no} duplicate symptom_id '{sid}'")
+            if sid in indicators:
+                rep.error(f"{rel}:{line_no} symptom_id '{sid}' is an indicator id")
+            ids.add(sid)
+        for col in ("red_flag", "shared"):
+            value = cells[col].strip()
+            if value and value not in YES_NO:
+                rep.error(f"{rel}:{line_no} {col} must be yes or no, got '{value}'")
+        source = cells["source"].strip()
+        if source and not valid_source(source):
+            rep.error(f"{rel}:{line_no} source must be an http(s) link or 'Assumption'")
+
+    validate_rows(rep, rel, rows, SYMPTOMS_HEADER, set(SYMPTOMS_HEADER), row)
+
+
+def check_symptom_log(rep: Reporter, root: Path, state: dict) -> None:
+    """data/symptom_log.csv (T-78): optional; every symptom_id must be defined."""
+    rel = "config/data/symptom_log.csv"
+    rows = read_table(root, rel, SYMPTOM_LOG_HEADER, rep)
+    if rows is None:
+        return
+    symptoms = state.get("symptoms")
+
+    def row(cells, line_no):
+        pid = cells["person_id"].strip()
+        if pid and not ID_RE.match(pid):
+            rep.error(f"{rel}:{line_no} invalid person_id '{pid}', must be lowercase snake_case")
+        day = cells["mission_day"].strip()
+        if day and not (day.isdigit() and int(day) > 0):
+            rep.error(f"{rel}:{line_no} mission_day must be a positive integer, got '{day}'")
+        time = cells["time"].strip()
+        if time and not TIME_RE.match(time):
+            rep.error(f"{rel}:{line_no} time must be HH:MM (24-hour), got '{time}'")
+        sid = cells["symptom_id"].strip()
+        if sid:
+            if symptoms is None:
+                rep.error(f"{rel}:{line_no} symptom '{sid}' but config/data/symptoms.csv is missing")
+            elif sid not in symptoms:
+                rep.error(f"{rel}:{line_no} symptom_id '{sid}' is not in config/data/symptoms.csv")
+        severity = cells["severity"].strip()
+        if severity and severity not in SEVERITIES:
+            rep.error(f"{rel}:{line_no} severity must be 1, 2 or 3, got '{severity}'")
+
+    validate_rows(rep, rel, rows, SYMPTOM_LOG_HEADER, set(SYMPTOM_LOG_HEADER), row)
 
 
 def check_body_regions(rep: Reporter, root: Path) -> None:
@@ -642,7 +745,9 @@ def check(root: Path, strict: bool) -> list[str]:
     check_indicators(rep, root, state)
     check_demo_ranges(rep, root, state)
     check_attention(rep, root, state)
+    check_symptoms(rep, root, state)
     check_conditions(rep, root, state, strict)
+    check_symptom_log(rep, root, state)
     check_body_regions(rep, root)
     check_demo_data(rep, root, state)
     check_content_files(rep, root, state, strict)
