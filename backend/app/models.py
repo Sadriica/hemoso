@@ -19,6 +19,11 @@ StateName = Literal["no_data", "in_range", "outside_range", "needs_review"]
 # Who acts on an attention row, from least to most severe.
 Notify = Literal["crew", "cmo", "flight_surgeon"]
 
+# Which side of a person's range counts for a condition signal (FORMATS.md 3).
+Side = Literal["above", "below"]
+# The three-step label of an evidence score, plus no_data (bio2-02).
+ConditionLabel = Literal["no_data", "low", "possible", "review"]
+
 
 def is_valid_id(value: str) -> bool:
     """True when `value` is lowercase snake_case (letters, digits, underscores)."""
@@ -82,3 +87,35 @@ class IndicatorState(BaseModel):
     spread: float | None
     n: int
     attention: AttentionRow | None
+
+
+class ConditionSignal(BaseModel):
+    """One signal a condition rests on (bio2-02).
+
+    `side` is the side of the person's range that counts for the condition, or
+    null when `based_on` left it out; `contribution` is the point the signal
+    added, or null while it is not usable (no reading, no side or no baseline);
+    `value` is the newest reading, or null when there is none.
+    """
+
+    indicator_id: str
+    side: Side | None
+    contribution: float | None
+    value: float | None
+
+
+class ConditionScore(BaseModel):
+    """The evidence score of one possible condition (bio2-02, REQ-06).
+
+    `score` is the mean of the signals' points, from 0 to 1, or null while
+    fewer than two signals are usable; `label` is `no_data` with no score.
+    The score is evidence, not a probability: the CMO or the flight surgeon
+    confirms, and the route never says the person has the condition.
+    """
+
+    condition_id: str
+    name: str
+    score: float | None
+    label: ConditionLabel
+    signals: list[ConditionSignal]
+    source: str
