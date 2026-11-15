@@ -3,6 +3,7 @@ import PhaseHeading from '../components/PhaseHeading'
 import type { EntryStore } from '../data/entryStore'
 import type { Indicator, Entry as EntryRecord } from '../domain/types'
 import Entry from '../screens/Entry'
+import ReactionCheck from '../reaction/ReactionCheck'
 import { strings } from '../strings'
 
 interface ReportPhaseProps {
@@ -53,6 +54,15 @@ export default function ReportPhase({
           {copy.logged(logged)}
         </p>
       </div>
+
+      {/* Optional and skippable: the way on to the status never waits for it. */}
+      <ReactionCheck
+        store={store}
+        personId={personId}
+        indicators={indicators}
+        entries={entries}
+        serverConfigured={serverConfigured}
+      />
 
       <div className="phase__actions">
         <button type="button" className="text-link" onClick={onBack}>
