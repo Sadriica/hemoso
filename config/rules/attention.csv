@@ -16,3 +16,6 @@ reaction_lapses,above,3,watch,crew,Assumption
 appetite_1_5,below,3,watch,crew,Assumption
 fluid_intake_ml,below,2500,watch,crew,https://www.nasa.gov/wp-content/uploads/2023/12/ochmo-tb-027-water.pdf
 body_mass_kg,below,45,watch,crew,Assumption
+eye_closure_pct,above,15,watch,crew,Assumption
+blink_rate_pm,below,6,watch,crew,Assumption
+blink_rate_pm,above,30,watch,crew,Assumption
