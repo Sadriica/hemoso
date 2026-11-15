@@ -1,0 +1,100 @@
+/* The eye check wears the panel grammar of the reaction check: `.panel` and
+   `.panel--cut` give the surface; every value is a token of DESIGN.md. */
+
+.eye {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-block: var(--space-4);
+}
+
+.eye__heading {
+  font-size: var(--text-h2);
+  line-height: 30px;
+  margin: 0;
+}
+
+.eye__intro,
+.eye__meta,
+.eye__status {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-small);
+  line-height: 20px;
+}
+
+.eye__intro {
+  max-width: 60ch;
+}
+
+.eye__status:empty {
+  display: none;
+}
+
+.eye__result {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--text-h2);
+  line-height: 30px;
+}
+
+.eye__stage {
+  position: relative;
+  width: 100%;
+  max-width: 360px;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+/* The preview is mirrored, as a mirror is. */
+.eye__video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+}
+
+/* A plain oval to place the face in. */
+.eye__guide {
+  position: absolute;
+  inset: 12% 28%;
+  border: 2px dashed var(--color-accent);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.eye__bar {
+  width: 100%;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--color-border-control);
+}
+
+.eye__bar-fill {
+  width: 100%;
+  height: 100%;
+  background: var(--color-accent);
+  transform-origin: left;
+  transition: transform 200ms linear;
+}
+
+.eye__bar-fill--still {
+  transition: none;
+}
+
+.eye__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .eye__bar-fill {
+    transition: none;
+  }
+}

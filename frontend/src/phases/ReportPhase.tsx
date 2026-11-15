@@ -13,6 +13,7 @@ import Disclosure from '../components/Disclosure'
 import SymptomChecklist from '../components/symptoms/SymptomChecklist'
 import type { SymptomDef } from '../domain/symptoms'
 import Entry from '../screens/Entry'
+import EyeStep from '../eye/EyeStep'
 import ReactionCheck from '../reaction/ReactionCheck'
 import { REACTION_LAPSES_ID, REACTION_MEDIAN_ID } from '../reaction/ids'
 import { reactionStrings } from '../reaction/strings'
@@ -144,6 +145,16 @@ export default function ReportPhase({
         </Disclosure>
       </div>
       )}
+
+      {/* The eye check: nothing renders while EYE_CHECK_ENABLED is false. */}
+      <EyeStep
+        store={store}
+        personId={personId}
+        indicators={indicators}
+        entries={entries}
+        fresh={fresh}
+        serverConfigured={serverConfigured}
+      />
 
       <SymptomChecklist personId={personId} defs={symptoms} entries={entries} />
 

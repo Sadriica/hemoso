@@ -2,6 +2,7 @@ import { isClockTime, isMissionDay } from '../domain/clock'
 import { MEASUREMENT_CONTEXTS } from '../domain/context'
 import type { Entry, Indicator, MeasurementContext } from '../domain/types'
 import { systemOf, type BodySystemId } from '../icons/meta'
+import { isEyeIndicator } from '../eye/ids'
 import { isReactionIndicator } from '../reaction/ids'
 import { SCALE_UNIT, strings } from '../strings'
 
@@ -115,6 +116,8 @@ export function readingRows(indicators: Indicator[]): ReadingRow[] {
     // The reaction check measures these two itself (reaction/ids.ts): no field
     // asks the crew to type a value the app already knows.
     if (isReactionIndicator(indicator.id)) continue
+    // The eye check writes its two the same way.
+    if (isEyeIndicator(indicator.id)) continue
     if (indicator.id === BP_SYSTOLIC) {
       const diastolic = indicators.find(
         (item) => item.id === BP_DIASTOLIC,
