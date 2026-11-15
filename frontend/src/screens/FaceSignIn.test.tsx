@@ -580,6 +580,43 @@ describe('FaceSignIn', () => {
       expect(overlay()).toHaveAttribute('data-state', 'success')
     })
 
+    it('fills the progress arc over the five registering frames', async () => {
+      allowCamera()
+      const releases: Array<(value: number[]) => void> = []
+      engine.descriptorFrom.mockImplementation(
+        () =>
+          new Promise<number[]>((resolve) => {
+            releases.push(resolve)
+          }),
+      )
+      const user = userEvent.setup()
+      renderPanel()
+
+      await user.click(
+        screen.getByRole('button', { name: strings.face.continueLabel }),
+      )
+      await user.click(
+        screen.getByRole('button', { name: strings.face.register }),
+      )
+
+      await waitFor(() => expect(releases).toHaveLength(1))
+      expect(overlay()).toHaveAttribute('data-progress', '0')
+      expect(overlay()?.querySelector('.face-scan__progress')).not.toBeNull()
+      releases[0]([0.2, 0.4])
+      await waitFor(() =>
+        expect(overlay()).toHaveAttribute('data-progress', '0.2'),
+      )
+      for (let frame = 1; frame < 5; frame += 1) {
+        await waitFor(() => expect(releases).toHaveLength(frame + 1))
+        releases[frame]([0.2, 0.4])
+      }
+      await waitFor(() =>
+        expect(overlay()).toHaveAttribute('data-state', 'success'),
+      )
+      expect(overlay()).not.toHaveAttribute('data-progress')
+      expect(overlay()?.querySelector('.face-scan__progress')).toBeNull()
+    })
+
     it('renders the final state without motion when reduced motion is on', async () => {
       allowCamera()
       engine.descriptorFrom.mockResolvedValue(null)

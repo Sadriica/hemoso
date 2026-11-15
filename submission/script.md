@@ -1,15 +1,21 @@
 # Pitch script · two minutes
 
-**Status:** draft · **Owner:** Bio 1 · Sat 14, 23:30 · read aloud three times
-before Sun 14:00 (REQ-35)
+**Status:** not presented · **Owner:** Bio 1 · Sun 15 Nov 10:15
 
-For the mentors on Sunday at 14:00. Spoken, not read: short sentences, one idea
-each, and the app on screen during the story. 279 spoken words, timed to 2:00 at a
-conversation pace with the demo on screen.
+The team dropped the two-minute pitch on Sunday morning: the submission is judged
+on the project page and the demo, so the spoken story adds no score. This file
+stays because two things in it are still used: the REQ-11 line, word for word,
+and the map of where each judging criterion is answered, which Bio 2 can quote on
+the submission page.
 
-Language: English. Question 2 for the Medellín lead (the language of the
-presentation) is still open; if the mentors prefer Spanish, this is the text to
-translate, not to rewrite.
+What it is no longer: a text to rehearse, and a reason to keep a presenter free
+before 14:00.
+
+For the record: the Medellín programme lists a presentation to mentors at 14:00
+(`docs/CHALLENGE.md`). Checked with the local lead as feedback and not scoring;
+if that changes, this file is ready to read again.
+
+Language: English. The 276 words below take about 1:55 at a conversation pace.
 
 ## Demo format (REQ-17)
 
@@ -31,7 +37,7 @@ The same words go in three places:
 | Place | Who puts it there |
 | --- | --- |
 | The app, in the status view | Eng 2 (REQ-01) |
-| This script, spoken at 1:17 | Bio 1 |
+| This script, spoken at 1:20 | Bio 1 |
 | The submission page description | Bio 2 (REQ-34) |
 
 It is one sentence on purpose. A disclaimer that takes ten seconds to say is a
@@ -41,51 +47,47 @@ disclaimer nobody hears.
 
 | Time | Beat | What is on screen |
 | --- | --- | --- |
-| 0:00–0:18 | The problem, with a NASA source | The app, idle |
-| 0:18–0:28 | Who uses it, and when | The app, status |
-| 0:28–0:42 | What the ISS measures today | `config/data/indicators.csv`, the instrument column |
-| 0:42–1:17 | One astronaut, two readings, one decision (the same scene as the video) | Report with 38.5 °C and the pulse, then the fever evidence board |
-| 1:17–1:30 | What it does not do | The status card, the CMO line |
-| 1:30–1:50 | Why you can trust what it says | `config/rules/attention.csv`, the temperature row with its link |
+| 0:00–0:20 | The problem, with a NASA source | The app, idle, day 41 |
+| 0:20–0:40 | Who uses it, and when | The app, day 41 status |
+| 0:40–1:20 | One astronaut, three days, through the demo | The demo path: day 41, day 42, day 46 |
+| 1:20–1:35 | What it does not do | The status card, the CMO line |
+| 1:35–1:50 | Evidence and its limits | `config/` open, one rule with its link |
 | 1:50–2:00 | Maturity and next step | The team |
 
-### 0:00–0:18 · The problem
+### 0:00–0:20 · The problem
 
 On a long mission, there is no hospital. NASA's Human Research Program says
-weightlessness changes how the heart and blood vessels work, and crews report
-rashes and infections in orbit. A crew medical officer is on board, a flight
-surgeon on Earth. Neither can watch everyone.
+weightlessness changes how the heart and blood vessels work, which can raise the
+risk of cardiovascular events, and that crews report rashes and infections in
+orbit. On board there is a crew medical officer. On Earth, a flight surgeon.
+Neither can watch every crew member every day.
 
-### 0:18–0:28 · Who uses it, and when
+### 0:20–0:40 · Who uses it, and when
 
-HeMoSo is for the astronaut, between contacts with Earth. A daily check, compared
-with that person's own usual range, so a change shows while it is small.
+HeMoSo is for the astronaut, on the days between contacts with Earth. A daily
+check of a few numbers and symptoms, compared with that person's own usual range,
+so a change is visible while it is still small.
 
-### 0:28–0:42 · What the ISS measures today
+### 0:40–1:20 · The story
 
-We build on instruments NASA documents on the station. Glucose from the i-STAT analyser. Core temperature
-from the T-Mini headband. Sleep from the Actiwatch. Body mass from SLAMMD.
-Reaction time from a check adapted from the ISS Reaction Self Test.
+Day 41. Elena logs her resting heart rate: three days above her usual range. HeMoSo
+suggests a mild infection is possible, with the probability and what it is based
+on, and asks her to repeat the measurement and answer two questions. Her CMO on
+board is notified. Day 42: fever of 38.5 °C and a sore throat, so the flight
+surgeon is told at the next link. Day 46: both back inside her usual range.
 
-### 0:42–1:17 · The story
-
-Elena logs two readings: a core temperature of 38.5 °C and a fast resting pulse.
-HeMoSo compares both with her own usual range. The temperature also crosses a
-limit with a NASA source, so it needs review. The evidence board shows fever as
-possible, 0.75 of 1, with its two signals and that source. The next step is plain:
-tell the CMO on board today.
-
-### 1:17–1:30 · What it does not do
+### 1:20–1:35 · What it does not do
 
 HeMoSo does not diagnose. It shows a probability and its basis, and it names who
 confirms: your CMO or the flight surgeon. The decision is theirs.
 
-### 1:30–1:50 · Why you can trust what it says
+### 1:35–1:50 · Evidence and its limits
 
-A limit with a source is checked before the person's own baseline. So a core
-temperature of 39.5 °C on day 1 already needs review, with no history yet. Every
-threshold carries its link, or says Assumption. And an Assumption never raises an
-alarm on its own.
+NASA's open data shaped what we track and why: the Human Research Program risk
+pages, and the nutrition evidence report behind the fluid rule. Every threshold
+in the app carries a link or is marked Assumption, because the sources we read
+set no in-flight cut-offs for heart rate, blood pressure, temperature, sleep or
+mood.
 
 ### 1:50–2:00 · Maturity and next step
 
@@ -97,26 +99,21 @@ surgeon would sign off, and a longer test inside a real mission routine.
 | Criterion | Where it is in the script |
 | --- | --- |
 | Impact | 0:00: a crew that cannot wait for Earth |
-| Creativity | 0:42: the app compares one person with their own usual range, and suggests with a probability, not a label |
-| Validity | 1:30: a sourced limit checked first, thresholds linked or marked Assumption |
-| Best Use of Science | 0:28: only instruments that fly on the ISS today; 1:30: every threshold shows its source, an Assumption never alarms alone |
-| Best Mission Concept | 0:00 and 0:42: a crew far from Earth, one astronaut's three days, and who confirms at 1:17 |
-| Relevance | 0:18 and 0:42: the astronaut's own assessment, on a real mission day |
+| Creativity | 0:40: the app compares one person with their own usual range, and suggests with a probability, not a label |
+| Validity | 1:35: NASA sources named, thresholds linked or marked Assumption, the gap stated |
+| Relevance | 0:20 and 0:40: the astronaut's own assessment, on a real mission day |
 | Presentation | The demo path is fixed and under 40 seconds; the limit is said out loud |
 
-## Before the presentation
+## If it is read again
 
-- Read it aloud three times with a timer (REQ-35). Target 1:55. If it passes
-  2:05, cut the Reaction Self Test sentence at 0:28 first, then the second
-  sentence of 1:17–1:30.
-- Update the story with the real screens and the real probability from Bio 2.
-  Until they exist, `{{PROBABILITY_AND_BASIS}}` stays a placeholder.
-- Confirm the name of the demo persona. If Elena is a real astronaut, change it.
-- Confirm the NASA resource Phys uses (REQ-19). The problem line at 0:00 names the
-  risk pages, because those are the ones this script was written from; if
-  `docs/nasa_data.md` ends up listing another resource, that line changes.
-- If the app fails during the demo, play the 30 s video and keep talking: the
-  story fits in 40 seconds, so the video covers the same ground.
+- Read it aloud with a timer. Target 1:55. If it passes 2:05, cut "and answer two
+  questions" first, then the second sentence of 1:20–1:35.
+- Replace `{{PROBABILITY_AND_BASIS}}` with what Bio 2 published, and check the
+  name of the demo persona.
+- The line at 1:35 names the risk pages and the nutrition report; Phys's label in
+  `docs/nasa_data.md` is broader (it adds the cardiovascular report and the other
+  hazards). If the story comes back, that line follows the label.
+- If the app fails, the 30 s video covers the same ground in 40 seconds.
 
 ## Sources for this script
 
@@ -131,13 +128,6 @@ surgeon would sign off, and a longer test inside a real mission routine.
 - Canadian Space Agency, Why do we conduct science experiments in space?:
   https://www.asc-csa.gc.ca/eng/iss/science/why-do-we-conduct-science-experiments-in-space.asp
 - NASA-STD-3001 Volume 1, Revision C: https://www.nasa.gov/wp-content/uploads/2023/11/nasa-std-3001-vol-1-rev-c-with-signature.pdf
-
-Files the new lines rest on: `config/data/indicators.csv` (instrument per
-indicator, each row with a link), `config/rules/attention.csv` (the cited
-`temp_core_c` rows: above 38.0 °C, below 35 °C), `FORMATS.md` section 3 (how each
-value is compared), `docs/findings/phys-02-baseline-state-rule.md` (a cited limit
-is absolute, an Assumption row never alarms alone, 39.5 °C on the first day is
-`needs_review`). Instrument sources are already in `docs/sources.md`.
 
 Every claim above is quoted in `docs/findings/bio1-01-question-2-sources.md` and
 `docs/findings/bio1-03-fluid-intake.md`, with the pages that were opened.
