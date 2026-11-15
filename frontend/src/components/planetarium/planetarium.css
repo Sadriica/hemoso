@@ -92,7 +92,8 @@
   background: var(--color-surface); color: var(--color-text); border-radius: var(--radius-small);
   font-family: var(--font-mono); font-size: var(--text-label); text-align: left; white-space: nowrap; line-height: 1.3;
 }
-.planetarium__body--left .planetarium__tag { left: auto; right: 100%; margin: 0 var(--space-1) 0 0; text-align: right; justify-items: end; }
+.planetarium__body--left .planetarium__tag { left: auto; right: 100%; margin: 0 var(--space-1) 0 0; }
+.planetarium__tag-name { font-weight: 600; }
 .planetarium__tag-state { color: var(--ring); align-items: center; }
 .planetarium__tag-value { color: var(--color-text-muted); margin-inline-start: var(--space-1); }
 .planetarium__row-state svg, .planetarium__tag-state svg { flex: none; }
