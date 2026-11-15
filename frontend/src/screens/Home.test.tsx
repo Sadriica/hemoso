@@ -50,6 +50,7 @@ function entry(missionDay: number, value: number): Entry {
     unit: 'example_unit',
     missionDay,
     time: '13:30',
+    context: 'rest',
   }
 }
 
@@ -331,6 +332,7 @@ describe('Home', () => {
           unit: '1 to 5',
           missionDay: 10,
           time: '08:00',
+          context: 'rest',
         },
       ],
     }

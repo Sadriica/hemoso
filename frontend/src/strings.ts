@@ -92,6 +92,16 @@ export const strings = {
     valueWithUnit: (unit: string): string => `Value (${unit})`,
     missionDay: 'Mission day',
     time: 'Time',
+    // What the astronaut was doing when they took the reading (FORMATS.md
+    // section 3, `context`). The choice that fits the local clock is picked
+    // first, and the person can change it.
+    context: 'Context',
+    contextLabels: {
+      rest: 'At rest',
+      after_exercise: 'After exercise',
+      on_waking: 'On waking',
+      before_sleep: 'Before sleep',
+    },
     save: 'Save entry',
     saved: 'Saved. Waiting to be sent.',
     // Without a server nothing is sent, so the message promises nothing.

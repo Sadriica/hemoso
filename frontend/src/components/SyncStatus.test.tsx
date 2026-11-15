@@ -36,6 +36,7 @@ function newEntry(value = 58): Omit<Entry, 'id'> {
     unit: 'bpm',
     missionDay: 2,
     time: '09:15',
+    context: 'rest',
   }
 }
 

@@ -58,6 +58,7 @@ function entry(
     unit: 'example_unit',
     missionDay,
     time,
+    context: 'rest',
     ...extra,
   }
 }
@@ -287,6 +288,7 @@ describe('History', () => {
         unit: 'example_unit',
         missionDay: 2,
         time: '09:00',
+        context: 'rest',
       })
     })
     expect(screen.getAllByRole('row')).toHaveLength(3)
