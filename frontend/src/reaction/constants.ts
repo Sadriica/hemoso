@@ -3,17 +3,16 @@
 // (docs/findings/phys-06-reaction-time-pvtb.md), which reproduces the 3-minute
 // PVT-B of the ISS Reaction Self Test; the lapse threshold and the intervals come
 // from Dev et al. 2024, https://pmc.ncbi.nlm.nih.gov/articles/PMC11614644/
-// The run is shortened to 50 seconds and the stimuli vary (team decision,
+// The run is shortened to 90 seconds and the stimuli vary (team decision,
 // Sun 01:50, next to F-phys-06). A change happens here and in that finding,
 // never in the screen.
 
 /**
- * One check of the real length: 50_000 ms (50 s, rounded from 49.5 s, 55 % of
- * the earlier 90 s; team lead decision, Sun 11:45). A shortened form of the
- * 3-minute PVT-B of F-phys-06 (team decision, Sun 01:50), so the median and the lapses
+ * One check of the real length: 90_000 ms. A shortened form of the 3-minute
+ * PVT-B of F-phys-06 (team decision, Sun 01:50), so the median and the lapses
  * come from fewer trials than the instrument the threshold was built for.
  */
-export const REACTION_DURATION_MS = 50_000
+export const REACTION_DURATION_MS = 90_000
 
 /**
  * The fewest valid trials (a reaction or a lapse) a run needs before it is
@@ -24,7 +23,7 @@ export const REACTION_MIN_SAVE_TRIALS = 3
 
 /**
  * The demo length, 30_000 ms. It exists for the demo path and for the e2e
- * test, which cannot spend 50 seconds per run; the app reaches it with
+ * test, which cannot spend 90 seconds per run; the app reaches it with
  * `?reaction=demo` and nothing else uses it. A run of this length shows the
  * result and saves nothing: 30 seconds is a demonstration of the screen, not a
  * check the crew took, so it must not reach the mission record (T-76).
@@ -36,9 +35,8 @@ export const REACTION_WAIT_MIN_MS = 2000
 export const REACTION_WAIT_MAX_MS = 5000
 
 /**
- * An answer that takes this long or longer is a lapse: the PVT-B counts 355 ms,
- * not the 500 ms of the 5-minute PVT (F-phys-06). Assumption for the go/no-go
- * form until Phys sets a cut-off (phys-06 covers the simple PVT-B).
+ * A trial that takes this long or longer is a lapse, not a reaction time: the
+ * PVT-B counts 355 ms, not the 500 ms of the 5-minute PVT.
  */
 export const REACTION_LAPSE_CUTOFF_MS = 355
 
@@ -69,20 +67,18 @@ export const REACTION_TONE_MS_MAX = 200
 export const REACTION_TONE_GAINS = [0.08, 0.16, 0.25]
 
 /**
- * Whether the light mode has colours with only green as the target. ON (team
- * lead decision, Sun 11:45): with a plain "answer every light", a crew member
- * who repeats the check every day learns to predict it, and a go/no-go with
- * distractors keeps it fair. The first light of a run is a white warm-up
- * target; after it only the green lamp is a target and the orange, yellow and
- * blue lamps are not. Answering a distractor is an error: it is shown in the
- * result and never saved. A go/no-go is a choice task, which is slower than the
- * simple PVT-B, so the lapse cut-off below is an assumption for this form.
- * Off: every light is the same white lamp and a target, only its size changes,
- * no errors are counted.
+ * Whether the light mode has colours with only green as the target. OFF until
+ * Phys confirms the method and a cut-off (team lead, Sun 01:50). With several
+ * colours and one target the test becomes a go/no-go choice task, where
+ * reaction times run about 100 ms slower, so the 355 ms lapse cut-off of
+ * F-phys-06 no longer fits. Off: every light is a target (answer all of them),
+ * its shape and size change from trial to trial, no non-targets exist, no
+ * errors are counted and the result has no "errors" figure. On: the green-only
+ * behaviour below applies.
  */
-export const REACTION_COLOUR_TARGETS = true
+export const REACTION_COLOUR_TARGETS = false
 
-/** The sizes the white lamp takes when colour targets are off: a scale of its box. */
+/** The sizes a light takes when colour targets are off: a scale of its box. */
 export const REACTION_SIZES = [0.65, 0.82, 1]
 
 /**
@@ -103,7 +99,7 @@ export const REACTION_MIN_GAP_MS = 334
 // `?reaction=demo`. Nothing else in the app reads this parameter.
 const DEMO_PARAM = 'reaction'
 
-/** The length of one run: 50 seconds, or the demo length on the demo path. */
+/** The length of one run: 90 seconds, or the demo length on the demo path. */
 export function reactionLength(search: string): number {
   return new URLSearchParams(search).get(DEMO_PARAM) === 'demo'
     ? REACTION_DEMO_DURATION_MS
