@@ -8,6 +8,7 @@ import {
   type FormEvent,
   type RefObject,
 } from 'react'
+import { isUsername, normaliseUsername } from '../domain/username'
 import PhaseHeading from '../components/PhaseHeading'
 import Notice from '../components/Notice'
 import { isIsoDate, setMissionStart, todayIso } from '../data/missionStart'
@@ -27,8 +28,6 @@ const OrbitalScene = lazy(() => import('../components/orbital'))
 /** The fieldset of crew members: the face panel sends the focus back here. */
 export const CREW_PICKER_ID = 'crew-picker'
 
-// A username is the person_id of the contract: lowercase snake_case.
-const USERNAME = /^[a-z][a-z0-9_]{0,63}$/
 // The PIN rule of the contract, checked here too so a mistyped PIN is a
 // sentence and not a round trip.
 const PIN = /^\d{4,8}$/
@@ -189,13 +188,21 @@ export default function IdentifyPhase({
     onDone()
   }
 
+  // A name the form cannot turn into an id: the sentence sits under the field,
+  // the field is marked invalid and brought into view with the focus on it.
+  function showUsernameProblem(): void {
+    setProblem('username')
+    const field = usernameRef.current
+    field?.focus()
+    field?.scrollIntoView?.({ block: 'center' })
+  }
+
   async function submitPin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (busy) return
-    const person = username.trim()
-    if (!USERNAME.test(person)) {
-      setProblem('username')
-      usernameRef.current?.focus()
+    const person = normaliseUsername(username)
+    if (!isUsername(person)) {
+      showUsernameProblem()
       return
     }
     if (!PIN.test(pin)) {
@@ -220,10 +227,9 @@ export default function IdentifyPhase({
   async function submitCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (busy) return
-    const person = username.trim()
-    if (!USERNAME.test(person)) {
-      setProblem('username')
-      usernameRef.current?.focus()
+    const person = normaliseUsername(username)
+    if (!isUsername(person)) {
+      showUsernameProblem()
       return
     }
     if (!PIN.test(pin)) {
@@ -251,6 +257,13 @@ export default function IdentifyPhase({
   }
 
   const problemText = problem === null ? null : signInCopy.errors[problem]
+  // The id the form will send, shown under the field as soon as it differs
+  // from what was typed and can work ("Juan Perez" -> juan_perez).
+  const normalisedUsername = normaliseUsername(username)
+  const usernamePreview =
+    normalisedUsername !== username && isUsername(normalisedUsername)
+      ? normalisedUsername
+      : null
 
   const facePanel = (
     <section className="identify__face" aria-labelledby={faceTitleId}>
@@ -503,8 +516,30 @@ export default function IdentifyPhase({
                         spellCheck={false}
                         value={username}
                         disabled={busy}
-                        onChange={(event) => setUsername(event.target.value)}
+                        aria-invalid={problem === 'username' ? true : undefined}
+                        aria-describedby={
+                          problem === 'username'
+                            ? `${usernameId}-error`
+                            : usernamePreview !== null
+                              ? `${usernameId}-preview`
+                              : undefined
+                        }
+                        onChange={(event) => {
+                          setUsername(event.target.value)
+                          if (problem === 'username') setProblem(null)
+                        }}
                       />
+                      {problem === 'username' ? (
+                        <SigninError id={`${usernameId}-error`}>
+                          {signInCopy.errors.username}
+                        </SigninError>
+                      ) : (
+                        usernamePreview !== null && (
+                          <p className="signin__hint" id={`${usernameId}-preview`}>
+                            {signInCopy.willSignInAs(usernamePreview)}
+                          </p>
+                        )
+                      )}
                     </div>
                     <div className="signin__field">
                       <label className="signin__label" htmlFor={pinId}>
@@ -592,7 +627,7 @@ export default function IdentifyPhase({
                       </button>
                     </div>
                   </form>
-                  {problemText !== null && (
+                  {problemText !== null && problem !== 'username' && (
                     <SigninError>{problemText}</SigninError>
                   )}
           

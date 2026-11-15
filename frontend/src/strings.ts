@@ -408,13 +408,15 @@ export const strings = {
     // The role line of a crew card. The demo crew is synthetic data (REQ-14),
     // so that is the role it carries.
     crewRole: 'Synthetic crew member',
+    // The id a typed name becomes, shown under the field while it is typed.
+    willSignInAs: (personId: string): string => `You will sign in as ${personId}`,
     signedInAs: (personId: string): string => `Signed in as ${personId}`,
     signOut: 'Sign out',
     expired: 'Your session ended. Enter your PIN again.',
     askPin: (personId: string): string => `Enter the PIN for ${personId}.`,
     errors: {
       username:
-        'Use lowercase letters, digits and underscores, starting with a letter.',
+        'Start with a letter. Use letters, digits, spaces or underscores, 64 at most.',
       pin: 'Enter a PIN of 4 to 8 digits.',
       pinMismatch: 'The two PINs are different.',
       wrong: 'Wrong username or PIN.',
