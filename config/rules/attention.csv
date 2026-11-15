@@ -6,7 +6,7 @@ bp_sys_mmhg,above,180,urgent,flight_surgeon,https://www.who.int/news-room/fact-s
 bp_dia_mmhg,above,90,consult,cmo,https://www.who.int/news-room/fact-sheets/detail/hypertension
 bp_dia_mmhg,above,120,urgent,flight_surgeon,https://www.who.int/news-room/fact-sheets/detail/hypertension
 temp_core_c,below,35,urgent,flight_surgeon,https://www.nasa.gov/wp-content/uploads/2023/11/nasa-std-3001-vol-1-rev-c-with-signature.pdf
-temp_core_c,above,38.0,consult,cmo,https://ntrs.nasa.gov/api/citations/20230012738/downloads/JSC%2022538%20Health%20Stabilization%20Program%20Rev%20F%20Clean.pdf
+temp_core_c,above,38.5,consult,cmo,Assumption
 sleep_h,below,6,watch,crew,https://academic.oup.com/sleep/article/45/3/zsac006/6505235
 mood_1_5,below,2,watch,crew,Assumption
 glucose_mgdl,above,126,consult,cmo,https://diabetes.org/about-diabetes/diagnosis
@@ -14,5 +14,5 @@ glucose_mgdl,below,70,consult,cmo,https://diabetes.org/living-with-diabetes/hypo
 reaction_median_ms,above,500,watch,crew,Assumption
 reaction_lapses,above,3,watch,crew,Assumption
 appetite_1_5,below,3,watch,crew,Assumption
-fluid_intake_ml,below,2500,watch,crew,https://www.nasa.gov/wp-content/uploads/2023/12/ochmo-tb-027-water.pdf
-body_mass_kg,below,70,watch,crew,Assumption
+fluid_intake_ml,below,1500,watch,crew,Assumption
+body_mass_kg,below,45,watch,crew,Assumption
