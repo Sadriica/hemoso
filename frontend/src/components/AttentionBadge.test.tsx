@@ -1,46 +1,26 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import AttentionBadge from './AttentionBadge'
-import type { AttentionRule } from '../domain/types'
-
-const rule: AttentionRule = {
-  indicatorId: 'example_indicator',
-  side: 'above',
-  threshold: 100,
-  attentionLevel: 'example_level',
-  notify: 'crew',
-  sources: ['Assumption'],
-}
 
 describe('AttentionBadge', () => {
-  it('shows "In range" for in_range', () => {
-    render(<AttentionBadge attention={{ kind: 'in_range' }} />)
-    expect(screen.getByText('In range')).toBeInTheDocument()
+  it('shows the words it is given', () => {
+    render(<AttentionBadge kind="in_range" text="In your usual range" />)
+    expect(screen.getByText('In your usual range')).toBeInTheDocument()
   })
 
-  it('shows the level name for attention', () => {
-    render(
-      <AttentionBadge
-        attention={{ kind: 'attention', level: 'example_level', rule }}
-      />,
-    )
+  it('shows the level name of a reading that needs review', () => {
+    render(<AttentionBadge kind="attention" text="example_level" />)
     expect(screen.getByText('example_level')).toBeInTheDocument()
   })
 
-  it('shows "No threshold yet" for no_rules', () => {
-    render(<AttentionBadge attention={{ kind: 'no_rules' }} />)
-    expect(screen.getByText('No threshold yet')).toBeInTheDocument()
-    expect(screen.queryByText('In range')).toBeNull()
-  })
-
-  it('shows "No data" for no_data', () => {
-    render(<AttentionBadge attention={{ kind: 'no_data' }} />)
-    expect(screen.getByText('No data')).toBeInTheDocument()
+  it('shows the no data words when there is no reading', () => {
+    render(<AttentionBadge kind="no_data" text="No data yet" />)
+    expect(screen.getByText('No data yet')).toBeInTheDocument()
   })
 
   it('keeps the icon hidden from assistive technology', () => {
     const { container } = render(
-      <AttentionBadge attention={{ kind: 'in_range' }} />,
+      <AttentionBadge kind="in_range" text="In your usual range" />,
     )
     expect(container.querySelector('svg')?.getAttribute('aria-hidden')).toBe(
       'true',

@@ -15,6 +15,7 @@ const sleepQuality: Indicator = {
   direction: 'lower',
   measuredOnBoard: 'Questionnaire after waking',
   hazards: ['isolation_and_confinement'],
+  minSpread: 1,
   sources: ['Assumption'],
 }
 
@@ -25,6 +26,7 @@ const mood: Indicator = {
   direction: 'lower',
   measuredOnBoard: 'Questionnaire before sleep and journaling',
   hazards: ['isolation_and_confinement'],
+  minSpread: 1,
   sources: ['Assumption'],
 }
 
@@ -35,6 +37,7 @@ const heartRate: Indicator = {
   direction: 'both',
   measuredOnBoard: 'Bio-Monitor smart shirt or ECG',
   hazards: ['gravity_fields'],
+  minSpread: 4,
   sources: ['Assumption'],
 }
 

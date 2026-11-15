@@ -18,6 +18,10 @@ export interface Indicator {
   direction: Direction
   measuredOnBoard: string
   hazards: string[]
+  // The noise floor of the baseline rule, in the indicator's unit: the spread
+  // never goes below it (FORMATS.md section 3). 0 for a file without the
+  // column, so an older file still loads.
+  minSpread: number
   sources: Source[]
 }
 

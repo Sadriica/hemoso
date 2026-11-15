@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import Home from './Home'
 import { strings } from '../strings'
 import type { LoadedContent } from '../content/load'
@@ -11,6 +11,13 @@ import type {
   IndicatorContent,
 } from '../domain/types'
 
+// Every test starts with no server, and the fakes of one test never reach the
+// next.
+afterEach(() => {
+  vi.unstubAllGlobals()
+  vi.stubEnv('VITE_API_BASE_URL', '')
+})
+
 const indicator: Indicator = {
   id: 'example_indicator',
   name: 'Example indicator',
@@ -18,6 +25,7 @@ const indicator: Indicator = {
   direction: 'higher',
   measuredOnBoard: 'example measurement method',
   hazards: ['isolation_and_confinement'],
+  minSpread: 1,
   sources: ['Assumption'],
 }
 
@@ -73,42 +81,57 @@ function renderHome(content: LoadedContent) {
   )
 }
 
+// The three earlier readings at rest that the baseline rule needs before it
+// says anything (FORMATS.md section 3).
+const baseline = [entry(1, 10), entry(2, 10), entry(3, 10)]
+
+// The load with these readings instead of the two of `data`.
+function homeWith(rows: Entry[]): LoadedContent {
+  return { ...data, demoEntries: rows }
+}
+
+// The shape of a Response for the state route: the client reads `status` and
+// `json()` only.
+function answer(status: number, body: unknown): Response {
+  return {
+    status,
+    json: () => Promise.resolve(body),
+  } as unknown as Response
+}
+
 describe('Home', () => {
   it('shows name, latest value with unit, day/time, badge and next step', () => {
-    renderHome(data)
+    renderHome(homeWith([...baseline, entry(10, 10)]))
     expect(
       screen.getByRole('heading', { name: 'Example indicator' }),
     ).toBeInTheDocument()
     expect(screen.getByText('10')).toHaveTextContent('10 example_unit')
     expect(screen.getByText(strings.timeLabel(10, '13:30'))).toBeInTheDocument()
-    expect(screen.getByText('In range')).toBeInTheDocument()
+    expect(screen.getByText(strings.badge.inRange)).toBeInTheDocument()
     expect(screen.getByText('No action needed.')).toBeInTheDocument()
   })
 
+  it('says no data yet while the window holds fewer than three readings', () => {
+    renderHome(data)
+    expect(screen.getByText(strings.badge.noData)).toBeInTheDocument()
+    expect(screen.getByText(strings.nextStep.noData)).toBeInTheDocument()
+  })
+
   it('shows the level name and its next step when a value crosses the threshold', () => {
-    const attentionData: LoadedContent = {
-      ...data,
-      demoEntries: [entry(1, 1), entry(10, 101)],
-    }
-    renderHome(attentionData)
+    renderHome(homeWith([...baseline, entry(10, 101)]))
     expect(screen.getByText('example_level')).toBeInTheDocument()
     expect(screen.getByText('Example next step. Assumption.')).toBeInTheDocument()
   })
 
   it('says who acts when a level matches, from the notify column', () => {
-    const crossing: LoadedContent = {
-      ...data,
-      demoEntries: [entry(10, 101)],
-    }
-    renderHome(crossing)
+    renderHome(homeWith([...baseline, entry(10, 101)]))
     expect(screen.getByText('Tell the crew.')).toBeInTheDocument()
   })
 
   it('names the CMO when the matching rule notifies the CMO', () => {
     renderHome({
-      ...data,
+      ...homeWith([...baseline, entry(10, 101)]),
       rules: [{ ...rule, notify: 'cmo' }],
-      demoEntries: [entry(10, 101)],
     })
     expect(screen.getByText('Tell the CMO.')).toBeInTheDocument()
     expect(screen.queryByText('Tell the crew.')).toBeNull()
@@ -116,9 +139,8 @@ describe('Home', () => {
 
   it('names the flight surgeon when the matching rule notifies them', () => {
     renderHome({
-      ...data,
+      ...homeWith([...baseline, entry(10, 101)]),
       rules: [{ ...rule, notify: 'flight_surgeon' }],
-      demoEntries: [entry(10, 101)],
     })
     expect(screen.getByText('Tell the flight surgeon.')).toBeInTheDocument()
   })
@@ -151,7 +173,7 @@ describe('Home', () => {
           },
         },
       },
-      demoEntries: [entry(10, 35)],
+      demoEntries: [entry(1, 40), entry(2, 40), entry(3, 40), entry(10, 35)],
     }
     renderHome(stepped)
     expect(screen.getByText('needs_review')).toBeInTheDocument()
@@ -316,6 +338,7 @@ describe('Home', () => {
       direction: 'lower',
       measuredOnBoard: 'Questionnaire after waking',
       hazards: ['isolation_and_confinement'],
+      minSpread: 1,
       sources: ['Assumption'],
     }
     const scaleData: LoadedContent = {
@@ -341,18 +364,80 @@ describe('Home', () => {
     expect(screen.queryByText('4 1 to 5')).toBeNull()
   })
 
-  it('never says in range when the indicator has no attention rule', () => {
-    const noRules: LoadedContent = { ...data, rules: [] }
-    renderHome(noRules)
+  it('says in your usual range from the person own baseline without an attention rule', () => {
+    renderHome({ ...homeWith([...baseline, entry(10, 10)]), rules: [] })
 
-    expect(screen.getByText('No threshold yet')).toBeInTheDocument()
-    expect(
-      screen.getByText(
-        'No attention rule for this indicator yet. Check with your CMO if you are unsure.',
-      ),
-    ).toBeInTheDocument()
-    expect(screen.queryByText('In range')).toBeNull()
+    expect(screen.getByText(strings.badge.inRange)).toBeInTheDocument()
+    expect(screen.getByText('No action needed.')).toBeInTheDocument()
+  })
+
+  it('says outside your usual range when the value is further than the band', () => {
+    renderHome({ ...homeWith([...baseline, entry(10, 40)]), rules: [] })
+
+    expect(screen.getByText(strings.badge.outsideRange)).toBeInTheDocument()
+    expect(screen.getByText(strings.nextStep.outsideRange)).toBeInTheDocument()
+    expect(screen.queryByText(strings.badge.inRange)).toBeNull()
     expect(screen.queryByText('No action needed.')).toBeNull()
+  })
+
+  it('uses the status the backend state route answers', async () => {
+    vi.stubEnv('VITE_API_BASE_URL', 'https://api.example.test')
+    const urls: string[] = []
+    const fetchFn = vi.fn((input: string) => {
+      urls.push(input)
+      return Promise.resolve(
+        answer(200, {
+          state: 'needs_review',
+          median: 10,
+          spread: 1,
+          n: 3,
+          attention: {
+            attention_level: 'server_level',
+            notify: 'flight_surgeon',
+            source: 'https://example.org/rule',
+          },
+        }),
+      )
+    })
+    vi.stubGlobal('fetch', fetchFn)
+    renderHome(homeWith([...baseline, entry(10, 100)]))
+
+    expect(await screen.findByText('server_level')).toBeInTheDocument()
+    expect(screen.getByText('Tell the flight surgeon.')).toBeInTheDocument()
+    expect(urls).toHaveLength(1)
+    expect(urls[0]).toContain(
+      '/people/demo_astronaut_1/indicators/example_indicator/state?value=100&context=rest',
+    )
+  })
+
+  it('keeps the local rule when the state route fails', async () => {
+    vi.stubEnv('VITE_API_BASE_URL', 'https://api.example.test')
+    const fetchFn = vi.fn(() => Promise.reject(new Error('offline')))
+    vi.stubGlobal('fetch', fetchFn)
+    renderHome(homeWith([...baseline, entry(10, 101)]))
+
+    expect(fetchFn).toHaveBeenCalled()
+    expect(await screen.findByText('example_level')).toBeInTheDocument()
+  })
+
+  it('asks the state route nothing without a base URL', async () => {
+    const fetchFn = vi.fn()
+    vi.stubGlobal('fetch', fetchFn)
+    renderHome(homeWith([...baseline, entry(10, 101)]))
+
+    expect(fetchFn).not.toHaveBeenCalled()
+    expect(screen.getByText('example_level')).toBeInTheDocument()
+  })
+
+  it('keeps the local rule when the state route answers another status', async () => {
+    vi.stubEnv('VITE_API_BASE_URL', 'https://api.example.test')
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.resolve(answer(502, { detail: 'upstream storage error' }))),
+    )
+    renderHome(homeWith([...baseline, entry(10, 101)]))
+
+    expect(await screen.findByText('example_level')).toBeInTheDocument()
   })
 
   it('names the content still missing instead of the generic notice', () => {

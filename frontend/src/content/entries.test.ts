@@ -9,6 +9,7 @@ const indicator: Indicator = {
   direction: 'higher',
   measuredOnBoard: 'example measurement method',
   hazards: ['isolation_and_confinement'],
+  minSpread: 1,
   sources: ['Assumption'],
 }
 

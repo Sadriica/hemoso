@@ -65,6 +65,25 @@ export function compareToOwnHistory(entries: Entry[]): HistoryComparison | null 
   }
 }
 
+// The history sentence with the baseline the backend computed: its median and
+// the count of readings in its window (the last 14 in the same context, from
+// docs/API.md). The difference keeps the precision the readings carry
+// (STANDARDS.md section 3), the same way compareToOwnHistory does.
+export function comparisonFromBaseline(
+  latest: Entry,
+  median: number,
+  count: number,
+): HistoryComparison {
+  const decimals = Math.max(decimalsOf(latest.value), decimalsOf(median))
+  const earlierMedian = roundTo(median, decimals)
+  return {
+    latest,
+    earlierCount: count,
+    earlierMedian,
+    difference: roundTo(latest.value - earlierMedian, decimals),
+  }
+}
+
 // Newest first, for a table: the latest day, then the latest time, and on the
 // same day and time the entry added last, so a correction sits above the value
 // it replaces.

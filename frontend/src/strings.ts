@@ -148,16 +148,21 @@ export const strings = {
     // "0" as none.
     signed: (value: number): string => (value > 0 ? `+${value}` : String(value)),
   },
+  // The four states of docs/API.md, GET .../state, in plain words (REQ-30).
   badge: {
-    inRange: 'In range',
+    inRange: 'In your usual range',
+    outsideRange: 'Outside your usual range',
     // No attention rule for this indicator, so no "in range" claim.
     noRules: 'No threshold yet',
-    noData: 'No data',
+    noData: 'No data yet',
+    // A review is needed and the server named no level: the app does not invent
+    // one.
+    needsReview: 'Needs review',
   },
   nextStep: {
     inRange: 'No action needed.',
-    noRules:
-      'No attention rule for this indicator yet. Check with your CMO if you are unsure.',
+    outsideRange:
+      'Outside your usual range. Your CMO or flight surgeon confirms.',
     noData: 'No data yet.',
     missing: 'No guidance for this state yet.',
   },

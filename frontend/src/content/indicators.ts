@@ -1,11 +1,13 @@
 import type { Direction, Indicator } from '../domain/types'
 import { parseSources } from '../domain/source'
 import { hazardName } from '../strings'
-import { parseCsvFile } from './csv'
+import { parseCsvFile, parseNumber } from './csv'
 
-// The columns this reader uses. FORMATS.md also lists min_spread, tier and
-// system, which the frontend does not read yet: requiring them would reject
-// the real config/data/indicators.csv on the day Phys adds them.
+// The columns this reader uses. FORMATS.md also lists tier and system, which
+// the frontend does not read yet: requiring them would reject the real
+// config/data/indicators.csv on the day Phys adds them. `min_spread` is read
+// when the column is there, because the local baseline rule needs the noise
+// floor.
 const REQUIRED_COLUMNS = [
   'id',
   'name',
@@ -47,10 +49,29 @@ export function parseIndicators(
       direction: parseDirection(row.direction ?? '', id, problems),
       measuredOnBoard: row.measured_on_board?.trim() ?? '',
       hazards: parseHazards(row.hazards ?? '', id, problems),
+      minSpread: parseMinSpread(row.min_spread, id, problems),
       sources: sources ?? [],
     })
   }
   return indicators
+}
+
+// The noise floor of the baseline rule: a number greater than 0, in the
+// indicator's unit (FORMATS.md section 3). A file from before the column
+// existed loads with 0, which leaves the spread at the median absolute
+// deviation alone.
+function parseMinSpread(
+  cell: string | undefined,
+  id: string,
+  problems: string[],
+): number {
+  if (cell === undefined) return 0
+  const minSpread = parseNumber(cell)
+  if (minSpread === null || minSpread <= 0) {
+    problems.push(`Indicator '${id}' has an invalid min_spread '${cell.trim()}'.`)
+    return 0
+  }
+  return minSpread
 }
 
 // Only the five hazard ids of FORMATS.md section 3 reach a screen. An id with

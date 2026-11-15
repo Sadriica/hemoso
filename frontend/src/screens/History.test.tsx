@@ -1,10 +1,17 @@
 import { act, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import History from './History'
 import type { LoadedContent } from '../content/load'
 import { LocalEntryStore } from '../data/entryStore'
 import type { Entry, Indicator } from '../domain/types'
+
+// Every test starts with no server, and the fakes of one test never reach the
+// next.
+afterEach(() => {
+  vi.unstubAllGlobals()
+  vi.stubEnv('VITE_API_BASE_URL', '')
+})
 
 const indicator: Indicator = {
   id: 'example_indicator',
@@ -13,6 +20,7 @@ const indicator: Indicator = {
   direction: 'higher',
   measuredOnBoard: 'example measurement method',
   hazards: ['isolation_and_confinement'],
+  minSpread: 1,
   sources: ['Assumption'],
 }
 
@@ -23,6 +31,7 @@ const scale: Indicator = {
   direction: 'lower',
   measuredOnBoard: 'Questionnaire after waking',
   hazards: ['isolation_and_confinement'],
+  minSpread: 1,
   sources: ['Assumption'],
 }
 
@@ -113,7 +122,7 @@ describe('History', () => {
     ])
     const table = screen.getByRole('table')
     expect(within(table).getByText('example_level')).toBeInTheDocument()
-    expect(within(table).getAllByText('In range')).toHaveLength(2)
+    expect(within(table).getAllByText('In your usual range')).toHaveLength(2)
   })
 
   it('says no threshold yet for an indicator without attention rules', async () => {
@@ -123,7 +132,7 @@ describe('History', () => {
     ])
     await user.selectOptions(screen.getByLabelText('Indicator'), 'sleep_quality_1_5')
     expect(screen.getByText('No threshold yet')).toBeInTheDocument()
-    expect(screen.queryByText('In range')).toBeNull()
+    expect(screen.queryByText('In your usual range')).toBeNull()
   })
 
   it('shows a 1 to 5 reading as the value over 5', async () => {
@@ -184,6 +193,49 @@ describe('History', () => {
           'Your earlier median: 36.6 example_unit (2 entries). ' +
           'Difference: +0.1 example_unit.',
       ),
+    ).toBeInTheDocument()
+  })
+
+  it('uses the median the state route answers', async () => {
+    vi.stubEnv('VITE_API_BASE_URL', 'https://api.example.test')
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve({
+          status: 200,
+          json: () =>
+            Promise.resolve({
+              state: 'in_range',
+              median: 30,
+              spread: 4,
+              n: 7,
+              attention: null,
+            }),
+        } as unknown as Response),
+      ),
+    )
+    renderHistory(readings)
+
+    expect(
+      await screen.findByText(
+        /Your earlier median: 30 example_unit \(7 entries\)/,
+      ),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(/Difference: \+12 example_unit\./),
+    ).toBeInTheDocument()
+  })
+
+  it('keeps the local comparison when the state route fails', async () => {
+    vi.stubEnv('VITE_API_BASE_URL', 'https://api.example.test')
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.reject(new Error('offline'))),
+    )
+    renderHistory([entry(1, '08:00', 10), entry(10, '15:44', 42)])
+
+    expect(
+      await screen.findByText(/Your earlier median: 10 example_unit/),
     ).toBeInTheDocument()
   })
 
