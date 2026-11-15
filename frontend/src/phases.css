@@ -25,7 +25,8 @@ body {
     radial-gradient(120% 80% at 80% -10%, color-mix(in srgb, var(--color-interactive) 12%, transparent), transparent 60%),
     linear-gradient(to right, var(--color-grid) 1px, transparent 1px),
     linear-gradient(to bottom, var(--color-grid) 1px, transparent 1px);
-  background-size: 100% 100%, 40px 40px, 40px 40px;
+  background-size: 100% 100%, var(--grid-size) var(--grid-size),
+    var(--grid-size) var(--grid-size);
   background-repeat: no-repeat, repeat, repeat;
 }
 
@@ -70,7 +71,7 @@ body {
 /* The sticky route rail must never hide the control that has focus
    (WCAG 2.4.11): scrolling into view leaves room for it. */
 html {
-  scroll-padding-bottom: 120px;
+  scroll-padding-bottom: var(--scroll-padding);
 }
 
 .skip-link {
@@ -94,53 +95,41 @@ html {
   transform: none;
 }
 
-/* Top bar: mark, name and the motion switch; one mono telemetry line from
-   real data; the synthetic data sentence and the sync facts. It sits on the
-   raised band, never on the stars (DESIGN.md 6, 8). */
+/* Top bar: one row of real data (mark, name, mission line, sync chip, motion
+   switch), then a 28 px strip with the synthetic data sentence of REQ-14 so it
+   stays on screen on every phase. It sits on the raised band, never on the
+   stars (DESIGN.md 6, 8). */
 .topbar {
-  padding: var(--space-2) var(--space-6);
   border-bottom: var(--border-subtle);
   background: var(--color-bg-raised);
 }
 
-.topbar__row {
-  display: flex;
-  flex-wrap: wrap;
+.topbar__bar {
+  display: grid;
+  /* One row: the mark and the name, the mission day and clock, who is on
+     duty, then the chip and the switch against the right edge. */
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  grid-template-areas: 'brand stamp duty controls';
   align-items: center;
-  gap: var(--space-1) var(--space-4);
+  gap: 0 var(--space-4);
   max-width: var(--container-width);
+  /* Tall enough for a 44 px target, short enough to stay one calm line
+     (DESIGN.md 14, structural size). */
+  min-height: 60px;
   margin: 0 auto;
-}
-
-.topbar__row:first-child {
-  flex-wrap: nowrap;
-  justify-content: space-between;
-}
-
-.topbar__row--meta {
-  color: var(--color-text-muted);
-  font-family: var(--font-mono);
-  font-size: var(--text-label);
-  line-height: var(--leading-label);
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
-}
-
-.topbar__row--facts {
-  justify-content: space-between;
-  gap: var(--space-1) var(--space-4);
+  padding: 0 var(--space-6);
 }
 
 .identity {
   display: flex;
+  grid-area: brand;
   align-items: center;
   gap: var(--space-2);
-  margin-right: auto;
 }
 
 .identity__mark {
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   fill: none;
   stroke: var(--color-accent);
   stroke-width: 1.5;
@@ -155,56 +144,111 @@ html {
   text-transform: uppercase;
 }
 
-.topbar__duty {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  color: var(--color-text);
+/* The mission line: the day and the clock, next to the mark. */
+.topbar__stamp {
+  grid-area: stamp;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  letter-spacing: var(--tracking-label);
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
-.topbar__duty i {
+/* Who is on duty, when the check has a person: a dot and the id as written. */
+.topbar__duty {
+  display: flex;
+  grid-area: duty;
+  justify-self: start;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+/* A person id is shown as it is written: never transformed. */
+.topbar__dot {
+  flex: none;
   width: 6px;
   height: 6px;
   border-radius: var(--radius-round);
   background: var(--status-in-range-text);
 }
 
+.topbar__controls {
+  display: flex;
+  grid-area: controls;
+  justify-self: end;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* The motion switch is one icon with its name on the button: a pressed button
+   means motion is off. */
 .topbar__motion {
-  min-height: var(--tap-min);
-  padding: 0 var(--space-3);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--tap-min);
+  height: var(--tap-min);
   border: 1px solid var(--color-border-control);
   border-radius: var(--radius-small);
   background: transparent;
   color: var(--color-text-muted);
-  font-family: var(--font-mono);
-  font-size: var(--text-label);
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
   cursor: pointer;
 }
 
 .topbar__motion[aria-pressed="true"] {
   border-color: var(--color-accent);
-  color: var(--color-text);
+  color: var(--color-accent);
 }
 
+/* REQ-14: the synthetic data sentence, on the 28 px strip under the bar. */
 .synthetic-notice {
+  display: flex;
+  align-items: center;
+  max-width: var(--container-width);
+  min-height: 28px;
+  margin: 0 auto;
+  padding: 0 var(--space-6);
   color: var(--color-text-muted);
-  font-size: var(--text-small);
-  line-height: var(--leading-small);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
 }
 
-/* The stage: one phase at a time, room to breathe. */
+/* The stage: one phase at a time, room to breathe, and room under it for the
+   sticky rail, so no control ever sits beneath it. */
 .stage {
   flex: 1;
   width: 100%;
   max-width: var(--container-width);
   margin: 0 auto;
-  padding: var(--space-6) var(--space-6) var(--space-7);
+  padding: var(--space-6) var(--space-6)
+    calc(var(--rail-height) + var(--space-4));
 }
 
-.stage:focus {
+/* The skip link moves the focus here. The ring only shows for a keyboard
+   focus, which is the one the skip link produces. */
+.stage:focus:not(:focus-visible) {
   outline: none;
+}
+
+.stage:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
 }
 
 .stage > .notice {
@@ -256,25 +300,14 @@ html {
   outline-offset: 6px;
 }
 
+/* The headline is set, not animated: the phase wrapper does the one entrance
+   (src/motion/PhaseTransition.tsx), so nothing fades the same thing twice. */
 .headline__line {
   display: block;
-  animation: headline-rise var(--motion-slow) var(--ease-standard) both;
 }
 
 .headline__line:nth-child(2) {
   color: var(--color-accent);
-}
-
-@keyframes headline-rise {
-  from {
-    opacity: 0;
-    transform: translateY(0.4em);
-  }
-
-  to {
-    opacity: 1;
-    transform: none;
-  }
 }
 
 /* Text never sits on the stars: the headline block has a solid page colour
@@ -457,14 +490,14 @@ html {
   outline-offset: 2px;
 }
 
-/* Phase 2: the form on a dark glass panel and the running count. */
+/* Phase 2: the routine report on a dark glass panel and the running count. */
 .report {
   display: grid;
   gap: var(--space-3);
 }
 
 .report__panel {
-  max-width: 640px;
+  max-width: 760px;
   padding: var(--space-5);
   border: 1px solid color-mix(in srgb, var(--color-border) 70%, transparent);
   border-radius: var(--radius-card);
@@ -479,6 +512,277 @@ html {
   text-transform: uppercase;
 }
 
+.report-form {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.report-form__body {
+  display: grid;
+  gap: var(--space-3);
+}
+
+/* Mission day, time and context on one row above the readings, so the three
+   facts a whole report shares are written once. */
+.report-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-2) var(--space-4);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--color-border) 45%, transparent);
+}
+
+.report-meta__field {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.report-meta__day {
+  width: 88px;
+}
+
+.report-meta__time {
+  width: 132px;
+}
+
+.report-meta__context {
+  min-width: 0;
+}
+
+.report-meta__choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+}
+
+/* The four contexts as one segmented control: a radio per choice, the chosen
+   one marked by a second border as well as the radio itself. */
+.report-meta__choice {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--tap-min);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-small);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: var(--text-small);
+  letter-spacing: normal;
+  text-transform: none;
+  cursor: pointer;
+}
+
+.report-meta__choice:has(input:checked) {
+  border-color: var(--color-accent);
+  box-shadow: inset 0 0 0 1px var(--color-accent);
+}
+
+/* One row per indicator: the system icon, the name with the last reading under
+   it, and one field on the right. Every row is the same height and every field
+   ends on the same right edge. */
+.readings {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.reading {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  align-items: center;
+  column-gap: var(--space-3);
+  min-height: 64px;
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3);
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--color-border) 45%, transparent);
+  /* The system colour repeats on the row edge and on the icon, always next to
+     the name in words (DESIGN.md 2.3). */
+  border-left: 2px solid var(--reading-system, var(--color-border));
+}
+
+.reading__icon {
+  display: inline-flex;
+  justify-self: center;
+}
+
+.reading__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 200px;
+  grid-template-areas:
+    'name fields'
+    'last fields'
+    'error fields';
+  align-items: center;
+  column-gap: var(--space-4);
+  row-gap: 0;
+}
+
+/* The scale is its own shape: the name above, the pills under it. */
+.reading--scale .reading__body {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    'name'
+    'pills'
+    'last'
+    'error';
+  padding-bottom: var(--space-1);
+}
+
+.reading__name {
+  display: block;
+  grid-area: name;
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+/* The value column: one bordered field per reading, the unit inside it on the
+   right, both blood pressures side by side with a slash between them. */
+.reading__fields {
+  display: flex;
+  grid-area: fields;
+  align-items: center;
+  justify-content: flex-end;
+  justify-self: end;
+  gap: var(--space-1);
+  width: 200px;
+}
+
+.reading__field {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.reading__field:focus-within {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* One border for the value, not one inside another, and no spin buttons: the
+   number is typed or stepped with the arrow keys on the field itself. */
+input.reading__input {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+  appearance: textfield;
+}
+
+input.reading__input:focus-visible {
+  outline: none;
+}
+
+input.reading__input::-webkit-outer-spin-button,
+input.reading__input::-webkit-inner-spin-button {
+  margin: 0;
+  appearance: none;
+}
+
+/* The two blood pressures: "120 / 80" with one unit after them. */
+.reading__slash {
+  flex: none;
+  margin-right: var(--space-1);
+  color: var(--color-text-muted);
+}
+
+.reading__unit {
+  flex: none;
+  margin-left: var(--space-1);
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+/* The last reading of that indicator, in its own quiet line under the name. */
+.reading__last {
+  grid-area: last;
+  min-height: var(--leading-small);
+  color: var(--color-text-muted);
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+}
+
+.reading__body > .field__error {
+  grid-area: error;
+}
+
+/* The 1 to 5 scale as five compact pills, the number then the word of the
+   scale (FORMATS.md section 2). */
+.reading__pills {
+  display: flex;
+  grid-area: pills;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+}
+
+.reading__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--tap-min);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-round);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  letter-spacing: normal;
+  text-transform: none;
+  cursor: pointer;
+}
+
+.reading__pill input {
+  width: 14px;
+  height: 14px;
+}
+
+.reading__pill b {
+  font-size: var(--text-small);
+  font-weight: 500;
+}
+
+.reading__pill span {
+  color: var(--color-text-muted);
+}
+
+.reading__pill:has(input:checked) {
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+  box-shadow: inset 0 0 0 1px var(--color-accent);
+}
+
+.reading__pill:has(input:checked) span {
+  color: var(--color-text);
+}
+
 /* Phase 3: the cards, then the history. */
 .status {
   display: grid;
@@ -490,25 +794,46 @@ html {
   border-top: 1px solid color-mix(in srgb, var(--color-border) 45%, transparent);
 }
 
-/* The route rail: three steps on a track, the current one lit. Progress, not
-   navigation. */
+/* The route rail: three numbered nodes on one track, the current one in the
+   accent colour and a step larger, the ones already done with a check. The
+   track fills up to the current node. Progress, not navigation, so nothing in
+   it is a button or a link. */
 .phase-rail {
   position: sticky;
   bottom: 0;
   z-index: 5;
-  padding: var(--space-2) var(--space-6) var(--space-2);
+  display: flex;
+  align-items: center;
+  min-height: var(--rail-height);
+  padding: var(--space-3) var(--space-6);
   border-top: var(--border-subtle);
   background: var(--color-bg-raised);
 }
 
-.phase-rail__track {
+.phase-rail__stepper {
+  /* Structural sizes: the row of the nodes and a node (DESIGN.md 14). */
+  --rail-row: 40px;
+  --rail-node: 30px;
+  position: relative;
+  width: 100%;
   max-width: var(--container-width);
-  height: 2px;
-  margin: 0 auto var(--space-3);
-  background: color-mix(in srgb, var(--color-border) 50%, transparent);
+  margin: 0 auto;
 }
 
-.phase-rail__progress {
+/* The track runs between the centre of the first node and the centre of the
+   last one, so the fill stops on the node instead of over it. The node paints
+   the raised band over the line: no stroke crosses a number. */
+.phase-rail__track {
+  position: absolute;
+  top: calc(var(--rail-row) / 2 - 1px);
+  right: 16.6667%;
+  left: 16.6667%;
+  height: 2px;
+  background: color-mix(in srgb, var(--color-border) 55%, transparent);
+}
+
+.phase-rail__fill {
+  display: block;
   height: 100%;
   background: var(--color-accent);
   transition: width var(--motion-slow) var(--ease-out);
@@ -517,45 +842,56 @@ html {
 .phase-rail__steps {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  max-width: var(--container-width);
-  margin: 0 auto;
+  margin: 0;
   padding: 0;
   list-style: none;
 }
 
 .phase-rail__step {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-2);
+  display: grid;
+  grid-template-rows: var(--rail-row) auto;
+  justify-items: center;
+  align-items: center;
+  row-gap: var(--space-1);
   color: var(--color-text-muted);
   font-family: var(--font-mono);
   font-size: var(--text-label);
+  line-height: var(--leading-label);
   letter-spacing: 0.16em;
   text-transform: uppercase;
 }
 
-.phase-rail__step b {
+/* The node sits on the track, so it covers it: the raised band as its fill. */
+.phase-rail__node {
+  display: grid;
+  place-items: center;
+  width: var(--rail-node);
+  height: var(--rail-node);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-round);
+  background: var(--color-bg-raised);
   font-weight: 500;
+  letter-spacing: 0.04em;
 }
 
-.phase-rail__step--current,
-.phase-rail__step--current b {
+.phase-rail__step--current {
   color: var(--color-accent);
+}
+
+.phase-rail__step--current .phase-rail__node {
+  width: 36px;
+  height: 36px;
+  border-color: var(--color-accent);
+  box-shadow: inset 0 0 0 1px var(--color-accent);
 }
 
 .phase-rail__step--done {
   color: var(--color-text);
 }
 
-.phase-rail__next {
-  max-width: var(--container-width);
-  margin: var(--space-1) auto 0;
-  color: var(--color-text-muted);
-  font-family: var(--font-mono);
-  font-size: var(--text-label);
-  line-height: var(--leading-label);
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
+.phase-rail__step--done .phase-rail__node {
+  border-color: var(--color-text-muted);
+  color: var(--color-text);
 }
 
 /* Light theme: the same layout on light surfaces, no stars or grain. */
@@ -593,26 +929,96 @@ html {
     --leading-hero: 42px;
   }
 
-  .topbar {
-    padding: var(--space-1) var(--space-3) var(--space-2);
+  .topbar__bar {
+    /* The mark and the controls keep the first row; who is on duty takes the
+       second, so nothing overflows at 360 px. */
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      'brand . controls'
+      'duty duty duty';
+    gap: var(--space-1) var(--space-2);
+    padding: 0 var(--space-3);
+    min-height: 64px;
+  }
+
+  /* A smaller mark and a tighter pair of gaps keep the row inside 320 px. */
+  .identity {
+    gap: var(--space-1);
+  }
+
+  .identity__mark {
+    width: 22px;
+    height: 22px;
+  }
+
+  /* The day and the clock do not fit next to the chip at 360 px. They are on
+     the report panel and on every status card. */
+  .topbar__stamp {
+    display: none;
+  }
+
+  .synthetic-notice {
+    padding: 0 var(--space-3);
+  }
+
+  /* The chip keeps its state and, when something waits, the count. The words
+     that would push the bar sideways stay in the accessibility tree. */
+  .sync-chip__word,
+  .sync-chip__quiet {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  /* Nothing follows the dot: the state is the whole chip. */
+  .sync-chip:has(.sync-chip__quiet) .sync-chip__separator {
+    display: none;
   }
 
   .stage {
-    padding: var(--space-5) var(--space-3) var(--space-6);
+    padding: var(--space-5) var(--space-3)
+      calc(var(--rail-height) + var(--space-3));
   }
 
   .phase-rail {
-    padding: var(--space-2) var(--space-3) var(--space-3);
+    padding: var(--space-3) var(--space-3);
   }
 
   .phase-rail__step {
-    flex-direction: column;
-    gap: 0;
     letter-spacing: 0.08em;
   }
 
   .report__panel {
     padding: var(--space-3);
+  }
+
+  /* One column per row on a phone: the name, the last reading, then the
+     field across the width, still ending on the same edge. */
+  .reading__body {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'name'
+      'last'
+      'fields'
+      'error';
+  }
+
+  .reading--scale .reading__body {
+    grid-template-areas:
+      'name'
+      'pills'
+      'last'
+      'error';
+  }
+
+  .reading__fields {
+    justify-self: stretch;
+    width: 100%;
+    margin-top: var(--space-1);
   }
 
   .journey-button {
@@ -622,23 +1028,21 @@ html {
 
 /* Motion off: the system setting or the switch in the top bar. */
 @media (prefers-reduced-motion: reduce) {
-  .headline__line,
   .journey-button,
   .button,
   .disclosure__toggle,
   .disclosure__chevron,
-  .phase-rail__progress {
+  .phase-rail__fill {
     animation: none;
     transition: none;
   }
 }
 
-.app--still .headline__line,
 .app--still .journey-button,
 .app--still .button,
 .app--still .disclosure__toggle,
 .app--still .disclosure__chevron,
-.app--still .phase-rail__progress {
+.app--still .phase-rail__fill {
   animation: none;
   transition: none;
 }

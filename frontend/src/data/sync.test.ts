@@ -1,6 +1,7 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { LocalEntryStore } from './entryStore'
 import type { Outbox } from './entryStore'
+import { readSession, saveSession, watchExpired } from './session'
 import {
   HttpSync,
   NoopSync,
@@ -349,5 +350,82 @@ describe('sendPending', () => {
     )
     expect(round).toEqual({ sent: 0, conflicts: 0, rejected: 0, failed: 0 })
     expect(calls).toHaveLength(0)
+  })
+})
+
+describe('the token of a person with an account', () => {
+  const FAR = '2999-01-01T00:00:00Z'
+
+  function accountEntry(): Entry {
+    return {
+      ...newEntry(58, 2, '09:15'),
+      personId: 'cadet_okoro',
+      id: 'a',
+    }
+  }
+
+  // A fetch that keeps the headers of every call, which is what this block is
+  // about, and answers the statuses in order.
+  function recordingFetch(statuses: number[]): {
+    headers: Array<Record<string, string>>
+    fetchFn: FetchLike
+  } {
+    const headers: Array<Record<string, string>> = []
+    const queue = [...statuses]
+    return {
+      headers,
+      fetchFn: (_url, init) => {
+        headers.push({ ...(init.headers as Record<string, string>) })
+        return Promise.resolve(response(queue.shift() ?? 201))
+      },
+    }
+  }
+
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
+  it('sends the bearer token of that person', async () => {
+    saveSession({
+      personId: 'cadet_okoro',
+      token: 'abc.def',
+      expiresAt: FAR,
+    })
+    const { headers, fetchFn } = recordingFetch([201])
+    const client = new HttpSync('https://api.example.test', fetchFn)
+
+    await expect(client.send(accountEntry())).resolves.toBe('sent')
+    expect(headers[0].Authorization).toBe('Bearer abc.def')
+  })
+
+  it('sends no token for a person without a session, like the demo astronaut', async () => {
+    const { headers, fetchFn } = recordingFetch([201])
+    const client = new HttpSync('https://api.example.test', fetchFn)
+
+    await client.send({ ...newEntry(58, 2, '09:15'), id: 'a' })
+    expect(headers[0].Authorization).toBeUndefined()
+  })
+
+  it('forgets a session the server refuses and keeps the entry waiting', async () => {
+    saveSession({ personId: 'cadet_okoro', token: 'dead', expiresAt: FAR })
+    const heard: string[] = []
+    const stop = watchExpired((personId) => heard.push(personId))
+    const { fetchFn } = recordingFetch([401])
+
+    const outbox = outboxWith({
+      ...newEntry(58, 2, '09:15'),
+      personId: 'cadet_okoro',
+    })
+    const round = await sendPending(
+      outbox,
+      new HttpSync('https://api.example.test', fetchFn),
+      at,
+    )
+    stop()
+
+    expect(round.failed).toBe(1)
+    expect(outbox.pending()).toHaveLength(1)
+    expect(readSession('cadet_okoro')).toBeNull()
+    expect(heard).toEqual(['cadet_okoro'])
   })
 })

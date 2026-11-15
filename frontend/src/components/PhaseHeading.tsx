@@ -19,8 +19,8 @@ const PhaseHeading = forwardRef<HTMLHeadingElement, PhaseHeadingProps>(
           {eyebrow}
         </p>
         <h1 ref={ref} id="phase-heading" tabIndex={-1} className="headline">
-          {lines.map((line, index) => (
-            <span key={line} className="headline__line" style={{ animationDelay: `${index * 90}ms` }}>
+          {lines.map((line) => (
+            <span key={line} className="headline__line">
               {line}{' '}
             </span>
           ))}

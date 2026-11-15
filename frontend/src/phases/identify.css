@@ -1,0 +1,292 @@
+/* Phase 1, Identify (REQ-37, REQ-36, REQ-32): one centred column, the headline
+   and its sentence, then the ways in stacked on one another — the face kept on
+   this device, a username and a PIN, a new account, the open demo.
+   Every colour, size, space and radius is a token of frontend/DESIGN.md. The
+   rules here only override the shared layout of phases.css for this phase, with
+   a selector of their own, so the shared files stay as the lead locked them. */
+
+.phase--identify {
+  justify-items: center;
+}
+
+/* The headline sits in the same centred column as the choices, with no box
+   behind it: DESIGN.md 14 accepts display type and the eyebrow on the
+   Starfield, and their contrast is checked against the page colour. */
+.phase--identify .phase-heading {
+  width: 100%;
+  max-width: 560px;
+  margin: 0;
+  padding: 0;
+  background: none;
+  text-align: center;
+}
+
+.phase--identify .eyebrow {
+  justify-content: center;
+}
+
+.phase--identify .phase-heading__intro {
+  margin-inline: auto;
+}
+
+.phase--identify .identify {
+  display: grid;
+  gap: var(--space-3);
+  width: 100%;
+  max-width: 560px;
+}
+
+/* One way in: a card per choice, on the surface step of the rest of the app. */
+.signin__option {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: var(--border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  text-align: left;
+}
+
+/* The name of a choice reads as the eyebrow of a card: mono, uppercase. */
+.signin__title {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+.signin__text {
+  max-width: 60ch;
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+  color: var(--color-text-muted);
+}
+
+.signin__hint {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  letter-spacing: var(--tracking-label);
+  color: var(--color-text-muted);
+}
+
+/* The form of a username and a PIN: one column, labels above the fields. */
+.signin__form {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.signin__field {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.signin__label {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.signin__input {
+  width: 100%;
+  min-height: var(--tap-min);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-card);
+  background: var(--color-bg-raised);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+}
+
+/* The PIN is a code, never a word: mono, spaced, masked by the input type. */
+.signin__input--pin {
+  max-width: 12ch;
+  font-family: var(--font-mono);
+  letter-spacing: 0.24em;
+}
+
+.signin__input:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.signin__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* The second answer of a card (creating an account, signing out) is a text
+   link, so each card keeps one primary action. */
+.signin__link,
+.signin__signout {
+  min-height: var(--tap-min);
+  padding: 0 var(--space-2);
+  border: 0;
+  background: none;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.signin__link:hover,
+.signin__signout:hover {
+  color: var(--color-accent);
+}
+
+/* A wrong PIN or a taken username: words and the attention colour, never the
+   colour alone. */
+.signin__error {
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+  color: var(--status-attention-text);
+}
+
+/* Who is on duty on this device, with the way out. */
+.signin__session {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-3);
+  padding: var(--space-1) var(--space-1) var(--space-1) var(--space-3);
+  border: var(--border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--color-bg-raised);
+}
+
+.signin__who {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--color-text);
+}
+
+/* The card-wide button of a choice, and the way on to the report. */
+.signin__option > .journey-button {
+  width: 100%;
+}
+
+/* The crew names of the demo, one per line: a card per person, with a circle
+   of initials, the name and the role, not a row of radios. The radio itself
+   covers the card, so a tap anywhere on it answers. */
+.phase--identify .crew-picker {
+  margin-top: var(--space-1);
+}
+
+.phase--identify .crew-picker__options {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.phase--identify .crew-option {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 72px;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-card);
+  background: var(--color-bg-raised);
+  cursor: pointer;
+}
+
+.phase--identify .crew-option input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.phase--identify .crew-option:hover {
+  border-color: var(--color-accent);
+}
+
+.phase--identify .crew-option:has(input:checked) {
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+}
+
+.phase--identify .crew-option:has(input:focus-visible) {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* The circle: initials of the person id, in the accent, on the raised band. */
+.crew-option__avatar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-round);
+  background: color-mix(in srgb, var(--color-accent) 12%, transparent);
+  color: var(--color-accent);
+  font-family: var(--font-mono);
+  font-size: var(--text-small);
+  letter-spacing: 0.08em;
+}
+
+.crew-option__body {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+/* The name of a person is never transformed, unlike the labels around it. */
+.crew-option__name {
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--color-text);
+}
+
+.crew-option__role {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+/* The chosen person is marked by a filled circle too, not by colour alone. */
+.crew-option__mark {
+  flex: none;
+  margin-left: auto;
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--color-text-muted);
+  border-radius: var(--radius-round);
+}
+
+.crew-option:has(input:checked) .crew-option__mark {
+  border: 4px solid var(--color-accent);
+}
+
+@media (max-width: 599px) {
+  .signin__option {
+    padding: var(--space-3);
+  }
+}

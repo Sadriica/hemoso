@@ -31,11 +31,11 @@
   /* Technical grid on the page background, dark theme only. */
   --color-grid: rgb(255 255 255 / 4%);
 
-  /* State colours: always shown with their own icon shape and words. */
+  /* State colours: always shown with their own icon shape and words. Outside
+     the usual range reads as amber, like any warning: its open-ring icon and
+     its words keep it apart from a field error. */
   --status-in-range-text: #5fd49a;
   --status-in-range-bg: #0d2a1f;
-  --status-outside-text: #8ec5ff;
-  --status-outside-bg: #0f2339;
   --status-attention-text: #f5c542;
   --status-attention-bg: #2c2407;
   --status-review-text: #ff8a70;
@@ -91,16 +91,26 @@
   --radius-card: 4px;
   --radius-round: 999px;
   --border-subtle: 1px solid var(--color-border);
-  --shadow-soft: none;
   --shadow-raised: 0 0 0 1px var(--color-border), 0 8px 24px rgb(0 0 0 / 35%);
   --container-width: 1200px;
   --tap-min: 44px;
+
+  /* Structural sizes that more than one rule reads. The route rail is sticky
+     and the page reserves its height, so nothing sits under it. */
+  --rail-height: 88px;
+  --grid-size: 40px;
+  --scroll-padding: 120px;
+  /* The label beside a planetarium body, kept clear of the stage edge. */
+  --tag-width: 112px;
 
   /* Motion (DESIGN.md 7). State changes stay under 600 ms; only the intro,
      the phase change and the planetarium settling may use --motion-cinematic. */
   --motion-fast: 150ms;
   --motion-base: 250ms;
   --motion-slow: 400ms;
+  /* The intro is the one long moment: about three and a half seconds, and any
+     key or tap ends it (DESIGN.md 7). */
+  --motion-intro: 3400ms;
   --motion-cinematic: 1200ms;
   --ease-standard: cubic-bezier(0.2, 0.7, 0.1, 1);
   --ease-out: cubic-bezier(0, 0, 0.2, 1);
@@ -125,8 +135,6 @@
 
     --status-in-range-text: #14532d;
     --status-in-range-bg: #dcfce7;
-    --status-outside-text: #0b4aa8;
-    --status-outside-bg: #dbeafe;
     --status-attention-text: #6b3a06;
     --status-attention-bg: #fef3c7;
     --status-review-text: #9a2a14;
@@ -140,7 +148,6 @@
     --system-neuro: #7c3aed;
     --system-metabolic: #0f766e;
 
-    --shadow-soft: 0 1px 2px rgb(8 11 18 / 12%);
     --shadow-raised: 0 0 0 1px var(--color-border), 0 8px 24px rgb(8 11 18 / 12%);
   }
 }
@@ -285,36 +292,23 @@ legend {
   color: var(--color-accent);
 }
 
-/* Sync status (section 10, row "Sync status"): the outbox facts as one
-   metadata row in the header. Each fact is its own item, so on a narrow screen
-   the row wraps onto more lines instead of pushing the page sideways (REQ-32);
-   the text is never set to nowrap for that reason. */
-.sync-status {
+/* Sync chip: the sending state as one item of the top bar (REQ-28). Words
+   first, the badge pair of the state tokens second (DESIGN.md 2.2), so the
+   state is never colour alone. The text is one line and the chip never grows
+   past the bar: a narrow screen drops the word after the count instead. */
+.sync {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-1) var(--space-3);
+  gap: var(--space-2);
   min-width: 0;
 }
 
-.sync-status__item {
-  min-width: 0;
-  font-family: var(--font-mono);
-  font-size: var(--text-label);
-  line-height: var(--leading-label);
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
-  color: var(--color-text-muted);
-  overflow-wrap: anywhere;
-}
-
-/* Connection state as a small badge (7.4): icon and word, in the status
-   colours, so the state is never colour alone. */
-.sync-status__state {
+.sync-chip {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  padding: var(--space-1) var(--space-2);
+  min-height: 32px;
+  padding: 0 var(--space-2);
   border: 1px solid currentColor;
   border-radius: var(--radius-small);
   font-family: var(--font-mono);
@@ -323,26 +317,58 @@ legend {
   letter-spacing: var(--tracking-label);
   text-transform: uppercase;
   font-weight: 500;
+  white-space: nowrap;
 }
 
-.sync-status__state--online {
+.sync-chip--online {
   color: var(--status-in-range-text);
   background: var(--status-in-range-bg);
 }
 
-.sync-status__state--offline {
+/* Offline, and a reading the server refused: the same attention pair, the
+   words say which one it is. */
+.sync-chip--attention {
   color: var(--status-attention-text);
   background: var(--status-attention-bg);
 }
 
-.sync-status__icon {
+.sync-chip--idle {
+  color: var(--color-text-muted);
+  background: transparent;
+}
+
+.sync-chip__icon {
   flex: none;
   display: inline-flex;
 }
 
+.sync-chip__separator {
+  opacity: 0.75;
+}
+
+/* A text button, not a filled one: the bar keeps one weight of ink. */
+.sync__send {
+  min-height: var(--tap-min);
+  padding: 0 var(--space-2);
+  border: 0;
+  background: none;
+  color: var(--color-accent);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.sync__send:hover {
+  color: var(--color-text);
+}
+
 /* Screen title (3.2). */
 .home__heading,
-.entry__heading {
+.report-form__heading {
   margin-bottom: var(--space-3);
   font-family: var(--font-display);
   font-size: var(--text-h1);
@@ -473,16 +499,18 @@ legend {
   margin-top: var(--space-1);
 }
 
-/* Live region for "Saved. Waiting to be sent." */
+/* Live region for the saved readings and where they are kept. */
 .form__status {
   min-height: var(--leading-body);
   font-size: var(--text-body);
   line-height: var(--leading-body);
 }
 
-/* Notices (7.7): 2 px left rule in the notice colour, icon, text. */
+/* Notices (7.7): 2 px left rule in the notice colour, icon, text, and the one
+   action, which wraps onto its own line on a phone. */
 .notice {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-2);
   align-items: flex-start;
   margin-bottom: var(--space-3);
@@ -493,6 +521,21 @@ legend {
   background: var(--color-surface);
 }
 
+.notice__icon {
+  flex: none;
+  display: inline-flex;
+  padding-top: 2px;
+}
+
+.notice__body {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+
+.notice__action {
+  flex: 0 0 auto;
+}
+
 .notice--info .notice__icon {
   color: var(--color-accent);
 }
@@ -501,40 +544,16 @@ legend {
   border-left-color: var(--status-attention-text);
 }
 
+.notice--warning .notice__icon {
+  color: var(--status-attention-text);
+}
+
 .notice--review {
   border-left-color: var(--status-review-text);
 }
 
 .notice--review .notice__icon {
   color: var(--status-review-text);
-}
-
-/* The one action of a notice sits on its own line on a phone. */
-.notice {
-  flex-wrap: wrap;
-}
-
-.notice__body {
-  flex: 1 1 200px;
-}
-
-.notice__action {
-  flex: 0 0 auto;
-}
-
-.notice--warning .notice__icon {
-  color: var(--status-attention-text);
-}
-
-.notice__icon {
-  flex: none;
-  display: inline-flex;
-  padding-top: 2px;
-}
-
-.notice__body {
-  flex: 1 1 auto;
-  min-width: 0;
 }
 
 /* Indicator cards (7.3): one card per indicator, three per row on desktop. */
@@ -562,15 +581,11 @@ legend {
 }
 
 .indicator-card--outside {
-  border-left-color: var(--status-outside-text);
+  border-left-color: var(--status-attention-text);
 }
 
 .indicator-card--review {
   border-left-color: var(--status-review-text);
-}
-
-.indicator-card--selected {
-  box-shadow: 0 0 0 1px var(--color-accent);
 }
 
 /* Title and badge: the badge always takes its own row under the name, so every
@@ -694,8 +709,8 @@ legend {
 }
 
 .attention-badge--outside {
-  color: var(--status-outside-text);
-  background: var(--status-outside-bg);
+  color: var(--status-attention-text);
+  background: var(--status-attention-bg);
 }
 
 .attention-badge--review {
