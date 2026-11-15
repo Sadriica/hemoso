@@ -8,16 +8,14 @@
 ## Current status
 _Update before every checkpoint and at every shift change._
 
-[bio1] ready · done: 7 content files validated (0 errors), F-bio1-01/02/03, REQ-08 pass, REQ-11 line, video format · next: 2 minute story and video script · blocked: none
-
-- **Time:** Sat 19:20
-- **Done:** F-bio1-01 with the question 2 source for the proposed indicators (`team/bio1/notes/question-2-evidence.md`); F-bio1-02 on space fever; F-bio1-03 proposing fluid intake (deferred by the team); the REQ-26 text shape (`team/bio1/notes/status-texts.md`); the seven content files in `config/content/` for the six indicators of the statement, with `check_content.py` at 0 errors
-- **In progress:** waiting for `config/data/indicators.csv` to confirm the ids, and `config/rules/attention.csv` for the level names
-- **Next:** adjust the level headings when `attention.csv` lands, then move to REQ-08 and the pitch
+- **Time:** Sun 07:40
+- **Done:** #12 A visual tool astronauts use to assess their own health and ; #37 Video script and storyboard (30 s or less, English subtitles
+- **In progress:** #42 Status and next-step texts the astronaut reads for each indi; #19 Simple instructions on measurements, indicators and risks; n; #22 Never presented as a replacement for the CMO or the flight s; #28 Demo format, script and slides within the limits; #32 The pitch answers the five judging criteria; #33 No images, video, audio or likeness of people under 18
+- **Next:** #3 Each person: clone, setup.sh, open their agent; #6 Choose the solution and write FORMATS.md (files, formats, ow; #9 Pitch script (2 minutes)
+- **Chat line:** `[bio1] ready · done: 2 (REQ-01, T-11) · next: REQ-26, REQ-08, REQ-11, REQ-17, REQ-21, REQ-22, T-03, T-06 · blocked: none`
 
 ## Blockers
-- `config/data/indicators.csv` (Phys, REQ-03): the ids and units in the content files are the ones listed in the task, not read from the file.
-- `config/rules/attention.csv` (Bio 2, REQ-05): the three `###` headings per file are provisional.
+- None
 
 ## Shift
 - Sleep shift: _(A: 1:00–4:30 · B: 4:30–8:00)_
