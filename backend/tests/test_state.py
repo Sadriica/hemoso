@@ -20,6 +20,7 @@ from app.state import (
     attention_for,
     baseline,
     cited_rows,
+    daily_values,
     is_cited,
     state_for,
     window,
@@ -212,13 +213,106 @@ def test_mad_above_the_floor_sets_the_spread():
     assert spread == pytest.approx(1.4826 * 10)
 
 
-def test_window_keeps_the_last_fourteen_in_the_same_context():
+def test_window_keeps_the_last_fourteen_days_in_the_same_context():
     entries = [entry(day, float(day)) for day in range(1, 21)]
     entries.insert(10, entry(5, 99.0, context="after_exercise"))
 
     kept = window(entries, "rest")
 
     assert [row.value for row in kept] == [float(day) for day in range(7, 21)]
+
+
+# The window: the last 14 mission days that hold a reading, one value per day.
+
+
+def stored(*pairs: tuple[int, float]) -> list[Entry]:
+    """Entries from (mission_day, value) pairs, one every minute from 08:00."""
+    return [
+        Entry(**{**ENTRY, "value": value, "mission_day": day, "time": f"08:{index:02d}"})
+        for index, (day, value) in enumerate(pairs)
+    ]
+
+
+def daily_state(
+    entries: list[Entry],
+    context: str = "rest",
+    before: tuple[int, str] | None = None,
+    min_spread: float = 4.0,
+) -> tuple[list[float], int, float | None, float | None]:
+    """The daily values of the window, the readings behind them and the baseline."""
+    recent = window(entries, context, before)
+    daily = daily_values(recent)
+    median, spread = baseline(daily, min_spread)
+    return daily, len(recent), median, spread
+
+
+def test_one_day_of_readings_has_no_baseline():
+    daily, readings, median, spread = daily_state(stored((1, 60.0), (1, 70.0)))
+
+    assert daily == [65.0]
+    assert readings == 2
+    assert (median, spread) == (None, None)
+
+
+def test_three_days_average_each_day_and_take_their_median():
+    entries = stored((1, 60.0), (1, 70.0), (2, 62.0), (3, 64.0), (3, 66.0))
+
+    daily, readings, median, spread = daily_state(entries)
+
+    assert daily == [65.0, 62.0, 65.0]
+    assert readings == 5
+    assert median == 65.0
+    assert spread == 4.0
+
+
+def test_a_noisy_day_counts_once():
+    pairs = [(10, 60.0)] + [(10, 120.0)] * 9 + [(11, 61.0), (12, 62.0)]
+
+    daily, readings, median, _ = daily_state(stored(*pairs))
+
+    assert daily == [114.0, 61.0, 62.0]
+    assert readings == 12
+    assert median == 62.0
+
+
+def test_the_window_holds_the_last_fourteen_days():
+    entries = stored(*[(day, float(day)) for day in range(1, 21)])
+
+    daily, readings, _, _ = daily_state(entries)
+
+    assert daily == [float(day) for day in range(7, 21)]
+    assert readings == 14
+
+
+def test_gaps_between_days_do_not_shrink_the_window():
+    entries = stored((1, 60.0), (2, 61.0), (5, 62.0), (9, 63.0))
+
+    daily, readings, _, _ = daily_state(entries)
+
+    assert daily == [60.0, 61.0, 62.0, 63.0]
+    assert readings == 4
+
+
+def test_the_context_still_separates_readings():
+    entries = stored((3, 60.0)) + [entry(3, 95.0, context="after_exercise")]
+
+    rest = daily_values(window(entries, "rest"))
+    exercised = daily_values(window(entries, "after_exercise"))
+
+    assert rest == [60.0]
+    assert exercised == [95.0]
+
+
+def test_a_reading_after_the_tested_one_is_not_in_its_day():
+    entries = [
+        Entry(**{**ENTRY, "value": 70.0, "mission_day": 4, "time": "07:00"}),
+        Entry(**{**ENTRY, "value": 90.0, "mission_day": 4, "time": "09:00"}),
+    ]
+
+    daily, readings, _, _ = daily_state(entries, before=(4, "08:00"))
+
+    assert daily == [70.0]
+    assert readings == 1
 
 
 def test_state_route_no_data_with_two_entries(client, tmp_path):
@@ -235,6 +329,7 @@ def test_state_route_no_data_with_two_entries(client, tmp_path):
         "median": None,
         "spread": None,
         "n": 2,
+        "readings": 2,
         "attention": None,
     }
 
@@ -249,6 +344,7 @@ def test_state_route_cited_limit_without_baseline_needs_review(client, tmp_path)
     assert response.json()["state"] == "needs_review"
     assert response.json()["median"] is None
     assert response.json()["n"] == 0
+    assert response.json()["readings"] == 0
     assert response.json()["attention"] == {
         "attention_level": "example_level_high",
         "notify": "crew",
@@ -294,6 +390,35 @@ def test_state_route_compares_with_the_stored_history(client, tmp_path):
         "median": 70.0,
         "spread": 4.0,
         "n": 3,
+        "readings": 3,
+        "attention": None,
+    }
+
+
+def test_state_route_counts_days_and_readings(client, tmp_path):
+    write_config(tmp_path)
+    for value, day, time in (
+        (60.0, 1, "08:00"),
+        (70.0, 1, "09:00"),
+        (62.0, 2, "08:00"),
+        (64.0, 3, "08:00"),
+        (66.0, 3, "09:00"),
+    ):
+        response = client.post(
+            "/entries", json={**ENTRY, "value": value, "mission_day": day, "time": time}
+        )
+        assert response.status_code == 201
+
+    response = client.get(
+        "/people/demo_astronaut_1/indicators/example_indicator/state?value=63"
+    )
+
+    assert response.json() == {
+        "state": "in_range",
+        "median": 65.0,
+        "spread": 4.0,
+        "n": 3,
+        "readings": 5,
         "attention": None,
     }
 
@@ -544,6 +669,7 @@ def test_blood_pressure_without_history_is_no_data(client, tmp_path):
             "median": None,
             "spread": None,
             "n": 0,
+            "readings": 0,
             "attention": None,
         },
         "diastolic": {
@@ -551,6 +677,7 @@ def test_blood_pressure_without_history_is_no_data(client, tmp_path):
             "median": None,
             "spread": None,
             "n": 0,
+            "readings": 0,
             "attention": None,
         },
     }
@@ -674,6 +801,7 @@ def test_state_route_keeps_earlier_entries_and_drops_later_ones(client, tmp_path
         "median": 70.0,
         "spread": 4.0,
         "n": 3,
+        "readings": 3,
         "attention": None,
     }
 
