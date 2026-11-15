@@ -81,25 +81,3 @@ export const reactionStrings = {
   // Fewer valid trials than REACTION_MIN_SAVE_TRIALS: nothing is saved.
   tooFew: `Fewer than ${REACTION_MIN_SAVE_TRIALS} answers. Nothing was saved.`,
 }
-
-export const stateStrings = {
-  heading: 'How you are today',
-  confirms: 'Your CMO or flight surgeon confirms.',
-  // The three steps of docs/API.md, GET /people/{id}/conditions, and the null
-  // case. No percentage, no label, no diagnosis.
-  label: {
-    low: 'Not likely with what you have recorded.',
-    possible: 'Possible. These signals point to it:',
-    review: 'Ask your CMO or flight surgeon to check this.',
-    no_data: 'Not enough data yet.',
-  } as Record<string, string>,
-  evidence: (score: number): string => `Evidence ${score.toFixed(3)} of 1`,
-  pointing: (names: string[]): string =>
-    names.length === 0
-      ? 'No signal points at it today.'
-      : `Pointing at it: ${names.join(', ')}.`,
-  missing: (names: string[]): string =>
-    names.length === 0 ? '' : `No reading yet: ${names.join(', ')}.`,
-  source: 'Source',
-  assumption: 'Assumption',
-}

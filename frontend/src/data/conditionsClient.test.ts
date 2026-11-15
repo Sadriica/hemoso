@@ -1,11 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import type { FetchLike } from '../data/sync'
+import type { FetchLike } from './sync'
 import {
   createConditionsClient,
-  psychologicalCondition,
-  type Condition,
 } from './conditionsClient'
-import { PSYCHOLOGICAL_CONDITION_ID } from './ids'
+// The id of one row of config/rules/conditions.csv.
+const CONDITION_ID = 'current_state'
 
 // The client reads `status` and `json()` only, so a plain object is enough and
 // the test does not depend on the Response implementation of the runner.
@@ -34,7 +33,7 @@ function fakeFetch(response: Response | Error): {
 }
 
 const row = {
-  condition_id: PSYCHOLOGICAL_CONDITION_ID,
+  condition_id: CONDITION_ID,
   name: 'Current state',
   score: 0.5,
   label: 'possible',
@@ -65,7 +64,7 @@ describe('createConditionsClient', () => {
       fakeFetch(answer(200, [row])).fetchFn,
     )
     const [condition] = (await client.fetchConditions('demo_astronaut_1')) ?? []
-    expect(condition.id).toBe(PSYCHOLOGICAL_CONDITION_ID)
+    expect(condition.id).toBe(CONDITION_ID)
     expect(condition.label).toBe('possible')
     expect(condition.score).toBe(0.5)
     expect(condition.signals[0]).toEqual({
@@ -115,36 +114,5 @@ describe('createConditionsClient', () => {
     const client = createConditionsClient('http://api.test', fake.fetchFn)
     await client.fetchConditions('demo_astronaut_1')
     expect(fake.headers[0].Authorization).toBeUndefined()
-  })
-})
-
-describe('psychologicalCondition', () => {
-  const conditions: Condition[] = [
-    {
-      id: 'orthostatic_intolerance',
-      name: 'Orthostatic intolerance',
-      score: 0.2,
-      label: 'low',
-      signals: [],
-      source: 'Assumption',
-    },
-    {
-      id: PSYCHOLOGICAL_CONDITION_ID,
-      name: 'Current state',
-      score: 0.4,
-      label: 'possible',
-      signals: [],
-      source: 'Assumption',
-    },
-  ]
-
-  it('picks the neuro-behavioural condition, not the first one', () => {
-    expect(psychologicalCondition(conditions)?.id).toBe(
-      PSYCHOLOGICAL_CONDITION_ID,
-    )
-  })
-
-  it('is null while Bio 2 has not written that row', () => {
-    expect(psychologicalCondition(conditions.slice(0, 1))).toBeNull()
   })
 })
