@@ -1,0 +1,181 @@
+/* The look of the face check (T-70, #104): a ring and a scan line over the
+   camera picture while the face is read, then the same ring in a state colour
+   with a check or a cross. Decoration only: the overlay is aria-hidden and the
+   status text beside it says the same thing in words (DESIGN.md 2.4, 7.1).
+   Animated with transform, opacity and stroke-dashoffset only. */
+
+.face-panel__frame {
+  position: relative;
+  width: 100%;
+  max-width: 320px;
+}
+
+.face-panel__frame .face-panel__video {
+  display: block;
+}
+
+.face-scan {
+  --scan-color: var(--accent-cyan);
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: var(--radius-card);
+  pointer-events: none;
+  color: var(--scan-color);
+}
+
+.face-scan[data-state='success'] {
+  --scan-color: var(--status-in-range-text);
+}
+
+.face-scan[data-state='failure'] {
+  --scan-color: var(--status-review-text);
+}
+
+.face-scan__svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.face-scan__ring,
+.face-scan__arc,
+.face-scan__done,
+.face-scan__mark {
+  fill: none;
+  stroke: var(--scan-color);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.face-scan__ring {
+  stroke-width: 2;
+  opacity: 0.45;
+}
+
+.face-scan__arc,
+.face-scan__done {
+  stroke-width: 4;
+}
+
+.face-scan__arc {
+  stroke-dasharray: 26 74;
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: face-scan-turn 1.1s linear infinite;
+}
+
+.face-scan__done {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: face-scan-draw 350ms var(--ease-out, ease-out) forwards;
+}
+
+.face-scan__mark {
+  stroke-width: 7;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  animation: face-scan-draw 400ms var(--ease-out, ease-out) 250ms forwards;
+}
+
+.face-scan__line {
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  top: 0;
+  height: 45%;
+  background: linear-gradient(to bottom, transparent, var(--scan-color));
+  border-bottom: 2px solid var(--scan-color);
+  opacity: 0.5;
+  transform: translateY(-100%);
+  animation: face-scan-sweep 1.4s var(--ease-standard, ease-in-out) infinite;
+}
+
+.face-scan[data-state='failure'] .face-scan__svg {
+  animation: face-scan-shake 400ms linear 1;
+}
+
+@keyframes face-scan-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes face-scan-sweep {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(240%);
+  }
+}
+
+@keyframes face-scan-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes face-scan-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  15% {
+    transform: translateX(-10px);
+  }
+  30% {
+    transform: translateX(10px);
+  }
+  50% {
+    transform: translateX(-7px);
+  }
+  70% {
+    transform: translateX(7px);
+  }
+  85% {
+    transform: translateX(-3px);
+  }
+}
+
+/* No motion: the final state, drawn at once. While the face is read there is
+   only the static ring in the scan colour. */
+.app--still .face-scan__arc,
+.app--still .face-scan__line,
+.face-scan[data-motion='still'] .face-scan__arc,
+.face-scan[data-motion='still'] .face-scan__line {
+  display: none;
+}
+
+.app--still .face-scan__svg,
+.app--still .face-scan__done,
+.app--still .face-scan__mark,
+.face-scan[data-motion='still'] .face-scan__svg,
+.face-scan[data-motion='still'] .face-scan__done,
+.face-scan[data-motion='still'] .face-scan__mark {
+  animation: none;
+  stroke-dashoffset: 0;
+}
+
+.app--still .face-scan__ring,
+.face-scan[data-motion='still'] .face-scan__ring {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .face-scan__arc,
+  .face-scan__line {
+    display: none;
+  }
+
+  .face-scan__svg,
+  .face-scan__done,
+  .face-scan__mark {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+
+  .face-scan__ring {
+    opacity: 1;
+  }
+}

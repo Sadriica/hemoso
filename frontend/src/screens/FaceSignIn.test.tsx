@@ -55,6 +55,7 @@ function renderPanel(overrides: Partial<FaceSignInProps> = {}) {
     onFocusPicker: vi.fn(),
     // Five frames do not wait two seconds in a test.
     frameIntervalMs: 0,
+    resultHoldMs: 0,
     ...overrides,
   }
   render(<FaceSignIn {...props} />)
@@ -97,7 +98,9 @@ describe('FaceSignIn', () => {
     renderPanel()
 
     expect(screen.getByText(strings.face.consent)).toBeVisible()
-    expect(screen.getByRole('button', { name: strings.face.continueLabel })).toHaveFocus()
+    expect(
+      screen.getByRole('button', { name: strings.face.continueLabel }),
+    ).toHaveFocus()
     expect(getUserMedia).not.toHaveBeenCalled()
   })
 
@@ -106,7 +109,9 @@ describe('FaceSignIn', () => {
     const user = userEvent.setup()
     const props = renderPanel()
 
-    await user.click(screen.getByRole('button', { name: strings.face.cancelLabel }))
+    await user.click(
+      screen.getByRole('button', { name: strings.face.cancelLabel }),
+    )
 
     expect(props.onClose).toHaveBeenCalledTimes(1)
     expect(getUserMedia).not.toHaveBeenCalled()
@@ -145,7 +150,9 @@ describe('FaceSignIn', () => {
     const user = userEvent.setup()
     renderPanel({ personId: '' })
 
-    await user.click(screen.getByRole('button', { name: strings.face.continueLabel }))
+    await user.click(
+      screen.getByRole('button', { name: strings.face.continueLabel }),
+    )
 
     // Nobody is on duty yet: the register button says so and registers nobody.
     expect(screen.getByText(strings.face.chooseFirst)).toBeVisible()
@@ -161,16 +168,24 @@ describe('FaceSignIn', () => {
     const user = userEvent.setup()
     renderPanel({ personId: 'cadet_okoro' })
 
-    await user.click(screen.getByRole('button', { name: strings.face.continueLabel }))
-    expect(screen.getByText(strings.face.registeredFor('cadet_okoro'))).toBeVisible()
-    await user.click(screen.getByRole('button', { name: strings.face.register }))
+    await user.click(
+      screen.getByRole('button', { name: strings.face.continueLabel }),
+    )
+    expect(
+      screen.getByText(strings.face.registeredFor('cadet_okoro')),
+    ).toBeVisible()
+    await user.click(
+      screen.getByRole('button', { name: strings.face.register }),
+    )
 
     await waitFor(() =>
       expect(screen.getByRole('status')).toHaveTextContent(
         strings.face.status.registered('cadet_okoro'),
       ),
     )
-    expect(loadFaces().map((record) => record.personId)).toEqual(['cadet_okoro'])
+    expect(loadFaces().map((record) => record.personId)).toEqual([
+      'cadet_okoro',
+    ])
   })
 
   it('keeps every track of a camera that was opened, even after an empty scan', async () => {
@@ -179,8 +194,12 @@ describe('FaceSignIn', () => {
     const user = userEvent.setup()
     renderPanel()
 
-    await user.click(screen.getByRole('button', { name: strings.face.continueLabel }))
-    await user.click(screen.getByRole('button', { name: strings.face.register }))
+    await user.click(
+      screen.getByRole('button', { name: strings.face.continueLabel }),
+    )
+    await user.click(
+      screen.getByRole('button', { name: strings.face.register }),
+    )
 
     await waitFor(() =>
       expect(screen.getByRole('alert')).toHaveTextContent(
@@ -198,7 +217,9 @@ describe('FaceSignIn', () => {
     const user = userEvent.setup()
     const props = renderPanel()
 
-    await user.click(screen.getByRole('button', { name: strings.face.continueLabel }))
+    await user.click(
+      screen.getByRole('button', { name: strings.face.continueLabel }),
+    )
     await user.click(screen.getByRole('button', { name: strings.face.signIn }))
 
     await waitFor(() =>
@@ -216,7 +237,9 @@ describe('FaceSignIn', () => {
     const user = userEvent.setup()
     const props = renderPanel()
 
-    await user.click(screen.getByRole('button', { name: strings.face.continueLabel }))
+    await user.click(
+      screen.getByRole('button', { name: strings.face.continueLabel }),
+    )
     await user.click(screen.getByRole('button', { name: strings.face.signIn }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
@@ -233,15 +256,21 @@ describe('FaceSignIn', () => {
     const user = userEvent.setup()
     const props = renderPanel()
 
-    await user.click(screen.getByRole('button', { name: strings.face.continueLabel }))
-    await user.click(screen.getByRole('button', { name: strings.face.register }))
+    await user.click(
+      screen.getByRole('button', { name: strings.face.continueLabel }),
+    )
+    await user.click(
+      screen.getByRole('button', { name: strings.face.register }),
+    )
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
       strings.face.problem('denied', 'register'),
     )
     // Registering has no other screen to send the person to: Close is the exit.
     expect(props.onFocusPicker).not.toHaveBeenCalled()
-    expect(screen.getByRole('button', { name: strings.face.closeLabel })).toHaveFocus()
+    expect(
+      screen.getByRole('button', { name: strings.face.closeLabel }),
+    ).toHaveFocus()
     expect(engine.descriptorFrom).not.toHaveBeenCalled()
   })
 
@@ -251,7 +280,9 @@ describe('FaceSignIn', () => {
       getUserMedia: vi.fn().mockRejectedValue(namedError('NotFoundError')),
     })
     renderPanel()
-    await user.click(screen.getByRole('button', { name: strings.face.continueLabel }))
+    await user.click(
+      screen.getByRole('button', { name: strings.face.continueLabel }),
+    )
     await user.click(screen.getByRole('button', { name: strings.face.signIn }))
     expect(await screen.findByRole('alert')).toHaveTextContent(
       strings.face.problem('missing', 'tab'),
@@ -274,7 +305,9 @@ describe('FaceSignIn', () => {
     const user = userEvent.setup()
     renderPanel()
 
-    await user.click(screen.getByRole('button', { name: strings.face.continueLabel }))
+    await user.click(
+      screen.getByRole('button', { name: strings.face.continueLabel }),
+    )
     await user.click(
       screen.getByRole('button', { name: strings.face.deleteAction }),
     )
@@ -301,11 +334,15 @@ describe('FaceSignIn', () => {
     const user = userEvent.setup()
     renderPanel()
 
-    await user.click(screen.getByRole('button', { name: strings.face.continueLabel }))
+    await user.click(
+      screen.getByRole('button', { name: strings.face.continueLabel }),
+    )
     await user.click(
       screen.getByRole('button', { name: strings.face.deleteAction }),
     )
-    await user.click(screen.getByRole('button', { name: strings.face.cancelLabel }))
+    await user.click(
+      screen.getByRole('button', { name: strings.face.cancelLabel }),
+    )
 
     expect(loadFaces()).toHaveLength(1)
     expect(
@@ -320,8 +357,12 @@ describe('FaceSignIn', () => {
     const user = userEvent.setup()
     const props = renderPanel()
 
-    await user.click(screen.getByRole('button', { name: strings.face.continueLabel }))
-    await user.click(screen.getByRole('button', { name: strings.face.register }))
+    await user.click(
+      screen.getByRole('button', { name: strings.face.continueLabel }),
+    )
+    await user.click(
+      screen.getByRole('button', { name: strings.face.register }),
+    )
 
     const alert = await screen.findByRole('alert')
     expect(alert).toHaveTextContent(strings.face.problem('failed', 'register'))
@@ -329,7 +370,9 @@ describe('FaceSignIn', () => {
     expect(alert).not.toHaveTextContent('Pick your name')
     // The only exit on this screen is Close, and it has the focus.
     expect(props.onFocusPicker).not.toHaveBeenCalled()
-    expect(screen.getByRole('button', { name: strings.face.closeLabel })).toHaveFocus()
+    expect(
+      screen.getByRole('button', { name: strings.face.closeLabel }),
+    ).toHaveFocus()
     expect(track.stop).toHaveBeenCalledTimes(1)
     // The cause reaches the console: name and message, nothing else.
     expect(warn).toHaveBeenCalledWith(
@@ -345,7 +388,9 @@ describe('FaceSignIn', () => {
     const user = userEvent.setup()
     const props = renderPanel({ personId: '' })
 
-    await user.click(screen.getByRole('button', { name: strings.face.continueLabel }))
+    await user.click(
+      screen.getByRole('button', { name: strings.face.continueLabel }),
+    )
     await user.click(screen.getByRole('button', { name: strings.face.signIn }))
 
     const alert = await screen.findByRole('alert')
@@ -361,7 +406,9 @@ describe('FaceSignIn', () => {
     const user = userEvent.setup()
     renderPanel({ personId: '', fallback: 'picker' })
 
-    await user.click(screen.getByRole('button', { name: strings.face.continueLabel }))
+    await user.click(
+      screen.getByRole('button', { name: strings.face.continueLabel }),
+    )
     await user.click(screen.getByRole('button', { name: strings.face.signIn }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
@@ -382,8 +429,12 @@ describe('FaceSignIn', () => {
     const user = userEvent.setup()
     renderPanel()
 
-    await user.click(screen.getByRole('button', { name: strings.face.continueLabel }))
-    await user.click(screen.getByRole('button', { name: strings.face.register }))
+    await user.click(
+      screen.getByRole('button', { name: strings.face.continueLabel }),
+    )
+    await user.click(
+      screen.getByRole('button', { name: strings.face.register }),
+    )
 
     expect(await screen.findByText(strings.face.loading(40))).toBeVisible()
     await screen.findByText(strings.face.status.noFace)
@@ -393,7 +444,9 @@ describe('FaceSignIn', () => {
     const user = userEvent.setup()
     renderPanel()
 
-    await user.click(screen.getByRole('button', { name: strings.face.continueLabel }))
+    await user.click(
+      screen.getByRole('button', { name: strings.face.continueLabel }),
+    )
 
     expect(
       screen.getByText(strings.face.noSavedFace('demo_astronaut_1')),
@@ -427,12 +480,16 @@ describe('FaceSignIn', () => {
     const user = userEvent.setup()
     renderPanel()
 
-    await user.click(screen.getByRole('button', { name: strings.face.continueLabel }))
+    await user.click(
+      screen.getByRole('button', { name: strings.face.continueLabel }),
+    )
     const picture = screen.getByLabelText(strings.face.videoLabel)
     expect(picture.tagName).toBe('VIDEO')
     expect(picture.closest('[hidden]')).not.toBeNull()
 
-    await user.click(screen.getByRole('button', { name: strings.face.register }))
+    await user.click(
+      screen.getByRole('button', { name: strings.face.register }),
+    )
     await waitFor(() => expect(release).toBeDefined())
     release?.(stream)
     await waitFor(() => expect(picture.closest('[hidden]')).toBeNull())
@@ -442,6 +499,114 @@ describe('FaceSignIn', () => {
         strings.face.status.registered('demo_astronaut_1'),
       ),
     )
-    expect(picture.closest('[hidden]')).not.toBeNull()
+    // The camera is released; the frame stays a moment to show the result.
+    expect(document.querySelector('.face-scan')).toHaveAttribute(
+      'data-state',
+      'success',
+    )
+  })
+
+  describe('the picture of the check (#104)', () => {
+    function overlay() {
+      return document.querySelector('.face-scan')
+    }
+
+    it('scans while the face is read, then shows success on a match', async () => {
+      allowCamera()
+      saveFace({ personId: 'demo_astronaut_2', descriptor: [1, 1] })
+      let release: (value: number[]) => void = () => undefined
+      engine.descriptorFrom.mockImplementation(
+        () => new Promise<number[]>((resolve) => (release = resolve)),
+      )
+      const user = userEvent.setup()
+      renderPanel({ resultHoldMs: 50 })
+
+      await user.click(
+        screen.getByRole('button', { name: strings.face.continueLabel }),
+      )
+      await user.click(
+        screen.getByRole('button', { name: strings.face.signIn }),
+      )
+
+      await waitFor(() => expect(overlay()).not.toBeNull())
+      expect(overlay()).toHaveAttribute('data-state', 'scanning')
+      expect(overlay()).toHaveAttribute('aria-hidden', 'true')
+
+      release([1, 1])
+      await waitFor(() =>
+        expect(overlay()).toHaveAttribute('data-state', 'success'),
+      )
+    })
+
+    it('shows failure when no one matches, and the alert and focus stay', async () => {
+      allowCamera()
+      saveFace({ personId: 'demo_astronaut_2', descriptor: [1, 1] })
+      engine.descriptorFrom.mockResolvedValue([9, 9])
+      const user = userEvent.setup()
+      const props = renderPanel()
+
+      await user.click(
+        screen.getByRole('button', { name: strings.face.continueLabel }),
+      )
+      await user.click(
+        screen.getByRole('button', { name: strings.face.signIn }),
+      )
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        strings.face.problem('notRecognised', 'tab'),
+      )
+      expect(overlay()).toHaveAttribute('data-state', 'failure')
+      expect(props.onFocusPicker).toHaveBeenCalledTimes(1)
+    })
+
+    it('shows success when a face is saved', async () => {
+      allowCamera()
+      engine.descriptorFrom.mockResolvedValue([0.2, 0.4])
+      const user = userEvent.setup()
+      renderPanel()
+
+      await user.click(
+        screen.getByRole('button', { name: strings.face.continueLabel }),
+      )
+      await user.click(
+        screen.getByRole('button', { name: strings.face.register }),
+      )
+
+      await waitFor(() =>
+        expect(screen.getByRole('status')).toHaveTextContent(
+          strings.face.status.registered('demo_astronaut_1'),
+        ),
+      )
+      expect(overlay()).toHaveAttribute('data-state', 'success')
+    })
+
+    it('renders the final state without motion when reduced motion is on', async () => {
+      allowCamera()
+      engine.descriptorFrom.mockResolvedValue(null)
+      const original = window.matchMedia
+      window.matchMedia = ((query: string) => ({
+        matches: query.includes('prefers-reduced-motion'),
+        media: query,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+      })) as unknown as typeof window.matchMedia
+      try {
+        const user = userEvent.setup()
+        renderPanel()
+
+        await user.click(
+          screen.getByRole('button', { name: strings.face.continueLabel }),
+        )
+        await user.click(
+          screen.getByRole('button', { name: strings.face.register }),
+        )
+
+        await screen.findByRole('alert')
+        expect(overlay()).toHaveAttribute('data-state', 'failure')
+        expect(overlay()).toHaveAttribute('data-motion', 'still')
+      } finally {
+        window.matchMedia = original
+      }
+    })
   })
 })
