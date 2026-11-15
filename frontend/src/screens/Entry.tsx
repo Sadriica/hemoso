@@ -711,6 +711,9 @@ function ReadingRowField({
     >
       <span className="rep-row__channel" aria-hidden="true">
         {String(index + 1).padStart(2, '0')}
+        {/* Done is a check beside the channel number and a stronger edge,
+            never colour alone. */}
+        {done && <span className="rep-row__check">✓</span>}
       </span>
       <span className="rep-row__icon">
         <IndicatorIcon
@@ -718,12 +721,6 @@ function ReadingRowField({
           colored={row.system !== null}
           size={24}
         />
-        {/* Done is a check and a stronger edge, never colour alone. */}
-        {done && (
-          <span className="rep-row__check" aria-hidden="true">
-            ✓
-          </span>
-        )}
       </span>
 
       {row.scale ? (

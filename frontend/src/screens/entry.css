@@ -743,27 +743,14 @@
 /* Round 5: the footer, the saved message with the way on, and rows that read
    as done. */
 .rep .rep-footer {
-  position: sticky;
-  bottom: calc(var(--rail-height) + var(--space-2));
-  z-index: 1;
+  /* In the flow, after the last panel: a bar fixed over the first cards hid
+     the fields a person came to fill in (UX review, point 1). */
+  position: static;
   display: grid;
   gap: var(--space-2);
-  margin-top: var(--space-1);
-  padding: var(--space-2) 0;
+  margin-top: var(--space-2);
+  padding: var(--space-3) 0 0;
   border-top: 1px solid var(--color-border);
-  background: var(--color-bg-raised);
-  /* A soft edge above, so the bar reads as docked over the cards and not as a
-     strip that cuts them off. */
-  box-shadow: 0 calc(var(--space-3) * -1) var(--space-3) calc(var(--space-2) * -1)
-    color-mix(in srgb, var(--color-bg) 90%, transparent);
-}
-
-/* On a phone the footer with the saved message and two buttons is a third of
-   the screen: it stays in the flow there, so the rows are never covered. */
-@media (max-width: 599px) {
-  .rep .rep-footer {
-    position: static;
-  }
 }
 
 /* Once saved, the footer is the confirmation and the way on: it holds the
@@ -812,20 +799,10 @@
 }
 
 .rep .rep-row__check {
-  position: absolute;
-  right: -4px;
-  bottom: -4px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  border-radius: var(--radius-round);
-  background: var(--color-accent);
-  color: var(--color-on-interactive);
-  font-size: 12px;
+  /* A plain mark beside the channel number, not a badge over the icon. */
+  margin-left: var(--space-1);
+  color: var(--color-accent);
   font-weight: 700;
-  line-height: 1;
 }
 
 .rep .rep-row--done {

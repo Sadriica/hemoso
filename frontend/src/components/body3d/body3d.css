@@ -271,11 +271,12 @@
   }
 
   /* A shorter figure, so the first group of buttons shows with it in the first
-     screen. It keeps its own box, so nothing moves when the chunk arrives. */
+     screen; it grows with the screen so the limbs are easy to see and tap. It
+     keeps its own box, so nothing moves when the chunk arrives. */
   .body3d[data-mode='pain'] .body3d__stage,
   .body3d[data-mode='pain'] .body3d-slot {
     aspect-ratio: auto;
-    height: 232px;
+    height: clamp(232px, 40svh, 340px);
     min-height: 0;
   }
 }
