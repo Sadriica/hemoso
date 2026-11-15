@@ -388,6 +388,55 @@ Labels:
 | 0.6 to 1 | `review` | "Ask your CMO or flight surgeon to check this" |
 | null | `no_data` | "Not enough data yet", with the signals still missing |
 
+#### Symptoms in the score (pending T-78)
+
+The optional fifth column of `config/rules/conditions.csv`, `symptoms`, is not
+agreed yet: T-78 owns the format, from Bio 2's proposal
+(`team/bio2/notes/complementary-proposals.md`, section 4). The route reads the
+column when it is there and does nothing different when it is not: with four
+columns there are no symptom signals, the reports are not even read from the
+store, and each condition returns the body it returned before this change.
+
+- A symptom the row lists and the person reported is one more usable signal:
+  `0.5` when only that row lists it, `0.25` when two or more rows list it
+  ("shared"). The score is still the mean over all usable signals, the
+  indicator ones and the symptom ones together.
+- Only the reports of the newest mission day that holds any symptom report
+  count (`app.conditions.newest_day_reports`). An older day is history. The day
+  is chosen over every report of the person, not per condition, so all
+  conditions read the same day.
+- `severity` is stored and adds nothing: a mild and a severe report of the same
+  symptom on the same day add the same point.
+- A reported symptom that `config/data/symptoms.csv` marks `red_flag` `yes` and
+  the row lists sets `red_flag: true` on that condition, whatever the score,
+  `no_data` included. It is data only: no text and no diagnosis, and the CMO or
+  the flight surgeon confirms. Without `symptoms.csv` no row says which
+  symptoms are red flags, so no flag is set.
+- A symptom the row lists and the person did not report stays in `signals`
+  with `contribution` null, so the screen can show what the score rests on.
+
+A red flag is not a second score and never waits for one. It outranks the
+label: a condition can read `label: low` ("Not likely with what you have
+recorded") and `red_flag: true` at the same time, because the flag rests on the
+presence of a symptom `symptoms.csv` marks as a red flag, not on the mean. The
+screen shows the flag and the CMO or the flight surgeon sees it whatever the
+label says. The flag describes the newest day that has a report, like the
+points: it carries no day of its own, so a screen that shows it also shows the
+day of the reports it was read from.
+
+Two gates stand between this code and a real `config/`:
+`scripts/check_content.py` still fixes `conditions.csv` at four columns, so the
+five-column file fails the merge check until T-78 updates the checker, and
+`FORMATS.md` still documents four columns. Until both are done the symptom
+layer cannot appear in the product, and `config/data/symptoms.csv` is not
+checked at all.
+
+The three numbers are constants in `backend/app/conditions.py`:
+`SYMPTOM_SPECIFIC_POINT` (0.5), `SYMPTOM_SHARED_POINT` (0.25) and
+`SYMPTOM_SHARED_FROM` (2, the number of rows that makes a symptom shared). Each
+is marked "Assumption, pending T-78": Bio 2's proposal chooses them and no
+clinical source calibrates them.
+
 Four points the finding does not settle, resolved here:
 
 - The bands are written in the finding with both ends (`0 to 0.3`, `0.3 to
@@ -416,21 +465,42 @@ the route does not look up an indicator.
 | `name` | string | the plain name from that row |
 | `score` | number or null | the mean of the usable signals, 0 to 1, three decimals |
 | `label` | string | `no_data`, `low`, `possible` or `review` |
-| `signals` | array | one object per signal in `based_on`, in file order |
+| `signals` | array | one object per signal in `based_on` and per symptom in `symptoms`, in file order |
 | `source` | string | the row's link or `Assumption` |
+| `red_flag` | boolean | `true` only when a red-flag symptom the row lists was reported; the field is left out of the object while it is not true |
 
 Each signal object:
 
 | Field | Type | Meaning |
 | --- | --- | --- |
-| `indicator_id` | string | the signal's indicator |
+| `kind` | string | `indicator` or `symptom`. Left out of an indicator signal, which keeps the four fields it had before T-79. |
+| `indicator_id` | string | the signal's indicator; left out of a symptom signal |
+| `symptom_id` | string | the reported symptom; left out of an indicator signal |
 | `side` | string or null | `above` or `below`, the side that counts for this condition; null when `based_on` has no side |
-| `contribution` | number or null | `1`, `0.5` or `0`, the point the signal added; null while it is not usable |
+| `contribution` | number or null | `1`, `0.5`, `0.25` or `0`, the point the signal added; null while it is not usable |
 | `value` | number or null | the newest reading, or null when there is none |
+
+A four-column `conditions.csv` returns exactly the body this route returned
+before the symptom layer: no `kind`, no `symptom_id`, no `red_flag`.
+
+`docs/openapi.json` marks the signal fields optional because one model covers
+both kinds; the body is the one in the table above. A client that reads
+`signals` has to accept `kind: symptom` before `config/rules/conditions.csv`
+gains the column: the current frontend rejects a signal without an
+`indicator_id`, and a rejected signal costs it every condition in the answer.
+That client change is not part of T-79.
 
 ```bash
 curl "$VITE_API_BASE_URL/people/demo_astronaut_1/conditions"
 # 200 [{"condition_id":"orthostatic_intolerance","name":"Orthostatic intolerance","score":0.5,"label":"possible","signals":[{"indicator_id":"hr_bpm","side":"above","contribution":1.0,"value":112.0},{"indicator_id":"bp_sys_mmhg","side":"below","contribution":0.5,"value":95.0},{"indicator_id":"bp_dia_mmhg","side":"below","contribution":0.0,"value":74.0}],"source":"http://humanresearchroadmap.nasa.gov/Evidence/reports/ORTHO.pdf"}]
+```
+
+With the fifth column (pending T-78) and the reports of the day, a condition
+lists the symptoms behind the score too:
+
+```bash
+curl "$VITE_API_BASE_URL/people/demo_astronaut_1/conditions"
+# 200 [..., {"condition_id":"hypoglycaemia","name":"Hypoglycaemia","score":0.562,"label":"possible","signals":[{"indicator_id":"glucose_mgdl","side":"below","contribution":1.0,"value":60.0},{"kind":"symptom","symptom_id":"shaky","contribution":0.5},{"kind":"symptom","symptom_id":"sweating","contribution":0.5},{"kind":"symptom","symptom_id":"confusion","contribution":0.25}],"source":"https://diabetes.org/living-with-diabetes/hypoglycemia-low-blood-glucose","red_flag":true}]
 ```
 
 ```js
@@ -564,6 +634,117 @@ for (const report of reports) {
 The reports above are in a synthetic history (REQ-14); no real crew data is
 stored in this endpoint.
 
+### POST /people/{person_id}/symptoms
+
+Stores one symptom report (T-79; the format is pending T-78, Bio 2's proposal
+in `team/bio2/notes/complementary-proposals.md` section 4): which symptom from
+`config/data/symptoms.csv`, how strong, the mission day and the time. The
+severity is kept as the astronaut set it: this route does not read it, and
+`GET /people/{person_id}/conditions` uses only the fact that the symptom was
+reported. Nothing here is a diagnosis.
+
+The same report can be re-sent (the frontend re-sends what waits in its outbox,
+REQ-13) without adding a second row: one report is kept per `person_id`,
+`mission_day`, `time` and `symptom_id`.
+
+Path parameter: `person_id`, a string (same lowercase `snake_case` rule).
+
+Request body: one report. Every field is required.
+
+| Field | Type | Rule |
+| --- | --- | --- |
+| `symptom_id` | string | at most 64 characters, lowercase `snake_case`; when `config/data/symptoms.csv` exists and holds rows it must be one of its `symptom_id` values, and while that file is missing or holds only its header any id is accepted |
+| `severity` | integer | 1 (mild), 2 (moderate) or 3 (severe); booleans, decimals and strings are rejected |
+| `mission_day` | integer | greater than 0, at most 100000, "day N"; booleans and strings are rejected |
+| `time` | string | `HH:MM`, 24-hour clock |
+
+Responses:
+
+| Code | Meaning |
+| --- | --- |
+| `201` | A new report was stored; the stored report is returned, with `person_id` taken from the path. |
+| `200` | A report with the same `person_id`, `mission_day`, `time` and `symptom_id` already exists with the same `severity`; that stored report is returned and nothing is added. |
+| `409` | A report with that key already exists with a different `severity`; `detail` is a short plain message. |
+| `422` | A field breaks a rule, `person_id` in the path breaks the id rule, or `config/data/symptoms.csv` exists and the id is not in it (`detail` `unknown symptom`). |
+| `401` / `403` | The token rule below, when that person has an account. |
+| `502` | The upstream store (Supabase) is unreachable or returns an error. |
+
+```bash
+curl -X POST "$VITE_API_BASE_URL/people/demo_astronaut_1/symptoms" \
+  -H "Content-Type: application/json" \
+  -d '{"symptom_id":"shaky","severity":2,"mission_day":12,"time":"14:10"}'
+# 201 {"symptom_id":"shaky","severity":2,"mission_day":12,"time":"14:10","person_id":"demo_astronaut_1"}
+# re-sending the same body returns 200 with the same stored report
+```
+
+```js
+const response = await fetch(
+  `${VITE_API_BASE_URL}/people/demo_astronaut_1/symptoms`,
+  {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${session.token}`, // only when that person has an account
+    },
+    body: JSON.stringify({
+      symptom_id: "shaky",
+      severity: 2,
+      mission_day: 12,
+      time: "14:10",
+    }),
+  }
+);
+if (response.status === 201 || response.status === 200) {
+  // stored: the report waits no more in the outbox
+}
+if (response.status === 409) {
+  // this person, day, time and symptom already hold another severity: do not
+  // retry, ask the astronaut which one is right
+}
+```
+
+### GET /people/{person_id}/symptoms
+
+Returns one person's symptom reports, ordered by `mission_day` then `time`,
+oldest first. A person with no report gets an empty array, never a `404`: the
+route does not look the person up.
+
+Path parameter: `person_id` (same lowercase `snake_case` rule).
+
+Query parameters:
+
+| Name | Type | Rule |
+| --- | --- | --- |
+| `symptom_id` | string | optional; only the reports of that symptom, same id rule as in the body. An id with no report gives an empty array. |
+
+Each object has the fields of the body above plus `person_id`. The API adds no
+state, no threshold and no text about the severity.
+
+Responses: `200` (a JSON array, empty when there is no report); `422` when
+`person_id` or `symptom_id` breaks the `snake_case` rule; `401` / `403` as below
+when that person has an account; `502` when the upstream store (Supabase) is
+unreachable or returns an error.
+
+```bash
+curl "$VITE_API_BASE_URL/people/demo_astronaut_1/symptoms?symptom_id=shaky"
+# 200 [{"symptom_id":"shaky","severity":2,"mission_day":12,"time":"14:10","person_id":"demo_astronaut_1"}]
+```
+
+```js
+const params = new URLSearchParams({ symptom_id: "shaky" });
+const response = await fetch(
+  `${VITE_API_BASE_URL}/people/demo_astronaut_1/symptoms?${params}`
+);
+const reports = await response.json(); // array, oldest report first
+for (const report of reports) {
+  // show report.symptom_id, report.severity as the number the astronaut chose,
+  // and the day and time; nothing else is attached to it
+}
+```
+
+The reports above are in a synthetic history (REQ-14); no real crew data is
+stored in this endpoint.
+
 ## Sessions and the Authorization header
 
 Every route that names a person checks who is asking before it answers:
@@ -577,6 +758,8 @@ Every route that names a person checks who is asking before it answers:
 | `GET /people/{person_id}/conditions` | the path |
 | `POST /people/{person_id}/pain` | the path |
 | `GET /people/{person_id}/pain` | the path |
+| `POST /people/{person_id}/symptoms` | the path |
+| `GET /people/{person_id}/symptoms` | the path |
 
 The rule depends on whether that person has an account:
 
@@ -676,6 +859,29 @@ already holds another report. Both pain routes return `422` with a plain-string
 `detail` when `person_id`, or the `region_id` filter, breaks the `snake_case`
 rule, and the same `502` as the routes above.
 
+`POST /people/{person_id}/symptoms` returns `422` with the field array when the
+body breaks a rule:
+
+| Cause | `msg` |
+| --- | --- |
+| `severity` is below 1 or above 3 | `Input should be greater than or equal to 1` / `Input should be less than or equal to 3` |
+| `severity` is a boolean, a decimal or a string | `Input should be a valid integer` |
+| `mission_day` is 0 or negative, or above 100000 | `Input should be greater than 0` / `Input should be less than or equal to 100000` |
+| `symptom_id` is longer than 64 characters | `String should have at most 64 characters` |
+| `symptom_id` breaks the id rule | `Value error, must be lowercase snake_case` |
+| `time` is not `HH:MM` 24-hour | `Value error, time must be HH:MM (24-hour)` |
+| a field is missing | `Field required` |
+
+With a plain-string `detail` it answers `422` `unknown symptom` when
+`config/data/symptoms.csv` exists, holds rows, and the id is not one of them
+(pending T-78; while that file is missing or holds only its header, any
+`snake_case` id is accepted). It returns `409` with
+the plain string `a symptom report for this person, day, time and symptom
+already exists with a different severity` when that key already holds another
+report. Both symptom routes return `422` with a plain-string `detail` when
+`person_id`, or the `symptom_id` filter, breaks the `snake_case` rule, and the
+same `502` as the routes above.
+
 `POST /accounts` and `POST /sessions` return `422` with the field array when the
 body breaks a rule:
 
@@ -691,7 +897,7 @@ and with `detail` `this person already has an account` when the account exists.
 `POST /sessions` returns `401` with `detail` `wrong username or PIN`
 and `429` with `detail` `too many wrong PINs, try again later`.
 
-The seven routes that name a person return `401` with `detail` `missing or
+The nine routes that name a person return `401` with `detail` `missing or
 invalid token` and `403` with `detail` `this token belongs to another person`;
 both come from the rule above, before the route does its own work.
 
@@ -748,7 +954,7 @@ and a restart clears every window.
 - No endpoint lists indicators.
 - No change of PIN, no sign-out and no refresh of a token: a token works until
   `expires_at`.
-- No update or delete of entries or pain reports.
+- No update or delete of entries, pain reports or symptom reports.
 
 These are facts about the current code, not proposals.
 

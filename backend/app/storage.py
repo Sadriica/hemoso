@@ -1,4 +1,4 @@
-"""Storage for entries and pain reports: memory, sqlite and supabase (REQ-27)."""
+"""Storage for entries, pain reports and symptom reports: memory, sqlite and supabase (REQ-27)."""
 
 from __future__ import annotations
 
@@ -11,13 +11,22 @@ from typing import Protocol
 
 import httpx
 
-from .models import Account, Entry, PainReport, entry_key, pain_key
+from .models import (
+    Account,
+    Entry,
+    PainReport,
+    SymptomReport,
+    entry_key,
+    pain_key,
+    symptom_key,
+)
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 
 _COLUMNS = ("person_id", "indicator_id", "value", "unit", "mission_day", "time", "context")
 _ACCOUNT_COLUMNS = ("person_id", "salt", "pin_hash")
 _PAIN_COLUMNS = ("person_id", "region_id", "intensity", "mission_day", "time", "note")
+_SYMPTOM_COLUMNS = ("person_id", "symptom_id", "severity", "mission_day", "time")
 
 
 class EntryConflict(Exception):
@@ -26,6 +35,10 @@ class EntryConflict(Exception):
 
 class PainConflict(Exception):
     """The natural key already holds a pain report with another intensity or note."""
+
+
+class SymptomConflict(Exception):
+    """The natural key already holds a symptom report with another severity."""
 
 
 def _same_value(left: Entry, right: Entry) -> bool:
@@ -40,6 +53,10 @@ def _same_pain(left: PainReport, right: PainReport) -> bool:
     return left.intensity == right.intensity and left.note == right.note
 
 
+def _same_symptom(left: SymptomReport, right: SymptomReport) -> bool:
+    return left.severity == right.severity
+
+
 class Storage(Protocol):
     def add(self, entry: Entry) -> tuple[Entry, bool]: ...
 
@@ -50,6 +67,12 @@ class Storage(Protocol):
     def pain_reports(
         self, person_id: str, region_id: str | None = None
     ) -> list[PainReport]: ...
+
+    def add_symptom(self, report: SymptomReport) -> tuple[SymptomReport, bool]: ...
+
+    def symptom_reports(
+        self, person_id: str, symptom_id: str | None = None
+    ) -> list[SymptomReport]: ...
 
     def account(self, person_id: str) -> Account | None: ...
 
@@ -66,12 +89,17 @@ def _ordered_pain(reports: list[PainReport]) -> list[PainReport]:
     return sorted(reports, key=lambda report: (report.mission_day, report.time))
 
 
+def _ordered_symptoms(reports: list[SymptomReport]) -> list[SymptomReport]:
+    return sorted(reports, key=lambda report: (report.mission_day, report.time))
+
+
 class MemoryStorage:
-    """Holds entries, pain reports and accounts in memory; used by tests."""
+    """Holds entries, pain reports, symptom reports and accounts in memory; used by tests."""
 
     def __init__(self) -> None:
         self._entries: list[Entry] = []
         self._pain: list[PainReport] = []
+        self._symptoms: list[SymptomReport] = []
         self._accounts: dict[str, Account] = {}
 
     def add(self, entry: Entry) -> tuple[Entry, bool]:
@@ -109,6 +137,26 @@ class MemoryStorage:
             for report in self._pain
             if report.person_id == person_id
             and (region_id is None or report.region_id == region_id)
+        )
+
+    def add_symptom(self, report: SymptomReport) -> tuple[SymptomReport, bool]:
+        key = symptom_key(report)
+        for existing in self._symptoms:
+            if symptom_key(existing) == key:
+                if _same_symptom(existing, report):
+                    return existing, False
+                raise SymptomConflict
+        self._symptoms.append(report)
+        return report, True
+
+    def symptom_reports(
+        self, person_id: str, symptom_id: str | None = None
+    ) -> list[SymptomReport]:
+        return _ordered_symptoms(
+            report
+            for report in self._symptoms
+            if report.person_id == person_id
+            and (symptom_id is None or report.symptom_id == symptom_id)
         )
 
     def account(self, person_id: str) -> Account | None:
@@ -193,6 +241,21 @@ class SqliteStorage:
             self._conn.execute(
                 "CREATE UNIQUE INDEX IF NOT EXISTS pain_reports_natural_key_idx"
                 " ON pain_reports (person_id, region_id, mission_day, time)"
+            )
+            # Symptom reports (T-79), one per person, day, time and symptom, so
+            # the frontend's outbox can re-send one without a second row.
+            self._conn.execute(
+                "CREATE TABLE IF NOT EXISTS symptom_reports ("
+                "person_id TEXT NOT NULL,"
+                "symptom_id TEXT NOT NULL,"
+                "severity INTEGER NOT NULL,"
+                "mission_day INTEGER NOT NULL,"
+                "time TEXT NOT NULL,"
+                "created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)"
+            )
+            self._conn.execute(
+                "CREATE UNIQUE INDEX IF NOT EXISTS symptom_reports_natural_key_idx"
+                " ON symptom_reports (person_id, mission_day, time, symptom_id)"
             )
             self._conn.commit()
 
@@ -324,6 +387,59 @@ class SqliteStorage:
         with self._lock:
             rows = self._conn.execute(sql, params).fetchall()
         return [PainReport(**dict(zip(_PAIN_COLUMNS, row))) for row in rows]
+
+    def add_symptom(self, report: SymptomReport) -> tuple[SymptomReport, bool]:
+        with self._lock:
+            try:
+                self._conn.execute(
+                    "INSERT INTO symptom_reports (person_id, symptom_id, severity,"
+                    " mission_day, time) VALUES (?, ?, ?, ?, ?)",
+                    (
+                        report.person_id,
+                        report.symptom_id,
+                        report.severity,
+                        report.mission_day,
+                        report.time,
+                    ),
+                )
+                self._conn.commit()
+            except sqlite3.IntegrityError:
+                self._conn.rollback()
+                existing = self._find_symptom(symptom_key(report))
+                if existing is None:
+                    raise
+                if _same_symptom(existing, report):
+                    return existing, False
+                raise SymptomConflict from None
+        return report, True
+
+    def _find_symptom(
+        self, key: tuple[str, int, str, str]
+    ) -> SymptomReport | None:
+        """The stored symptom report for `key`, or None. Call under the lock."""
+        rows = self._conn.execute(
+            "SELECT person_id, symptom_id, severity, mission_day, time"
+            " FROM symptom_reports WHERE person_id = ? AND mission_day = ?"
+            " AND time = ? AND symptom_id = ?",
+            key,
+        ).fetchall()
+        return SymptomReport(**dict(zip(_SYMPTOM_COLUMNS, rows[0]))) if rows else None
+
+    def symptom_reports(
+        self, person_id: str, symptom_id: str | None = None
+    ) -> list[SymptomReport]:
+        sql = (
+            "SELECT person_id, symptom_id, severity, mission_day, time"
+            " FROM symptom_reports WHERE person_id = ?"
+        )
+        params: tuple[str, ...] = (person_id,)
+        if symptom_id is not None:
+            sql += " AND symptom_id = ?"
+            params += (symptom_id,)
+        sql += " ORDER BY mission_day, time"
+        with self._lock:
+            rows = self._conn.execute(sql, params).fetchall()
+        return [SymptomReport(**dict(zip(_SYMPTOM_COLUMNS, row))) for row in rows]
 
 
 class SupabaseStorage:
@@ -498,6 +614,65 @@ class SupabaseStorage:
         )
         response.raise_for_status()
         return [PainReport(**row) for row in response.json()]
+
+    def add_symptom(self, report: SymptomReport) -> tuple[SymptomReport, bool]:
+        # Read before write, as the other two add methods do: the unique index
+        # in supabase/schema.sql is the backstop, but a read first returns the
+        # exact stored report so the API can answer 200 or 409.
+        existing = self._find_symptom(report)
+        if existing is not None:
+            if _same_symptom(existing, report):
+                return existing, False
+            raise SymptomConflict
+        response = self._client.post(
+            f"{self.url}/rest/v1/symptom_reports",
+            json=report.model_dump(),
+            headers=self._headers(),
+        )
+        if response.status_code == 409:
+            # A concurrent request inserted this key between our read and write.
+            existing = self._find_symptom(report)
+            if existing is not None:
+                if _same_symptom(existing, report):
+                    return existing, False
+                raise SymptomConflict
+        response.raise_for_status()
+        return report, True
+
+    def _find_symptom(self, report: SymptomReport) -> SymptomReport | None:
+        """The stored report with the same natural key, or None."""
+        response = self._client.get(
+            f"{self.url}/rest/v1/symptom_reports",
+            params={
+                "person_id": f"eq.{report.person_id}",
+                "mission_day": f"eq.{report.mission_day}",
+                "time": f"eq.{report.time}",
+                "symptom_id": f"eq.{report.symptom_id}",
+                "select": ",".join(_SYMPTOM_COLUMNS),
+            },
+            headers=self._headers(),
+        )
+        response.raise_for_status()
+        rows = response.json()
+        return SymptomReport(**rows[0]) if rows else None
+
+    def symptom_reports(
+        self, person_id: str, symptom_id: str | None = None
+    ) -> list[SymptomReport]:
+        params = {
+            "person_id": f"eq.{person_id}",
+            "order": "mission_day.asc,time.asc",
+            "select": ",".join(_SYMPTOM_COLUMNS),
+        }
+        if symptom_id is not None:
+            params["symptom_id"] = f"eq.{symptom_id}"
+        response = self._client.get(
+            f"{self.url}/rest/v1/symptom_reports",
+            params=params,
+            headers=self._headers(),
+        )
+        response.raise_for_status()
+        return [SymptomReport(**row) for row in response.json()]
 
 
 _storage: Storage | None = None

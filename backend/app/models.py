@@ -1,4 +1,5 @@
-"""The stored models: one measurement (REQ-27), one pain report (B-3), accounts."""
+"""The stored models: one measurement (REQ-27), one pain report (B-3), one symptom
+report (T-79) and accounts."""
 
 from __future__ import annotations
 
@@ -22,6 +23,8 @@ Notify = Literal["crew", "cmo", "flight_surgeon"]
 
 # Which side of a person's range counts for a condition signal (FORMATS.md 3).
 Side = Literal["above", "below"]
+# What a signal of a condition is: a measured indicator or a reported symptom.
+SignalKind = Literal["indicator", "symptom"]
 # The three-step label of an evidence score, plus no_data (bio2-02).
 ConditionLabel = Literal["no_data", "low", "possible", "review"]
 
@@ -130,6 +133,62 @@ def pain_key(report: PainReport) -> tuple[str, str, int, str]:
     return (report.person_id, report.region_id, report.mission_day, report.time)
 
 
+# A symptom is reported as mild, moderate or severe (Bio 2's proposal, T-79).
+SEVERITY_MIN = 1
+SEVERITY_MAX = 3
+
+
+class SymptomFields(BaseModel):
+    """The fields of one symptom report the astronaut sends (T-79).
+
+    `symptom_id` is a lowercase `snake_case` id; while
+    `config/data/symptoms.csv` does not exist the API does not check it against
+    a file. `severity` is 1 (mild), 2 (moderate) or 3 (severe), stored as the
+    astronaut set it: the score reads only whether the symptom was reported.
+    """
+
+    symptom_id: str = Field(max_length=64)
+    severity: int = Field(ge=SEVERITY_MIN, le=SEVERITY_MAX, strict=True)
+    mission_day: int = Field(gt=0, le=100000, strict=True)
+    time: str
+
+    @field_validator("symptom_id")
+    @classmethod
+    def _check_symptom(cls, value: str) -> str:
+        if not is_valid_id(value):
+            raise ValueError("must be lowercase snake_case")
+        return value
+
+    @field_validator("time")
+    @classmethod
+    def _check_time(cls, value: str) -> str:
+        if not is_valid_time(value):
+            raise ValueError("time must be HH:MM (24-hour)")
+        return value
+
+
+class SymptomReportIn(SymptomFields):
+    """The body of `POST /people/{person_id}/symptoms`: the person is in the path."""
+
+
+class SymptomReport(SymptomFields):
+    """One stored symptom report: the fields above and whose report it is."""
+
+    person_id: str = Field(max_length=64)
+
+    @field_validator("person_id")
+    @classmethod
+    def _check_person(cls, value: str) -> str:
+        if not is_valid_id(value):
+            raise ValueError("must be lowercase snake_case")
+        return value
+
+
+def symptom_key(report: SymptomReport) -> tuple[str, int, str, str]:
+    """The natural key: one report per person, day, time and symptom."""
+    return (report.person_id, report.mission_day, report.time, report.symptom_id)
+
+
 class AttentionRow(BaseModel):
     """The attention.csv row a value crosses (REQ-05).
 
@@ -173,27 +232,40 @@ class BloodPressureState(BaseModel):
 
 
 class ConditionSignal(BaseModel):
-    """One signal a condition rests on (bio2-02).
+    """One signal a condition rests on (bio2-02, T-79).
 
-    `side` is the side of the person's range that counts for the condition, or
-    null when `based_on` left it out; `contribution` is the point the signal
-    added, or null while it is not usable (no reading, no side or no baseline);
+    `kind` is `indicator` for a measured signal and `symptom` for one the
+    person reported; a symptom signal carries `symptom_id` and a point of its
+    own, and the indicator fields stay empty. `side` is the side of the
+    person's range that counts for the condition, or null when `based_on` left
+    it out; `contribution` is the point the signal added, or null while it is
+    not usable (no reading, no side, no baseline, or a symptom not reported);
     `value` is the newest reading, or null when there is none.
+
+    The route leaves out the fields a signal does not set
+    (`response_model_exclude_unset`), so an indicator signal keeps the four
+    fields it had before the symptom layer and a symptom signal adds `kind` and
+    `symptom_id`.
     """
 
-    indicator_id: str
-    side: Side | None
-    contribution: float | None
-    value: float | None
+    kind: SignalKind = "indicator"
+    indicator_id: str | None = None
+    symptom_id: str | None = None
+    side: Side | None = None
+    contribution: float | None = None
+    value: float | None = None
 
 
 class ConditionScore(BaseModel):
-    """The evidence score of one possible condition (bio2-02, REQ-06).
+    """The evidence score of one possible condition (bio2-02, REQ-06, T-79).
 
     `score` is the mean of the signals' points, from 0 to 1, or null while
     fewer than two signals are usable; `label` is `no_data` with no score.
-    The score is evidence, not a probability: the CMO or the flight surgeon
-    confirms, and the route never says the person has the condition.
+    `red_flag` appears as `true` only when the person reported a symptom that
+    this condition lists and `config/data/symptoms.csv` marks as a red flag; it
+    is not a diagnosis and adds no text. The score is evidence, not a
+    probability: the CMO or the flight surgeon confirms, and the route never
+    says the person has the condition.
     """
 
     condition_id: str
@@ -202,6 +274,7 @@ class ConditionScore(BaseModel):
     label: ConditionLabel
     signals: list[ConditionSignal]
     source: str
+    red_flag: bool = False
 
 
 class Account(BaseModel):

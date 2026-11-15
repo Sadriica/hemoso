@@ -1,12 +1,14 @@
-"""The config rows the backend reads: indicators.csv, attention.csv and conditions.csv.
+"""The config rows the backend reads: indicators, attention, conditions, symptoms.
 
 `data/indicators.csv` answers "which indicators exist and what is each unit"
 (entry validation) and "what is each noise floor" (the baseline in
 `app.state`). `rules/attention.csv` answers "when does a value need attention
 and who acts" (REQ-05). `rules/conditions.csv` answers "what may the astronaut
-have and which signals does it rest on" (REQ-06), scored by `app.conditions`.
-All three files are read as FORMATS.md defines them; a missing file reads as no
-rows, as it does while the team fills `config/`.
+have and which signals does it rest on" (REQ-06), scored by `app.conditions`;
+its optional fifth column, `symptoms`, adds the reported symptoms a condition
+lists (T-79). `data/symptoms.csv` answers "which symptoms can be reported and
+which of them are red flags" (T-79). Every file is read as FORMATS.md defines
+it; a missing file reads as no rows, as it does while the team fills `config/`.
 """
 
 from __future__ import annotations
@@ -88,7 +90,8 @@ def load_condition_rows() -> list[dict[str, str]]:
     """rules/conditions.csv in file order; [] while the file is missing.
 
     `based_on` keeps its column text; `app.conditions` splits it into
-    `indicator_id:side` pairs.
+    `indicator_id:side` pairs. The optional `symptoms` column keeps its text
+    too, and a file with four columns has no such key at all (T-79).
     """
     path = config_dir() / "rules" / "conditions.csv"
     if not path.exists():
@@ -99,6 +102,39 @@ def load_condition_rows() -> list[dict[str, str]]:
             for row in csv.DictReader(handle)
             if row["condition_id"].strip()
         ]
+
+
+def load_symptom_rows() -> dict[str, dict[str, str]]:
+    """symptom_id -> the whole symptoms.csv row; {} while the file is missing.
+
+    The file is optional (T-79): `symptom_id`, `name`, `red_flag` and `source`,
+    as Bio 2 proposes in `team/bio2/notes/complementary-proposals.md` section 4.
+    The key is lowercased because an id the API accepts is always lowercase: a
+    `Shaky` row in the file still answers for a stored `shaky`, instead of
+    silently losing the red flag. `scripts/check_content.py` is the right place
+    to reject such a row once T-78 teaches it to read this file.
+    """
+    path = config_dir() / "data" / "symptoms.csv"
+    if not path.exists():
+        return {}
+    with path.open(newline="", encoding="utf-8-sig") as handle:
+        return {
+            row["symptom_id"].strip().lower(): {
+                key: (value or "").strip() for key, value in row.items()
+            }
+            for row in csv.DictReader(handle)
+            if (row.get("symptom_id") or "").strip()
+        }
+
+
+def validate_against_symptoms(symptom_id: str) -> str | None:
+    """Short message when symptoms.csv exists and lacks the id, else None."""
+    rows = load_symptom_rows()
+    if not rows:
+        return None
+    if symptom_id not in rows:
+        return "unknown symptom"
+    return None
 
 
 def validate_against_indicators(entry: Entry) -> str | None:

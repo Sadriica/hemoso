@@ -73,7 +73,7 @@
         "type": "object"
       },
       "ConditionScore": {
-        "description": "The evidence score of one possible condition (bio2-02, REQ-06).\n\n`score` is the mean of the signals' points, from 0 to 1, or null while\nfewer than two signals are usable; `label` is `no_data` with no score.\nThe score is evidence, not a probability: the CMO or the flight surgeon\nconfirms, and the route never says the person has the condition.",
+        "description": "The evidence score of one possible condition (bio2-02, REQ-06, T-79).\n\n`score` is the mean of the signals' points, from 0 to 1, or null while\nfewer than two signals are usable; `label` is `no_data` with no score.\n`red_flag` appears as `true` only when the person reported a symptom that\nthis condition lists and `config/data/symptoms.csv` marks as a red flag; it\nis not a diagnosis and adds no text. The score is evidence, not a\nprobability: the CMO or the flight surgeon confirms, and the route never\nsays the person has the condition.",
         "properties": {
           "condition_id": {
             "title": "Condition Id",
@@ -92,6 +92,11 @@
           "name": {
             "title": "Name",
             "type": "string"
+          },
+          "red_flag": {
+            "default": false,
+            "title": "Red Flag",
+            "type": "boolean"
           },
           "score": {
             "anyOf": [
@@ -128,7 +133,7 @@
         "type": "object"
       },
       "ConditionSignal": {
-        "description": "One signal a condition rests on (bio2-02).\n\n`side` is the side of the person's range that counts for the condition, or\nnull when `based_on` left it out; `contribution` is the point the signal\nadded, or null while it is not usable (no reading, no side or no baseline);\n`value` is the newest reading, or null when there is none.",
+        "description": "One signal a condition rests on (bio2-02, T-79).\n\n`kind` is `indicator` for a measured signal and `symptom` for one the\nperson reported; a symptom signal carries `symptom_id` and a point of its\nown, and the indicator fields stay empty. `side` is the side of the\nperson's range that counts for the condition, or null when `based_on` left\nit out; `contribution` is the point the signal added, or null while it is\nnot usable (no reading, no side, no baseline, or a symptom not reported);\n`value` is the newest reading, or null when there is none.\n\nThe route leaves out the fields a signal does not set\n(`response_model_exclude_unset`), so an indicator signal keeps the four\nfields it had before the symptom layer and a symptom signal adds `kind` and\n`symptom_id`.",
         "properties": {
           "contribution": {
             "anyOf": [
@@ -142,7 +147,23 @@
             "title": "Contribution"
           },
           "indicator_id": {
-            "title": "Indicator Id",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Indicator Id"
+          },
+          "kind": {
+            "default": "indicator",
+            "enum": [
+              "indicator",
+              "symptom"
+            ],
+            "title": "Kind",
             "type": "string"
           },
           "side": {
@@ -160,6 +181,17 @@
             ],
             "title": "Side"
           },
+          "symptom_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Symptom Id"
+          },
           "value": {
             "anyOf": [
               {
@@ -172,12 +204,6 @@
             "title": "Value"
           }
         },
-        "required": [
-          "indicator_id",
-          "side",
-          "contribution",
-          "value"
-        ],
         "title": "ConditionSignal",
         "type": "object"
       },
@@ -452,6 +478,80 @@
         "title": "SessionOut",
         "type": "object"
       },
+      "SymptomReport": {
+        "description": "One stored symptom report: the fields above and whose report it is.",
+        "properties": {
+          "mission_day": {
+            "exclusiveMinimum": 0.0,
+            "maximum": 100000.0,
+            "title": "Mission Day",
+            "type": "integer"
+          },
+          "person_id": {
+            "maxLength": 64,
+            "title": "Person Id",
+            "type": "string"
+          },
+          "severity": {
+            "maximum": 3.0,
+            "minimum": 1.0,
+            "title": "Severity",
+            "type": "integer"
+          },
+          "symptom_id": {
+            "maxLength": 64,
+            "title": "Symptom Id",
+            "type": "string"
+          },
+          "time": {
+            "title": "Time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symptom_id",
+          "severity",
+          "mission_day",
+          "time",
+          "person_id"
+        ],
+        "title": "SymptomReport",
+        "type": "object"
+      },
+      "SymptomReportIn": {
+        "description": "The body of `POST /people/{person_id}/symptoms`: the person is in the path.",
+        "properties": {
+          "mission_day": {
+            "exclusiveMinimum": 0.0,
+            "maximum": 100000.0,
+            "title": "Mission Day",
+            "type": "integer"
+          },
+          "severity": {
+            "maximum": 3.0,
+            "minimum": 1.0,
+            "title": "Severity",
+            "type": "integer"
+          },
+          "symptom_id": {
+            "maxLength": 64,
+            "title": "Symptom Id",
+            "type": "string"
+          },
+          "time": {
+            "title": "Time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "symptom_id",
+          "severity",
+          "mission_day",
+          "time"
+        ],
+        "title": "SymptomReportIn",
+        "type": "object"
+      },
       "ValidationError": {
         "properties": {
           "ctx": {
@@ -713,7 +813,7 @@
     },
     "/people/{person_id}/conditions": {
       "get": {
-        "description": "The evidence score of every condition in config/rules/conditions.csv.\n\nOne point per signal: 1 when the newest reading crossed an attention row on\nthe signal's side, 0.5 when it is outside the person's baseline on that\nside (both from `app.state`), 0 otherwise; the score is the mean of the\nusable signals (bio2-02, FORMATS.md section 3 point 3).",
+        "description": "The evidence score of every condition in config/rules/conditions.csv.\n\nOne point per signal: 1 when the newest reading crossed an attention row on\nthe signal's side, 0.5 when it is outside the person's baseline on that\nside (both from `app.state`), 0 otherwise; the score is the mean of the\nusable signals (bio2-02, FORMATS.md section 3 point 3). A reported symptom\nthat a row lists in its optional `symptoms` column is one more usable\nsignal (T-79): 0.5 when only that row lists it, 0.25 when two or more do.\n\nFields a condition leaves unset are left out of the answer, so a\nfour-column `conditions.csv` returns exactly the body it returned before\nthe symptom layer: no `kind` on an indicator signal, no `red_flag`.",
         "operationId": "get_conditions_people__person_id__conditions_get",
         "parameters": [
           {
@@ -1022,6 +1122,120 @@
           }
         },
         "summary": "Create Pain"
+      }
+    },
+    "/people/{person_id}/symptoms": {
+      "get": {
+        "description": "One person's symptom reports, oldest first, optionally for one symptom.\n\n`symptom_id` filters; an unknown person is an empty list, not a 404.",
+        "operationId": "list_symptoms_people__person_id__symptoms_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "person_id",
+            "required": true,
+            "schema": {
+              "title": "Person Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "symptom_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Symptom Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SymptomReport"
+                  },
+                  "title": "Response List Symptoms People  Person Id  Symptoms Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Symptoms"
+      },
+      "post": {
+        "description": "Store one symptom report (T-79, pending T-78).\n\nThe person is in the path, so the same report sent twice from the\nfrontend's outbox answers 200 with the stored report and adds nothing; a\ndifferent severity for the same person, day, time and symptom is a 409.\nWhile `config/data/symptoms.csv` exists the symptom id must be one of its\nrows; without that file any lowercase `snake_case` id is accepted. The\nseverity is stored as the astronaut set it and adds nothing to the score.",
+        "operationId": "create_symptom_people__person_id__symptoms_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "person_id",
+            "required": true,
+            "schema": {
+              "title": "Person Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SymptomReportIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The exact same symptom report was already stored."
+          },
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SymptomReport"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "409": {
+            "description": "A symptom report for this person, day, time and symptom exists with a different severity."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Symptom"
       }
     },
     "/sessions": {

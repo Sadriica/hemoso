@@ -9,9 +9,20 @@ person's baseline on that side, 0 otherwise. Fewer than two usable signals is
 `no_data`, never a low score. The rule and its test vectors are in
 `docs/findings/bio2-02-evidence-score.md`.
 
+The optional fifth column of `rules/conditions.csv`, `symptoms`, adds the
+symptoms the person reported and this condition lists (Bio 2's proposal,
+`team/bio2/notes/complementary-proposals.md` section 4; T-79). A reported
+symptom counts as one more usable signal, worth `SYMPTOM_SPECIFIC_POINT` when
+only this condition lists it and `SYMPTOM_SHARED_POINT` when two or more
+conditions do. A reported symptom that `data/symptoms.csv` marks `red_flag`
+`yes` and this condition lists sets `red_flag` on the result, whatever the
+score. The score never becomes a diagnosis: no text is written here, and the
+CMO or the flight surgeon confirms.
+
 The arithmetic is pure: no file, network or clock access. The route reads the
-rows with `app.indicators` and the history with the store, so the same functions
-can be checked against the finding's vectors in `tests/test_conditions.py`.
+rows with `app.indicators` and the history and reports with the store, so the
+same functions can be checked against the finding's vectors in
+`tests/test_conditions.py` and Bio 2's example in `tests/test_symptoms.py`.
 
 Where the decision leaves room, this module resolves it as follows:
 
@@ -41,20 +52,39 @@ Where the decision leaves room, this module resolves it as follows:
   finding touches either end.
 - The score is reported with three decimals, as the finding's vectors write it
   (0.167, 0.667); the label is read from the unrounded mean.
+- A symptom counts once, through the newest mission day that holds any report
+  of that person (`newest_day_reports`): an older day is history, not evidence
+  for today, and every condition reads the same day. `severity` is stored but
+  adds nothing to the score. A symptom this condition lists and the person did
+  not report is still shown, with no point, so the screen can tell what the
+  score rests on. The red flag needs `data/symptoms.csv`: without that file no
+  row says which symptoms are red flags, and no flag is set.
 """
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Sequence
+from collections.abc import Collection, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 
-from .models import ConditionScore, ConditionSignal, Entry
+from .models import ConditionScore, ConditionSignal, Entry, SymptomReport
 from .state import attention_for, baseline, cited_rows, state_for, window
 
 # One signal whose newest value crossed an attention row on its side.
 ATTENTION_POINT = 1.0
 # One signal outside the person's baseline on its side.
 BASELINE_POINT = 0.5
+# A reported symptom that only this condition lists (Bio 2's proposal, T-79:
+# "a specific symptom"; Assumption, pending T-78).
+SYMPTOM_SPECIFIC_POINT = 0.5
+# A reported symptom that two or more conditions list ("shared"; Bio 2's
+# proposal, T-79; Assumption, pending T-78).
+SYMPTOM_SHARED_POINT = 0.25
+# How many condition rows must list a symptom before it counts as shared. The
+# proposal names five shared symptoms instead of a count; a count keeps the
+# rule from depending on which conditions exist (Assumption, pending T-78).
+SYMPTOM_SHARED_FROM = 2
+# The cell value of `red_flag` in data/symptoms.csv that marks a red flag.
+RED_FLAG_YES = "yes"
 # Fewer usable signals than this gives no_data (bio2-02).
 MIN_USABLE_SIGNALS = 2
 # The label bands, narrowest first: a score takes the first label it is below.
@@ -160,6 +190,107 @@ def score_for(points: Sequence[float | None]) -> float | None:
     return sum(usable) / len(usable)
 
 
+def symptom_ids(row: Mapping[str, str]) -> list[str]:
+    """The `symptoms` column of one conditions.csv row, in file order.
+
+    A file with four columns has no `symptoms` key, so every row lists none and
+    the score is the one the indicator signals alone give (T-79). An id written
+    twice in one row is one symptom: it cannot count twice.
+    """
+    return list(dict.fromkeys(row.get("symptoms", "").split()))
+
+
+def newest_day_reports(reports: Iterable[SymptomReport]) -> list[SymptomReport]:
+    """The person's reports of the newest mission day that holds any report.
+
+    A report answers "how does the person feel" for its own day only: an older
+    day is history, not evidence for today. The day is chosen over every
+    report of the person, not per condition or per symptom, so all conditions
+    read the same day, and `mission_day` is the only thing ordered here: a
+    clock time is not a date. The person's own reports arrive oldest first from
+    the store; the returned list keeps that order.
+    """
+    rows = list(reports)
+    if not rows:
+        return []
+    newest = max(report.mission_day for report in rows)
+    return [report for report in rows if report.mission_day == newest]
+
+
+def shared_symptoms(rows: Iterable[Mapping[str, str]]) -> set[str]:
+    """The symptom ids that `SYMPTOM_SHARED_FROM` or more conditions list.
+
+    `rows` are all rows of `rules/conditions.csv`: a symptom both glucose
+    conditions list is "shared" and counts less than a symptom only one of
+    them names (Bio 2's proposal, T-79).
+    """
+    counts: dict[str, int] = {}
+    for row in rows:
+        for symptom_id in symptom_ids(row):
+            counts[symptom_id] = counts.get(symptom_id, 0) + 1
+    return {
+        symptom_id
+        for symptom_id, count in counts.items()
+        if count >= SYMPTOM_SHARED_FROM
+    }
+
+
+def symptom_point(symptom_id: str, shared: Collection[str]) -> float:
+    """The point one reported symptom adds: shared or specific."""
+    return SYMPTOM_SHARED_POINT if symptom_id in shared else SYMPTOM_SPECIFIC_POINT
+
+
+def reported_ids(reports: Iterable[SymptomReport]) -> set[str]:
+    """The symptom ids the person reported among `reports`."""
+    return {report.symptom_id for report in reports}
+
+
+def is_red_flag(row: Mapping[str, str]) -> bool:
+    """Whether a symptoms.csv row marks the symptom as a red flag."""
+    return str(row.get("red_flag", "")).strip().lower() == RED_FLAG_YES
+
+
+def symptom_signals(
+    row: Mapping[str, str],
+    reports: Sequence[SymptomReport],
+    shared: Collection[str],
+) -> list[ConditionSignal]:
+    """One signal per symptom this condition lists, in the column's order.
+
+    A symptom the person reported on the newest day adds its point; one they
+    did not report is listed with no point, so the screen shows what the score
+    rests on. `severity` does not change the point.
+    """
+    reported = reported_ids(reports)
+    signals: list[ConditionSignal] = []
+    for symptom_id in symptom_ids(row):
+        signals.append(
+            ConditionSignal(
+                kind="symptom",
+                symptom_id=symptom_id,
+                contribution=(
+                    symptom_point(symptom_id, shared)
+                    if symptom_id in reported
+                    else None
+                ),
+            )
+        )
+    return signals
+
+
+def has_red_flag(
+    row: Mapping[str, str],
+    reports: Sequence[SymptomReport],
+    symptom_rows: Mapping[str, Mapping[str, str]],
+) -> bool:
+    """Whether a red-flag symptom this condition lists was reported that day."""
+    reported = reported_ids(reports)
+    return any(
+        symptom_id in reported and is_red_flag(symptom_rows.get(symptom_id, {}))
+        for symptom_id in symptom_ids(row)
+    )
+
+
 def label_for(score: float | None) -> str:
     """`no_data` without a score, else `low`, `possible` or `review`."""
     if score is None:
@@ -171,9 +302,20 @@ def label_for(score: float | None) -> str:
 
 
 def condition_result(
-    row: dict[str, str], latest: dict[str, LatestValue | None]
+    row: dict[str, str],
+    latest: dict[str, LatestValue | None],
+    reports: Iterable[SymptomReport] = (),
+    symptom_rows: Mapping[str, Mapping[str, str]] | None = None,
+    shared: Collection[str] = (),
 ) -> ConditionScore:
-    """One row of `rules/conditions.csv` as the route returns it."""
+    """One row of `rules/conditions.csv` as the route returns it.
+
+    `reports` are the person's symptom reports, oldest first; only the newest
+    mission day counts (`newest_day_reports`). `symptom_rows` is
+    `data/symptoms.csv` and `shared` the ids `shared_symptoms` returned; both
+    may be empty, which leaves every symptom specific and no flag set.
+    """
+    today = newest_day_reports(reports)
     signals: list[ConditionSignal] = []
     for indicator_id, side in parse_signals(row["based_on"]):
         newest = latest.get(indicator_id)
@@ -185,7 +327,12 @@ def condition_result(
                 value=None if newest is None else newest.value,
             )
         )
+    signals.extend(symptom_signals(row, today, shared))
     score = score_for([signal.contribution for signal in signals])
+    rows = symptom_rows or {}
+    # `red_flag` is passed only when it is true: the route leaves unset fields
+    # out, so a condition with no red flag keeps the fields it had before T-79.
+    flag = {"red_flag": True} if has_red_flag(row, today, rows) else {}
     return ConditionScore(
         condition_id=row["condition_id"],
         name=row["name"],
@@ -193,4 +340,5 @@ def condition_result(
         label=label_for(score),
         signals=signals,
         source=row["source"],
+        **flag,
     )
