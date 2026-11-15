@@ -50,7 +50,8 @@ Your CMO or flight surgeon confirms.
 
 ### watch
 
-Your lapses have been more frequent than usual for several days.
+You had more than 3 lapses, the line the crew uses, or more than your usual
+range.
 
 Protect your sleep tonight and take the test again tomorrow. Assumption.
 

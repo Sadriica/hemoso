@@ -27,7 +27,10 @@ export function parseCsv(text: string): Record<string, string>[] {
   return parseCsvTable(text).records
 }
 
-export function parseCsvTable(text: string): CsvTable {
+// `optional` names one column a row may leave out (FORMATS.md: the `symptoms`
+// column of conditions.csv). A row one cell short gets an empty cell there; any
+// other count is still a malformed row.
+export function parseCsvTable(text: string, optional?: string): CsvTable {
   // Strip a UTF-8 BOM so a file saved from a spreadsheet still parses.
   const cleaned = text.replace(/^\uFEFF/, '')
   if (cleaned.trim() === '') return { headers: [], records: [] }
@@ -36,9 +39,13 @@ export function parseCsvTable(text: string): CsvTable {
   if (rows.length === 0) return { headers: [], records: [] }
   const headers = parseRow(rows[0].content).map((header) => header.trim())
   const records: Record<string, string>[] = []
+  const optionalIndex = optional === undefined ? -1 : headers.indexOf(optional)
 
   for (let i = 1; i < rows.length; i++) {
     const cells = parseRow(rows[i].content)
+    if (optionalIndex >= 0 && cells.length === headers.length - 1) {
+      cells.splice(optionalIndex, 0, '')
+    }
     if (cells.length !== headers.length) {
       throw new CsvError(
         rows[i].lineNumber,
@@ -65,12 +72,11 @@ export function parseCsvFile(
   text: string,
   problems: string[],
   required: readonly string[] = [],
+  optional?: string,
 ): Record<string, string>[] {
   try {
-    const table = parseCsvTable(text)
-    const missing = required.filter(
-      (column) => !table.headers.includes(column),
-    )
+    const table = parseCsvTable(text, optional)
+    const missing = required.filter((column) => !table.headers.includes(column))
     for (const column of missing) {
       problems.push(`Missing column '${column}' in ${fileName}.`)
     }

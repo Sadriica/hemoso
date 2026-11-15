@@ -38,9 +38,18 @@ describe('attentionFor', () => {
     })
   })
 
-  it('treats a value equal to the threshold as in range', () => {
-    expect(attentionFor(100, [aboveRule])).toEqual({ kind: 'in_range' })
-    expect(attentionFor(10, [belowRule])).toEqual({ kind: 'in_range' })
+  it('triggers a rule when the value is exactly on the threshold', () => {
+    // Q4 (Bio 2, Sun 15 Nov): "140/90 or higher" includes 140/90.
+    expect(attentionFor(100, [aboveRule])).toEqual({
+      kind: 'attention',
+      level: 'high',
+      rule: aboveRule,
+    })
+    expect(attentionFor(10, [belowRule])).toEqual({
+      kind: 'attention',
+      level: 'low',
+      rule: belowRule,
+    })
   })
 
   it('says there are no rules when the indicator has none, never in range', () => {

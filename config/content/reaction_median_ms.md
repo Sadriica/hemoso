@@ -52,7 +52,8 @@ Your CMO or flight surgeon confirms.
 
 ### watch
 
-Your answers have been slower than your usual range for several days.
+Your answers are above 500 ms, the line the crew uses, or slower than your usual
+range.
 
 Protect your sleep tonight and take the test again tomorrow. Assumption.
 

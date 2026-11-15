@@ -1,8 +1,11 @@
 import type { ConditionRule, ConditionSignalRule } from '../domain/types'
 import { parseCsvFile } from './csv'
 
-// The four columns of FORMATS.md section 3, in order.
+// The required columns of FORMATS.md section 3. The header may also hold the
+// optional `symptoms` column (T-78), which a row may leave out. An id written
+// twice in one row is one symptom.
 const REQUIRED_COLUMNS = ['condition_id', 'name', 'based_on', 'source']
+const OPTIONAL_COLUMN = 'symptoms'
 
 // Validates and reads one conditions.csv (REQ-06). Problems are appended in
 // place; a row that cannot be shown safely (no id, no name, no source) is left
@@ -16,7 +19,13 @@ export function parseConditions(
 ): ConditionRule[] {
   const conditions: ConditionRule[] = []
   const seen = new Set<string>()
-  const rows = parseCsvFile(fileName, text, problems, REQUIRED_COLUMNS)
+  const rows = parseCsvFile(
+    fileName,
+    text,
+    problems,
+    REQUIRED_COLUMNS,
+    OPTIONAL_COLUMN,
+  )
   for (const row of rows) {
     const id = row.condition_id?.trim() ?? ''
     const name = row.name?.trim() ?? ''
@@ -47,7 +56,12 @@ export function parseConditions(
         )
       }
     }
-    conditions.push({ id, name, signals, source })
+    const symptoms = [
+      ...new Set(
+        (row.symptoms ?? '').split(/\s+/).filter((token) => token !== ''),
+      ),
+    ]
+    conditions.push({ id, name, signals, symptoms, source })
   }
   return conditions
 }

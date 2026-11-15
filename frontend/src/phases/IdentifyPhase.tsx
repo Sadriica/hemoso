@@ -85,11 +85,6 @@ export default function IdentifyPhase({
   // A face is on this device when the screen opens: that is what makes it the
   // first way in (REQ-36).
   const [hasFace] = useState(() => loadFaces().length > 0)
-  // After a PIN sign-in on a device with a camera and no face saved for that
-  // person, the screen offers to add one before the report.
-  const [offer, setOffer] = useState(false)
-  const [offerDone, setOfferDone] = useState(false)
-  const offerButtonRef = useRef<HTMLButtonElement>(null)
   // Sign in and Create an account are two tabs of one block that is always on
   // screen when the server has accounts; nothing waits behind a closed row.
   const focusPin = useRef(false)
@@ -107,7 +102,6 @@ export default function IdentifyPhase({
   const faceTitleId = useId()
   const accountTitleId = useId()
   const demoTitleId = useId()
-  const offerTitleId = useId()
 
   // A token the server stopped accepting: the PIN of that person, right here.
   // The notice stays until the person is in again.
@@ -198,13 +192,9 @@ export default function IdentifyPhase({
     onDone()
   }
 
-  // A person is in with a PIN: the report comes next, unless the device has a
-  // camera and no face of theirs, when adding one is offered first.
-  const afterPinSignIn = (person: string) => {
-    if (canUseCamera() && !loadFaces().some((face) => face.personId === person)) {
-      setOffer(true)
-      return
-    }
+  // A person is in with a PIN: the report comes next. Adding a face is
+  // offered there, as a quiet line (components/FaceOffer.tsx), never in the way.
+  const afterPinSignIn = () => {
     onDone()
   }
 
@@ -246,7 +236,7 @@ export default function IdentifyPhase({
       return
     }
     setPin('')
-    afterPinSignIn(person)
+    afterPinSignIn()
   }
 
   async function submitCreate(event: FormEvent<HTMLFormElement>) {
@@ -278,7 +268,7 @@ export default function IdentifyPhase({
     setMissionStart(person, isIsoDate(startDate) ? startDate : todayIso())
     setPin('')
     setConfirmPin('')
-    afterPinSignIn(person)
+    afterPinSignIn()
   }
 
   const problemText = problem === null ? null : signInCopy.errors[problem]
@@ -371,61 +361,7 @@ export default function IdentifyPhase({
         )}
 
         <div className="identify__panel panel panel--cut" data-enter="panel">
-          {offer && session.personId !== null && (
-              <section className="identify__offer" aria-labelledby={offerTitleId}>
-                <h2 id={offerTitleId} className="capsule signin__title">
-                  {signInCopy.faceOfferHeading}
-                </h2>
-                <p className="signin__text">{signInCopy.faceOfferNote}</p>
-                {faceOpen && (
-                  <Suspense fallback={<p role="status">{strings.face.opening}</p>}>
-                    <FaceSignIn
-                      personId={session.personId}
-                      onPersonSelected={faceMatched}
-                      onFocusPicker={() => offerButtonRef.current?.focus()}
-                      // Signed in already: no tab to point at.
-                      fallback="register"
-                      onClose={() => {
-                        setFaceOpen(false)
-                        setOfferDone(
-                          loadFaces().some((face) => face.personId === session.personId),
-                        )
-                      }}
-                    />
-                  </Suspense>
-                )}
-                {!faceOpen && (
-                  <div className="signin__actions">
-                    {offerDone ? (
-                      <button type="button" className="journey-button journey-button--solid" onClick={onDone}>
-                        <span>{copy.next}</span>
-                        <span className="journey-button__arrow" aria-hidden="true">
-                          →
-                        </span>
-                      </button>
-                    ) : (
-                      <>
-                        <button
-                          ref={offerButtonRef}
-                          type="button"
-                          className="journey-button journey-button--solid"
-                          onClick={() => setFaceOpen(true)}
-                        >
-                          <span>{signInCopy.faceOfferAction}</span>
-                          <span className="journey-button__arrow" aria-hidden="true">
-                            ◎
-                          </span>
-                        </button>
-                        <button type="button" className="signin__link" onClick={onDone}>
-                          {signInCopy.faceOfferSkip}
-                        </button>
-                      </>
-                    )}
-                  </div>
-                )}
-              </section>
-          )}
-          {!offer && (
+          {(
             <>
               <section className="identify__demo" aria-labelledby={demoTitleId}>
       <h2 id={demoTitleId} className="capsule signin__title">
@@ -458,9 +394,10 @@ export default function IdentifyPhase({
                           type="radio"
                           name="crew"
                           value={id}
-                          // The name a screen reader hears is the person id, the same
-                          // name the rest of the app uses.
-                          aria-label={id}
+                          // The name a screen reader hears is the person's name in
+                          // plain words, the one the top bar and the status use,
+                          // not the id with its underscores.
+                          aria-label={personName(id)}
                           checked={session.personId === id}
                           onChange={() => pickName(id)}
                         />
@@ -503,7 +440,7 @@ export default function IdentifyPhase({
           )}
         </div>
 
-        {!offer && session.accountsOffered && (
+        {session.accountsOffered && (
           <div className="identify__more" data-enter="rest">
             <div
               className="identify__tabs"
@@ -724,13 +661,6 @@ function SceneFallback() {
   )
 }
 
-// A browser with a camera API: only then is adding a face offered.
-function canUseCamera(): boolean {
-  return (
-    typeof navigator !== 'undefined' &&
-    typeof navigator.mediaDevices?.getUserMedia === 'function'
-  )
-}
 
 // The PIN field keeps digits only: a pasted space cannot make a PIN invalid.
 function digitsOnly(value: string): string {

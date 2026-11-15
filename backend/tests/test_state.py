@@ -32,6 +32,9 @@ FIXTURES = (
 )
 BASELINE = json.loads((FIXTURES / "baseline.json").read_text(encoding="utf-8"))
 ATTENTION = json.loads((FIXTURES / "attention.json").read_text(encoding="utf-8"))
+# The window rule of phys-02 (Sun 15 Nov), the same seven cases the frontend
+# checks in frontend/src/domain/state.test.ts: one file defines the window.
+WINDOW_VECTORS = json.loads((FIXTURES / "window.json").read_text(encoding="utf-8"))
 
 # A source with a link: only these rows can raise needs_review (phys-02).
 CITED = "https://example.org/limit"
@@ -131,7 +134,12 @@ def test_baseline_vectors(case):
     assert got == case["expected"]
 
 
-@pytest.mark.parametrize("case", ATTENTION["cases"], ids=lambda case: case["name"])
+# The shared vectors now record that a value on the threshold triggers its
+# row (Bio 2's Q4 decision, Sun 15 Nov); every case of the file runs here.
+SHARED_ATTENTION = ATTENTION["cases"]
+
+
+@pytest.mark.parametrize("case", SHARED_ATTENTION, ids=lambda case: case["name"])
 def test_attention_vectors(case):
     row = attention_for(case["input"]["rows"], case["input"]["value"])
     got = (
@@ -141,6 +149,53 @@ def test_attention_vectors(case):
     )
 
     assert got == case["expected"]
+
+
+@pytest.mark.parametrize(
+    ("side", "threshold", "value", "matches"),
+    [
+        ("above", 100, 100, True),
+        ("above", 100, 99.9, False),
+        ("below", 90, 90, True),
+        ("below", 90, 90.1, False),
+    ],
+)
+def test_a_value_on_the_threshold_triggers_the_row(side, threshold, value, matches):
+    row = {
+        "indicator_id": "example_indicator",
+        "side": side,
+        "threshold": threshold,
+        "attention_level": "example_level",
+        "notify": "crew",
+        "source": CITED,
+    }
+
+    assert (attention_for([row], value) is not None) is matches
+
+
+@pytest.mark.parametrize("case", WINDOW_VECTORS["cases"], ids=lambda case: case["name"])
+def test_window_vectors(case):
+    given, expected = case["input"], case["expected"]
+    history = [
+        Entry(**{**ENTRY, "value": row["value"], "mission_day": row["mission_day"],
+                 "time": row["time"]})
+        for row in given["history"]
+    ]
+    test = given["test"]
+
+    recent = window(history, "rest", (test["mission_day"], test["time"]))
+    daily = daily_values(recent)
+    median, spread = baseline(daily, given["min_spread"])
+
+    assert daily == pytest.approx(expected["daily_values"])
+    assert len(daily) == expected["n"]
+    if expected["median"] is None:
+        assert median is None and spread is None
+    else:
+        assert median == pytest.approx(expected["median"])
+        # The file rounds `spread` to 4 decimals.
+        assert spread == pytest.approx(expected["spread"], abs=5e-5)
+    assert state_for(test["value"], median, spread, None) == expected["state"]
 
 
 def temperature_row(source: str) -> dict:

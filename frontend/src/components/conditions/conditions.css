@@ -53,6 +53,18 @@
   background: var(--color-bg-raised);
 }
 
+.condition--urgent {
+  --step: var(--status-review-text);
+  border-left-width: 6px;
+}
+
+.condition__urgent {
+  margin: 0;
+  color: var(--status-review-text);
+  font-family: var(--font-display);
+  font-size: var(--text-h2);
+}
+
 .condition--review {
   --step: var(--status-review-text);
   border-left-width: 6px;

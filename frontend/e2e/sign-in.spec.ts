@@ -159,13 +159,18 @@ async function createAccount(page: Page): Promise<void> {
   await page.getByRole('button', { name: strings.signIn.createAction }).click()
 }
 
-// A PIN sign-in on a browser with a camera offers to add a face before the
-// report; these tests are about the PIN, so they decline it.
+// After a PIN sign-in the check goes straight on to the report. On a browser
+// with a camera the report offers face sign-in as one quiet line; these tests
+// are about the PIN, so they say "Not now", and the line must not come back.
 async function declineFaceOffer(page: Page): Promise<void> {
-  await expect(
-    page.getByRole('heading', { name: strings.signIn.faceOfferHeading }),
-  ).toBeVisible()
-  await page.getByRole('button', { name: strings.signIn.faceOfferSkip }).click()
+  await expect(page.getByRole('heading', { level: 1 })).toContainText(
+    strings.phases.report.headline[0],
+  )
+  const notNow = page.getByRole('button', { name: strings.signIn.faceOfferSkip })
+  if ((await notNow.count()) > 0) {
+    await notNow.click()
+    await expect(notNow).toHaveCount(0)
+  }
 }
 
 test('creates an account, signs in and sends its token on the person routes', async ({

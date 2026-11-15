@@ -1,4 +1,6 @@
 import { lazy, Suspense, useCallback, useState, type RefObject } from 'react'
+import FaceOffer from '../components/FaceOffer'
+import { isDemoPerson } from '../hooks/useSession'
 import { SERVER_ID_PREFIX } from '../data/historyClient'
 import PhaseHeading from '../components/PhaseHeading'
 import type { EntryStore } from '../data/entryStore'
@@ -8,6 +10,8 @@ import type {
   Entry as EntryRecord,
 } from '../domain/types'
 import Disclosure from '../components/Disclosure'
+import SymptomChecklist from '../components/symptoms/SymptomChecklist'
+import type { SymptomDef } from '../domain/symptoms'
 import Entry from '../screens/Entry'
 import ReactionCheck from '../reaction/ReactionCheck'
 import { REACTION_LAPSES_ID, REACTION_MEDIAN_ID } from '../reaction/ids'
@@ -29,6 +33,8 @@ interface ReportPhaseProps {
   /** This person's entries, live from the store. */
   entries: EntryRecord[]
   serverConfigured: boolean
+  /** config/data/symptoms.csv; with none the symptom list is not shown. */
+  symptoms?: SymptomDef[]
   onBack: () => void
   onDone: () => void
   /** The top bar switch is on: the scene stands still. */
@@ -46,6 +52,7 @@ export default function ReportPhase({
   rules,
   entries,
   serverConfigured,
+  symptoms = [],
   onBack,
   onDone,
   still = false,
@@ -87,6 +94,12 @@ export default function ReportPhase({
     <section className="phase phase--report" aria-labelledby="phase-heading">
       <PhaseHeading ref={headingRef} eyebrow={copy.eyebrow} lines={copy.headline} intro={copy.intro} />
 
+      {/* Signed in with a PIN: adding the face for next time is one quiet line
+          here, not a step before the check. The demo astronaut has no account. */}
+      {serverConfigured && !isDemoPerson(personId) && (
+        <FaceOffer personId={personId} />
+      )}
+
       <div className="scene-band scene-band--report" data-enter="scene" aria-hidden="true">
         <Suspense fallback={null}>
           <OrbitalScene
@@ -110,7 +123,9 @@ export default function ReportPhase({
             onNext={onDone}
           />
         </div>
-        <p className="report__count" role="status">
+        {/* Not a live region: the save result of the form is the one status
+            announced when a reading is saved. */}
+        <p className="report__count">
           {copy.logged(logged)}
         </p>
       </div>
@@ -129,6 +144,8 @@ export default function ReportPhase({
         </Disclosure>
       </div>
       )}
+
+      <SymptomChecklist personId={personId} defs={symptoms} entries={entries} />
 
       <div className="phase__actions" data-enter="rest">
         <button type="button" className="text-link" onClick={onBack}>

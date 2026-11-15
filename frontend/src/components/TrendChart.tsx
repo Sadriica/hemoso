@@ -209,7 +209,12 @@ export default function TrendChart({
       data-draw={drawKey}
       ref={figureRef}
     >
-      <p className="tc__readout" id={readoutId} aria-live="polite">
+      {/* The visible readout is hidden from the accessibility tree; the group
+          still points at it as its description. What a screen reader hears
+          when the person moves is the hidden live line below, which only
+          holds a reading that was picked, so opening the panel or changing a
+          filter announces nothing. */}
+      <p className="tc__readout" id={readoutId} aria-hidden="true">
         {readout === null ? (
           newest === null ? (
             <span className="tc__readout-idle">
@@ -237,6 +242,15 @@ export default function TrendChart({
           </>
         )}
       </p>
+
+      <span className="sr-only" aria-live="polite" aria-atomic="true">
+        {readout === null || activeSeries === undefined
+          ? ''
+          : `${readout}. ${strings.history.trend.point({
+              index: activeIndex + 1,
+              count: activeSeries.points.length,
+            })}`}
+      </span>
 
       <div
         className="tc__focus"

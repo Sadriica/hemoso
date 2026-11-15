@@ -3,6 +3,7 @@ import {
   useId,
   useRef,
   useState,
+  useSyncExternalStore,
   type CSSProperties,
   type FormEvent,
   type KeyboardEvent,
@@ -18,7 +19,7 @@ import type {
   Indicator,
   MeasurementContext,
 } from '../domain/types'
-import type { EntryStore } from '../data/entryStore'
+import type { EntryStore, Outbox } from '../data/entryStore'
 import { IndicatorIcon, StatusIcon, systemColor } from '../icons'
 import AttentionBadge from '../components/AttentionBadge'
 import { statusBadgeKind, statusText } from '../components/attentionText'
@@ -182,6 +183,18 @@ function ReportForm({
   const [dayError, setDayError] = useState<string | undefined>()
   const [timeError, setTimeError] = useState<string | undefined>()
   const [status, setStatus] = useState('')
+  // The readings of the last save and how many the server had refused before
+  // it, so the sentence can follow the outbox: waiting, then sent.
+  const [lastSave, setLastSave] = useState<{
+    ids: string[]
+    refusedBefore: number
+  } | null>(null)
+  // Subscribed so the sentence is read again whenever the outbox changes.
+  useSyncExternalStore(
+    (listener) => store.subscribe(listener),
+    () => outboxKey(store),
+  )
+  const sendState = sendStateOf(store, lastSave, serverConfigured)
   // Rows saved in this check, so they keep reading as done once cleared, and
   // whether the last action was a save (it offers the way on).
   const [savedRows, setSavedRows] = useState<Record<string, boolean>>({})
@@ -272,8 +285,10 @@ function ReportForm({
     setDayError(undefined)
     setTimeError(undefined)
 
+    const savedIds: string[] = []
+    const refusedBefore = refusedCount(store)
     for (const reading of draft.readings) {
-      store.add({
+      const created = store.add({
         personId,
         indicatorId: reading.indicatorId,
         value: reading.value,
@@ -282,7 +297,9 @@ function ReportForm({
         time: draft.time,
         context: contextOf(rowOfField.get(reading.indicatorId) ?? rows[0]),
       })
+      savedIds.push(created.id)
     }
+    setLastSave({ ids: savedIds, refusedBefore })
 
     const saved = draft.readings.map((reading) =>
       strings.entry.reading(
@@ -300,11 +317,7 @@ function ReportForm({
         ]),
       ),
     }))
-    setStatus(
-      `${strings.entry.savedList(saved.join(', '))} ${
-        serverConfigured ? strings.entry.saved : strings.entry.savedOnDevice
-      }`,
-    )
+    setStatus(strings.entry.savedList(saved.join(', ')))
 
     // The day and the time usually repeat; only the readings are cleared.
     setValues((current) => {
@@ -510,6 +523,7 @@ function ReportForm({
           <div className="rep-saved">
             <p className="form__status" role="status">
               {status}
+              {status !== '' && sendState !== null && ` ${sendWords[sendState]}`}
             </p>
             {afterSave && onNext !== undefined && (
               <button
@@ -697,6 +711,9 @@ function ReadingRowField({
     >
       <span className="rep-row__channel" aria-hidden="true">
         {String(index + 1).padStart(2, '0')}
+        {/* Done is a check beside the channel number and a stronger edge,
+            never colour alone. */}
+        {done && <span className="rep-row__check">✓</span>}
       </span>
       <span className="rep-row__icon">
         <IndicatorIcon
@@ -704,12 +721,6 @@ function ReadingRowField({
           colored={row.system !== null}
           size={24}
         />
-        {/* Done is a check and a stronger edge, never colour alone. */}
-        {done && (
-          <span className="rep-row__check" aria-hidden="true">
-            ✓
-          </span>
-        )}
       </span>
 
       {row.scale ? (
@@ -782,12 +793,18 @@ function ReadingRowField({
                     /
                   </span>
                 )}
-                <label
-                  className="sr-only"
-                  htmlFor={`${baseId}-${field.indicatorId}`}
-                >
-                  {field.label}
-                </label>
+                {/* A single field is named by the visible title above it; a
+                    second label would make a screen reader say the name
+                    twice. The two blood pressure fields have no title of
+                    their own, so each keeps a hidden one. */}
+                {pair && (
+                  <label
+                    className="sr-only"
+                    htmlFor={`${baseId}-${field.indicatorId}`}
+                  >
+                    {field.label}
+                  </label>
+                )}
                 <input
                   ref={(element) => {
                     valueRefs.current[field.indicatorId] = element
@@ -960,6 +977,48 @@ function lastStatus(
     }
   }
   return worst
+}
+
+// What happened to the readings of the last save, for the sentence under the
+// form. With no server they stay on the device. With one they wait in the
+// outbox, and the sentence changes once the outbox lets them go: sent, or not
+// accepted when the server refused one of them meanwhile.
+type SendState = 'device' | 'waiting' | 'sent' | 'refused'
+
+const sendWords: Record<SendState, string> = {
+  device: strings.entry.savedOnDevice,
+  waiting: strings.entry.saved,
+  sent: strings.entry.sent,
+  refused: strings.entry.notAccepted,
+}
+
+type MaybeOutbox = EntryStore & Partial<Outbox>
+
+function refusedCount(store: MaybeOutbox): number {
+  const snapshot = store.getOutboxSnapshot?.()
+  return snapshot === undefined
+    ? 0
+    : snapshot.conflictCount + snapshot.rejectedCount
+}
+
+// One string per state of the outbox, so the screen re-reads it on a change.
+function outboxKey(store: MaybeOutbox): string {
+  const snapshot = store.getOutboxSnapshot?.()
+  return snapshot === undefined
+    ? ''
+    : `${snapshot.pendingCount}:${snapshot.conflictCount}:${snapshot.rejectedCount}`
+}
+
+function sendStateOf(
+  store: MaybeOutbox,
+  lastSave: { ids: string[]; refusedBefore: number } | null,
+  serverConfigured: boolean,
+): SendState | null {
+  if (lastSave === null) return null
+  if (!serverConfigured || store.pending === undefined) return 'device'
+  const waiting = new Set(store.pending().map((entry) => entry.id))
+  if (lastSave.ids.some((id) => waiting.has(id))) return 'waiting'
+  return refusedCount(store) > lastSave.refusedBefore ? 'refused' : 'sent'
 }
 
 function lastReading(row: ReadingRow, entries: EntryRecord[]): string | null {

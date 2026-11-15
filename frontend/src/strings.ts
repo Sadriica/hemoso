@@ -268,6 +268,9 @@ export const strings = {
     // Whether the readings leave the device is the sentence after this one, so
     // this one never promises a send the demo cannot make.
     saved: 'Waiting to be sent.',
+    // The same readings once the server took them, or when it did not.
+    sent: 'Sent.',
+    notAccepted: 'The server did not accept it. Kept on this device.',
     savedOnDevice: 'Kept on this device.',
     noIndicators: 'No indicators are set up yet.',
     // A save with every row empty has nothing to store, and says so.
@@ -438,12 +441,19 @@ export const strings = {
       possible: 'Possible',
       low: 'Low',
       no_data: 'Not enough data yet',
+      urgent: 'Urgent',
     },
     sentence: {
       review: 'Ask your CMO or flight surgeon to check this.',
       possible: 'Some of your readings point to it.',
       low: 'Your readings do not point to it.',
       no_data: 'It needs at least two readings that can be compared.',
+      urgent: 'Call your CMO now',
+    },
+    // One symptom signal: the plain name, then whether it was reported today.
+    symptom: {
+      reported: (name: string): string => `${name}: you reported it`,
+      notReported: (name: string): string => `${name}: not reported`,
     },
     // The bar: its name, the value as text, and what a screen reader hears.
     meterName: (name: string): string => `Evidence for ${name}`,
@@ -465,6 +475,23 @@ export const strings = {
     openCard: (text: string): string => `Show the reading. ${text}`,
     source: 'Source:',
     notEnough: (count: number): string => `Not enough data yet (${count})`,
+  },
+  // The optional symptom list of the Report (T-80). Plain names come from
+  // config/data/symptoms.csv; nothing here names a condition.
+  symptoms: {
+    toggle: 'Symptoms, optional',
+    legend: 'Do you feel any of these now?',
+    hint: 'Tick what applies. Leave the rest empty. Your CMO or flight surgeon reads what you report.',
+    strength: (name: string): string => `How strong: ${name}`,
+    severity: { 1: 'Mild', 2: 'Moderate', 3: 'Severe' } as const,
+    save: 'Save symptoms',
+    nothingTicked: 'Tick at least one symptom to save.',
+    saved: (count: number): string =>
+      `${count} ${count === 1 ? 'symptom' : 'symptoms'} saved.`,
+    notSaved: 'Could not save on this device. Tell your CMO what you feel.',
+    callCmo: 'Call your CMO now',
+    callCmoWhy: (names: string): string => `You reported: ${names}.`,
+    confirms: 'Your CMO or flight surgeon confirms.',
   },
   problems: {
     label: 'Content problems (for the team)',
@@ -516,8 +543,10 @@ export const strings = {
     faceOfferHeading: 'Add face sign-in on this device',
     faceOfferNote:
       'Your face is turned into numbers kept only on this device. You read the details before the camera opens.',
-    faceOfferAction: 'Add face sign-in on this device',
+    faceOfferAction: 'Add face sign-in',
     faceOfferSkip: 'Not now',
+    // The same offer as one quiet line on the report, after the sign-in.
+    faceOfferLine: 'Next time, sign in with your face on this device.',
     pinHeading: 'Username and PIN',
     username: 'Username',
     pin: 'PIN',
@@ -535,7 +564,9 @@ export const strings = {
     crewRole: 'Synthetic crew member',
     // The id a typed name becomes, shown under the field while it is typed.
     willSignInAs: (personId: string): string => `You will sign in as ${personId}`,
-    signedInAs: (personId: string): string => `Signed in as ${personId}`,
+    // The same readable name as the top bar, never the raw id.
+    signedInAs: (personId: string): string =>
+      `Signed in as ${personName(personId)}`,
     signOut: 'Sign out',
     expired: 'Your session ended. Enter your PIN again.',
     askPin: (personId: string): string => `Enter the PIN for ${personId}.`,

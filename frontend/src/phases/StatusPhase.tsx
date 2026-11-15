@@ -19,6 +19,7 @@ import './status.css'
 import './status-console.css'
 import Home from '../screens/Home'
 import PossibleConditions from '../components/conditions/PossibleConditions'
+import { useSymptomReports } from '../hooks/useSymptomReports'
 import { strings } from '../strings'
 import '../screens/scene-grammar.css'
 
@@ -82,6 +83,7 @@ export default function StatusPhase({
   // render: no second copy of it to keep in step. A saved report bumps the
   // version, which is what makes the next render read it.
   const [, setReportsVersion] = useState(0)
+  const symptomReports = useSymptomReports(personId, data.demoSymptoms)
   const reports = readPainReports(personId)
   const refreshReports = useCallback(
     () => setReportsVersion((count) => count + 1),
@@ -113,6 +115,8 @@ export default function StatusPhase({
           indicators={data.indicators}
           rules={data.rules}
           entries={entries}
+          symptoms={data.symptoms}
+          symptomReports={symptomReports}
           onSelectIndicator={showIndicator}
         />
         <div className="status__history">

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import Entry from './Entry'
@@ -115,6 +115,9 @@ describe('Entry', () => {
     expect(rows).toHaveLength(3)
 
     const heart = screen.getByLabelText('Heart rate')
+    // One label, so a screen reader says the name once.
+    expect((heart as HTMLInputElement).labels).toHaveLength(1)
+    expect(heart).toHaveAccessibleName('Heart rate')
     expect(heart).toHaveAttribute('inputmode', 'decimal')
     expect(heart).not.toHaveAttribute('type', 'number')
     expect(heart).toHaveAccessibleDescription('bpm last 58 bpm')
@@ -453,6 +456,36 @@ describe('Entry', () => {
       strings.entry.savedOnDevice,
     )
     expect(store.pending()).toHaveLength(1)
+  })
+
+  it('says sent once the outbox lets the readings go', async () => {
+    const store = renderEntry([heartRate], { serverConfigured: true })
+    typeInto('Heart rate', '57')
+    await submit()
+    expect(screen.getByRole('status')).toHaveTextContent(strings.entry.saved)
+
+    act(() => {
+      store.markSent(
+        store.pending().map((entry) => entry.id),
+        { missionDay: 10, time: '13:30' },
+      )
+    })
+    expect(screen.getByRole('status')).toHaveTextContent(strings.entry.sent)
+    expect(screen.getByRole('status')).not.toHaveTextContent(strings.entry.saved)
+  })
+
+  it('says so when the server did not accept the reading', async () => {
+    const store = renderEntry([heartRate], { serverConfigured: true })
+    typeInto('Heart rate', '57')
+    await submit()
+
+    act(() => {
+      store.markRejected(store.pending()[0].id)
+    })
+    expect(screen.getByRole('status')).toHaveTextContent(
+      strings.entry.notAccepted,
+    )
+    expect(screen.getByRole('status')).not.toHaveTextContent(strings.entry.sent)
   })
 
   it('answers the scale with the arrow keys and saves it as 1 to 5', async () => {

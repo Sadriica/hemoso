@@ -11,8 +11,10 @@ export function notifyRank(notify: Notify): number {
   return NOTIFY_RANK[notify]
 }
 
-// A rule with side `above` matches when value > threshold, `below` when
-// value < threshold. Every matching rule is collected and the most severe
+// A rule with side `above` matches when value >= threshold, `below` when
+// value <= threshold: the cited sources say "or higher", and Bio 2 decided on
+// Sun 15 Nov that a `below` row reads the same way, "or lower" (Q4). Every
+// matching rule is collected and the most severe
 // `notify` wins, because one value can cross several steps of the same
 // indicator. On the same severity the more extreme threshold wins: lower on
 // `below`, higher on `above`.
@@ -33,7 +35,9 @@ export function attentionFor(value: number, rules: AttentionRule[]): Attention {
 }
 
 function matches(rule: AttentionRule, value: number): boolean {
-  return rule.side === 'above' ? value > rule.threshold : value < rule.threshold
+  return rule.side === 'above'
+    ? value >= rule.threshold
+    : value <= rule.threshold
 }
 
 function isMoreSevere(candidate: AttentionRule, winner: AttentionRule): boolean {

@@ -1290,6 +1290,8 @@ input.reading__input::-webkit-inner-spin-button {
   inset: 0;
   z-index: 100;
   background: var(--color-bg);
+  /* Like the intro it stands in for: a click goes through it. */
+  pointer-events: none;
 }
 
 /* Round 3 shape grammar (DESIGN.md 6.1): one wide main panel per screen, with
@@ -1420,5 +1422,89 @@ input.reading__input::-webkit-inner-spin-button {
 @media (max-width: 399px) {
   .topbar__stamp:has(+ .topbar__duty)::after {
     content: none;
+  }
+}
+
+/* Review of Sun 09:40, point 4. The rail is fixed at the bottom, so a control
+   or a panel that is scrolled into view (by focus, by a pick, by a link) must
+   stop above it and not under it. The page keeps its scroll padding as the
+   fallback; this is the margin of the targets themselves. */
+:where(a, button, input, select, textarea, summary, [tabindex]),
+.disclosure__panel,
+.indicator-details,
+.conditions,
+.hc,
+.pain-picker,
+.body3d__turn,
+.reaction {
+  scroll-margin-bottom: calc(var(--rail-height) + var(--space-3));
+}
+
+/* Review of Sun 09:40, point 8. On a phone the bar took four short rows. The
+   day, the clock and the person now flow as one line that wraps, the rows
+   sit closer, and the synthetic-data sentence keeps its own quiet line. */
+@media (max-width: 599px) {
+  .topbar__bar {
+    row-gap: 0;
+    padding-block: var(--space-1) 0;
+  }
+
+  .topbar__mission {
+    display: block;
+    padding-bottom: 0;
+    letter-spacing: 0;
+  }
+
+  .topbar__mission > * {
+    display: inline;
+  }
+
+  .topbar__mission .topbar__stamp:has(+ .topbar__duty)::after {
+    content: ' · ';
+  }
+
+  .synthetic-notice {
+    padding-bottom: var(--space-1);
+    letter-spacing: 0;
+  }
+}
+
+/* Sun 10:20 (Wambi): on a wide screen the three steps were spread across the
+   whole width with long lines between them, so the rail read as three loose
+   pieces. The steps now sit together in the middle, joined by short
+   connectors as on a phone, and every step keeps its name. */
+@media (min-width: 600px) {
+  .phase-rail__track {
+    display: none;
+  }
+
+  .phase-rail__steps {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .phase-rail__step {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+  }
+
+  .phase-rail__label {
+    padding-inline: 0;
+    background: none;
+  }
+
+  .phase-rail__step + .phase-rail__step::before {
+    content: '';
+    width: 64px;
+    height: 2px;
+    margin-inline: var(--space-3);
+    background: var(--color-border-control);
+  }
+
+  .phase-rail__step + .phase-rail__step--done::before,
+  .phase-rail__step + .phase-rail__step--current::before {
+    background: var(--color-accent);
   }
 }

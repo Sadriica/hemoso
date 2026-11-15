@@ -3,7 +3,7 @@
    motion or the top bar switch. */
 
 /* The intro: about five seconds, skippable at any moment. Its own
-   starfield drifts, the mark draws itself and the name types in. */
+   starfield drifts, the mark draws itself and the name resolves in under it. */
 .intro__layer {
   position: fixed;
   inset: 0;
@@ -16,6 +16,9 @@
   background: var(--color-bg);
   color: var(--color-accent);
   animation: intro-out var(--motion-intro) linear both;
+  /* A first click or tap is never lost: it ends the intro (Intro.tsx listens
+     on the window) and goes through to what is under the layer. */
+  pointer-events: none;
 
   /* Every length of the intro is a share of --motion-intro, so the whole
      length is one token. The shares were set at 3400 ms and stretch with it. */
@@ -23,9 +26,16 @@
   --intro-draw: calc(var(--motion-intro) * 6 / 34);
   --intro-draw-1: calc(var(--motion-intro) * 2 / 34);
   --intro-draw-2: calc(var(--motion-intro) * 5 / 34);
-  --intro-type: calc(var(--motion-intro) * 12 / 34);
-  --intro-type-at: calc(var(--motion-intro) * 9 / 34);
-  --intro-caret: calc(var(--motion-intro) * 6 / 34);
+  --intro-name-at: calc(var(--motion-intro) * 9 / 34);
+  --intro-name-step: calc(var(--motion-intro) * 1 / 34);
+  --intro-name-in: calc(var(--motion-intro) * 5 / 34);
+  --intro-name-sweep-at: calc(var(--motion-intro) * 14 / 34);
+  --intro-name-sweep-step: calc(var(--motion-intro) * 0.8 / 34);
+  --intro-name-sweep: calc(var(--motion-intro) * 4 / 34);
+  /* The mark and its orbits share one centre, a little above the middle of
+     the screen; the title sits under the lowest point the orbits reach. */
+  --orbit-size: min(80vmin, 560px);
+  --intro-centre: calc(50% - var(--space-5));
   --intro-clock-at: calc(var(--motion-intro) * 22 / 34);
 }
 
@@ -38,8 +48,12 @@
 }
 
 .intro__mark {
+  position: absolute;
+  top: var(--intro-centre);
+  left: 50%;
   width: 96px;
   height: 96px;
+  margin: -48px 0 0 -48px;
   fill: none;
   stroke: currentColor;
   stroke-width: 1.75;
@@ -91,11 +105,8 @@
 }
 
 .intro__orbits {
-  /* Centred on the mark, which sits a little above the middle of the screen
-     because the name is under it. */
-  --orbit-size: min(80vmin, 560px);
   position: absolute;
-  top: calc(50% - var(--space-5));
+  top: var(--intro-centre);
   left: 50%;
   width: var(--orbit-size);
   height: var(--orbit-size);
@@ -129,12 +140,22 @@
   animation: intro-fade var(--motion-base) var(--ease-out) calc(var(--motion-intro) * 12 / 34) forwards;
 }
 
-/* The name types in: the box widens in six steps, the caret sits at the edge. */
+/* The title block: centred under the orbits, clear of the animation. */
+.intro__title {
+  position: absolute;
+  top: calc(var(--intro-centre) + var(--orbit-size) * 0.4 + var(--space-4));
+  right: 0;
+  left: 0;
+  display: grid;
+  justify-items: center;
+  gap: var(--space-2);
+}
+
+/* The name resolves like a signal coming in: each letter comes out of a soft
+   blur with a small upward drift, then a faint cyan sweep crosses the word.
+   Transform, opacity, a small blur on the letters and a clipped gradient. */
 .intro__name {
-  overflow: hidden;
-  width: 6.8ch;
   margin: 0;
-  border-right: 2px solid currentColor;
   color: var(--color-text);
   font-family: var(--font-display);
   font-size: var(--text-display);
@@ -143,9 +164,26 @@
   line-height: var(--leading-display);
   text-transform: uppercase;
   white-space: nowrap;
+}
+
+.intro__letter {
+  display: inline-block;
+  color: transparent;
+  background: linear-gradient(
+      100deg,
+      var(--color-text) 40%,
+      var(--accent-cyan) 50%,
+      var(--color-text) 60%
+    )
+    100% 0 / 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  opacity: 0;
   animation:
-    intro-type var(--intro-type) steps(6, end) var(--intro-type-at) both,
-    intro-caret var(--intro-caret) steps(1, end) var(--intro-type-at) 3 both;
+    intro-resolve var(--intro-name-in) var(--ease-out)
+      calc(var(--intro-name-at) + var(--intro-name-step) * var(--i)) both,
+    intro-sweep var(--intro-name-sweep) var(--ease-standard)
+      calc(var(--intro-name-sweep-at) + var(--intro-name-sweep-step) * var(--i)) both;
 }
 
 .intro__clock {
@@ -240,20 +278,27 @@
   }
 }
 
-@keyframes intro-type {
+@keyframes intro-resolve {
   from {
-    width: 0;
+    opacity: 0;
+    filter: blur(8px);
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
   }
 }
 
-@keyframes intro-caret {
-  0%,
-  100% {
-    border-color: currentColor;
+@keyframes intro-sweep {
+  from {
+    background-position: 100% 0;
   }
 
-  50% {
-    border-color: transparent;
+  to {
+    background-position: 0 0;
   }
 }
 
@@ -290,4 +335,16 @@
 .app--still .intro__skip {
   animation: none;
   transition: none;
+}
+
+/* Review of Sun 09:40, point 6. The skip button sat on the phase rail: it now
+   stands above it, and nearer the edge on a phone. */
+.intro__skip {
+  bottom: calc(var(--rail-height) + var(--space-2));
+}
+
+@media (max-width: 599px) {
+  .intro__skip {
+    right: var(--space-3);
+  }
 }

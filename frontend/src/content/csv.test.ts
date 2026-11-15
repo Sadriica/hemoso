@@ -56,6 +56,49 @@ describe('parseCsv', () => {
 describe('parseCsvFile', () => {
   const required = ['indicator_id', 'side', 'notify']
 
+  it('fills an optional column a row leaves out, and keeps the rows that have it', () => {
+    const problems: string[] = []
+    const records = parseCsvFile(
+      'conditions.csv',
+      'condition_id,name,based_on,symptoms,source\n' +
+        'a,A,x:above,Assumption\n' +
+        'b,B,y:below,thirst fatigue,Assumption\n',
+      problems,
+      ['condition_id', 'name', 'based_on', 'source'],
+      'symptoms',
+    )
+    expect(problems).toEqual([])
+    expect(records).toEqual([
+      {
+        condition_id: 'a',
+        name: 'A',
+        based_on: 'x:above',
+        symptoms: '',
+        source: 'Assumption',
+      },
+      {
+        condition_id: 'b',
+        name: 'B',
+        based_on: 'y:below',
+        symptoms: 'thirst fatigue',
+        source: 'Assumption',
+      },
+    ])
+  })
+
+  it('still reports a row short by two cells with an optional column', () => {
+    const problems: string[] = []
+    const records = parseCsvFile(
+      'conditions.csv',
+      'condition_id,name,based_on,symptoms,source\na,A,Assumption\n',
+      problems,
+      ['condition_id', 'name', 'based_on', 'source'],
+      'symptoms',
+    )
+    expect(records).toEqual([])
+    expect(problems).toHaveLength(1)
+  })
+
   it('reads the rows when every required column is in the header', () => {
     const problems: string[] = []
     const records = parseCsvFile(
@@ -90,14 +133,19 @@ describe('parseCsvFile', () => {
       required,
     )
     expect(records).toEqual([])
-    expect(problems.some((problem) => problem.includes('Malformed row in file.csv'))).toBe(
-      true,
-    )
+    expect(
+      problems.some((problem) => problem.includes('Malformed row in file.csv')),
+    ).toBe(true)
   })
 
   it('reports the required columns of a file with no header at all', () => {
     const problems: string[] = []
-    const records = parseCsvFile('file.csv', '# only a comment\n', problems, required)
+    const records = parseCsvFile(
+      'file.csv',
+      '# only a comment\n',
+      problems,
+      required,
+    )
     expect(records).toEqual([])
     expect(problems).toEqual([
       "Missing column 'indicator_id' in file.csv.",

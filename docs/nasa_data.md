@@ -54,6 +54,30 @@ shows a false emergency. Day 3 has a single symptom and no glucose baseline yet
 (two earlier readings), so it stays "no data". The log was generated on Sun 15 Nov
 for Phys to review. The values are invented, not measured.
 
+## Label for the video and the submission page
+
+Two versions, both drawn from the list above. `submission/script.md` asks for this
+line at 1:35, and the submission page asks for it in the "NASA data" field.
+
+**Short, for the video caption (18 words):**
+
+> NASA Human Research Program: Risks of Human Spaceflight, the five hazards, and the
+> nutrition and cardiovascular evidence reports.
+
+**Long, for the submission field:**
+
+> NASA Human Research Program: Risks of Human Spaceflight and the five hazards of
+> human spaceflight; the cardiovascular and nutrition evidence reports; NASA-STD-3001
+> Volume 1 Revision C with its OCHMO technical briefs on bone loss, food and nutrition,
+> and water for human consumption; Spaceflight Standard Measures; the wearable research
+> page; and NTRS records 20090029851, 20170009855 and 20230006919. Partner agency:
+> CSA Bio-Monitor and the CSA article on radiation monitoring.
+
+Both name only resources that appear in the table above. If a resource leaves the
+table, it leaves these lines in the same commit.
+
+
+
 ## The other challenge resources
 
 The challenge page lists five resources. Two are used above (Hazards and Risks). The
