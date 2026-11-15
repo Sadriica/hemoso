@@ -1,0 +1,464 @@
+/* The History trend as a telemetry trace (DESIGN.md section 15, console
+   grammar). One framed panel on --color-bg-raised with a hairline frame, a 2 px
+   top edge in the accent and two corner marks at the bottom; the controls and
+   the readout in mono labels; the readings as marks joined by a line. Tokens
+   only: nothing here adds a value to the palette.
+
+   A mark is never colour alone: each state has its own shape (a round family
+   for the first series and a square family for the second) and the legend and
+   the readout say the state in words.
+
+   Motion is transform, opacity and a stroke offset, 250 to 900 ms. It stops
+   under prefers-reduced-motion, with the app switch (.app--still) and while the
+   tab is hidden. */
+
+.hc {
+  position: relative;
+  display: grid;
+  gap: var(--space-3);
+  max-width: 720px;
+  margin-bottom: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-top: 2px solid var(--color-accent);
+  border-radius: var(--radius-card);
+  background: var(--color-bg-raised);
+}
+
+.hc::before,
+.hc::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  width: var(--space-3);
+  height: var(--space-3);
+  border-bottom: 2px solid var(--color-accent);
+  pointer-events: none;
+}
+
+.hc::before {
+  left: -1px;
+  border-left: 2px solid var(--color-accent);
+}
+
+.hc::after {
+  right: -1px;
+  border-right: 2px solid var(--color-accent);
+}
+
+.hc__heading {
+  margin: 0;
+  color: var(--color-accent);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  font-weight: 400;
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+}
+
+.hc__empty {
+  margin: 0;
+  padding: var(--space-4) var(--space-3);
+  border: 1px dashed var(--color-border-control);
+  border-radius: var(--radius-card);
+  color: var(--color-text-muted);
+}
+
+/* Segmented controls: real radio buttons, the segments are their look. */
+.hc-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+}
+
+.hc-seg--context {
+  flex: 1 1 100%;
+}
+
+.hc-seg {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.hc-seg__legend {
+  padding: 0;
+  margin-bottom: var(--space-1);
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+.hc-seg__row {
+  display: flex;
+  flex-wrap: wrap;
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+.hc-seg__item {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+}
+
+.hc-seg__item + .hc-seg__item {
+  border-left: 1px solid var(--color-border);
+}
+
+.hc-seg__item input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.hc-seg__item span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 var(--space-2);
+  font-size: var(--text-label);
+  letter-spacing: var(--tracking-label);
+  line-height: 1.2;
+  text-align: center;
+  color: var(--color-text);
+  box-shadow: inset 0 -2px 0 transparent;
+}
+
+.hc-seg__item--empty span {
+  color: var(--color-text-muted);
+}
+
+/* The chosen segment: a filled tone, bold text and an underline, so it does
+   not rest on colour alone. */
+.hc-seg__item input:checked + span {
+  background: color-mix(in srgb, var(--color-accent) 18%, var(--color-surface));
+  box-shadow: inset 0 -2px 0 var(--color-accent);
+  font-weight: 700;
+}
+
+.hc-seg__item input:focus-visible + span {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -3px;
+}
+
+/* The chart. */
+.tc {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+/* The readout lives above the plot, never over it. Its height is reserved so
+   moving between points does not shift the chart. */
+.tc__readout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 var(--space-3);
+  min-height: 3.2em;
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-left: 2px solid var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 7%, var(--color-surface));
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+}
+
+.tc__readout-main {
+  color: var(--color-text);
+}
+
+.tc__readout-idle,
+.tc__readout-count {
+  color: var(--color-text-muted);
+}
+
+.tc__focus {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  padding: var(--space-1);
+}
+
+.tc__focus:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.tc__svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  font-family: var(--font-mono);
+  touch-action: manipulation;
+}
+
+.tc__grid {
+  stroke: var(--color-border);
+  stroke-width: 1;
+  opacity: 0.6;
+}
+
+.tc__axis {
+  stroke: var(--color-border-control);
+  stroke-width: 1;
+}
+
+.tc__tick {
+  fill: var(--color-text-muted);
+  font-size: var(--text-label);
+  font-variant-numeric: tabular-nums;
+}
+
+.tc__unit {
+  fill: var(--color-text-muted);
+  font-size: var(--text-label);
+}
+
+.tc__axis-name {
+  fill: var(--color-text-muted);
+  font-size: var(--text-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+.tc__band rect {
+  fill: color-mix(in srgb, var(--color-accent) 11%, transparent);
+  stroke: color-mix(in srgb, var(--color-accent) 30%, transparent);
+  stroke-width: 1;
+}
+
+.tc__band--b rect {
+  fill: color-mix(in srgb, var(--color-text) 7%, transparent);
+  stroke: color-mix(in srgb, var(--color-text) 25%, transparent);
+}
+
+.tc__band line {
+  stroke: var(--color-text-muted);
+  stroke-width: 1;
+}
+
+.tc__threshold {
+  stroke: var(--status-attention-text);
+  stroke-width: 1;
+}
+
+.tc__threshold-label {
+  fill: var(--status-attention-text);
+  /* A halo in the plot colour keeps the label legible over a line or a band. */
+  paint-order: stroke;
+  stroke: var(--color-surface);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+  font-size: var(--text-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+.tc__guide {
+  stroke: var(--color-text-muted);
+  stroke-width: 1;
+  stroke-dasharray: 2 3;
+}
+
+.tc__line {
+  fill: none;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.tc__line--a {
+  stroke: var(--color-accent);
+}
+
+/* The second series is a dashed line in text colour, as well as its own
+   marks. The dashes are in path lengths (pathLength is 1). */
+.tc__line--b {
+  stroke: var(--color-text);
+  stroke-dasharray: 0.025 0.015;
+}
+
+.tc__hit {
+  fill: transparent;
+  cursor: pointer;
+}
+
+.tc__ring {
+  fill: none;
+  stroke: var(--color-text);
+  stroke-width: 2;
+}
+
+.tc__mark {
+  stroke: var(--color-bg-raised);
+  stroke-width: 1;
+}
+
+.tc__mark--in_range {
+  fill: var(--status-in-range-text);
+}
+
+.tc__mark--outside {
+  fill: var(--status-attention-text);
+}
+
+.tc__mark--review {
+  fill: var(--status-review-text);
+}
+
+.tc__mark--no_data {
+  fill: var(--color-bg-raised);
+  stroke: var(--status-no-data-text);
+  stroke-width: 2;
+}
+
+.tc__hint,
+.tc__note {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-small);
+  line-height: var(--leading-small, 1.4);
+}
+
+.tc__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+}
+
+.tc__legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.tc__legend-item svg {
+  flex: none;
+}
+
+.history__table-wrap + .history__table-wrap {
+  margin-top: var(--space-3);
+}
+
+/* Motion. The series rises (opacity and transform) and the first line draws
+   (stroke offset) when the chart mounts and when the context, the window or the
+   indicator changes: the draw key remounts those groups. */
+@keyframes tc-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes tc-draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes tc-fade {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.tc__series {
+  animation: tc-rise var(--motion-base) var(--ease-settle) both;
+}
+
+.tc__layer {
+  animation: tc-fade var(--motion-base) var(--ease-out) both;
+}
+
+.tc__line--a {
+  stroke-dasharray: 1;
+  animation: tc-draw var(--motion-draw) var(--ease-settle) both;
+}
+
+/* While the tab is hidden nothing runs; it finishes when the tab is back. */
+.tc--hidden .tc__series,
+.tc--hidden .tc__layer,
+.tc--hidden .tc__line--a {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tc__series,
+  .tc__layer,
+  .tc__line--a {
+    animation: none;
+  }
+}
+
+.app--still .tc__series,
+.app--still .tc__layer,
+.app--still .tc__line--a {
+  animation: none;
+}
+
+/* Phone: one column; the segments wrap to full width and the readout keeps
+   room for three lines. */
+@media (max-width: 599px) {
+  .hc {
+    padding: var(--space-2);
+  }
+
+  .hc-controls {
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  /* Two by two, so no segment sits alone on a row. */
+  .hc-seg--context .hc-seg__item {
+    flex: 1 1 50%;
+  }
+
+  .hc-seg--context .hc-seg__item:nth-child(n + 3) {
+    border-top: 1px solid var(--color-border);
+  }
+
+  .hc-seg--context .hc-seg__item:nth-child(3) {
+    border-left: 0;
+  }
+
+  .tc__readout {
+    min-height: 5em;
+    padding: var(--space-2);
+  }
+}
