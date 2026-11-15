@@ -54,6 +54,8 @@ new ones without updating this table and the owner named in it.
 | `appetite_1_5` | Appetite | 1 to 5 | `lower` | Tier B · system `metabolic`; self-rated once a day at the check-in, 1 = very low to 5 = very good (our scale, Assumption). Phys, Sun 06:50 (T-77) |
 | `fluid_intake_ml` | Fluid intake | mL | `lower` | Tier B · system `metabolic`; water drunk plus water used to rehydrate food, logged from the metered galley dispenser. Phys, Sun 06:50 (T-77) |
 | `body_mass_kg` | Body mass | kg | `both` | Tier A · system `musculoskeletal`; measured with SLAMMD (mass from F = ma). Phys, Sun 06:50 (T-77); compares both sides of the baseline, Phys Sun 10:00 (losing or gaining mass both matter) |
+| `eye_closure_pct` | Eye closure | % | `higher` | Tier B · system `neuro_behavioural`; share of a 60 s on-device camera check with the eyes closed (eye aspect ratio below 0.2), a PERCLOS-like measure. Eyelids only, never mood or stress. Phys, F-phys-07 (60 s and 0.2 are Assumptions) |
+| `blink_rate_pm` | Blink rate | per min | `both` | Tier B · system `neuro_behavioural`; blinks per minute in the same 60 s check (closed for 100 to 400 ms). No source says which side is worse. Phys, F-phys-07 |
 | `<condition_id>` | to be filled by Bio 2 (REQ-06) | — (a condition has an evidence score from 0 to 1, not a unit) | — | One row per possible condition; example id `example_condition`. |
 | `<body_region_id>` | to be filled by the owner (open question) | — | — | One row per selectable body region; example id `example_body_region`. |
 
