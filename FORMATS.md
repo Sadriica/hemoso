@@ -218,7 +218,10 @@ Columns in order: `indicator_id`, `side`, `threshold`, `attention_level`,
 `notify`, `source`.
 
 - `indicator_id`: an id from `data/indicators.csv`.
-- `side`: `below` or `above`: which side of `threshold` triggers this row.
+- `side`: `below` or `above`: which side of `threshold` triggers this row. A
+  value exactly on the threshold counts: `above` triggers at
+  `value >= threshold` and `below` at `value <= threshold` (Bio 2, Sun 15 Nov,
+  Q4).
 - `threshold`: a number; its unit is the indicator's unit.
 - `attention_level`: the name of this state, filled by Bio 2; the same names
   are the sub-headings in `content/<indicator_id>.md`.

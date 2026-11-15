@@ -49,11 +49,12 @@ def attention_for(rows: list[dict], value: float) -> dict | None:
 
         {"attention_level": "example_level", "notify": "cmo"}
 
-    A row matches when the value is on its side of its threshold (``below``:
-    value < threshold, ``above``: value > threshold). Of the matching rows the
-    most severe ``notify`` wins; on the same severity the more extreme threshold
-    wins (lower on ``below``, higher on ``above``), and two rows on opposite
-    sides keep the first one in file order. FORMATS.md states the notify rule
+    A row matches when the value is on its side of its threshold or on it
+    (``below``: value <= threshold, ``above``: value >= threshold; Bio 2,
+    Sun 15 Nov, Q4). Of the matching rows the most severe ``notify`` wins; on
+    the same severity the more extreme threshold wins (lower on ``below``,
+    higher on ``above``), and two rows on opposite sides keep the first one in
+    file order. FORMATS.md states the notify rule
     and the escalation it needs, but not the tie on equal ``notify``; the
     frontend does it this way and ``attention.json`` says so.
     """
@@ -69,13 +70,16 @@ def attention_for(rows: list[dict], value: float) -> dict | None:
 
 
 def attention_matches(row: dict, value: float) -> bool:
-    """Whether the value is on the row's side of its threshold (strict)."""
+    """Whether the value reached the row's threshold on the row's side.
+
+    The threshold itself counts, as FORMATS.md says since Q4.
+    """
     side = row["side"]
     threshold = float(row["threshold"])
     if side == "below":
-        return value < threshold
+        return value <= threshold
     if side == "above":
-        return value > threshold
+        return value >= threshold
     raise ValueError(f"side must be below or above, got {side!r}")
 
 
