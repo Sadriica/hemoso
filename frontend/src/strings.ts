@@ -21,6 +21,31 @@ export function hazardName(id: string): string | null {
   return HAZARD_NAMES[id] ?? null
 }
 
+// The word after the count in the sync chip ("3 waiting"). One place, because
+// the chip splits the count from the word on a narrow screen.
+const WAITING_WORD = 'waiting'
+
+// A person id read as a name: "demo_astronaut_1" is "Demo astronaut 1". Nothing
+// is invented; the id is the only name the data has (T-70).
+export function personName(personId: string): string {
+  const words = personId.split('_').filter((word) => word !== '')
+  if (words.length === 0) return personId
+  const name = words.join(' ')
+  return name.charAt(0).toUpperCase() + name.slice(1)
+}
+
+// The initials of the circle before the name: "DA" for "demo_astronaut_1". A
+// trailing number is dropped, so the circle never holds a digit.
+export function personInitials(personId: string): string {
+  const letters = personId
+    .split('_')
+    .filter((word) => /^[a-z]/i.test(word))
+    .slice(0, 2)
+    .map((word) => word.charAt(0).toUpperCase())
+    .join('')
+  return letters === '' ? personId.slice(0, 2).toUpperCase() : letters
+}
+
 export const strings = {
   appName: 'HeMoSo',
   skipToMain: 'Skip to main content',
@@ -40,18 +65,17 @@ export const strings = {
   // sentence of help and one way forward.
   phases: {
     railLabel: 'Health check progress',
-    // What the rail says comes after the current step, and on the last one.
-    next: (name: string): string => `Next: ${name}`,
-    last: 'Last step',
+    // The rail draws the three steps; this sentence is what a screen reader
+    // hears in place of the track.
     step: (number: number, total: number): string => `Phase ${number} of ${total}`,
     identify: {
       number: '01',
       name: 'Identify',
       eyebrow: '01 / IDENTIFY',
       headline: ['WHO IS', 'ON DUTY', 'TODAY?'],
-      intro: 'Sign in with your face, or pick your name. Your readings stay with you.',
+      intro:
+        'Sign in with your face, your username and PIN, or open the demo. Your readings stay with you.',
       crewLabel: 'Crew member',
-      or: 'or',
       missing: 'Pick your name, or sign in with your face, to begin.',
       next: 'Begin the report',
     },
@@ -60,7 +84,7 @@ export const strings = {
       name: 'Report',
       eyebrow: '02 / REPORT',
       headline: ['LOG', "TODAY'S", 'READINGS.'],
-      intro: 'One reading at a time. Skip what you did not measure.',
+      intro: 'Fill in what you measured. Leave the rest empty.',
       logged: (count: number): string =>
         count === 0
           ? 'No reading logged in this check yet.'
@@ -100,23 +124,27 @@ export const strings = {
   },
   // The first-load intro (skippable with any key or tap).
   intro: { skip: 'Skip intro' },
-  // The bar along the top of every phase (style guide 5, 7.1).
+  // The bar along the top of every phase: the mark, the mission line, the sync
+  // chip and the motion switch, all on one row.
   topbar: {
     tagline: 'CREW HEALTH',
-    onDuty: (personId: string): string => `ON DUTY / ${personId}`,
+    onDuty: (personId: string): string => `on duty ${personId}`,
     reduceMotion: 'Reduce motion',
+    // What the motion switch turns off, in words for its tooltip.
+    motionOn: 'Motion is on',
+    motionOff: 'Motion is off',
   },
+  // The routine report: one row per indicator of config/data/indicators.csv,
+  // one shared day, time and context, one save.
   entry: {
-    heading: 'Entry',
-    indicator: 'Indicator',
-    // The unit is the visible suffix inside the field (style guide 7.6). For a
-    // 1 to 5 scale it is part of the group name instead, because the choices
-    // are numbers already.
-    value: 'Value',
-    valueWithUnit: (unit: string): string => `Value (${unit})`,
+    heading: "Today's readings",
+    // The two blood pressure ids are one row, side by side.
+    bloodPressure: 'Blood pressure',
+    systolic: 'Systolic',
+    diastolic: 'Diastolic',
     missionDay: 'Mission day',
     time: 'Time',
-    // What the astronaut was doing when they took the reading (FORMATS.md
+    // What the astronaut was doing when they took the readings (FORMATS.md
     // section 3, `context`). The choice that fits the local clock is picked
     // first, and the person can change it.
     context: 'Context',
@@ -126,11 +154,22 @@ export const strings = {
       on_waking: 'On waking',
       before_sleep: 'Before sleep',
     },
-    save: 'Save entry',
-    saved: 'Saved. Waiting to be sent.',
-    // Without a server nothing is sent, so the message promises nothing.
-    savedOnDevice: 'Saved on this device.',
+    // The mood scale of FORMATS.md section 2 (1 = very low to 5 = very good).
+    // The app writes no health word of its own beyond these.
+    scaleWords: ['Very low', 'Low', 'Neutral', 'Good', 'Very good'],
+    // The last reading of that indicator, under its field.
+    lastValue: (reading: string): string => `last ${reading}`,
+    save: 'Save readings',
+    // What was saved, one item per reading: "Heart rate 72 bpm, Mood 3 / 5".
+    savedList: (items: string): string => `Saved: ${items}`,
+    reading: (name: string, value: string): string => `${name} ${value}`,
+    // Whether the readings leave the device is the sentence after this one, so
+    // this one never promises a send the demo cannot make.
+    saved: 'Waiting to be sent.',
+    savedOnDevice: 'Kept on this device.',
     noIndicators: 'No indicators are set up yet.',
+    // A save with every row empty has nothing to store, and says so.
+    noReading: 'Fill in at least one reading.',
     errors: {
       valueRequired: 'Enter a value.',
       valueNumber: 'Enter a number.',
@@ -222,26 +261,69 @@ export const strings = {
   problems: {
     label: 'Content problems (for the team)',
   },
-  // The header line about sending the outbox (REQ-28). Every state is a
-  // sentence, never a colour or an icon on its own.
+  // The chip about sending the outbox (REQ-28). One state at a time: the
+  // connection, then what it means for the readings, joined by a middle dot.
+  // Every fact stays (waiting count, online or offline, a failure), but the bar
+  // shows only one of them.
   sync: {
-    waiting: (count: number): string => `${count} waiting to be sent`,
-    nothingWaiting: 'Nothing waiting to be sent',
-    lastSent: (day: number, time: string): string =>
-      `Last sent: Day ${day} ${time}`,
-    notSentYet: 'Not sent yet',
     online: 'Online',
     offline: 'Offline',
+    noServer: 'No server',
+    waiting: (count: number): string => `${count} ${WAITING_WORD}`,
+    // The word alone, so a narrow screen can keep the count and the chip keeps
+    // one sentence for its title.
+    waitingWord: WAITING_WORD,
+    allSent: 'all sent',
+    savedHere: 'saved here',
+    // The whole chip as one sentence, for its tooltip and the tests.
+    chip: (state: string, detail: string): string => `${state} · ${detail}`,
     sendNow: 'Send now',
-    // The browser is offline and a server is set up: entries stay here.
-    offlineNotice: 'You are offline. Entries wait on this device.',
-    tryAgain: 'Try to send',
-    noServer: 'No server set up for this demo',
+    // What the server said about a reading it did not take (REQ-28): the count
+    // and the reason, in the one place the bar has room for it.
     notAccepted: (count: number): string =>
-      `${count} not accepted by the server`,
+      count === 1 ? '1 not accepted' : `${count} not accepted`,
     // The browser blocked storage, or replaced data it could not read.
     notSaved: 'Entries are not saved on this device.',
     reset: 'Saved entries could not be read and were replaced by the demo data.',
+  },
+  // Signing in (REQ-37, T-70): a face kept on this device, a username and a
+  // PIN, a new account, or the open demo of REQ-32. Short sentences, no health
+  // wording. The PIN is never written down here or anywhere in the browser.
+  signIn: {
+    faceHeading: 'Sign in with your face',
+    faceNote: 'A face saved on this device opens your session.',
+    pinHeading: 'Username and PIN',
+    username: 'Username',
+    pin: 'PIN',
+    pinHint: '4 to 8 digits.',
+    action: 'Sign in',
+    createToggle: 'Create an account',
+    createHeading: 'Create an account',
+    createAction: 'Create my account',
+    createBack: 'Back to signing in',
+    confirmPin: 'PIN again',
+    demoHeading: 'Demo',
+    demoNote: 'The demo astronaut has no account. Every value in it is synthetic.',
+    demoAction: 'Open the demo',
+    // The role line of a crew card. The demo crew is synthetic data (REQ-14),
+    // so that is the role it carries.
+    crewRole: 'Synthetic crew member',
+    signedInAs: (personId: string): string => `Signed in as ${personId}`,
+    signOut: 'Sign out',
+    expired: 'Your session ended. Enter your PIN again.',
+    askPin: (personId: string): string => `Enter the PIN for ${personId}.`,
+    errors: {
+      username:
+        'Use lowercase letters, digits and underscores, starting with a letter.',
+      pin: 'Enter a PIN of 4 to 8 digits.',
+      pinMismatch: 'The two PINs are different.',
+      wrong: 'Wrong username or PIN.',
+      blocked: 'Too many tries. Wait 10 minutes, then try again.',
+      exists: 'That username is taken. Sign in with it instead.',
+      invalid:
+        'The server did not accept these details. Check the username and the PIN.',
+      retry: 'No answer from the server. Try again.',
+    },
   },
   // The panel behind the header button (REQ-36, T-58, T-59). It only exists on
   // a page opened with ?face=1. The consent text is read before the camera
@@ -255,9 +337,12 @@ export const strings = {
     continueLabel: 'Continue',
     cancelLabel: 'Cancel',
     closeLabel: 'Close',
-    person: 'Person to register',
+    registeredFor: (personId: string): string =>
+      `Your face is saved for ${personId} on this device.`,
+    chooseFirst:
+      'Choose your name in the demo section first. Your face is saved for that person.',
     register: 'Register face',
-    signIn: 'Sign in',
+    signIn: 'Use my face',
     // The label of the camera picture. The panel is the only place in the app
     // that shows a camera at all.
     videoLabel: 'Camera preview. No picture is kept.',
@@ -289,12 +374,11 @@ export const strings = {
   // The mission time of a reading on a card: the technical label style, with
   // the middle dot between the day and the clock time (guide 7.3).
   timeLabel: (day: number, time: string): string => `DAY ${day} · ${time}`,
-  // The metadata line of the top bar (style guide 5): the mission day of the
-  // latest reading and the device clock, labelled NOW so it is not read as the
-  // time of a reading. The synthetic data sentence of REQ-14 sits beside it.
+  // The metadata line of the top bar: the mission day of the latest reading and
+  // the device clock, on one row with who is on duty. The synthetic data
+  // sentence of REQ-14 sits in the strip under the bar.
   header: {
-    metadata: (day: number, time: string): string =>
-      missionStamp(day, time),
+    metadata: (day: number, time: string): string => missionStamp(day, time),
   },
   // The unit that follows a value on a card: "58 bpm". The 1 to 5 scales hold
   // their range in the unit, so they read "4 / 5" and not "4 1 to 5".
@@ -306,7 +390,8 @@ function entryCount(count: number): string {
   return `${count} ${count === 1 ? 'entry' : 'entries'}`
 }
 
-// The mission time of the header band, in the technical label style.
+// The mission time of the header band, in the technical label style of
+// STANDARDS.md section 4: the day, then the clock, on one line.
 function missionStamp(day: number, time: string): string {
-  return `DAY ${day} · NOW ${time}`
+  return `Day ${day} · ${time}`
 }

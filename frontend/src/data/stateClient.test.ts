@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { createStateClient, type StateQuery } from './stateClient'
+import { readSession, saveSession } from './session'
 import type { FetchLike } from './sync'
 
 const query: StateQuery = {
@@ -152,5 +153,60 @@ describe('createStateClient', () => {
     await expect(
       createStateClient('https://api.example.test', fetchFn).fetchState(query),
     ).resolves.toBeNull()
+  })
+})
+
+describe('the token of a person with an account', () => {
+  // A fetch that keeps the headers of each call, which is what this block is
+  // about.
+  function recordingFetch(status: number): {
+    headers: Array<Record<string, string>>
+    fetchFn: FetchLike
+  } {
+    const headers: Array<Record<string, string>> = []
+    return {
+      headers,
+      fetchFn: (_url, init) => {
+        headers.push({ ...(init.headers as Record<string, string>) })
+        return Promise.resolve(answer(status, valid))
+      },
+    }
+  }
+
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
+  it('sends the bearer token of that person', async () => {
+    saveSession({
+      personId: 'demo_astronaut_1',
+      token: 'abc.def',
+      expiresAt: '2999-01-01T00:00:00Z',
+    })
+    const { headers, fetchFn } = recordingFetch(200)
+
+    await createStateClient('https://api.example.test', fetchFn).fetchState(query)
+
+    expect(headers[0].Authorization).toBe('Bearer abc.def')
+  })
+
+  it('sends no token for a person without a session', async () => {
+    const { headers, fetchFn } = recordingFetch(200)
+    await createStateClient('https://api.example.test', fetchFn).fetchState(query)
+    expect(headers[0].Authorization).toBeUndefined()
+  })
+
+  it('forgets a refused session and answers null', async () => {
+    saveSession({
+      personId: 'demo_astronaut_1',
+      token: 'dead',
+      expiresAt: '2999-01-01T00:00:00Z',
+    })
+    const { fetchFn } = recordingFetch(401)
+
+    await expect(
+      createStateClient('https://api.example.test', fetchFn).fetchState(query),
+    ).resolves.toBeNull()
+    expect(readSession('demo_astronaut_1')).toBeNull()
   })
 })

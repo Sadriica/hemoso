@@ -5,6 +5,9 @@ import { SCALE_UNIT } from '../src/strings'
 // written here: the same rows the content loader reads at build time, so the
 // test follows config/data/indicators.csv when Phys changes it.
 export interface IndicatorRows {
+  // Indicator ids, in file order: a spec names the id it needs (the reaction
+  // check reads these two) instead of a column position.
+  ids: string[]
   // Indicator names, in the order of the "Indicator" select.
   names: string[]
   // Unit of each indicator, by index.
@@ -28,6 +31,7 @@ export function readIndicatorRows(): IndicatorRows {
     .map(splitCsvLine)
   // The first row is the header.
   const data = rows.slice(1)
+  const ids = data.map((cells) => cells[0] ?? '')
   const names = data.map((cells) => cells[1] ?? '')
   const units = data.map((cells) => cells[2] ?? '')
   const measuredOnBoard = data.map((cells) => cells[4] ?? '')
@@ -35,6 +39,7 @@ export function readIndicatorRows(): IndicatorRows {
     (cells[5] ?? '').split(/\s+/).filter(Boolean),
   )
   return {
+    ids,
     names,
     units,
     measuredOnBoard,

@@ -25,12 +25,12 @@
 }
 .planetarium__row-value { font-family: var(--font-mono); font-size: var(--text-small); color: var(--color-text-muted); }
 .planetarium__row--in-range .planetarium__row-state, .planetarium__body--in-range { --ring: var(--status-in-range-text); }
-.planetarium__row--outside .planetarium__row-state, .planetarium__body--outside { --ring: var(--status-outside-text); }
+.planetarium__row--outside .planetarium__row-state, .planetarium__body--outside { --ring: var(--status-attention-text); }
 .planetarium__row--review .planetarium__row-state, .planetarium__body--review { --ring: var(--status-review-text); }
 .planetarium__row--no-data .planetarium__row-state, .planetarium__body--no-data { --ring: var(--status-no-data-text); }
 .planetarium__row-state { color: var(--ring); }
 .planetarium__row--in-range { --ring: var(--status-in-range-text); }
-.planetarium__row--outside { --ring: var(--status-outside-text); }
+.planetarium__row--outside { --ring: var(--status-attention-text); }
 .planetarium__row--review { --ring: var(--status-review-text); }
 .planetarium__row--no-data { --ring: var(--status-no-data-text); }
 
@@ -56,7 +56,7 @@
 .planetarium__orb[aria-pressed='true'] .planetarium__disc { box-shadow: 0 0 0 3px var(--color-bg-raised), 0 0 0 6px var(--color-accent); }
 .planetarium__tag {
   position: absolute; top: 50%; left: 100%; transform: translateY(-50%); margin-left: var(--space-1);
-  display: grid; width: 112px; padding: var(--space-1);
+  display: grid; width: var(--tag-width); padding: var(--space-1);
   background: var(--color-surface); color: var(--color-text); border-radius: var(--radius-small);
   font-family: var(--font-mono); font-size: var(--text-label); overflow-wrap: anywhere; text-align: left;
 }

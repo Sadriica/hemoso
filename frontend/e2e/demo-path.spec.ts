@@ -19,6 +19,10 @@ const SCALE_VALUE = 3
 const copy = strings.phases
 
 test('guided check by keyboard with axe on every phase', async ({ page }) => {
+  // One test walks the whole check: three phases, an axe scan on each, a first
+  // load that includes the intro and a full report. On a loaded machine that is
+  // three times the default budget, not a slower app.
+  test.slow()
   const problems = collectProblems(page)
   let person = ''
   let readingDay = ''
@@ -56,70 +60,83 @@ test('guided check by keyboard with axe on every phase', async ({ page }) => {
     await expect(page.getByText(strings.topbar.onDuty(person))).toBeVisible()
   })
 
-  await test.step('Report: save a measured value', async () => {
-    await page.keyboard.press('Tab')
-    await expect(page.getByLabel(strings.entry.indicator)).toBeFocused()
-    await page.keyboard.press('Tab')
-    await expect(page.getByLabel(strings.entry.value, { exact: true })).toBeFocused()
-    await page.keyboard.type(FIRST_VALUE)
-
-    await page.keyboard.press('Tab')
-    const day = page.getByLabel(strings.entry.missionDay)
-    await expect(day).toBeFocused()
-    // The day after the latest one in the store, so the new reading is the
-    // latest one whatever the clock says.
-    readingDay = String(Number(await day.inputValue()) + 1)
-    await page.keyboard.press('ControlOrMeta+a')
-    await page.keyboard.type(readingDay)
-
-    await page.keyboard.press('Tab')
-    await expect(page.getByLabel(strings.entry.time)).toBeFocused()
-    // The time input has a tab stop per segment, so tab on until the button.
-    await focusByTab(page, page.getByRole('button', { name: strings.entry.save }))
-    await page.keyboard.press('Enter')
-    await expect(page.getByText(strings.entry.savedOnDevice)).toBeVisible()
-    await expect(page.getByText(copy.report.logged(1))).toBeVisible()
-    // No server in the demo: the entry waits on this device (REQ-28).
-    await expect(page.getByText(strings.sync.waiting(1))).toBeVisible()
+  await test.step('Report: one row per indicator, with its icon and its unit', async () => {
+    // Every indicator of the file has a row; the two blood pressures share one.
+    const rows = page.getByRole('listitem').filter({
+      has: page.locator('.reading__body'),
+    })
+    const paired = names.filter((name) => /systolic|diastolic/i.test(name)).length
+    await expect(rows).toHaveCount(names.length - (paired === 2 ? 1 : 0))
+    await expect(page.getByLabel(names[0])).toBeVisible()
+    await expect(
+      page.getByRole('group', { name: strings.entry.bloodPressure }),
+    ).toBeVisible()
+    await expect(page.getByLabel(strings.entry.missionDay)).toBeVisible()
+    await expect(
+      page.getByRole('group', { name: strings.entry.context }),
+    ).toBeVisible()
   })
 
-  await expectNoBlockingA11yIssues(page, 'Report')
-  await expectNoHorizontalScroll(page, 'Report')
-
-  await test.step('Report: save a 1 to 5 value with the arrow keys', async () => {
+  await test.step('Report: fill a measured row and the scale, then save once', async () => {
     expect(
       scaleIndex,
       `no indicator with unit '${SCALE_UNIT}' in config/data/indicators.csv`,
     ).toBeGreaterThanOrEqual(0)
 
-    await focusByTab(page, page.getByLabel(strings.entry.indicator), 'backwards')
-    for (let step = 0; step < scaleIndex; step += 1) {
-      await page.keyboard.press('ArrowDown')
-    }
-
-    // The scale is the only value field that is a group of five choices.
-    const scale = page.getByRole('group', {
-      name: strings.entry.valueWithUnit(SCALE_UNIT),
-    })
-    await expect(scale).toBeVisible()
-    await page.keyboard.press('Tab')
-    await expect(scale.getByRole('radio', { name: '1' })).toBeFocused()
-    for (let choice = 1; choice < SCALE_VALUE; choice += 1) {
-      await page.keyboard.press('ArrowRight')
-    }
-    await expect(scale.getByRole('radio', { name: String(SCALE_VALUE) })).toBeChecked()
-
+    // The shared day first: the day after the latest one in the store, so the
+    // new readings are the latest ones whatever the clock says.
     await page.keyboard.press('Tab')
     const day = page.getByLabel(strings.entry.missionDay)
     await expect(day).toBeFocused()
-    scaleDay = String(Number(await day.inputValue()) + 1)
+    readingDay = String(Number(await day.inputValue()) + 1)
     await page.keyboard.press('ControlOrMeta+a')
-    await page.keyboard.type(scaleDay)
+    await page.keyboard.type(readingDay)
+    scaleDay = readingDay
+
+    await page.keyboard.press('Tab')
+    await expect(page.getByLabel(strings.entry.time)).toBeFocused()
+
+    // The measured row, typed with the keyboard only.
+    await focusByTab(page, page.getByLabel(names[0]))
+    await page.keyboard.type(FIRST_VALUE)
+
+    // The mood row is five choices: two arrow presses reach the third one.
+    const scale = page.getByRole('group', { name: names[scaleIndex] })
+    await focusByTab(page, scale.getByRole('radio').first())
+    for (let choice = 1; choice < SCALE_VALUE; choice += 1) {
+      await page.keyboard.press('ArrowRight')
+    }
+    await expect(
+      scale.getByRole('radio').nth(SCALE_VALUE - 1),
+    ).toBeChecked()
 
     await focusByTab(page, page.getByRole('button', { name: strings.entry.save }))
     await page.keyboard.press('Enter')
+
+    // One save for the whole report: both readings are in, the empty rows are
+    // not (REQ-02).
+    await expect(
+      page.getByText(strings.entry.savedOnDevice, { exact: false }),
+    ).toBeVisible()
     await expect(page.getByText(copy.report.logged(2))).toBeVisible()
-    await expect(page.getByText(strings.sync.waiting(2))).toBeVisible()
+    // No server in the demo: the readings wait on this device (REQ-28).
+    await expect(
+      page.getByTitle(
+        strings.sync.chip(strings.sync.noServer, strings.sync.waiting(2)),
+      ),
+    ).toBeVisible()
+  })
+
+  await expectNoBlockingA11yIssues(page, 'Report')
+  await expectNoHorizontalScroll(page, 'Report')
+
+  await test.step('Report: an empty row saves nothing and says nothing', async () => {
+    // Saving again with every row empty is not an error and stores nothing.
+    const save = page.getByRole('button', { name: strings.entry.save })
+    await focusByTab(page, save)
+    await page.keyboard.press('Enter')
+    await expect(page.getByText(strings.entry.noReading)).toBeVisible()
+    await expect(page.getByText(copy.report.logged(2))).toBeVisible()
   })
 
   await test.step('Report: go on to the status', async () => {

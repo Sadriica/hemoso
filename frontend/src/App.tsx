@@ -1,11 +1,13 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { loadContent } from './content/load'
+import { createAccountClient } from './data/accountClient'
 import { LocalEntryStore } from './data/entryStore'
 import { createHistoryClient } from './data/historyClient'
 import { createSyncClient } from './data/sync'
 import { missionNow } from './domain/clock'
 import { useEntries } from './hooks/useEntries'
 import { useHistorySync } from './hooks/useHistorySync'
+import { isDemoPerson, useSession } from './hooks/useSession'
 import Notice from './components/Notice'
 import PhaseRail from './components/PhaseRail'
 import type { PhaseId } from './phases/phaseIds'
@@ -16,6 +18,7 @@ import IdentifyPhase from './phases/IdentifyPhase'
 import ReportPhase from './phases/ReportPhase'
 import StatusPhase from './phases/StatusPhase'
 import PhaseTransition from './motion/PhaseTransition'
+import { useReducedMotion } from './motion/motion'
 import { strings } from './strings'
 
 // The intro is a chunk of its own; it shows once per tab, on the first load.
@@ -28,13 +31,6 @@ function introSeen(): boolean {
   } catch {
     return false
   }
-}
-
-function prefersReducedMotion(): boolean {
-  return (
-    typeof window.matchMedia === 'function' &&
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  )
 }
 
 // The app is one guided check in three phases, always in this order: identify,
@@ -54,19 +50,27 @@ export default function App() {
   // The same base URL for reading back what the server kept: a second device
   // then shows the readings the first one made (REQ-27).
   const [historyClient] = useState(() => createHistoryClient())
+  // Accounts live on the server (REQ-37). With no base URL there are none, and
+  // the demo astronaut is the only way in.
+  const [accounts] = useState(() => createAccountClient())
+  const session = useSession(accounts)
+  const personId = session.personId
   // Face sign-in is off unless the page is opened with ?face=1: REQ-14 forbids
   // real personal data in the app until Eng 1 records the exception.
   const [faceEnabled] = useState(
     () => new URLSearchParams(window.location.search).get('face') === '1',
   )
-  const [motionReduced, setMotionReduced] = useState(prefersReducedMotion)
+  // Motion is off when the top bar switch says so or when the system asks for
+  // less motion; the system setting is followed live (src/motion/motion.ts).
+  const [still, setStill] = useState(false)
+  const reduction = useReducedMotion()
+  const motionReduced = still || reduction
 
   // The intro opens on the first load of a tab, unless motion is off. Until
   // its chunk arrives, a solid page-colour layer of the same size covers the
   // screen, so the first phase never flashes under it.
   const [introOpen, setIntroOpen] = useState(() => !motionReduced && !introSeen())
-  const [phase, setPhase] = useState<PhaseId>('identify')
-  const [personId, setPersonId] = useState<string | null>(null)
+  const [requestedPhase, setPhase] = useState<PhaseId>('identify')
   const indicatorIds = useMemo(
     () => data.indicators.map((indicator) => indicator.id),
     [data],
@@ -76,11 +80,14 @@ export default function App() {
   // the same readings on any device (REQ-27).
   useHistorySync(historyClient, store, personId, indicatorIds)
 
+  const accountsOffered = session.accountsOffered
   const personIds = useMemo(() => {
     const ids = new Set(data.demoEntries.map((entry) => entry.personId))
     for (const entry of entries) ids.add(entry.personId)
-    return [...ids]
-  }, [data, entries])
+    // The list is the crew of the demo data. A person with an account signs in
+    // with a PIN, and is never picked from a list (REQ-37).
+    return [...ids].filter((id) => !accountsOffered || isDemoPerson(id))
+  }, [data, entries, accountsOffered])
   const personEntries = useMemo(
     () => entries.filter((entry) => entry.personId === personId),
     [entries, personId],
@@ -91,6 +98,12 @@ export default function App() {
     ...(store.isPersistent() ? [] : [strings.sync.notSaved]),
     ...(store.wasReset() ? [strings.sync.reset] : []),
   ]
+
+  // A token the server stopped accepting brings the check back to the PIN form
+  // of that person (T-70), whatever phase asked for it. Their entries wait in
+  // the outbox meanwhile, and signing in again returns to the same phase.
+  const expiredFor = session.expiredFor
+  const phase: PhaseId = expiredFor === null ? requestedPhase : 'identify'
 
   // A new phase starts at the top, with focus on its heading, so a screen
   // reader announces where the person is. The page load keeps the focus where
@@ -131,7 +144,7 @@ export default function App() {
         store={store}
         client={client}
         motionReduced={motionReduced}
-        onToggleMotion={() => setMotionReduced((still) => !still)}
+        onToggleMotion={() => setStill((value) => !value)}
       />
       <main id="main-content" className="stage" tabIndex={-1}>
         {storageWarnings.length > 0 && (
@@ -140,10 +153,10 @@ export default function App() {
         <PhaseTransition phase={phase} still={motionReduced}>
         {phase === 'identify' && (
           <IdentifyPhase
+            key={expiredFor ?? 'identify'}
             headingRef={headingRef}
             personIds={personIds}
-            personId={personId}
-            onPersonChange={setPersonId}
+            session={session}
             faceEnabled={faceEnabled}
             onDone={() => setPhase('report')}
           />
@@ -172,7 +185,7 @@ export default function App() {
             motionReduced={motionReduced}
             onBack={() => setPhase('report')}
             onRestart={() => {
-              setPersonId(null)
+              session.reset()
               setPhase('identify')
             }}
           />

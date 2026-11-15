@@ -50,14 +50,14 @@ function crewPicker(page: Page) {
 async function openFacePanel(page: Page) {
   await page.goto('/?face=1')
   await page.getByRole('button', { name: copy.buttonLabel }).click()
-  const panel = page.getByRole('dialog', { name: copy.heading })
+  const panel = page.getByRole('region', { name: copy.heading })
   await expect(panel).toBeVisible()
   return panel
 }
 
 // Past the consent, where the camera actions and the delete live.
 async function acceptConsent(page: Page) {
-  const panel = page.getByRole('dialog', { name: copy.heading })
+  const panel = page.getByRole('region', { name: copy.heading })
   await panel.getByRole('button', { name: copy.continueLabel }).click()
   await expect(panel.getByRole('button', { name: copy.register })).toBeVisible()
   return panel
@@ -89,8 +89,9 @@ async function expectOnReport(page: Page) {
 // Out of the panel and through the picker to the report: the check still works
 // after the face declined to help.
 async function goOnWithPicker(page: Page) {
-  await page.getByRole('dialog').getByRole('button', { name: copy.closeLabel }).click()
-  await expect(page.getByRole('dialog')).toHaveCount(0)
+  const panel = page.getByRole('region', { name: copy.heading })
+  await panel.getByRole('button', { name: copy.closeLabel }).click()
+  await expect(panel).toHaveCount(0)
   const personId = await pickFirstCrew(page)
   await page.getByRole('button', { name: phasesCopy.identify.next }).click()
   await expectOnReport(page)
@@ -114,7 +115,7 @@ test('?face=1: the consent comes before any camera, and Cancel leaves the picker
   ).toHaveCount(0)
 
   await panel.getByRole('button', { name: copy.cancelLabel }).click()
-  await expect(page.getByRole('dialog')).toHaveCount(0)
+  await expect(page.getByRole('region', { name: copy.heading })).toHaveCount(0)
   expect(models, 'model files asked for before the camera opened').toEqual([])
 
   // Declining costs nothing: the list, the way forward and the report are
@@ -135,7 +136,10 @@ test('?face=1: a camera that shows no face registers nobody and names nobody', a
   const personId = await pickFirstCrew(page)
   const register = panel.getByRole('button', { name: copy.register })
   const signIn = panel.getByRole('button', { name: copy.signIn, exact: true })
-  const personField = panel.getByRole('combobox', { name: copy.person })
+  // The face of the person on duty, named by the panel: no person is picked in
+  // the panel itself (T-70).
+  await expect(panel.getByText(copy.registeredFor(personId))).toBeVisible()
+  await expect(register).toBeEnabled()
 
   // Five frames of the test pattern, no face in any of them: nothing is saved
   // and the person reads why.
@@ -162,7 +166,7 @@ test('?face=1: a camera that shows no face registers nobody and names nobody', a
   })
   await expect(register).toBeEnabled()
   await expect(signIn).toBeEnabled()
-  await expect(personField).toBeEnabled()
+  await expect(panel.getByText(copy.registeredFor(personId))).toBeVisible()
   await expectOnIdentify(page)
   await expect(crewPicker(page).getByRole('radio').first()).toBeFocused()
 

@@ -5,31 +5,10 @@ import Entry from './Entry'
 import { LocalEntryStore } from '../data/entryStore'
 import { isClockTime } from '../domain/clock'
 import type { Entry as EntryRecord, Indicator } from '../domain/types'
+import { strings } from '../strings'
 
-// The two indicators Phys writes on a 1 to 5 scale, and one measured reading,
-// with the ids and units of config/data/indicators.csv.
-const sleepQuality: Indicator = {
-  id: 'sleep_quality_1_5',
-  name: 'Sleep quality',
-  unit: '1 to 5',
-  direction: 'lower',
-  measuredOnBoard: 'Questionnaire after waking',
-  hazards: ['isolation_and_confinement'],
-  minSpread: 1,
-  sources: ['Assumption'],
-}
-
-const mood: Indicator = {
-  id: 'mood_1_5',
-  name: 'Mood',
-  unit: '1 to 5',
-  direction: 'lower',
-  measuredOnBoard: 'Questionnaire before sleep and journaling',
-  hazards: ['isolation_and_confinement'],
-  minSpread: 1,
-  sources: ['Assumption'],
-}
-
+// The indicators of config/data/indicators.csv that these cases need, with the
+// same ids and units Phys writes in the file.
 const heartRate: Indicator = {
   id: 'hr_bpm',
   name: 'Heart rate',
@@ -41,22 +20,63 @@ const heartRate: Indicator = {
   sources: ['Assumption'],
 }
 
-function entry(missionDay: number, value: number): EntryRecord {
+const systolic: Indicator = {
+  id: 'bp_sys_mmhg',
+  name: 'Systolic blood pressure',
+  unit: 'mmHg',
+  direction: 'both',
+  measuredOnBoard: 'Bio-Monitor smart shirt or arm cuff',
+  hazards: ['gravity_fields'],
+  minSpread: 5,
+  sources: ['Assumption'],
+}
+
+const diastolic: Indicator = {
+  id: 'bp_dia_mmhg',
+  name: 'Diastolic blood pressure',
+  unit: 'mmHg',
+  direction: 'both',
+  measuredOnBoard: 'Bio-Monitor smart shirt or arm cuff',
+  hazards: ['gravity_fields'],
+  minSpread: 4,
+  sources: ['Assumption'],
+}
+
+const mood: Indicator = {
+  id: 'mood_1_5',
+  name: 'Mood',
+  unit: '1 to 5',
+  direction: 'lower',
+  measuredOnBoard: 'Questionnaire before sleep and journaling',
+  hazards: ['isolation_and_confinement'],
+  minSpread: 0.5,
+  sources: ['Assumption'],
+}
+
+function entry(
+  indicatorId: string,
+  missionDay: number,
+  value: number,
+  unit = 'bpm',
+): EntryRecord {
   return {
-    id: `demo_astronaut_1:hr_bpm:${missionDay}:13:30`,
+    id: `demo_astronaut_1:${indicatorId}:${missionDay}:13:30`,
     personId: 'demo_astronaut_1',
-    indicatorId: 'hr_bpm',
+    indicatorId,
     value,
-    unit: 'bpm',
+    unit,
     missionDay,
     time: '13:30',
     context: 'rest',
   }
 }
 
-const seedEntries = [entry(1, 56), entry(10, 58)]
+const seedEntries = [entry('hr_bpm', 1, 56), entry('hr_bpm', 10, 58)]
 
-function renderEntry(indicators: Indicator[] = [heartRate]): LocalEntryStore {
+function renderEntry(
+  indicators: Indicator[] = [heartRate],
+  options: { serverConfigured?: boolean } = {},
+): LocalEntryStore {
   const store = new LocalEntryStore({ seedEntries })
   render(
     <Entry
@@ -64,17 +84,18 @@ function renderEntry(indicators: Indicator[] = [heartRate]): LocalEntryStore {
       personId="demo_astronaut_1"
       indicators={indicators}
       entries={seedEntries}
+      serverConfigured={options.serverConfigured}
     />,
   )
   return store
 }
 
-function typeValue(text: string) {
-  fireEvent.change(screen.getByLabelText('Value'), { target: { value: text } })
+function typeInto(label: string, text: string) {
+  fireEvent.change(screen.getByLabelText(label), { target: { value: text } })
 }
 
 async function submit() {
-  const save = screen.getByRole('button', { name: 'Save entry' })
+  const save = screen.getByRole('button', { name: strings.entry.save })
   save.focus()
   await userEvent.setup().keyboard('{Enter}')
 }
@@ -84,269 +105,263 @@ beforeEach(() => {
 })
 
 describe('Entry', () => {
-  it('labels every field and shows the unit once, as the suffix', () => {
-    renderEntry()
-    expect(screen.getByLabelText('Indicator')).toHaveValue('hr_bpm')
+  it('gives every indicator its own row, labelled, with the unit inside', () => {
+    renderEntry([heartRate, systolic, diastolic, mood])
+
+    // One row per indicator, in the order of the file; the two blood pressures
+    // share a row and keep the order of their ids.
+    const rows = screen.getAllByRole('listitem')
+    expect(rows).toHaveLength(3)
+
+    const heart = screen.getByLabelText('Heart rate')
+    expect(heart).toHaveAttribute('type', 'number')
+    expect(heart).toHaveAccessibleDescription('bpm last 58 bpm')
+    expect(within(rows[0]).getByText('bpm')).toHaveClass('reading__unit')
+
+    const pressure = screen.getByRole('group', { name: 'Blood pressure' })
+    expect(within(pressure).getByLabelText('Systolic')).toHaveAttribute(
+      'type',
+      'number',
+    )
+    expect(within(pressure).getByLabelText('Diastolic')).toBeInTheDocument()
+    expect(within(pressure).getByText('mmHg')).toBeInTheDocument()
+
+    // Mood is the scale: five choices in the words of the content.
+    const scale = screen.getByRole('group', { name: 'Mood' })
     expect(
-      screen.getByRole('option', { name: 'Heart rate' }),
-    ).toBeInTheDocument()
-
-    const value = screen.getByLabelText('Value')
-    expect(value).toHaveAttribute('type', 'number')
-    expect(value).toHaveAccessibleDescription('bpm')
-    expect(screen.queryByText('Value (bpm)')).toBeNull()
-
-    const unit = screen.getByText('bpm')
-    expect(unit).toHaveClass('field__unit')
-    expect(unit).not.toHaveAttribute('aria-hidden')
-
-    expect(screen.getByLabelText('Mission day')).toHaveValue(10)
-    const time = screen.getByLabelText('Time')
-    expect(isClockTime((time as HTMLInputElement).value)).toBe(true)
-  })
-
-  it('links the value error after the unit and saves nothing', async () => {
-    const store = renderEntry()
-    await submit()
-
-    const value = screen.getByLabelText('Value')
-    expect(value).toHaveAccessibleDescription('bpm Enter a value.')
-    expect(value).toHaveFocus()
-    expect(screen.getByText('Enter a value.')).toBeInTheDocument()
-    expect(store.list()).toHaveLength(seedEntries.length)
-  })
-
-  it('asks for a whole mission day and moves focus to that field', async () => {
-    const store = renderEntry()
-    typeValue('57')
-    const day = screen.getByLabelText('Mission day')
-    fireEvent.change(day, { target: { value: '0' } })
-    await submit()
-
-    expect(day).toHaveAccessibleDescription(
-      'Enter a whole mission day, 1 or more.',
-    )
-    expect(day).toHaveFocus()
-    expect(store.list()).toHaveLength(seedEntries.length)
-  })
-
-  it('asks for a time as HH:MM and moves focus to that field', async () => {
-    const store = renderEntry()
-    typeValue('57')
-    const time = screen.getByLabelText('Time')
-    fireEvent.change(time, { target: { value: '' } })
-    await submit()
-
-    expect(time).toHaveAccessibleDescription('Enter a time as HH:MM.')
-    expect(time).toHaveFocus()
-    expect(store.list()).toHaveLength(seedEntries.length)
-  })
-
-  it('saves an entry with the keyboard only and clears only the value', async () => {
-    const user = userEvent.setup()
-    const store = renderEntry()
-
-    await user.tab()
-    expect(screen.getByLabelText('Indicator')).toHaveFocus()
-    await user.tab()
-    expect(screen.getByLabelText('Value')).toHaveFocus()
-    await user.keyboard('57')
-    await user.tab()
-    expect(screen.getByLabelText('Mission day')).toHaveFocus()
-    await user.tab()
-    expect(screen.getByLabelText('Time')).toHaveFocus()
-    await user.tab()
-    // One tab stop for the checked context, then the button.
-    const context = screen.getByRole('group', { name: 'Context' })
-    expect(within(context).getByRole('radio', { checked: true })).toHaveFocus()
-    await user.tab()
-
-    const save = screen.getByRole('button', { name: 'Save entry' })
-    expect(save).toHaveFocus()
-    await user.keyboard('{Enter}')
-
-    expect(screen.getByRole('status')).toHaveTextContent(
-      'Saved on this device.',
-    )
-    const saved = store.list()
-    expect(saved).toHaveLength(seedEntries.length + 1)
-    const last = saved[saved.length - 1]
-    expect(last).toMatchObject({
-      personId: 'demo_astronaut_1',
-      indicatorId: 'hr_bpm',
-      value: 57,
-      unit: 'bpm',
-      missionDay: 10,
-    })
-    expect(isClockTime(last.time)).toBe(true)
-    expect(store.pending()).toEqual([last])
-
-    expect((screen.getByLabelText('Value') as HTMLInputElement).value).toBe('')
-    expect(screen.getByLabelText('Mission day')).toHaveValue(10)
-  })
-
-  it('promises the send only when a server is set up', async () => {
-    const store = new LocalEntryStore({ seedEntries })
-    render(
-      <Entry
-        store={store}
-        personId="demo_astronaut_1"
-        indicators={[heartRate]}
-        serverConfigured
-        entries={seedEntries}
-      />,
-    )
-
-    typeValue('57')
-    await submit()
-
-    expect(screen.getByRole('status')).toHaveTextContent(
-      'Saved. Waiting to be sent.',
-    )
-    expect(store.pending()).toHaveLength(1)
-  })
-
-  it.each([sleepQuality, mood])(
-    'shows a 1 to 5 radio group for $name',
-    (scaleIndicator) => {
-      renderEntry([scaleIndicator])
-      const value = screen.getByRole('group', { name: 'Value (1 to 5)' })
-      expect(value).toBeInTheDocument()
-      expect(
-        within(value)
-          .getAllByRole('radio')
-          .map((radio) => (radio as HTMLInputElement).value),
-      ).toEqual(['1', '2', '3', '4', '5'])
-      expect(screen.queryByLabelText('Value')).toBeNull()
-    },
-  )
-
-  it('keeps the number input for an indicator with a measured unit', () => {
-    renderEntry([heartRate])
-    expect(screen.queryByRole('group', { name: 'Value (bpm)' })).toBeNull()
-    expect(screen.getByLabelText('Value')).toHaveAttribute('type', 'number')
-  })
-
-  it('offers nothing outside 1 to 5 for a scale indicator', () => {
-    renderEntry([sleepQuality])
-    expect(screen.queryByRole('radio', { name: '7' })).toBeNull()
-    expect(screen.queryByRole('radio', { name: '-2' })).toBeNull()
-    expect(screen.queryByRole('spinbutton', { name: 'Value' })).toBeNull()
-  })
-
-  it('asks for a choice and moves focus to the first one', async () => {
-    const store = renderEntry([sleepQuality])
-    await submit()
-
-    expect(
-      screen.getByRole('group', { name: 'Value (1 to 5)' }),
-    ).toHaveAccessibleDescription('Choose a value from 1 to 5.')
-    expect(screen.getByRole('radio', { name: '1' })).toHaveFocus()
-    expect(screen.getByText('Choose a value from 1 to 5.')).toBeInTheDocument()
-    expect(store.list()).toHaveLength(seedEntries.length)
-  })
-
-  it('chooses a scale value with the arrow keys and saves it', async () => {
-    const user = userEvent.setup()
-    const store = renderEntry([sleepQuality])
-
-    await user.tab()
-    expect(screen.getByLabelText('Indicator')).toHaveFocus()
-    await user.tab()
-    expect(screen.getByRole('radio', { name: '1' })).toHaveFocus()
-
-    await user.keyboard('{ArrowRight}')
-    expect(screen.getByRole('radio', { name: '2' })).toBeChecked()
-    expect(screen.getByRole('radio', { name: '2' })).toHaveFocus()
-    await user.keyboard('{ArrowRight}')
-    expect(screen.getByRole('radio', { name: '3' })).toBeChecked()
-
-    // One tab stop for the group, then the rest of the form.
-    await user.tab()
-    expect(screen.getByLabelText('Mission day')).toHaveFocus()
-    await user.tab()
-    expect(screen.getByLabelText('Time')).toHaveFocus()
-    await user.tab()
-    const context = screen.getByRole('group', { name: 'Context' })
-    expect(within(context).getByRole('radio', { checked: true })).toHaveFocus()
-    await user.tab()
-    const save = screen.getByRole('button', { name: 'Save entry' })
-    expect(save).toHaveFocus()
-    await user.keyboard('{Enter}')
-
-    expect(screen.getByRole('status')).toHaveTextContent(
-      'Saved on this device.',
-    )
-    expect(store.list()[seedEntries.length]).toMatchObject({
-      personId: 'demo_astronaut_1',
-      indicatorId: 'sleep_quality_1_5',
-      value: 3,
-      unit: '1 to 5',
-      missionDay: 10,
-    })
-    expect(screen.getByRole('radio', { name: '3' })).not.toBeChecked()
-  })
-
-  it('stores the time as 24-hour HH:MM whatever the browser shows', async () => {
-    const store = renderEntry()
-    typeValue('57')
-    const time = screen.getByLabelText('Time')
-    fireEvent.change(time, { target: { value: '15:44' } })
-    await submit()
-
-    const saved = store.list()
-    expect(saved[saved.length - 1]).toMatchObject({
-      value: 57,
-      time: '15:44',
-    })
-  })
-
-  it('offers the four contexts as radios in the words of the app', () => {
-    renderEntry()
-    const context = screen.getByRole('group', { name: 'Context' })
-    expect(
-      within(context)
+      within(scale)
         .getAllByRole('radio')
         .map((radio) => (radio as HTMLInputElement).value),
-    ).toEqual(['rest', 'after_exercise', 'on_waking', 'before_sleep'])
+    ).toEqual(['1', '2', '3', '4', '5'])
     expect(
-      within(context).getByRole('radio', { name: 'At rest' }),
+      within(scale).getByRole('radio', { name: '5 Very good' }),
     ).toBeInTheDocument()
-    expect(
-      within(context).getByRole('radio', { name: 'Before sleep' }),
-    ).toBeInTheDocument()
+    // The scale is choices, never a number field.
+    expect(screen.queryByRole('spinbutton', { name: 'Mood' })).toBeNull()
   })
 
-  it('picks the context that fits the clock time the form opens with', () => {
+  it('draws one icon per row', () => {
+    renderEntry([heartRate, systolic, diastolic, mood])
+    const icons = document.querySelectorAll('[data-icon]')
+    // Heart rate, the blood pressure pair (one gauge), mood.
+    expect(icons).toHaveLength(3)
+  })
+
+  it('starts on the person’s day and time, with the context of that clock', () => {
     vi.spyOn(Date.prototype, 'getHours').mockReturnValue(7)
     vi.spyOn(Date.prototype, 'getMinutes').mockReturnValue(30)
     renderEntry()
-    const context = screen.getByRole('group', { name: 'Context' })
+
+    expect(screen.getByLabelText(strings.entry.missionDay)).toHaveValue(10)
+    const time = screen.getByLabelText(strings.entry.time)
+    expect(isClockTime((time as HTMLInputElement).value)).toBe(true)
+    const context = screen.getByRole('group', { name: strings.entry.context })
     expect(
       within(context).getByRole('radio', { name: 'On waking' }),
     ).toBeChecked()
     vi.restoreAllMocks()
   })
 
-  it('saves the chosen context with the reading', async () => {
-    const user = userEvent.setup()
+  it('offers the four contexts as one segmented control', () => {
+    renderEntry()
+    const context = screen.getByRole('group', { name: strings.entry.context })
+    expect(
+      within(context)
+        .getAllByRole('radio')
+        .map((radio) => (radio as HTMLInputElement).value),
+    ).toEqual(['rest', 'after_exercise', 'on_waking', 'before_sleep'])
+    expect(
+      within(context).getByRole('radio', { name: 'Before sleep' }),
+    ).toBeInTheDocument()
+  })
+
+  it('saves every filled row as its own entry with the shared day and time', async () => {
+    const store = renderEntry([heartRate, systolic, diastolic])
+
+    typeInto('Heart rate', '57')
+    typeInto('Systolic', '120')
+    typeInto('Diastolic', '80')
+    fireEvent.change(screen.getByLabelText(strings.entry.time), {
+      target: { value: '15:44' },
+    })
+    await userEvent
+      .setup()
+      .click(screen.getByRole('radio', { name: 'After exercise' }))
+    await submit()
+
+    const saved = store.list().slice(seedEntries.length)
+    expect(saved).toHaveLength(3)
+    expect(saved).toMatchObject([
+      {
+        personId: 'demo_astronaut_1',
+        indicatorId: 'hr_bpm',
+        value: 57,
+        unit: 'bpm',
+        missionDay: 10,
+        time: '15:44',
+        context: 'after_exercise',
+      },
+      {
+        indicatorId: 'bp_sys_mmhg',
+        value: 120,
+        unit: 'mmHg',
+        missionDay: 10,
+        time: '15:44',
+        context: 'after_exercise',
+      },
+      {
+        indicatorId: 'bp_dia_mmhg',
+        value: 80,
+        unit: 'mmHg',
+        missionDay: 10,
+        time: '15:44',
+        context: 'after_exercise',
+      },
+    ])
+    expect(store.pending()).toEqual(saved)
+  })
+
+  it('skips the rows left empty and names what it saved', async () => {
+    const store = renderEntry([heartRate, systolic, diastolic])
+
+    typeInto('Heart rate', '57')
+    await submit()
+
+    expect(store.list()).toHaveLength(seedEntries.length + 1)
+    expect(store.list()[seedEntries.length]).toMatchObject({
+      indicatorId: 'hr_bpm',
+      value: 57,
+    })
+    expect(screen.getByRole('status')).toHaveTextContent(
+      strings.entry.savedList('Heart rate 57 bpm'),
+    )
+    expect(screen.getByRole('status')).toHaveTextContent(
+      strings.entry.savedOnDevice,
+    )
+    // The day and the time stay, the reading goes.
+    expect((screen.getByLabelText('Heart rate') as HTMLInputElement).value).toBe(
+      '',
+    )
+    expect(screen.getByLabelText(strings.entry.missionDay)).toHaveValue(10)
+  })
+
+  it('saves nothing and points at the row that is wrong', async () => {
+    const store = renderEntry([heartRate, systolic, diastolic])
+
+    typeInto('Heart rate', '57')
+    typeInto('Systolic', '120')
+    await submit()
+
+    expect(store.list()).toHaveLength(seedEntries.length)
+    expect(screen.getByText(strings.entry.errors.valueRequired)).toBeInTheDocument()
+    // The error belongs to the pressure row, not to the heart rate one.
+    expect(screen.getByLabelText('Heart rate')).not.toHaveAttribute(
+      'aria-invalid',
+    )
+    expect(screen.getByLabelText('Diastolic')).toHaveFocus()
+  })
+
+  it('asks for the second blood pressure when the first one is filled', async () => {
+    const store = renderEntry([systolic, diastolic])
+
+    typeInto('Systolic', '120')
+    await submit()
+
+    const pressure = screen.getByRole('group', { name: 'Blood pressure' })
+    expect(pressure).toHaveAccessibleDescription(
+      `mmHg ${strings.entry.errors.valueRequired}`,
+    )
+    // The empty half of the pair is the one the person still has to write.
+    expect(within(pressure).getByLabelText('Diastolic')).toHaveFocus()
+    expect(store.list()).toHaveLength(seedEntries.length)
+  })
+
+  it('keeps the day and time checks, next to their field', async () => {
     const store = renderEntry()
-    typeValue('57')
-    await user.click(screen.getByRole('radio', { name: 'After exercise' }))
+
+    typeInto('Heart rate', '57')
+    fireEvent.change(screen.getByLabelText(strings.entry.missionDay), {
+      target: { value: '0' },
+    })
+    fireEvent.change(screen.getByLabelText(strings.entry.time), {
+      target: { value: '' },
+    })
+    await submit()
+
+    const day = screen.getByLabelText(strings.entry.missionDay)
+    expect(day).toHaveAccessibleDescription(strings.entry.errors.missionDay)
+    expect(day).toHaveFocus()
+    expect(
+      screen.getByText(strings.entry.errors.time),
+    ).toBeInTheDocument()
+    expect(store.list()).toHaveLength(seedEntries.length)
+  })
+
+  it('asks for a whole day before it saves, and for nothing else', async () => {
+    const store = renderEntry()
+
+    typeInto('Heart rate', '57')
+    fireEvent.change(screen.getByLabelText(strings.entry.missionDay), {
+      target: { value: '2.5' },
+    })
+    await submit()
+
+    expect(
+      screen.getByLabelText(strings.entry.missionDay),
+    ).toHaveAccessibleDescription(strings.entry.errors.missionDay)
+    expect(store.list()).toHaveLength(seedEntries.length)
+  })
+
+  it('says when there is nothing to save instead of saving an empty report', async () => {
+    const store = renderEntry()
+    await submit()
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      strings.entry.noReading,
+    )
+    expect(store.list()).toHaveLength(seedEntries.length)
+  })
+
+  it('promises the send only when a server is set up', async () => {
+    const store = renderEntry([heartRate], { serverConfigured: true })
+
+    typeInto('Heart rate', '57')
+    await submit()
+
+    expect(screen.getByRole('status')).toHaveTextContent(strings.entry.saved)
+    expect(screen.getByRole('status')).not.toHaveTextContent(
+      strings.entry.savedOnDevice,
+    )
+    expect(store.pending()).toHaveLength(1)
+  })
+
+  it('answers the scale with the arrow keys and saves it as 1 to 5', async () => {
+    const user = userEvent.setup()
+    const store = renderEntry([mood])
+
+    const scale = screen.getByRole('group', { name: 'Mood' })
+    const first = within(scale).getByRole('radio', { name: '1 Very low' })
+    first.focus()
+    await user.keyboard('{ArrowRight}{ArrowRight}')
+    expect(within(scale).getByRole('radio', { name: '3 Neutral' })).toBeChecked()
+
     await submit()
 
     expect(store.list()[seedEntries.length]).toMatchObject({
-      value: 57,
-      context: 'after_exercise',
+      indicatorId: 'mood_1_5',
+      value: 3,
+      unit: '1 to 5',
     })
     expect(
-      screen.getByRole('radio', { name: 'After exercise' }),
-    ).toBeChecked()
+      within(scale).getByRole('radio', { name: '3 Neutral' }),
+    ).not.toBeChecked()
   })
 
   it('says when there are no indicators to enter', () => {
     renderEntry([])
-    expect(screen.getByText('No indicators are set up yet.')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Save entry' })).toBeNull()
+    expect(screen.getByText(strings.entry.noIndicators)).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: strings.entry.save }),
+    ).toBeNull()
   })
 })

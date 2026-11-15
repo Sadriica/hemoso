@@ -9,6 +9,8 @@ const COLOR: Record<string, string> = {
   temp_core_c: 'thermoregulation',
   sleep_h: 'sleep',
   mood_1_5: 'neuro',
+  reaction_median_ms: 'neuro',
+  reaction_lapses: 'neuro',
   glucose_mgdl: 'metabolic',
 }
 
@@ -132,9 +134,38 @@ function Drop({ value }: { value: number }) {
 }
 
 /**
+ * Lapses as a row of five ticks: the filled ones are the lapses counted. The
+ * drawing only reads `value`; the card states the number in words.
+ */
+function Tally({ value }: { value: number }) {
+  const on = Math.round(fraction('reaction_lapses', value) * 5)
+  return (
+    <>
+      {[0, 1, 2, 3, 4].map((index) => {
+        const filled = index < on
+        return (
+          <rect
+            key={index}
+            className={filled ? undefined : 'ins-track'}
+            x={14 + index * 15}
+            y={filled ? 30 : 52}
+            width={9}
+            height={filled ? 34 : 12}
+            rx={4}
+            fill={filled ? 'currentColor' : 'none'}
+            strokeWidth={3}
+          />
+        )
+      })}
+    </>
+  )
+}
+
+/**
  * Props of `Instrument`.
  * - `indicatorId`: one of hr_bpm, bp_sys_mmhg, bp_dia_mmhg, temp_core_c,
- *   sleep_h, mood_1_5, glucose_mgdl. Any other id renders nothing.
+ *   sleep_h, mood_1_5, glucose_mgdl, reaction_median_ms, reaction_lapses. Any
+ *   other id renders nothing.
  * - `value`: the number the card already shows; it only sets the drawing.
  * - `reducedMotion`: draw the final state with no animation.
  */
@@ -170,6 +201,13 @@ export default function Instrument({ indicatorId, value, reducedMotion = false }
       break
     case 'glucose_mgdl':
       figure = <Drop value={value} />
+      break
+    case 'reaction_median_ms':
+      // The needle settles on the median time, like the blood pressure gauge.
+      figure = <Gauge id={indicatorId} value={value} />
+      break
+    case 'reaction_lapses':
+      figure = <Tally value={value} />
       break
     default:
       return null

@@ -13,6 +13,9 @@ const SYSTEMS: Record<string, BodySystemId> = {
   temp_core_c: 'thermoregulation',
   sleep_h: 'sleep',
   mood_1_5: 'neuro',
+  // The reaction check (T-71) writes these two; Phys adds the rows in T-72.
+  reaction_median_ms: 'neuro',
+  reaction_lapses: 'neuro',
   glucose_mgdl: 'metabolic',
 };
 

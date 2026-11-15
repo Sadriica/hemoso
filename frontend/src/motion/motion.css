@@ -1,16 +1,29 @@
-/* Motion layer (DESIGN.md section 7). Only transform, opacity and stroke offsets. */
+/* Motion layer (DESIGN.md section 7). Only transform, opacity and stroke
+   offsets: no layout property is animated, and everything stops under reduced
+   motion or the top bar switch. */
+
+/* The intro: about three and a half seconds, skippable at any moment. Its own
+   starfield drifts, the mark draws itself and the name types in. */
 .intro__layer {
   position: fixed;
   inset: 0;
   z-index: 100;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  place-content: center;
+  justify-items: center;
   gap: var(--space-4);
+  overflow: hidden;
   background: var(--color-bg);
   color: var(--color-accent);
-  animation: intro-out var(--motion-cinematic) linear both;
+  animation: intro-out var(--motion-intro) linear both;
+}
+
+/* A star from the intro sky: a dot that drifts sideways and twinkles. */
+.intro__star {
+  position: absolute;
+  border-radius: var(--radius-round);
+  background: color-mix(in srgb, var(--color-text) 70%, transparent);
+  animation: intro-drift 2600ms var(--ease-out) both;
 }
 
 .intro__mark {
@@ -25,11 +38,35 @@
 .intro__mark * {
   stroke-dasharray: 1;
   stroke-dashoffset: 1;
-  animation: intro-draw var(--motion-slow) var(--ease-standard) forwards;
+  animation: intro-draw 600ms var(--ease-standard) forwards;
 }
 
-.intro__mark path { animation-delay: var(--motion-fast); }
-.intro__mark circle:last-child { animation-delay: var(--motion-base); }
+.intro__mark path {
+  animation-delay: 200ms;
+}
+
+.intro__mark circle:last-child {
+  animation-delay: 500ms;
+}
+
+/* The name types in: the box widens in six steps, the caret sits at the edge. */
+.intro__name {
+  overflow: hidden;
+  width: 6ch;
+  margin: 0;
+  border-right: 2px solid currentColor;
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-size: var(--text-display);
+  font-weight: 700;
+  letter-spacing: var(--tracking-display);
+  line-height: var(--leading-display);
+  text-transform: uppercase;
+  white-space: nowrap;
+  animation:
+    intro-type 1200ms steps(6, end) 900ms both,
+    intro-caret 600ms steps(1, end) 900ms 3 both;
+}
 
 .intro__clock {
   margin: 0;
@@ -40,21 +77,22 @@
   letter-spacing: var(--tracking-label);
   text-transform: uppercase;
   opacity: 0;
-  animation: intro-fade var(--motion-base) var(--ease-out) var(--motion-slow) forwards;
+  animation: intro-fade var(--motion-base) var(--ease-out) 2200ms forwards;
 }
 
+/* A solid band under the skip button, so its text never sits on the sky. */
 .intro__skip {
   position: fixed;
   right: var(--space-4);
   bottom: var(--space-4);
   z-index: 101;
-  min-width: 44px;
-  min-height: 44px;
+  min-width: var(--tap-min);
+  min-height: var(--tap-min);
   padding: 0 var(--space-3);
-  background: transparent;
-  color: var(--color-text);
   border: 1px solid var(--color-border-control);
   border-radius: var(--radius-card);
+  background: var(--color-bg-raised);
+  color: var(--color-text);
   font-family: var(--font-mono);
   font-size: var(--text-label);
   letter-spacing: var(--tracking-label);
@@ -67,18 +105,76 @@
   outline-offset: 2px;
 }
 
-@keyframes intro-draw { to { stroke-dashoffset: 0; } }
-@keyframes intro-fade { to { opacity: 1; } }
+@keyframes intro-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes intro-drift {
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+
+  40% {
+    opacity: 0.9;
+  }
+
+  to {
+    opacity: 0.5;
+    transform: translateX(12px);
+  }
+}
+
+@keyframes intro-type {
+  from {
+    width: 0;
+  }
+}
+
+@keyframes intro-caret {
+  0%,
+  100% {
+    border-color: currentColor;
+  }
+
+  50% {
+    border-color: transparent;
+  }
+}
+
+@keyframes intro-fade {
+  to {
+    opacity: 1;
+  }
+}
+
 @keyframes intro-out {
-  0%, 75% { opacity: 1; }
-  100% { opacity: 0; }
+  0%,
+  88% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
 }
 
+/* Reduced motion: no intro at all (the screen renders nothing), and no
+   animation on anything that survives. */
 @media (prefers-reduced-motion: reduce) {
-  .intro__layer, .intro__layer *, .intro__skip { animation: none; transition: none; }
+  .intro__layer,
+  .intro__layer *,
+  .intro__skip {
+    animation: none;
+    transition: none;
+  }
 }
 
-.app--still .intro__layer, .app--still .intro__layer *, .app--still .intro__skip {
+.app--still .intro__layer,
+.app--still .intro__layer *,
+.app--still .intro__skip {
   animation: none;
   transition: none;
 }
