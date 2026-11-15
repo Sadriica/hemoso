@@ -40,7 +40,7 @@
   transform-box: view-box;
 }
 .instrument--anim .ins-settle {
-  animation: ins-settle var(--motion-slow) var(--ease-standard) both;
+  animation: ins-settle var(--motion-base) var(--ease-standard) both;
 }
 .instrument--anim .ins-beat {
   transform-box: fill-box;

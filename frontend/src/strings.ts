@@ -197,6 +197,9 @@ export const strings = {
     // section 3, `context`). The choice that fits the local clock is picked
     // first, and the person can change it.
     context: 'Context',
+    // The header control sets every row's own context at once.
+    applyToAll: 'Apply to all rows',
+    rowContext: (name: string): string => `Context for ${name}`,
     contextLabels: {
       rest: 'At rest',
       after_exercise: 'After exercise',

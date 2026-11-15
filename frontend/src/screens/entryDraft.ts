@@ -1,5 +1,6 @@
 import { isClockTime, isMissionDay } from '../domain/clock'
-import type { Indicator } from '../domain/types'
+import { MEASUREMENT_CONTEXTS } from '../domain/context'
+import type { Entry, Indicator, MeasurementContext } from '../domain/types'
 import { systemOf, type BodySystemId } from '../icons/meta'
 import { isReactionIndicator } from '../reaction/ids'
 import { SCALE_UNIT, strings } from '../strings'
@@ -251,4 +252,43 @@ export function parseReport(
   }
 
   return { ok: true, readings, missionDay, time }
+}
+
+// The context a row opens with: the one most of this person's entries for its
+// indicators were taken in, because that is the population the next reading is
+// compared with. A tie keeps the fallback when it is among the leaders and
+// otherwise follows the order of the four contexts; with no entries at all the
+// fallback (the context of the clock) is used.
+export function usualContext(
+  entries: readonly Entry[],
+  indicatorIds: readonly string[],
+  fallback: MeasurementContext,
+): MeasurementContext {
+  const counts = new Map<MeasurementContext, number>()
+  for (const entry of entries) {
+    if (!indicatorIds.includes(entry.indicatorId)) continue
+    counts.set(entry.context, (counts.get(entry.context) ?? 0) + 1)
+  }
+  const top = Math.max(0, ...counts.values())
+  if (top === 0) return fallback
+  const leaders = MEASUREMENT_CONTEXTS.filter((c) => counts.get(c) === top)
+  return leaders.includes(fallback) ? fallback : leaders[0]
+}
+
+// The opening context of every row, by row key.
+export function rowContexts(
+  rows: readonly ReadingRow[],
+  entries: readonly Entry[],
+  fallback: MeasurementContext,
+): Record<string, MeasurementContext> {
+  return Object.fromEntries(
+    rows.map((row) => [
+      row.key,
+      usualContext(
+        entries,
+        row.fields.map((field) => field.indicatorId),
+        fallback,
+      ),
+    ]),
+  )
 }

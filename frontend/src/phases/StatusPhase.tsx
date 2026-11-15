@@ -19,10 +19,13 @@ import './status.css'
 import Home from '../screens/Home'
 import PsychologicalState from '../reaction/PsychologicalState'
 import { strings } from '../strings'
+import '../screens/scene-grammar.css'
 
 // The history (chart and the full table) is a chunk of its own: it loads when
 // the person opens it, never on the first screen. The pain picker brings the
 // 3D body, so it is a chunk too, and it loads on the tap that opens it.
+// The quiet scene band beside the heading: decoration only, its own chunk.
+const OrbitalScene = lazy(() => import('../components/orbital'))
 const History = lazy(() => import('../screens/History'))
 const PainPicker = lazy(() => import('../components/body3d/PainPicker'))
 
@@ -72,6 +75,12 @@ export default function StatusPhase({
   return (
     <section className="phase phase--status" aria-labelledby="phase-heading">
       <PhaseHeading ref={headingRef} eyebrow={copy.eyebrow} lines={copy.headline} intro={copy.intro} />
+
+      <div className="scene-band scene-band--status" data-enter="scene" aria-hidden="true">
+        <Suspense fallback={null}>
+          <OrbitalScene variant="status" />
+        </Suspense>
+      </div>
 
       <div className="status">
         <Home

@@ -148,24 +148,63 @@ describe('Entry', () => {
     expect(icons).toHaveLength(3)
   })
 
-  it('starts on the person’s day and time, with the context of that clock', () => {
-    vi.spyOn(Date.prototype, 'getHours').mockReturnValue(7)
-    vi.spyOn(Date.prototype, 'getMinutes').mockReturnValue(30)
+  it('starts on the person’s day and time', () => {
     renderEntry()
-
     expect(screen.getByLabelText(strings.entry.missionDay)).toHaveValue('10')
     const time = screen.getByLabelText(strings.entry.time)
     expect(isClockTime((time as HTMLInputElement).value)).toBe(true)
-    const context = screen.getByRole('group', { name: strings.entry.context })
-    expect(
-      within(context).getByRole('radio', { name: 'On waking' }),
-    ).toBeChecked()
+  })
+
+  it('opens each row on its usual context, and the clock when there is none', () => {
+    vi.spyOn(Date.prototype, 'getHours').mockReturnValue(7)
+    vi.spyOn(Date.prototype, 'getMinutes').mockReturnValue(30)
+    renderEntry([heartRate, mood])
+    // Heart rate was taken at rest in the seeded history; mood has no entries.
+    expect(screen.getByLabelText(strings.entry.rowContext('Heart rate'))).toHaveValue('rest')
+    expect(screen.getByLabelText(strings.entry.rowContext('Mood'))).toHaveValue('on_waking')
+    // The rows differ, so the header control has no choice marked.
+    const all = screen.getByRole('group', { name: strings.entry.applyToAll })
+    expect(within(all).queryByRole('radio', { checked: true })).toBeNull()
     vi.restoreAllMocks()
+  })
+
+  it('sets every row with the header control', async () => {
+    const user = userEvent.setup()
+    renderEntry([heartRate, mood])
+    const all = screen.getByRole('group', { name: strings.entry.applyToAll })
+    await user.click(within(all).getByRole('radio', { name: 'Before sleep' }))
+    expect(screen.getByLabelText(strings.entry.rowContext('Heart rate'))).toHaveValue('before_sleep')
+    expect(screen.getByLabelText(strings.entry.rowContext('Mood'))).toHaveValue('before_sleep')
+    expect(within(all).getByRole('radio', { name: 'Before sleep' })).toBeChecked()
+  })
+
+  it('saves each row with its own context, the blood pressure pair sharing one', async () => {
+    const user = userEvent.setup()
+    const store = renderEntry([heartRate, systolic, diastolic, mood])
+    await user.selectOptions(
+      screen.getByLabelText(strings.entry.rowContext('Blood pressure')),
+      'after_exercise',
+    )
+    await user.selectOptions(
+      screen.getByLabelText(strings.entry.rowContext('Mood')),
+      'before_sleep',
+    )
+    typeInto('Heart rate', '60')
+    typeInto('Systolic', '118')
+    typeInto('Diastolic', '76')
+    await user.click(within(screen.getByRole('group', { name: 'Mood' })).getByRole('radio', { name: '4 Good' }))
+    await submit()
+    const saved = store.list().slice(seedEntries.length)
+    const contextOf = (id: string) => saved.find((e) => e.indicatorId === id)?.context
+    expect(contextOf('hr_bpm')).toBe('rest')
+    expect(contextOf('bp_sys_mmhg')).toBe('after_exercise')
+    expect(contextOf('bp_dia_mmhg')).toBe('after_exercise')
+    expect(contextOf('mood_1_5')).toBe('before_sleep')
   })
 
   it('offers the four contexts as one segmented control', () => {
     renderEntry()
-    const context = screen.getByRole('group', { name: strings.entry.context })
+    const context = screen.getByRole('group', { name: strings.entry.applyToAll })
     expect(
       within(context)
         .getAllByRole('radio')

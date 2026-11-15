@@ -82,6 +82,9 @@ async function matchFace(user: ReturnType<typeof userEvent.setup>) {
 }
 
 beforeEach(() => {
+  // The carry to the next phase takes half a second; these tests are about what
+  // the phase does, so motion is off (src/motion/carry.test.tsx covers the carry).
+  vi.stubGlobal('matchMedia', () => ({ matches: true, addEventListener() {}, removeEventListener() {} }))
   localStorage.clear()
   engine.descriptorFrom.mockReset()
   Object.defineProperty(HTMLMediaElement.prototype, 'readyState', {
