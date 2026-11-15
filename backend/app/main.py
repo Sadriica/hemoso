@@ -12,12 +12,21 @@ from fastapi import Depends, FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 from . import storage
+from .conditions import condition_result, latest_value, parse_signals
 from .indicators import (
     load_attention_rows,
+    load_condition_rows,
     load_indicator_rows,
     validate_against_indicators,
 )
-from .models import CONTEXTS, AttentionRow, Entry, IndicatorState, is_valid_id
+from .models import (
+    CONTEXTS,
+    AttentionRow,
+    ConditionScore,
+    Entry,
+    IndicatorState,
+    is_valid_id,
+)
 from .ratelimit import RateLimitMiddleware, limiter
 from .state import attention_for, baseline, state_for, window
 
@@ -160,3 +169,45 @@ def get_state(
             )
         ),
     )
+
+
+@app.get("/people/{person_id}/conditions")
+def get_conditions(person_id: str, store: Store) -> list[ConditionScore]:
+    """The evidence score of every condition in config/rules/conditions.csv.
+
+    One point per signal: 1 when the newest reading crossed an attention row on
+    the signal's side, 0.5 when it is outside the person's baseline on that
+    side (both from `app.state`), 0 otherwise; the score is the mean of the
+    usable signals (bio2-02, FORMATS.md section 3 point 3).
+    """
+    if not is_valid_id(person_id):
+        raise HTTPException(
+            status_code=422, detail="person_id must be lowercase snake_case"
+        )
+    rows = load_condition_rows()
+    indicators = load_indicator_rows()
+    indicator_ids = list(
+        dict.fromkeys(
+            indicator_id
+            for row in rows
+            for indicator_id, _ in parse_signals(row["based_on"])
+        )
+    )
+    try:
+        histories = {
+            indicator_id: store.history(person_id, indicator_id)
+            for indicator_id in indicator_ids
+        }
+    except httpx.HTTPError as error:
+        raise HTTPException(
+            status_code=502, detail="upstream storage error"
+        ) from error
+    latest = {}
+    for indicator_id in indicator_ids:
+        indicator = indicators.get(indicator_id)
+        latest[indicator_id] = latest_value(
+            histories[indicator_id],
+            None if indicator is None else float(indicator["min_spread"]),
+            load_attention_rows(indicator_id),
+        )
+    return [condition_result(row, latest) for row in rows]
