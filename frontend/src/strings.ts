@@ -262,12 +262,14 @@ export const strings = {
       unit: string
       day: number
       time: string
+      // How the context reads in a sentence: "at rest".
+      context: string
       median: string
       count: number
       difference: string
     }): string =>
       `Latest: ${parts.value} ${parts.unit} on Day ${parts.day} ${parts.time}. ` +
-      `Your earlier median: ${parts.median} ${parts.unit} (${entryCount(
+      `Your usual ${parts.context}: ${parts.median} ${parts.unit} (${readingCount(
         parts.count,
       )}). ` +
       `Difference: ${parts.difference} ${parts.unit}.`,
@@ -466,9 +468,9 @@ export const strings = {
   cardUnit: (unit: string): string => (unit === SCALE_UNIT ? '/ 5' : unit),
 }
 
-// "(1 entry)" and "(9 entries)": the count inside the history sentence.
-function entryCount(count: number): string {
-  return `${count} ${count === 1 ? 'entry' : 'entries'}`
+// "last 1 reading" and "last 9 readings": the count inside the history sentence.
+function readingCount(count: number): string {
+  return `last ${count} ${count === 1 ? 'reading' : 'readings'}`
 }
 
 // The mission time of the header band, in the technical label style of

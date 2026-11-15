@@ -197,13 +197,50 @@ describe('History', () => {
     expect(rowCells(screen.getAllByRole('row')[1])[3]).toBe('4 / 5')
   })
 
-  it('compares the latest reading with the earlier median', () => {
-    renderHistory(readings)
+  it('compares the latest reading with the usual value of the same context', () => {
+    renderHistory([
+      entry(1, '08:00', 4),
+      entry(2, '08:00', 5),
+      entry(3, '08:00', 6),
+      entry(10, '15:44', 42),
+    ])
     expect(
       screen.getByText(
         'Latest: 42 example_unit on Day 10 15:44. ' +
-          'Your earlier median: 5 example_unit (2 entries). ' +
+          'Your usual at rest: 5 example_unit (last 3 readings). ' +
           'Difference: +37 example_unit.',
+      ),
+    ).toBeInTheDocument()
+  })
+
+  it('ignores earlier readings of another context, like the card does', () => {
+    renderHistory([
+      entry(1, '08:00', 100, { context: 'after_exercise' }),
+      entry(2, '08:00', 4),
+      entry(3, '08:00', 5),
+      entry(4, '08:00', 6),
+      entry(5, '08:00', 8),
+    ])
+    expect(
+      screen.getByText(
+        'Latest: 8 example_unit on Day 5 08:00. ' +
+          'Your usual at rest: 5 example_unit (last 3 readings). ' +
+          'Difference: +3 example_unit.',
+      ),
+    ).toBeInTheDocument()
+  })
+
+  it('says there is not enough when the context has fewer than three earlier readings', () => {
+    renderHistory([
+      entry(1, '08:00', 100, { context: 'after_exercise' }),
+      entry(2, '08:00', 101, { context: 'after_exercise' }),
+      entry(3, '08:00', 102, { context: 'after_exercise' }),
+      entry(4, '08:00', 5),
+      entry(5, '08:00', 6),
+    ])
+    expect(
+      screen.getByText(
+        'Latest: 6 example_unit on Day 5 08:00. Not enough earlier entries to compare yet.',
       ),
     ).toBeInTheDocument()
   })
@@ -212,24 +249,14 @@ describe('History', () => {
     renderHistory([
       entry(1, '08:00', 10),
       entry(2, '08:00', 12),
-      entry(3, '08:00', 8),
+      entry(3, '08:00', 11),
+      entry(4, '08:00', 8),
     ])
     expect(
       screen.getByText(
-        'Latest: 8 example_unit on Day 3 08:00. ' +
-          'Your earlier median: 11 example_unit (2 entries). ' +
+        'Latest: 8 example_unit on Day 4 08:00. ' +
+          'Your usual at rest: 11 example_unit (last 3 readings). ' +
           'Difference: -3 example_unit.',
-      ),
-    ).toBeInTheDocument()
-  })
-
-  it('says one entry instead of entries for a single earlier reading', () => {
-    renderHistory([entry(1, '08:00', 10), entry(2, '08:00', 14)])
-    expect(
-      screen.getByText(
-        'Latest: 14 example_unit on Day 2 08:00. ' +
-          'Your earlier median: 10 example_unit (1 entry). ' +
-          'Difference: +4 example_unit.',
       ),
     ).toBeInTheDocument()
   })
@@ -238,12 +265,13 @@ describe('History', () => {
     renderHistory([
       entry(1, '08:00', 36.4),
       entry(2, '08:00', 36.7),
-      entry(3, '08:00', 36.7),
+      entry(3, '08:00', 36.6),
+      entry(4, '08:00', 36.7),
     ])
     expect(
       screen.getByText(
-        'Latest: 36.7 example_unit on Day 3 08:00. ' +
-          'Your earlier median: 36.6 example_unit (2 entries). ' +
+        'Latest: 36.7 example_unit on Day 4 08:00. ' +
+          'Your usual at rest: 36.6 example_unit (last 3 readings). ' +
           'Difference: +0.1 example_unit.',
       ),
     ).toBeInTheDocument()
@@ -271,7 +299,7 @@ describe('History', () => {
 
     expect(
       await screen.findByText(
-        /Your earlier median: 30 example_unit \(7 entries\)/,
+        /Your usual at rest: 30 example_unit \(last 7 readings\)/,
       ),
     ).toBeInTheDocument()
     expect(
@@ -285,10 +313,15 @@ describe('History', () => {
       'fetch',
       vi.fn(() => Promise.reject(new Error('offline'))),
     )
-    renderHistory([entry(1, '08:00', 10), entry(10, '15:44', 42)])
+    renderHistory([
+      entry(1, '08:00', 10),
+      entry(2, '08:00', 10),
+      entry(3, '08:00', 10),
+      entry(10, '15:44', 42),
+    ])
 
     expect(
-      await screen.findByText(/Your earlier median: 10 example_unit/),
+      await screen.findByText(/Your usual at rest: 10 example_unit/),
     ).toBeInTheDocument()
   })
 
@@ -356,16 +389,18 @@ describe('History', () => {
   it('never counts another person readings', () => {
     renderHistory([
       entry(1, '08:00', 10),
-      entry(2, '08:00', 12),
-      entry(3, '08:00', 1000, { personId: 'demo_astronaut_2' }),
-      entry(4, '08:00', 2000, { personId: 'demo_astronaut_2' }),
+      entry(2, '08:00', 10),
+      entry(3, '08:00', 10),
+      entry(4, '08:00', 12),
+      entry(5, '08:00', 1000, { personId: 'demo_astronaut_2' }),
+      entry(6, '08:00', 2000, { personId: 'demo_astronaut_2' }),
     ])
-    expect(screen.getAllByRole('row')).toHaveLength(3)
+    expect(screen.getAllByRole('row')).toHaveLength(5)
     expect(screen.queryByText(/2000/)).toBeNull()
     expect(
       screen.getByText(
-        'Latest: 12 example_unit on Day 2 08:00. ' +
-          'Your earlier median: 10 example_unit (1 entry). ' +
+        'Latest: 12 example_unit on Day 4 08:00. ' +
+          'Your usual at rest: 10 example_unit (last 3 readings). ' +
           'Difference: +2 example_unit.',
       ),
     ).toBeInTheDocument()
@@ -386,19 +421,23 @@ describe('History', () => {
   })
 
   it('shows a reading added after the first render', () => {
-    const store = renderHistory([entry(1, '08:00', 10)])
+    const store = renderHistory([
+      entry(1, '08:00', 10),
+      entry(2, '08:00', 10),
+      entry(3, '08:00', 10),
+    ])
     act(() => {
       store.add({
         personId: 'demo_astronaut_1',
         indicatorId: 'example_indicator',
         value: 20,
         unit: 'example_unit',
-        missionDay: 2,
+        missionDay: 4,
         time: '09:00',
         context: 'rest',
       })
     })
-    expect(screen.getAllByRole('row')).toHaveLength(3)
-    expect(screen.getByText(/Your earlier median: 10 example_unit/)).toBeInTheDocument()
+    expect(screen.getAllByRole('row')).toHaveLength(5)
+    expect(screen.getByText(/Your usual at rest: 10 example_unit/)).toBeInTheDocument()
   })
 })

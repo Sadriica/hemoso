@@ -1,14 +1,14 @@
 import { useId, useState } from 'react'
 import {
-  compareToOwnHistory,
   comparisonFromBaseline,
   newestFirst,
   type HistoryComparison,
 } from '../domain/entries'
 import type { LoadedContent } from '../content/load'
 import { createStateClient } from '../data/stateClient'
-import type { Entry } from '../domain/types'
+import type { AttentionRule, Entry } from '../domain/types'
 import type { EntryStore } from '../data/entryStore'
+import { localState } from '../domain/state'
 import { useEntries } from '../hooks/useEntries'
 import { useIndicatorState } from '../hooks/useIndicatorState'
 import { statusBadgeKind, statusText } from '../components/attentionText'
@@ -31,13 +31,26 @@ export default function History({
   store,
   personId,
   data,
+  indicatorId,
 }: {
   store: EntryStore
   personId: string
   data: LoadedContent
+  // The indicator the status card has selected. The panel opens on it and
+  // follows it; the select below still lets the person look at another one.
+  indicatorId?: string
 }) {
   const entries = useEntries(store)
-  const [chosenId, setChosenId] = useState(data.indicators[0]?.id ?? '')
+  const [chosenId, setChosenId] = useState(
+    indicatorId ?? data.indicators[0]?.id ?? '',
+  )
+  // A new card selection moves the panel; compared during render so there is
+  // no frame with the old indicator.
+  const [followed, setFollowed] = useState(indicatorId)
+  if (indicatorId !== followed) {
+    setFollowed(indicatorId)
+    if (indicatorId !== undefined) setChosenId(indicatorId)
+  }
   // Built once from VITE_API_BASE_URL. Empty is the public demo: the sentence
   // compares the readings of this device.
   const [client] = useState(() => createStateClient())
@@ -69,7 +82,8 @@ export default function History({
   const latest = rows[0] ?? null
   // The backend median covers the window the state rule uses: the last 14
   // readings in the same context (docs/API.md). Without an answer, or without
-  // a baseline there, the sentence compares the readings of this device.
+  // a baseline there, the sentence uses the same rule on the readings of this
+  // device, so it names the same usual value as the indicator card.
   const answer = useIndicatorState(
     client,
     latest === null || indicator === undefined
@@ -88,7 +102,7 @@ export default function History({
       ? null
       : answer !== null && answer.median !== null
         ? comparisonFromBaseline(latest, answer.median, answer.n)
-        : compareToOwnHistory(rows)
+        : localComparison(latest, rows, rules, indicator?.minSpread ?? 0)
 
   const shown = showAll ? rows : rows.slice(0, SHORT_TABLE)
 
@@ -245,6 +259,20 @@ function SummarySentence({
   )
 }
 
+// The card's own baseline on this device: the last readings in the context of
+// the latest one. Null while there are too few of them.
+function localComparison(
+  latest: Entry,
+  rows: Entry[],
+  rules: AttentionRule[],
+  minSpread: number,
+): HistoryComparison | null {
+  const local = localState(latest, rows, rules, minSpread)
+  return local.median === null
+    ? null
+    : comparisonFromBaseline(latest, local.median, local.n)
+}
+
 function summarySentence(comparison: HistoryComparison): string {
   const { latest } = comparison
   const unit = strings.cardUnit(latest.unit)
@@ -253,6 +281,7 @@ function summarySentence(comparison: HistoryComparison): string {
     unit,
     day: latest.missionDay,
     time: latest.time,
+    context: strings.trend.contextPhrase[latest.context],
     median: String(comparison.earlierMedian),
     count: comparison.earlierCount,
     difference: strings.history.signed(comparison.difference),
