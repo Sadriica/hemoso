@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 import { loadContent } from './content/load'
+import { SESSION_STORAGE_KEY } from './data/session'
 import { STORAGE_KEY } from './data/storedState'
 import { strings } from './strings'
 
@@ -200,6 +201,89 @@ describe('guided check', () => {
   })
 })
 
+describe('sign in', () => {
+  it('opens the demo with one click and no PIN', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.click(
+      screen.getByRole('button', { name: strings.signIn.demoAction }),
+    )
+
+    expect(heading()).toHaveTextContent(copy.report.headline.join(' '))
+    expect(screen.getByText(strings.topbar.onDuty(PERSON))).toBeInTheDocument()
+    // The demo needs no token, so nothing is kept that looks like one.
+    expect(localStorage.getItem(SESSION_STORAGE_KEY)).toBeNull()
+  })
+
+  it('asks for the PIN again when the server stops accepting the token', async () => {
+    vi.stubEnv('VITE_API_BASE_URL', 'https://api.example.test')
+    const authorizations: Array<string | null> = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((input: string, init?: RequestInit) => {
+        const headers = new Headers(init?.headers)
+        authorizations.push(headers.get('authorization'))
+        if (String(input).endsWith('/sessions')) {
+          return Promise.resolve({
+            status: 200,
+            json: () =>
+              Promise.resolve({
+                token: 'tok',
+                person_id: 'cadet_okoro',
+                expires_at: '2999-01-01T00:00:00Z',
+              }),
+          } as unknown as Response)
+        }
+        // The person routes refuse the token this device holds.
+        return Promise.resolve({
+          status: 401,
+          json: () => Promise.resolve({ detail: 'session expired' }),
+        } as unknown as Response)
+      }),
+    )
+    const user = userEvent.setup()
+    render(<App />)
+
+    await user.type(screen.getByLabelText(strings.signIn.username), 'cadet_okoro')
+    await user.type(screen.getByLabelText(strings.signIn.pin), '4821')
+    await user.click(screen.getByRole('button', { name: strings.signIn.action }))
+
+    // The history of that person is asked for with the token, the server
+    // refuses it, and the screen asks for the PIN again with the same name.
+    await waitFor(() =>
+      expect(screen.getByText(strings.signIn.expired)).toBeInTheDocument(),
+    )
+    expect(authorizations).toContain('Bearer tok')
+    expect(screen.getByLabelText(strings.signIn.username)).toHaveValue(
+      'cadet_okoro',
+    )
+    expect(localStorage.getItem(SESSION_STORAGE_KEY)).toBeNull()
+  })
+
+  it('keeps the readings of a person who signs out', async () => {
+    const user = userEvent.setup()
+    render(<App />)
+    await user.click(
+      screen.getByRole('button', { name: strings.signIn.demoAction }),
+    )
+
+    await user.type(screen.getByLabelText('Value'), '72')
+    await user.click(screen.getByRole('button', { name: 'Save entry' }))
+    expect(screen.getByText('Saved on this device.')).toBeInTheDocument()
+
+    // Back to phase 1, out of the session, and in again with the same person.
+    await user.click(screen.getByRole('button', { name: copy.report.back }))
+    await user.click(screen.getByRole('button', { name: strings.signIn.signOut }))
+    await user.click(screen.getByRole('radio', { name: PERSON }))
+    await user.click(screen.getByRole('button', { name: copy.identify.next }))
+    await user.click(screen.getByRole('button', { name: copy.report.next }))
+
+    // The reading was never the session's to lose (REQ-02).
+    expect(screen.getAllByText('72').length).toBeGreaterThan(0)
+  })
+})
+
 describe('top bar', () => {
   it('shows the synthetic data sentence on every phase', async () => {
     const user = userEvent.setup()
@@ -252,7 +336,9 @@ describe('face sign-in behind ?face=1', () => {
   it('renders no face control on the plain page', () => {
     render(<App />)
     expect(screen.queryByRole('button', { name: strings.face.buttonLabel })).toBeNull()
-    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(
+      screen.queryByRole('region', { name: strings.face.heading }),
+    ).toBeNull()
   })
 
   it('shows the face button above the crew list with the flag', () => {
@@ -271,13 +357,17 @@ describe('face sign-in behind ?face=1', () => {
     const button = screen.getByRole('button', { name: strings.face.buttonLabel })
 
     await user.click(button)
-    const panel = await screen.findByRole('dialog')
+    const panel = await screen.findByRole('region', { name: strings.face.heading })
     expect(panel).toHaveAttribute('aria-labelledby')
     expect(screen.getByText(strings.face.consent)).toBeInTheDocument()
     expect(button).toHaveAttribute('aria-expanded', 'true')
 
     await user.keyboard('{Escape}')
-    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('region', { name: strings.face.heading }),
+      ).toBeNull(),
+    )
     expect(button).toHaveFocus()
     expect(button).toHaveAttribute('aria-expanded', 'false')
   })
