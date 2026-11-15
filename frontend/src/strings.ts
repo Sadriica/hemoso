@@ -268,6 +268,9 @@ export const strings = {
     // Whether the readings leave the device is the sentence after this one, so
     // this one never promises a send the demo cannot make.
     saved: 'Waiting to be sent.',
+    // The same readings once the server took them, or when it did not.
+    sent: 'Sent.',
+    notAccepted: 'The server did not accept it. Kept on this device.',
     savedOnDevice: 'Kept on this device.',
     noIndicators: 'No indicators are set up yet.',
     // A save with every row empty has nothing to store, and says so.
@@ -516,8 +519,10 @@ export const strings = {
     faceOfferHeading: 'Add face sign-in on this device',
     faceOfferNote:
       'Your face is turned into numbers kept only on this device. You read the details before the camera opens.',
-    faceOfferAction: 'Add face sign-in on this device',
+    faceOfferAction: 'Add face sign-in',
     faceOfferSkip: 'Not now',
+    // The same offer as one quiet line on the report, after the sign-in.
+    faceOfferLine: 'Next time, sign in with your face on this device.',
     pinHeading: 'Username and PIN',
     username: 'Username',
     pin: 'PIN',
@@ -535,7 +540,9 @@ export const strings = {
     crewRole: 'Synthetic crew member',
     // The id a typed name becomes, shown under the field while it is typed.
     willSignInAs: (personId: string): string => `You will sign in as ${personId}`,
-    signedInAs: (personId: string): string => `Signed in as ${personId}`,
+    // The same readable name as the top bar, never the raw id.
+    signedInAs: (personId: string): string =>
+      `Signed in as ${personName(personId)}`,
     signOut: 'Sign out',
     expired: 'Your session ended. Enter your PIN again.',
     askPin: (personId: string): string => `Enter the PIN for ${personId}.`,
@@ -586,17 +593,17 @@ export const strings = {
       deleted: (personId: string): string =>
         `Face data deleted for ${personId}.`,
       noFace: 'No face found. Look at the camera and try again.',
-      // The model did not load, or the browser gave up on it: not the person's
-      // fault, and the picker still works.
-      failed: 'The face check could not run on this device. Pick your name below.',
-      notRecognised: 'Face not recognised. Pick your name instead.',
     },
-    camera: {
-      denied:
-        'The browser blocked the camera. Allow it for this site, or pick your name below.',
-      missing: 'No camera was found. Pick your name below.',
-      busy: 'The camera is in use by another app. Close it and try again, or pick your name below.',
-    },
+    // What the person reads while the model files come down: a phone on mobile
+    // data can wait a while for 6.4 MB, so the number moves.
+    loading: (percent: number): string =>
+      `Loading the face check, ${percent} %. This happens once.`,
+    // A problem is a short sentence and a way out that exists on the screen
+    // where it appears (T-70). `register`: the person is signed in, so the
+    // username and PIN already work. `tab`: the Sign in tab is on the screen.
+    // `picker`: no accounts on this server, only the demo crew to pick from.
+    problem: (kind: FaceProblem, where: FaceFallback): string =>
+      `${FACE_PROBLEM[kind]} ${FACE_FALLBACK[where]}`,
   },
   // The mission time of a reading on a card: the technical label style, with
   // the middle dot between the day and the clock time (guide 7.3).
@@ -613,6 +620,29 @@ export const strings = {
   // The unit that follows a value on a card: "58 bpm". The 1 to 5 scales hold
   // their range in the unit, so they read "4 / 5" and not "4 1 to 5".
   cardUnit: (unit: string): string => (unit === SCALE_UNIT ? '/ 5' : unit),
+}
+
+// The face sentences of T-70, kept apart so each one is written once.
+export type FaceProblem =
+  | 'failed'
+  | 'denied'
+  | 'missing'
+  | 'busy'
+  | 'notRecognised'
+export type FaceFallback = 'register' | 'tab' | 'picker'
+
+const FACE_PROBLEM: Record<FaceProblem, string> = {
+  failed: 'Face sign-in is not available on this device.',
+  denied: 'The browser blocked the camera. Allow it for this site.',
+  missing: 'No camera was found.',
+  busy: 'The camera is in use by another app. Close it and try again.',
+  notRecognised: 'Face not recognised.',
+}
+
+const FACE_FALLBACK: Record<FaceFallback, string> = {
+  register: 'Your username and PIN keep working.',
+  tab: 'Use the Sign in tab with your username and PIN.',
+  picker: 'Pick your name below.',
 }
 
 // "last 1 reading" and "last 9 readings": the count inside the history sentence.

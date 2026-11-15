@@ -54,6 +54,7 @@ OTHER_PERSON = "this token belongs to another person"
 STORAGE_ERROR = "upstream storage error"
 LOCKED = "too many wrong PINs, try again later"
 TAKEN_NAME = "this username is taken"
+NO_ACCOUNT = "this person has no account"
 # The smoke test's person keeps its open history, like every person in
 # config/data/demo_data.csv (REQ-32).
 RESERVED_PEOPLE = frozenset({"smoke_test_1"})

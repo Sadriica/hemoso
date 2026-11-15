@@ -140,13 +140,16 @@ function parseEntry(value: unknown): Entry | null {
 // A stored entry has an id the app assigned. For a row read from the server
 // the four fields the backend keeps one entry per make it, so reading the same
 // history again sends the same ids to the store.
+/** How the id of a reading that came from the server starts. */
+export const SERVER_ID_PREFIX = 'server:'
+
 function remoteId(
   personId: string,
   indicatorId: string,
   missionDay: number,
   time: string,
 ): string {
-  return `server:${personId}:${indicatorId}:${missionDay}:${time}`
+  return `${SERVER_ID_PREFIX}${personId}:${indicatorId}:${missionDay}:${time}`
 }
 
 function isShortText(value: unknown): value is string {

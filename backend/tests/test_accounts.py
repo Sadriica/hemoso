@@ -2,13 +2,17 @@
 
 from __future__ import annotations
 
+import json
 import re
+import sqlite3
 from datetime import UTC, datetime, timedelta
 
 import httpx
 import pytest
+from fastapi.testclient import TestClient
 
 from app import accounts, storage
+from app.main import app
 from app.models import Account
 
 PIN = "2468"
@@ -62,6 +66,13 @@ PERSON_ROUTES = [
         200,
     ),
     ("get", "/people/{person}/conditions", None, 200),
+    ("get", "/people/{person}/profile", None, 200),
+    (
+        "put",
+        "/people/{person}/mission_start",
+        {"json": {"mission_start": "2026-11-01"}},
+        200,
+    ),
 ]
 
 
@@ -80,8 +91,16 @@ def store():
     return app.dependency_overrides[storage.get_storage]()
 
 
-def create(client, person_id: str = PERSON, pin: str = PIN):
-    return client.post("/accounts", json={"person_id": person_id, "pin": pin})
+def create(
+    client,
+    person_id: str = PERSON,
+    pin: str = PIN,
+    mission_start: str | None = None,
+):
+    body: dict[str, str] = {"person_id": person_id, "pin": pin}
+    if mission_start is not None:
+        body["mission_start"] = mission_start
+    return client.post("/accounts", json=body)
 
 
 def sign_in(client, person_id: str = PERSON, pin: str = PIN):
@@ -382,7 +401,14 @@ def test_supabase_accounts_use_the_accounts_table():
         if request.method == "GET":
             return httpx.Response(
                 200,
-                json=[{"person_id": PERSON, "salt": "aa", "pin_hash": "bb"}],
+                json=[
+                    {
+                        "person_id": PERSON,
+                        "salt": "aa",
+                        "pin_hash": "bb",
+                        "mission_start": "2026-11-01",
+                    }
+                ],
             )
         if b'"crew_2"' in request.content:
             return httpx.Response(409, json={"message": "duplicate key"})
@@ -392,12 +418,246 @@ def test_supabase_accounts_use_the_accounts_table():
     store = storage.SupabaseStorage("https://example.supabase.co", "sb_secret_x", client)
 
     found = store.account(PERSON)
-    assert found == Account(person_id=PERSON, salt="aa", pin_hash="bb")
+    assert found == Account(
+        person_id=PERSON, salt="aa", pin_hash="bb", mission_start="2026-11-01"
+    )
     assert requests[0].url.path == "/rest/v1/accounts"
-    assert requests[0].url.params["select"] == "person_id,salt,pin_hash"
+    assert requests[0].url.params["select"] == (
+        "person_id,salt,pin_hash,mission_start"
+    )
 
     assert store.create_account(found) is True
     assert requests[1].method == "POST"
     assert requests[1].headers["Prefer"] == "return=minimal"
     duplicate = Account(person_id=OTHER, salt="aa", pin_hash="bb")
     assert store.create_account(duplicate) is False
+
+
+# --- Mission start per account (REQ-37) -------------------------------------
+# A date the app may not accept: two years before the station was crewed, a
+# month 13, a day 30 in February, the basic ISO form, a one-digit month, text
+# and nothing at all.
+BAD_MISSION_STARTS = [
+    "1999-12-31",
+    "2026-13-01",
+    "2026-02-30",
+    "20261115",
+    "2026-1-1",
+    "not-a-date",
+    "",
+]
+
+
+def utc_today():
+    return datetime.now(UTC).date()
+
+
+def test_create_account_with_mission_start(client, store):
+    response = create(client, mission_start="2026-11-01")
+
+    assert response.status_code == 201
+    account = store.account(PERSON)
+    assert account is not None
+    assert account.mission_start == "2026-11-01"
+
+
+def test_profile_returns_the_mission_start(client):
+    create(client, mission_start="2026-11-01")
+
+    response = client.get(
+        f"/people/{PERSON}/profile", headers=bearer(token_for(client))
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {"person_id": PERSON, "mission_start": "2026-11-01"}
+
+
+def test_profile_without_a_mission_start_is_null(client):
+    create(client)
+
+    response = client.get(
+        f"/people/{PERSON}/profile", headers=bearer(token_for(client))
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {"person_id": PERSON, "mission_start": None}
+
+
+def test_profile_of_a_person_without_an_account_is_404(client):
+    response = client.get(f"/people/{PERSON}/profile")
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "this person has no account"
+
+
+def test_mission_start_of_a_person_without_an_account_is_404(client, store):
+    response = client.put(
+        f"/people/{PERSON}/mission_start", json={"mission_start": "2026-11-01"}
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "this person has no account"
+    assert store.account(PERSON) is None
+
+
+def test_mission_start_is_set_and_changed(client):
+    create(client)
+    headers = bearer(token_for(client))
+
+    first = client.put(
+        f"/people/{PERSON}/mission_start",
+        json={"mission_start": "2026-11-01"},
+        headers=headers,
+    )
+    assert first.status_code == 200
+    assert first.json() == {"person_id": PERSON, "mission_start": "2026-11-01"}
+
+    second = client.put(
+        f"/people/{PERSON}/mission_start",
+        json={"mission_start": "2026-10-30"},
+        headers=headers,
+    )
+    assert second.status_code == 200
+    profile = client.get(f"/people/{PERSON}/profile", headers=headers)
+    assert profile.json()["mission_start"] == "2026-10-30"
+
+
+def test_new_routes_need_the_token(client):
+    create(client)
+
+    profile = client.get(f"/people/{PERSON}/profile")
+    change = client.put(
+        f"/people/{PERSON}/mission_start", json={"mission_start": "2026-11-01"}
+    )
+
+    assert profile.status_code == 401
+    assert change.status_code == 401
+    assert change.json()["detail"] == "missing or invalid token"
+
+
+def test_another_persons_token_is_403_on_the_new_routes(client):
+    create(client)
+    create(client, OTHER, pin=WRONG)
+    other = bearer(token_for(client, OTHER, pin=WRONG))
+
+    profile = client.get(f"/people/{PERSON}/profile", headers=other)
+    change = client.put(
+        f"/people/{PERSON}/mission_start",
+        json={"mission_start": "2026-11-01"},
+        headers=other,
+    )
+
+    assert profile.status_code == 403
+    assert change.status_code == 403
+    assert change.json()["detail"] == "this token belongs to another person"
+
+
+@pytest.mark.parametrize("value", BAD_MISSION_STARTS)
+def test_bad_mission_start_is_422_on_account_creation(client, store, value):
+    response = create(client, mission_start=value)
+
+    assert response.status_code == 422
+    assert store.account(PERSON) is None
+
+
+@pytest.mark.parametrize("value", BAD_MISSION_STARTS)
+def test_bad_mission_start_is_422_on_update(client, store, value):
+    create(client)
+
+    response = client.put(
+        f"/people/{PERSON}/mission_start",
+        json={"mission_start": value},
+        headers=bearer(token_for(client)),
+    )
+
+    assert response.status_code == 422
+    account = store.account(PERSON)
+    assert account is not None
+    assert account.mission_start is None
+
+
+def test_mission_start_more_than_one_day_ahead_is_422(client):
+    too_far = (utc_today() + timedelta(days=2)).isoformat()
+
+    response = create(client, mission_start=too_far)
+
+    assert response.status_code == 422
+
+
+def test_mission_start_tomorrow_is_accepted(client):
+    tomorrow = (utc_today() + timedelta(days=1)).isoformat()
+
+    response = create(client, mission_start=tomorrow)
+
+    assert response.status_code == 201
+
+
+def test_mission_start_of_2000_01_01_is_accepted(client):
+    response = create(client, mission_start="2000-01-01")
+
+    assert response.status_code == 201
+
+
+def test_an_account_from_before_the_column_still_signs_in(tmp_path):
+    path = tmp_path / "entries.db"
+    salt = "1" * 32
+    # The accounts table as a project wrote it before this change: no
+    # mission_start column in the file on disk.
+    conn = sqlite3.connect(path)
+    conn.execute(
+        "CREATE TABLE accounts ("
+        "person_id TEXT PRIMARY KEY,"
+        "salt TEXT NOT NULL,"
+        "pin_hash TEXT NOT NULL,"
+        "created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)"
+    )
+    conn.execute(
+        "INSERT INTO accounts (person_id, salt, pin_hash) VALUES (?, ?, ?)",
+        (PERSON, salt, accounts.hash_pin(PIN, salt)),
+    )
+    conn.commit()
+    conn.close()
+
+    store = storage.SqliteStorage(path)
+    app.dependency_overrides[storage.get_storage] = lambda: store
+    try:
+        with TestClient(app) as old_client:
+            signed_in = sign_in(old_client)
+            token = signed_in.json()["token"]
+            profile = old_client.get(
+                f"/people/{PERSON}/profile", headers=bearer(token)
+            )
+            changed = old_client.put(
+                f"/people/{PERSON}/mission_start",
+                json={"mission_start": "2026-11-01"},
+                headers=bearer(token),
+            )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert signed_in.status_code == 200
+    assert profile.json() == {"person_id": PERSON, "mission_start": None}
+    assert changed.status_code == 200
+    assert storage.SqliteStorage(path).account(PERSON).mission_start == "2026-11-01"
+
+
+def test_supabase_mission_start_is_a_patch_on_the_accounts_table():
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        person = request.url.params["person_id"]
+        rows = [{"person_id": PERSON}] if person == f"eq.{PERSON}" else []
+        return httpx.Response(200, json=rows)
+
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    store = storage.SupabaseStorage("https://example.supabase.co", "sb_secret_x", client)
+
+    assert store.set_mission_start(PERSON, "2026-11-01") is True
+    assert store.set_mission_start(OTHER, "2026-11-01") is False
+    patch = requests[0]
+    assert patch.method == "PATCH"
+    assert patch.url.path == "/rest/v1/accounts"
+    assert patch.url.params["select"] == "person_id"
+    assert patch.headers["Prefer"] == "return=representation"
+    assert json.loads(patch.content) == {"mission_start": "2026-11-01"}

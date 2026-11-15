@@ -125,6 +125,8 @@ describe('SyncStatus', () => {
       ).toBeNull(),
     )
 
+    // Off line the new reading waits, so the link is there to press.
+    setOnline(false)
     act(() => {
       store.add(newEntry(57))
     })
@@ -137,6 +139,36 @@ describe('SyncStatus', () => {
       ).toBeNull(),
     )
     expect(store.pending()).toHaveLength(0)
+  })
+
+  it('sends a reading saved on line at once, with no click', async () => {
+    const fake = fakeFetch([201, 201])
+    const store = renderStatus(new HttpSync('https://api.test', fake.fetchFn), [
+      newEntry(),
+    ])
+    await waitFor(() => expect(fake.calls()).toBe(1))
+
+    act(() => {
+      store.add(newEntry(57))
+    })
+    await waitFor(() => expect(fake.calls()).toBe(2))
+    await waitFor(() => expect(store.pending()).toHaveLength(0))
+    expect(screen.queryByRole('button', { name: strings.sync.sendNow })).toBeNull()
+  })
+
+  it('does not start a round of its own for a reading saved off line', async () => {
+    const fake = fakeFetch([201])
+    const store = renderStatus(new HttpSync('https://api.test', fake.fetchFn), [
+      newEntry(),
+    ])
+    await waitFor(() => expect(fake.calls()).toBe(1))
+
+    setOnline(false)
+    act(() => {
+      store.add(newEntry(57))
+    })
+    expect(fake.calls()).toBe(1)
+    expect(store.pending()).toHaveLength(1)
   })
 
   it('sends what was waiting when the status appears', async () => {
@@ -156,6 +188,8 @@ describe('SyncStatus', () => {
     ])
     await waitFor(() => expect(store.pending()).toHaveLength(0))
 
+    // Off line the new reading waits, so the link is there to press.
+    setOnline(false)
     act(() => {
       store.add(newEntry(57))
     })
