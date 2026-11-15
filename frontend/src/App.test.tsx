@@ -1,9 +1,21 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { ThemeProvider } from '@mui/material/styles'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import App from './App'
 import { STORAGE_KEY } from './data/storedState'
 import { strings } from './strings'
+import { theme } from './theme/theme'
+
+// The app is always rendered inside its theme (src/main.tsx does the same), so
+// the screens here are the screens a person sees.
+function renderApp() {
+  return render(
+    <ThemeProvider theme={theme}>
+      <App />
+    </ThemeProvider>,
+  )
+}
 
 beforeEach(() => {
   localStorage.clear()
@@ -18,9 +30,9 @@ afterEach(() => {
 
 describe('App', () => {
   it('renders the tabs pattern with a selected Home tab and its panel', () => {
-    render(<App />)
+    renderApp()
     expect(screen.getByRole('tablist')).toBeInTheDocument()
-    const tab = screen.getByRole('tab', { name: 'Home' })
+    const tab = screen.getByRole('tab', { name: /^Home/ })
     expect(tab).toHaveAttribute('aria-selected', 'true')
     expect(tab).toHaveAttribute('aria-controls', 'panel-home')
     expect(screen.getByRole('tabpanel')).toHaveAttribute(
@@ -31,35 +43,37 @@ describe('App', () => {
 
   it('moves between the tabs with the arrow keys', async () => {
     const user = userEvent.setup()
-    render(<App />)
-    const tab = screen.getByRole('tab', { name: 'Home' })
+    renderApp()
+    const tab = screen.getByRole('tab', { name: /^Home/ })
     tab.focus()
     await user.keyboard('{ArrowRight}')
     expect(
-      screen.getByRole('tab', { name: 'Entry', selected: true }),
+      screen.getByRole('tab', { name: /^Entry/, selected: true }),
     ).toBeInTheDocument()
     await user.keyboard('{ArrowLeft}')
     expect(
-      screen.getByRole('tab', { name: 'Home', selected: true }),
+      screen.getByRole('tab', { name: /^Home/, selected: true }),
     ).toBeInTheDocument()
   })
 
   it('keeps History after Entry', () => {
-    render(<App />)
-    expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual([
-      'Home',
-      'Entry',
-      'History',
-    ])
+    renderApp()
+    // The name a person hears is the plain screen name, followed by the numbered
+    // label the eye reads, so the first part of the name is the screen.
+    expect(
+      screen
+        .getAllByRole('tab')
+        .map((tab) => tab.getAttribute('aria-label')?.split(',')[0]),
+    ).toEqual(['Home', 'Entry', 'History'])
   })
 
   it('opens History by keyboard and shows the table with a comparison', async () => {
     const user = userEvent.setup()
-    render(<App />)
-    screen.getByRole('tab', { name: 'Home' }).focus()
+    renderApp()
+    screen.getByRole('tab', { name: /^Home/ }).focus()
     await user.keyboard('{ArrowRight}{ArrowRight}')
     expect(
-      screen.getByRole('tab', { name: 'History', selected: true }),
+      screen.getByRole('tab', { name: /^History/, selected: true }),
     ).toBeInTheDocument()
     // The number of readings comes from config/, so the test asks for the shape
     // of the sentence, not for a value.
@@ -74,12 +88,12 @@ describe('App', () => {
   // The waiting-for text depends on which config files exist, so Home tests
   // cover it with fixed data. Here only the note that is always on screen.
   it('shows the synthetic data notice', () => {
-    render(<App />)
+    renderApp()
     expect(screen.getByText('Demo with synthetic data only.')).toBeInTheDocument()
   })
 
   it('shows a person picker built from the demo person ids', () => {
-    render(<App />)
+    renderApp()
     expect(screen.getByLabelText('Person')).toBeInTheDocument()
     expect(
       screen.getByRole('option', { name: 'demo_astronaut_1' }),
@@ -87,7 +101,7 @@ describe('App', () => {
   })
 
   it('shows the sync status in the header with no server set up', () => {
-    render(<App />)
+    renderApp()
     expect(screen.getByText('Nothing waiting to be sent')).toBeInTheDocument()
     expect(screen.getByText('Not sent yet')).toBeInTheDocument()
     expect(screen.getByText('Online')).toBeInTheDocument()
@@ -99,7 +113,7 @@ describe('App', () => {
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new Error('storage is blocked')
     })
-    render(<App />)
+    renderApp()
     expect(
       screen.getByText('Entries are not saved on this device.'),
     ).toBeInTheDocument()
@@ -107,7 +121,7 @@ describe('App', () => {
 
   it('warns when stored entries could not be read and were replaced', () => {
     localStorage.setItem(STORAGE_KEY, '{"version":2,"entries":[]')
-    render(<App />)
+    renderApp()
     expect(
       screen.getByText(
         'Saved entries could not be read and were replaced by the demo data.',
@@ -120,11 +134,11 @@ describe('App', () => {
 
   it('saves an entry on the Entry tab and shows it on Home', async () => {
     const user = userEvent.setup()
-    render(<App />)
-    screen.getByRole('tab', { name: 'Home' }).focus()
+    renderApp()
+    screen.getByRole('tab', { name: /^Home/ }).focus()
     await user.keyboard('{ArrowRight}')
     expect(
-      screen.getByRole('tab', { name: 'Entry', selected: true }),
+      screen.getByRole('tab', { name: /^Entry/, selected: true }),
     ).toBeInTheDocument()
 
     // One Tab: the panel is not a stop of its own.
@@ -148,7 +162,7 @@ describe('App', () => {
       'Saved on this device.',
     )
 
-    screen.getByRole('tab', { name: 'Home' }).focus()
+    screen.getByRole('tab', { name: /^Home/ }).focus()
     await user.keyboard('{Enter}')
     expect(screen.getByText('1234567')).toBeInTheDocument()
     expect(screen.getByText(`Day ${nextDay} 15:44`)).toBeInTheDocument()
@@ -157,7 +171,7 @@ describe('App', () => {
 
 describe('face sign-in behind ?face=1', () => {
   it('renders no face control on the plain page', () => {
-    render(<App />)
+    renderApp()
     expect(
       screen.queryByRole('button', { name: strings.face.buttonLabel }),
     ).toBeNull()
@@ -166,7 +180,7 @@ describe('face sign-in behind ?face=1', () => {
 
   it('shows the button next to the person picker with the flag', () => {
     window.history.replaceState({}, '', '/?face=1')
-    render(<App />)
+    renderApp()
     expect(screen.getByLabelText('Person')).toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: strings.face.buttonLabel }),
@@ -176,7 +190,7 @@ describe('face sign-in behind ?face=1', () => {
   it('opens the panel with the consent text and closes it on Escape', async () => {
     window.history.replaceState({}, '', '/?face=1')
     const user = userEvent.setup()
-    render(<App />)
+    renderApp()
     const button = screen.getByRole('button', {
       name: strings.face.buttonLabel,
     })
@@ -204,7 +218,7 @@ describe('face sign-in behind ?face=1', () => {
     })
     try {
       const user = userEvent.setup()
-      render(<App />)
+      renderApp()
       await user.click(
         screen.getByRole('button', { name: strings.face.buttonLabel }),
       )

@@ -40,6 +40,20 @@ export const strings = {
     home: 'Home',
     entry: 'Entry',
     history: 'History',
+    // The visible label of each tab, numbered like a document (style guide 5,
+    // 7.2). On a narrow screen the word goes under its number, so three labels
+    // fit at 320 px.
+    section: {
+      home: { number: '01', name: 'STATUS' },
+      entry: { number: '02', name: 'ENTRY' },
+      history: { number: '03', name: 'HISTORY' },
+    },
+    // What assistive technology announces for a tab. The screen name comes
+    // first, the numbered label the eye reads follows it: WCAG 2.5.3 asks the
+    // visible text to be part of the name, so a person who speaks "01 / STATUS"
+    // reaches the same tab as a person who hears "Home".
+    accessibleName: (screen: string, section: { number: string; name: string }): string =>
+      `${screen}, ${section.number} / ${section.name}`,
   },
   entry: {
     heading: 'Entry',
@@ -204,6 +218,13 @@ export const strings = {
     },
   },
   timeLabel: (day: number, time: string): string => `Day ${day} ${time}`,
+  // The metadata line of the header band (style guide 5, 7.1): mission time as
+  // the technical label the eye reads ("DAY 30 · 07:00"). The synthetic data
+  // note of REQ-14 stays in it, so it is on screen on every tab.
+  header: {
+    metadata: (day: number, time: string): string =>
+      `HEMOSO / CREW HEALTH · ${missionStamp(day, time)} · SYNTHETIC DATA`,
+  },
   // The unit that follows a value on a card: "58 bpm". The 1 to 5 scales hold
   // their range in the unit, so they read "4 / 5" and not "4 1 to 5".
   cardUnit: (unit: string): string => (unit === SCALE_UNIT ? '/ 5' : unit),
@@ -212,4 +233,9 @@ export const strings = {
 // "(1 entry)" and "(9 entries)": the count inside the history sentence.
 function entryCount(count: number): string {
   return `${count} ${count === 1 ? 'entry' : 'entries'}`
+}
+
+// The mission time of the header band, in the technical label style.
+function missionStamp(day: number, time: string): string {
+  return `DAY ${day} · ${time}`
 }

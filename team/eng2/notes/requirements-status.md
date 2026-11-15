@@ -33,7 +33,7 @@ Not counted in the summary until Wambi gives it a number in
 
 | ID | Requirement | Class | Priority | Owner (GitHub) | Block | Done when | Dev | Seen now | Missing | Cards |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| REQ-36 (proposed) | Sign in with the face, on the device only | optional | P2 | Juli (@julimejia) | B3 Sat 17-1 | A person can register their face once and then sign in by looking at the camera; matching runs in the browser with bundled models; no image or face data leaves the device; the person picker still works without a camera | 0 % | Proposal with a "Blocker: REQ-14" section and cards T-58, T-59 committed (3329dfd); T-58 depends on the REQ-14 exception | Wambi's number; a `docs/DECISIONS.md` row choosing Use (exception, REQ-14 done-when updated) or Rejected (stays out of the product) | T-58, T-59 |
+| REQ-36 (proposed) | Sign in with the face, on the device only | optional | P2 | Juli (@julimejia) | B3 Sat 17-1 | A person can register their face once and then sign in by looking at the camera; matching runs in the browser with bundled models; no image or face data leaves the device; the person picker still works without a camera | 50 % | Built behind `?face=1` while the REQ-14 exception is pending (f0ff594): register and sign in on the device, models served from `./models` (MIT, 6.5 MB), engine loaded only on demand; e2e proves no face control and no `/models/` request without `?face=1` | Wambi's number; a `docs/DECISIONS.md` row choosing Use (exception, REQ-14 done-when updated) or Rejected (stays out of the product) | T-58, T-59 |
 
 Points to settle before T-58 starts:
 | Point | Why it matters | Who decides |
