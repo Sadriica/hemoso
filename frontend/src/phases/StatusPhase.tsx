@@ -50,13 +50,13 @@ export default function StatusPhase({
           entries={entries}
           motionReduced={motionReduced}
         />
-        <section className="status__history" aria-label={copy.historyHeading}>
+        <div className="status__history">
           <Disclosure label={copy.historyToggle}>
             <Suspense fallback={<Notice tone="info">{strings.board.loading}</Notice>}>
               <History store={store} personId={personId} data={data} />
             </Suspense>
           </Disclosure>
-        </section>
+        </div>
       </div>
 
       <div className="phase__actions">

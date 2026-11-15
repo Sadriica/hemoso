@@ -17,9 +17,16 @@
   border: 0;
 }
 
+/* One declaration: the technical grid of styles.css and the cold glow, so the
+   glow does not replace the grid and leave blocks in the side gutters. */
 body {
   background-color: var(--color-bg);
-  background-image: radial-gradient(120% 80% at 80% -10%, color-mix(in srgb, var(--color-interactive) 18%, transparent), transparent 60%);
+  background-image:
+    radial-gradient(120% 80% at 80% -10%, color-mix(in srgb, var(--color-interactive) 12%, transparent), transparent 60%),
+    linear-gradient(to right, var(--color-grid) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--color-grid) 1px, transparent 1px);
+  background-size: 100% 100%, 40px 40px, 40px 40px;
+  background-repeat: no-repeat, repeat, repeat;
 }
 
 .app {
@@ -71,6 +78,7 @@ html {
   top: var(--space-2);
   left: var(--space-2);
   z-index: 20;
+  min-height: var(--tap-min);
   padding: var(--space-2) var(--space-3);
   background: var(--color-interactive);
   color: var(--color-on-interactive);
@@ -321,7 +329,7 @@ html {
 }
 
 .journey-button__arrow {
-  font-size: 18px;
+  font-size: var(--text-body-l);
   letter-spacing: 0;
 }
 
@@ -422,7 +430,7 @@ html {
   width: 14px;
   height: 14px;
   border: 1px solid var(--color-text-muted);
-  border-radius: 50%;
+  border-radius: var(--radius-round);
 }
 
 /* A person id is shown as it is written: never transformed. */
@@ -614,6 +622,9 @@ html {
 @media (prefers-reduced-motion: reduce) {
   .headline__line,
   .journey-button,
+  .button,
+  .disclosure__toggle,
+  .disclosure__chevron,
   .phase-rail__progress {
     animation: none;
     transition: none;
@@ -622,6 +633,9 @@ html {
 
 .app--still .headline__line,
 .app--still .journey-button,
+.app--still .button,
+.app--still .disclosure__toggle,
+.app--still .disclosure__chevron,
 .app--still .phase-rail__progress {
   animation: none;
   transition: none;

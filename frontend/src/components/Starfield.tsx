@@ -39,6 +39,9 @@ export default function Starfield({ still }: { still: boolean }) {
     const context = canvas?.getContext('2d')
     if (!canvas || !context) return
 
+    // The star colour is the text token, so the theme decides it.
+    const starColor =
+      getComputedStyle(canvas).getPropertyValue('--color-text').trim() || '#f2f1e9'
     let frame = 0
     let animation = 0
 
@@ -60,7 +63,7 @@ export default function Starfield({ still }: { still: boolean }) {
         context.globalAlpha = twinkle
         context.beginPath()
         context.arc(x, star.y * height, star.radius, 0, Math.PI * 2)
-        context.fillStyle = '#e9eef5'
+        context.fillStyle = starColor
         context.fill()
       }
       context.globalAlpha = 1
