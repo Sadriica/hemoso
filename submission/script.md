@@ -2,6 +2,16 @@
 
 **Status:** draft · **Owner:** Bio 1 · Sat 14, 19:40
 
+## Demo format (REQ-17)
+
+Chosen on Sat 14 at 19:45: **a video of 30 seconds or less**, with English
+subtitles, hosted outside Space Apps. The seven slides stay as plan B.
+
+Why the video: its structure is already written in `submission/video.md`, and it
+does not depend on the app being ready for a live walkthrough. The limit is hard:
+30 seconds, and the subtitles are burned in, so a judge who watches without sound
+still understands it.
+
 ## The line that never changes (REQ-11)
 
 > HeMoSo helps you assess your own health. Your CMO and the flight surgeon

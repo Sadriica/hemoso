@@ -4,6 +4,7 @@ One entry per decision. Newest first.
 
 | Time | What | Why | Source | AI used |
 | --- | --- | --- | --- | --- |
+| Sat 19:45 | Demo format decided: a video of 30 seconds or less, English subtitles burned in; the seven slides stay as plan B | The video structure is written and does not depend on a live app; the limit is hard | SG: Submission guide · https://www.spaceappschallenge.org/resources/project-submission-guide/ | Yes, wording; decision is mine |
 | Sat 19:40 | The REQ-11 line written once, for the app, the script and the page: "HeMoSo helps you assess your own health. Your CMO and the flight surgeon confirm every decision." | One sentence in three places closes REQ-11; a longer disclaimer is not said out loud | `docs/requirements.md` REQ-11 · NASA-STD-3001 Vol 1 Rev C [V1 3004] | Yes, wording |
 | Sat 19:20 | REQ-08 pass on the seven content files: multi-action steps split, jargon replaced ("body clock", "the body handles sugar", "mental health") | REQ-08 asks numbered steps, one action per sentence and no assumed expertise; Bio 2 reviews next | `FORMATS.md` §3 · `docs/requirements.md` REQ-08 · `team/bio1/notes/req08-review.md` | Yes, wording |
 | Sat 19:00 | Seven content files in `config/content/` (hr_bpm, bp_sys_mmhg, bp_dia_mmhg, temp_core_c, sleep_h, mood_1_5, glucose_mgdl); `check_content.py` reports 0 errors | The six examples of the statement are the indicator set for now; the levels stay provisional until `attention.csv` says how many there are | `FORMATS.md` §3 · F-bio1-01 · F-bio1-02 · F-bio1-03 | Yes, wording; every link was opened |
