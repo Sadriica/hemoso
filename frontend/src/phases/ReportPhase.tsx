@@ -1,7 +1,11 @@
 import { lazy, Suspense, useCallback, useState, type RefObject } from 'react'
 import PhaseHeading from '../components/PhaseHeading'
 import type { EntryStore } from '../data/entryStore'
-import type { Indicator, Entry as EntryRecord } from '../domain/types'
+import type {
+  AttentionRule,
+  Indicator,
+  Entry as EntryRecord,
+} from '../domain/types'
 import Disclosure from '../components/Disclosure'
 import Entry from '../screens/Entry'
 import ReactionCheck from '../reaction/ReactionCheck'
@@ -19,6 +23,8 @@ interface ReportPhaseProps {
   store: EntryStore
   personId: string
   indicators: Indicator[]
+  // The attention rows, for the state of the last reading on each panel.
+  rules?: AttentionRule[]
   /** This person's entries, live from the store. */
   entries: EntryRecord[]
   serverConfigured: boolean
@@ -36,6 +42,7 @@ export default function ReportPhase({
   store,
   personId,
   indicators,
+  rules,
   entries,
   serverConfigured,
   onBack,
@@ -90,6 +97,7 @@ export default function ReportPhase({
             personId={personId}
             indicators={indicators}
             entries={entries}
+            rules={rules}
             serverConfigured={serverConfigured}
             onProgress={onProgress}
             onNext={onDone}

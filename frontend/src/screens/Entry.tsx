@@ -10,11 +10,20 @@ import {
 import { missionClockFor, type MissionClock } from '../domain/clock'
 import { getMissionStart } from '../data/missionStart'
 import { MEASUREMENT_CONTEXTS, contextForTime } from '../domain/context'
-import { latestEntry } from '../domain/entries'
-import type { Entry as EntryRecord, Indicator, MeasurementContext } from '../domain/types'
+import { latestEntry, newestFirst } from '../domain/entries'
+import { localState, statusFromLocal, type Status } from '../domain/state'
+import type {
+  AttentionRule,
+  Entry as EntryRecord,
+  Indicator,
+  MeasurementContext,
+} from '../domain/types'
 import type { EntryStore } from '../data/entryStore'
 import { IndicatorIcon, StatusIcon, systemColor } from '../icons'
+import AttentionBadge from '../components/AttentionBadge'
+import { statusBadgeKind, statusText } from '../components/attentionText'
 import Notice from '../components/Notice'
+import TelemetryVisual, { Sparkline } from '../components/telemetry/TelemetryVisual'
 import {
   SCALE_VALUES,
   parseReport,
@@ -24,6 +33,7 @@ import {
 } from './entryDraft'
 import { strings } from '../strings'
 import './entry.css'
+import './telemetry-console.css'
 
 // The report screen: one row for every indicator of
 // config/data/indicators.csv, on one shared day, time and context, saved with
@@ -40,6 +50,7 @@ export default function Entry({
   personId,
   indicators,
   entries,
+  rules,
   serverConfigured = false,
   onFilledChange,
   onProgress,
@@ -49,6 +60,9 @@ export default function Entry({
   personId: string
   indicators: Indicator[]
   entries: EntryRecord[]
+  // The attention rows of config/rules/attention.csv. With them each panel
+  // shows the state of the person's last reading; without them it shows none.
+  rules?: AttentionRule[]
   // True only when a server is set up. Without one nothing is sent, so the
   // saved message does not promise a send.
   serverConfigured?: boolean
@@ -83,6 +97,7 @@ export default function Entry({
       personId={personId}
       indicators={indicators}
       entries={entries}
+      rules={rules}
       defaults={defaults}
       serverConfigured={serverConfigured}
       onFilledChange={onFilledChange}
@@ -97,6 +112,7 @@ function ReportForm({
   personId,
   indicators,
   entries,
+  rules,
   defaults,
   serverConfigured,
   onFilledChange,
@@ -107,6 +123,7 @@ function ReportForm({
   personId: string
   indicators: Indicator[]
   entries: EntryRecord[]
+  rules?: AttentionRule[]
   defaults: MissionClock
   serverConfigured: boolean
   onFilledChange?: (count: number) => void
@@ -114,6 +131,13 @@ function ReportForm({
   onNext?: () => void
 }) {
   const [rows] = useState(() => readingRows(indicators))
+  // Nothing animates while the tab is hidden: the figures pause with it.
+  const [tabHidden, setTabHidden] = useState(false)
+  useEffect(() => {
+    const update = (): void => setTabHidden(document.visibilityState === 'hidden')
+    document.addEventListener('visibilitychange', update)
+    return () => document.removeEventListener('visibilitychange', update)
+  }, [])
   const [values, setValues] = useState<Record<string, string>>({})
   const [missionDayText, setMissionDayText] = useState(
     String(defaults.missionDay),
@@ -331,11 +355,17 @@ function ReportForm({
   }
 
   return (
-    <section aria-labelledby={`${baseId}-heading`} className="report-form rep">
+    <section
+      aria-labelledby={`${baseId}-heading`}
+      className={`report-form rep rep--console${tabHidden ? ' rep--paused' : ''}`}
+    >
       <div className="rep-head">
-        <h2 id={`${baseId}-heading`} className="report-form__heading">
-          {strings.entry.heading}
-        </h2>
+        <div className="rep-title">
+          <p className="rep-eyebrow">{strings.entry.console}</p>
+          <h2 id={`${baseId}-heading`} className="report-form__heading">
+            {strings.entry.heading}
+          </h2>
+        </div>
         <div className="rep-progress capsule">
           <span className="rep-progress__dots" aria-hidden="true">
             {rows.map((row, index) => (
@@ -447,10 +477,15 @@ function ReportForm({
 
 
         <ul className="rep-rows">
-          {rows.map((row) => (
+          {rows.map((row, index) => (
             <ReadingRowField
               key={row.key}
               row={row}
+              index={index}
+              telemetry={telemetryOf(row, values, entries, contextOf(row))}
+              status={
+                rules === undefined ? null : lastStatus(row, entries, indicators, rules)
+              }
               baseId={baseId}
               values={values}
               error={errorOf(row)}
@@ -510,6 +545,9 @@ function ReportForm({
 
 function ReadingRowField({
   row,
+  index,
+  telemetry,
+  status,
   baseId,
   values,
   error,
@@ -527,6 +565,11 @@ function ReadingRowField({
   onContext,
 }: {
   row: ReadingRow
+  /** The place of the panel in the console, for its channel number. */
+  index: number
+  telemetry: RowTelemetry
+  /** The state of the last saved reading; null with none or with no rules. */
+  status: Status | null
   baseId: string
   values: Record<string, string>
   error: string | undefined
@@ -608,12 +651,46 @@ function ReadingRowField({
     )
   const errorLine =
     error === undefined ? null : <FieldError id={errorId}>{error}</FieldError>
+  // The state of the last saved reading, in words with its icon. It is about
+  // that reading, never about the value being typed.
+  const stateLine =
+    status === null ? null : (
+      <p className="rep-row__state">
+        <span className="sr-only">{strings.entry.lastState} </span>
+        <AttentionBadge kind={statusBadgeKind(status)} text={statusText(status)} />
+      </p>
+    )
+  // The live figure follows the readout; the small history is the person's
+  // own earlier readings, with the count and the two ends in words.
+  const scope = (
+    <div className="rep-row__scope">
+      <TelemetryVisual kind={row.key} values={telemetry.live} />
+    </div>
+  )
+  const trend =
+    telemetry.history.length === 0 ? null : (
+      <div className="rep-row__trend">
+        <Sparkline values={telemetry.history} pending={telemetry.pending} />
+        <p className="rep-row__history">
+          {strings.entry.history(
+            pair ? row.fields[0].label : null,
+            telemetry.history.length,
+            Math.min(...telemetry.history),
+            Math.max(...telemetry.history),
+            strings.cardUnit(row.unit),
+          )}
+        </p>
+      </div>
+    )
 
   return (
     <li
       className={`rep-row${done ? ' rep-row--done' : ''}${row.scale ? ' rep-row--scale' : ''}${wide ? ' rep-row--wide' : ''}${pair ? ' rep-row--pair' : ''}`}
       style={style}
     >
+      <span className="rep-row__channel" aria-hidden="true">
+        {String(index + 1).padStart(2, '0')}
+      </span>
       <span className="rep-row__icon">
         <IndicatorIcon
           indicatorId={row.iconId}
@@ -640,7 +717,9 @@ function ReadingRowField({
             {title}
             {lastLine}
             {ctxControl}
+            {stateLine}
           </div>
+          {scope}
           <div className="rep-pills">
             {SCALE_VALUES.map((choice, index) => (
               <label key={choice} className="rep-pill">
@@ -661,6 +740,7 @@ function ReadingRowField({
             ))}
           </div>
           {errorLine}
+          {trend}
         </div>
       ) : (
         <div
@@ -674,7 +754,9 @@ function ReadingRowField({
             {title}
             {lastLine}
             {ctxControl}
+            {stateLine}
           </div>
+          {scope}
 
           {/* One field, one border: the value large on the left, the unit
               inside on the right. The blood pressure is the same field with
@@ -724,6 +806,7 @@ function ReadingRowField({
             </span>
           </span>
           {errorLine}
+          {trend}
         </div>
       )}
       {menuOpen && (
@@ -792,6 +875,86 @@ function ContextChoices({
 
 // The most recent reading of that row, in the words under its name: "last 72
 // bpm". A pair is only complete when both of its readings exist.
+// What the figures of one panel are drawn from: the value in the readout (or
+// the last reading while it is empty), and the person's earlier readings of
+// the first field in the panel's context, oldest first.
+interface RowTelemetry {
+  live: (number | null)[]
+  history: number[]
+  /** The typed value of the first field, when it is a number. */
+  pending: number | null
+}
+
+/** How many earlier readings the small history shows: the baseline window. */
+const HISTORY_POINTS = 14
+
+function typedNumber(text: string | undefined): number | null {
+  const trimmed = (text ?? '').trim()
+  if (trimmed === '') return null
+  const value = Number(trimmed)
+  return Number.isFinite(value) ? value : null
+}
+
+function telemetryOf(
+  row: ReadingRow,
+  values: Record<string, string>,
+  entries: EntryRecord[],
+  context: MeasurementContext,
+): RowTelemetry {
+  const typed = row.fields.map((field) => typedNumber(values[field.indicatorId]))
+  const live = row.fields.map((field, index) => {
+    if (typed[index] !== null) return typed[index]
+    const latest = latestEntry(
+      entries.filter((entry) => entry.indicatorId === field.indicatorId),
+    )
+    return latest === null ? null : latest.value
+  })
+  const first = row.fields[0].indicatorId
+  const history = newestFirst(
+    entries.filter(
+      (entry) => entry.indicatorId === first && entry.context === context,
+    ),
+  )
+    .slice(0, HISTORY_POINTS)
+    .map((entry) => entry.value)
+    .reverse()
+  return { live, history, pending: typed[0] }
+}
+
+// The four states, least to most serious: a pressure pair shows the worse of
+// its two (docs/findings/bio2-01-pressure-state-rule.md).
+const STATE_RANK = ['no_data', 'in_range', 'outside_range', 'needs_review']
+
+function lastStatus(
+  row: ReadingRow,
+  entries: EntryRecord[],
+  indicators: Indicator[],
+  rules: AttentionRule[],
+): Status | null {
+  let worst: Status | null = null
+  for (const field of row.fields) {
+    const own = entries.filter((entry) => entry.indicatorId === field.indicatorId)
+    const latest = latestEntry(own)
+    const indicator = indicators.find((item) => item.id === field.indicatorId)
+    if (latest === null || indicator === undefined) return null
+    const status = statusFromLocal(
+      localState(
+        latest,
+        own,
+        rules.filter((rule) => rule.indicatorId === field.indicatorId),
+        indicator.minSpread,
+      ),
+    )
+    if (
+      worst === null ||
+      STATE_RANK.indexOf(status.state) > STATE_RANK.indexOf(worst.state)
+    ) {
+      worst = status
+    }
+  }
+  return worst
+}
+
 function lastReading(row: ReadingRow, entries: EntryRecord[]): string | null {
   const latest = row.fields.map((field) =>
     latestEntry(entries.filter((entry) => entry.indicatorId === field.indicatorId)),
