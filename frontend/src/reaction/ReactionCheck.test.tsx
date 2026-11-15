@@ -10,6 +10,8 @@ import {
   REACTION_MIN_SAVE_TRIALS,
   REACTION_MIN_VALID_MS,
   REACTION_NONTARGET_MS,
+  REACTION_SIZES,
+  REACTION_TRIAL_WINDOW_MS,
   REACTION_WAIT_MIN_MS,
   reactionLength,
 } from './constants'
@@ -47,7 +49,7 @@ function memoryStore(): LocalEntryStore {
 }
 
 describe('reactionLength', () => {
-  it('is 90 seconds, and the demo length only on the demo path', () => {
+  it('is 50 seconds, and the demo length only on the demo path', () => {
     expect(reactionLength('')).toBe(REACTION_DURATION_MS)
     expect(reactionLength('?team=1')).toBe(REACTION_DURATION_MS)
     expect(reactionLength('?reaction=demo')).toBe(REACTION_DEMO_DURATION_MS)
@@ -62,6 +64,10 @@ describe('ReactionCheck', () => {
     vi.setSystemTime(new Date(Date.UTC(2026, 10, 14, 14, 30)))
     // The shortest wait every time, so a test advances a known number of ms.
     vi.spyOn(Math, 'random').mockReturnValue(0)
+    // The frame that draws a light is stamped by its own test; elsewhere the
+    // frame callback never runs, so the timer's stamp is the one measured.
+    vi.stubGlobal('requestAnimationFrame', () => 0)
+    vi.stubGlobal('cancelAnimationFrame', () => undefined)
   })
 
   afterEach(() => {
@@ -211,13 +217,18 @@ describe('ReactionCheck', () => {
     draw(store)
     fireEvent.click(screen.getByRole('radio', { name: reactionStrings.sound }))
     fireEvent.click(screen.getByRole('button', { name: reactionStrings.start }))
-    // jsdom has no Web Audio: the screen says so and the ring is the cue.
+    // jsdom has no Web Audio: the screen says so.
     expect(screen.getByText(reactionStrings.noTone)).toBeVisible()
 
+    // The stage is the same before and after the tone starts: no figure, no
+    // text change, and no live region that would announce the tone.
+    const before = area().innerHTML
     advance(REACTION_WAIT_MIN_MS)
-    expect(area().querySelector('.reaction__ring')).not.toBeNull()
-    expect(screen.getByText(reactionStrings.kind.tone)).toBeVisible()
-    expect(screen.getByText(reactionStrings.now)).toBeVisible()
+    expect(area()).toHaveAttribute('data-reaction-state', 'stimulus')
+    expect(area().innerHTML).toBe(before)
+    expect(area().querySelector('.reaction__stimulus')).toBeNull()
+    expect(area().querySelector('[role="status"], [aria-live]')).toBeNull()
+    expect(screen.getByText(reactionStrings.listen)).toBeVisible()
 
     advance(250)
     fireEvent.click(area())
@@ -325,10 +336,9 @@ describe('ReactionCheck', () => {
     advance(REACTION_WAIT_MIN_MS)
     random.mockReturnValue(0)
     expect(area()).toHaveAttribute('data-reaction-target', 'false')
-    // A non-target has a shape that is not the target's circle.
-    expect(screen.getByRole('img', { name: reactionStrings.kind.diamond })).toHaveAttribute(
-      'data-shape',
-      'diamond',
+    // A non-target is the same lamp in another colour, without the green ring.
+    expect(screen.getByRole('img', { name: reactionStrings.kind.blue })).toHaveClass(
+      'reaction__lamp--blue',
     )
     advance(200)
     fireEvent.keyDown(window, { key: ' ' })
@@ -360,13 +370,14 @@ describe('ReactionCheck', () => {
     START()
     expect(screen.getByText(reactionStrings.ruleLight)).toBeVisible()
     answerTrials(1)
-    // A different shape and size on the next light, still a target.
+    // The same white lamp in another size, still a target.
     random.mockReturnValue(0.99)
     advance(REACTION_WAIT_MIN_MS)
     random.mockReturnValue(0)
     expect(area()).toHaveAttribute('data-reaction-target', 'true')
-    const shape = screen.getByRole('img', { name: reactionStrings.kindPlain.diamond })
-    expect(shape).toHaveAttribute('data-shape', 'diamond')
+    const lamp = screen.getByRole('img', { name: reactionStrings.lamp })
+    expect(lamp).toHaveClass('reaction__lamp--white')
+    expect(REACTION_SIZES).toContain(1)
     advance(200)
     fireEvent.keyDown(window, { key: ' ' })
     // The answer is a reaction, not an error.
@@ -378,17 +389,64 @@ describe('ReactionCheck', () => {
     expect(store.list().map((entry) => entry.value)).toEqual([300, 0])
   })
 
-  it('draws the green target with a shape of its own and a label', () => {
+  it('draws the green target as a lamp with a ring and a label', () => {
     draw(memoryStore(), { search: '', colourTargets: true })
     START()
     answerTrials(1)
     advance(REACTION_WAIT_MIN_MS)
     const green = screen.getByRole('img', { name: reactionStrings.kind.green })
-    expect(green).toHaveAttribute('data-shape', 'circle')
+    expect(green).toHaveClass('reaction__lamp--green')
     expect(area()).toHaveAttribute('data-reaction-target', 'true')
-    // The instruction names the colour and the shape, and stays on screen.
+    // The instruction names the colour, and stays on screen.
     expect(screen.getByText(reactionStrings.ruleLightColour)).toBeVisible()
-    expect(reactionStrings.introLightColour).toContain('green circle')
+    expect(reactionStrings.introLightColour).toContain('only the green light')
+  })
+
+  it('times a light from the frame that draws it, not from the timer', () => {
+    let frame: FrameRequestCallback | null = null
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      frame = callback
+      return 1
+    })
+    const store = memoryStore()
+    draw(store, { search: '' })
+    now = 0
+    START()
+    advance(REACTION_WAIT_MIN_MS)
+    expect(frame).not.toBeNull()
+    // The lamp reaches the screen 40 ms after the timer fired.
+    now += 40
+    act(() => frame?.(now))
+    // 380 ms after the timer, 340 ms after the lamp was drawn: under 355 ms.
+    advance(340)
+    fireEvent.keyDown(window, { key: ' ' })
+    vi.stubGlobal('requestAnimationFrame', () => 0)
+    answerTrials(REACTION_MIN_SAVE_TRIALS - 1)
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(figures()).toBe('Median300 msLapses0')
+  })
+
+  it('keeps a late answer in the median and still counts it as a lapse', () => {
+    draw(memoryStore(), { search: '' })
+    START()
+    answerTrials(1, 300)
+    answerTrials(1, 500)
+    answerTrials(1, 700)
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(figures()).toBe('Median500 msLapses2')
+  })
+
+  it('never says "none" when every trial timed out', () => {
+    draw(memoryStore(), { search: '' })
+    START()
+    for (let trial = 0; trial < 3; trial += 1) {
+      advance(REACTION_WAIT_MIN_MS)
+      advance(REACTION_TRIAL_WINDOW_MS)
+    }
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(figures()).toContain('No answers')
+    expect(screen.getByText(reactionStrings.noAnswers)).toBeVisible()
+    expect(figures().toLowerCase()).not.toContain('none')
   })
 
   it('offers another run after the result', () => {
@@ -412,7 +470,7 @@ describe('ReactionCheck', () => {
       screen.getByRole('progressbar', { name: reactionStrings.timeLeft }),
     ).toHaveAttribute('aria-valuemax', String(REACTION_DURATION_MS))
 
-    // The shortest wait and an answer on time, until the 90 seconds run out.
+    // The shortest wait and an answer on time, until the 50 seconds run out.
     for (let trial = 0; trial < 100; trial += 1) {
       advance(REACTION_WAIT_MIN_MS)
       advance(300)
@@ -434,8 +492,8 @@ describe('ReactionCheck', () => {
     for (const entry of saved) {
       expect(entry.personId).toBe('demo_astronaut_1')
       expect(entry.missionDay).toBe(1)
-      // The reading is stamped when the 90 seconds are up: 14:30 plus 90 s.
-      expect(entry.time).toBe('14:31')
+      // The reading is stamped when the 50 seconds are up: 14:30 plus 50 s.
+      expect(entry.time).toBe('14:30')
       expect(entry.context).toBe('rest')
     }
     expect(store.pending()).toHaveLength(2)
