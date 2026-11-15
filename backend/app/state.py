@@ -40,8 +40,10 @@ Where the decision leaves room, this module resolves it as follows:
   without a baseline, because an invented limit must not raise an alarm on its
   own. The finding says "the only place a `needs_review` can come from, and only
   when the row carries a link".
-- A value exactly on an attention threshold does not trigger that row; the
-  shared vectors and the frontend compare strictly.
+- A value exactly on an attention threshold triggers that row: the cited
+  sources say "or higher" (WHO, "140/90 mmHg or higher" and "180/120 or
+  higher"; JSC 22538, "38.0 °C or greater"), and Bio 2 decided on Sun 15 Nov
+  that a `below` row is read the same way, "or lower" (Q4).
 - Two matching rows with the same `notify` are not defined by FORMATS.md; the
   more extreme threshold wins, as `scripts/fixtures/format_rules/attention.json`
   records, and two rows on opposite sides keep the first in file order.
@@ -182,8 +184,8 @@ def attention_for(rows: Sequence[dict], value: float) -> dict | None:
     """The attention row a value triggers, or None when no row does.
 
     `rows` are the rows of one indicator in file order. A row matches when the
-    value is on its side of its threshold (`below`: value < threshold, `above`:
-    value > threshold). When several rows match, the most severe `notify` wins;
+    value is on its side of its threshold or on it (`below`: value <=
+    threshold, `above`: value >= threshold). When several rows match, the most severe `notify` wins;
     on the same severity the more extreme threshold wins, and two rows on
     opposite sides keep the first row of the file.
     """
@@ -197,13 +199,16 @@ def attention_for(rows: Sequence[dict], value: float) -> dict | None:
 
 
 def attention_matches(row: dict, value: float) -> bool:
-    """Whether the value is past the row's threshold on the row's side."""
+    """Whether the value reached the row's threshold on the row's side.
+
+    The threshold itself counts ("140/90 or higher"): see the module notes.
+    """
     side = row["side"]
     threshold = float(row["threshold"])
     if side == "below":
-        return value < threshold
+        return value <= threshold
     if side == "above":
-        return value > threshold
+        return value >= threshold
     raise ValueError(f"side must be below or above, got {side!r}")
 
 
