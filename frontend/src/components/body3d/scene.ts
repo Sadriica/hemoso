@@ -5,6 +5,11 @@
 // Motion rules are DESIGN.md section 7: a change of state animates in 150 to
 // 400 ms, the idle turn stops on the first interaction, and under reduced
 // motion only the colour changes.
+//
+// Frames are asked for, never run forever: `step` returns whether the frame it
+// just drew still moved, and frame.ts stops the loop when nothing does. A
+// state change, a resize, a hover or an input draws once and lets the motion
+// that follows keep the loop alive; a hidden page draws nothing.
 
 import {
   BoxGeometry,
@@ -28,6 +33,7 @@ import {
 } from 'three'
 import { bodyRegion } from './regions'
 import { buildMannequin } from './mannequin'
+import { createFrameLoop } from './frame'
 import type { InjuryKind } from '../../data/painStore'
 
 export type SceneMode = 'status' | 'pain'
@@ -85,6 +91,15 @@ const ZOOM_MAX = 4.6
 const TAP_SLOP = 8
 const CAMERA_EASE = 0.4
 const GLOW_EASE = 0.25
+/**
+ * Below these the picture is at rest: one more frame would not change a pixel,
+ * so the loop stops. The angle is a thirtieth of a degree, the view is about
+ * two thousandths of a world unit, the colours are in the 0 to 1 of three.js.
+ */
+const REST_ANGLE = 0.0005
+const REST_VIEW = 0.002
+const REST_COLOR = 0.002
+const REST_GLOW = 0.004
 /** The four numbers the camera eases, in the order of the frame loop. */
 const VIEW_AXES = ['distance', 'x', 'y', 'z'] as const
 
@@ -149,20 +164,14 @@ export function createBodyScene(
   const viewNow = { distance: HOME.distance, x: 0, y: HOME.y, z: 0 }
   const viewGoal = { distance: HOME.distance, x: 0, y: HOME.y, z: 0 }
 
-  let frame = 0
-  let last = 0
-
   function resize(): void {
     const width = canvas.clientWidth || 320
     const height = canvas.clientHeight || 480
     renderer.setSize(width, height, false)
     camera.aspect = width / height
     camera.updateProjectionMatrix()
+    loop.request()
   }
-
-  const observer = new ResizeObserver(resize)
-  observer.observe(canvas)
-  resize()
 
   function regionAt(clientX: number, clientY: number): string | null {
     const rect = canvas.getBoundingClientRect()
@@ -194,10 +203,12 @@ export function createBodyScene(
       viewGoal.z = 0
       viewGoal.distance = FOCUS_DISTANCE
     }
+    loop.request()
   }
 
   function onPointerDown(event: PointerEvent): void {
     interacted = true
+    loop.request()
     pointers.set(event.pointerId, { x: event.clientX, y: event.clientY })
     if (pointers.size === 2) {
       const [a, b] = [...pointers.values()]
@@ -220,6 +231,7 @@ export function createBodyScene(
       const next = Math.hypot(a.x - b.x, a.y - b.y)
       if (pinchDistance > 0) {
         viewGoal.distance = clampZoom(viewGoal.distance - (next - pinchDistance) * 0.01)
+        loop.request()
       }
       pinchDistance = next
       return
@@ -231,12 +243,14 @@ export function createBodyScene(
       dragStart = { x: event.clientX, y: event.clientY }
       goalYaw += dx * 0.009
       goalPitch = Math.max(-0.35, Math.min(0.35, goalPitch + dy * 0.005))
+      loop.request()
       return
     }
     const id = regionAt(event.clientX, event.clientY)
     if (id !== hovered) {
       hovered = id
       canvas.style.cursor = id === null ? 'grab' : 'pointer'
+      loop.request()
     }
     callbacks.onHover(id === null ? null : bodyRegion(id)?.name ?? id, toCanvasPoint(event.clientX, event.clientY))
   }
@@ -256,6 +270,7 @@ export function createBodyScene(
 
   function onPointerLeave(): void {
     hovered = null
+    loop.request()
     callbacks.onHover(null, null)
   }
 
@@ -263,6 +278,7 @@ export function createBodyScene(
     event.preventDefault()
     interacted = true
     viewGoal.distance = clampZoom(viewGoal.distance + event.deltaY * 0.0015)
+    loop.request()
   }
 
   canvas.addEventListener('pointerdown', onPointerDown)
@@ -310,8 +326,10 @@ export function createBodyScene(
   let litSet = new Set<string>()
   let marksById = new Map<string, SceneMark>()
 
-  function paintRegions(dt: number): void {
+  /** Paints the glow of every region; true while a colour still eases. */
+  function paintRegions(dt: number): boolean {
     const step = state.reducedMotion ? 1 : 1 - Math.exp(-dt / GLOW_EASE)
+    let moving = false
     for (const part of mannequin.parts) {
       const material = mannequin.materials.get(part.regionId)
       if (material === undefined) continue
@@ -331,12 +349,20 @@ export function createBodyScene(
       }
       material.emissive.lerp(color, step)
       material.emissiveIntensity += (intensity - material.emissiveIntensity) * step
+      if (
+        Math.abs(intensity - material.emissiveIntensity) > REST_GLOW ||
+        Math.abs(color.r - material.emissive.r) > REST_COLOR ||
+        Math.abs(color.g - material.emissive.g) > REST_COLOR ||
+        Math.abs(color.b - material.emissive.b) > REST_COLOR
+      ) {
+        moving = true
+      }
     }
+    return moving
   }
 
-  function animate(now: number): void {
-    const dt = last === 0 ? 0.016 : Math.min(0.05, (now - last) / 1000)
-    last = now
+  /** One frame of `dt` seconds; true while the picture still moves. */
+  function step(dt: number): boolean {
     if (!interacted && !state.reducedMotion) goalYaw += IDLE_TURN * dt
     const turnStep = state.reducedMotion ? 1 : 1 - Math.exp(-dt / 0.12)
     yaw += (goalYaw - yaw) * turnStep
@@ -350,12 +376,33 @@ export function createBodyScene(
     camera.position.set(viewNow.x, viewNow.y + 0.02, viewNow.distance)
     camera.lookAt(viewNow.x, viewNow.y, viewNow.z)
 
-    paintRegions(dt)
-
+    const glowMoving = paintRegions(dt)
     renderer.render(scene, camera)
-    frame = requestAnimationFrame(animate)
+
+    // The idle turn never arrives, so it keeps the loop; every other motion
+    // ends one frame after it reaches its goal.
+    return (
+      (!interacted && !state.reducedMotion) ||
+      Math.abs(goalYaw - yaw) > REST_ANGLE ||
+      Math.abs(goalPitch - pitch) > REST_ANGLE ||
+      VIEW_AXES.some((axis) => Math.abs(viewGoal[axis] - viewNow[axis]) > REST_VIEW) ||
+      glowMoving
+    )
   }
-  frame = requestAnimationFrame(animate)
+
+  const loop = createFrameLoop(step, {
+    request: (callback) => requestAnimationFrame(callback),
+    cancel: (handle) => cancelAnimationFrame(handle),
+    hidden: () => document.hidden,
+    listenVisibility: (listener) => {
+      document.addEventListener('visibilitychange', listener)
+      return () => document.removeEventListener('visibilitychange', listener)
+    },
+  })
+
+  const observer = new ResizeObserver(resize)
+  observer.observe(canvas)
+  resize()
 
   return {
     apply(next: SceneState) {
@@ -364,10 +411,12 @@ export function createBodyScene(
       marksById = new Map(next.marks.map((mark) => [mark.regionId, mark]))
       litColor.set(next.litColor)
       rebuildMarkers()
+      loop.request()
     },
     orbit(direction: number) {
       interacted = true
       goalYaw += direction * BUTTON_TURN
+      loop.request()
     },
     resetView() {
       interacted = true
@@ -378,9 +427,10 @@ export function createBodyScene(
       viewGoal.x = 0
       viewGoal.y = HOME.y
       viewGoal.z = 0
+      loop.request()
     },
     dispose() {
-      cancelAnimationFrame(frame)
+      loop.dispose()
       observer.disconnect()
       canvas.removeEventListener('pointerdown', onPointerDown)
       canvas.removeEventListener('pointermove', onPointerMove)
