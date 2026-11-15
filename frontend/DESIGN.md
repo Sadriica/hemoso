@@ -138,10 +138,11 @@ Any new pair must be added here and to `theme.test.ts` before it is used.
 | Body | `--font-body` | Inter, SIL OFL | system-ui, Segoe UI, Roboto |
 | Mono (telemetry, values, labels) | `--font-mono` | JetBrains Mono, SIL OFL | ui-monospace, Cascadia Mono, Consolas |
 
-Font gate: the three families are named in the tokens but no file is bundled
-yet. Files are self-hosted from `frontend/public/fonts/` with their licence
-file, after Eng 1 says yes and `docs/DECISIONS.md` has a row. No CDN, ever.
-Until then the fallbacks show, and the scale below holds with them.
+Font gate: the files are bundled (Sun 15 Nov, `docs/DECISIONS.md` has the row).
+They are self-hosted from `frontend/public/fonts/` with their licence file
+(`OFL.txt`): Barlow Condensed 600 and 700, Inter and JetBrains Mono as one
+variable file each (400 to 700), Latin subset, woff2. No CDN, ever. The
+fallbacks only show while a file loads (`font-display: swap`).
 
 ### 4.2 Scale (locked)
 
@@ -376,7 +377,7 @@ Accepted deviations, so a later change does not "fix" them by accident:
 - The heartbeat figure plays three beats and stops; it is not an ambient loop.
 - With no attention rule filled in `config/rules`, every state is "no data"
   and the demo shows no state colour; this is a content gap, not a style bug.
-- Fonts are fallbacks until the files are approved (section 4.1).
+- Fonts are self-hosted in `public/fonts/` (section 4.1); the fallbacks show only while a file loads.
 
 ## 15. Mission scene (round 3, Sat 14 Nov 23:50)
 

@@ -55,6 +55,21 @@ into `team/<person>/README.md`.
 | CMO | Crew medical officer: the crew member with medical training on board |
 | mission control | Operations team on Earth |
 | Assumption | A value or statement with no direct source yet |
+| GMT | Station time: the ISS clock runs on Greenwich Mean Time; the app shows times as GMT. https://ntrs.nasa.gov/citations/20240002094 |
+| Flight Day (FD) | The day number of a crew member's flight ("FD 14"), used on the ISS too; the product's "day N". https://www.nasa.gov/blogs/stationreport/2013/06/12/iss-daily-summary-report-06-12-13/ |
+| Post-sleep | The morning block of the crew day, right after waking. https://www.nasa.gov/wp-content/uploads/2014/06/061314_tl.pdf |
+| Pre-sleep | The evening block of the crew day, before bed. https://www.nasa.gov/wp-content/uploads/2014/06/061314_tl.pdf |
+| PHS | Periodic Health Status: the routine on-board health check. https://www.nasa.gov/blogs/stationreport/2020/10/01/iss-daily-summary-report-10-01-2020/ |
+| PMC | Private Medical Conference: the private call between a crew member and the flight surgeon. https://ntrs.nasa.gov/api/citations/20080010877/downloads/20080010877.pdf |
+| CHeCS | Crew Health Care System: the station's medical system. https://www.nasa.gov/blogs/stationreport/2023/09/12/iss-daily-summary-report-9-12-2023/ |
+| ARED, T2, CEVIS | The ISS exercise devices: weight machine, treadmill, exercise bike. https://www.nasa.gov/missions/station/iss-research/astronaut-exercise/ |
+| Increment | A crew rotation period on the ISS. https://www.nasa.gov/blogs/stationreport/2021/04/12/iss-daily-summary-report-4-12-2021/ |
+
+In the interface a NASA term is the label and the plain words are its helper
+("Post-sleep · on waking"), so a person new to the station still reads it.
+Not NASA terms, kept in plain words: "rest" and "after exercise" (NASA writes
+"post-exercise" only for hygiene after a workout). MET (Mission Elapsed Time)
+belongs to Artemis and the Shuttle, not the ISS, so the product does not use it.
 
 The team adds the solution's own terms here on Saturday, once they exist.
 

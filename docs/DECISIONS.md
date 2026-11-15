@@ -72,6 +72,7 @@ was tier C until then). Ids in `FORMATS.md` section 2.
 | React 19.3.1, React DOM | MIT | The app's screens |
 | @vladmandic/face-api 1.7.15 and its models | MIT | Face sign-in on the device (REQ-36) |
 | three (version pinned in frontend/package.json) | MIT | The 3D body: rotate, see the systems, select where it hurts (REQ-15) |
+| Barlow Condensed, Inter, JetBrains Mono (self-hosted woff2 in `frontend/public/fonts/`) | SIL OFL 1.1 | The display, body and mono typefaces of the interface (`frontend/DESIGN.md` section 4); no CDN (REQ-28) |
 | Vite 8.3.8, TypeScript 6.0.3 | MIT, Apache-2.0 | Build and types (development only) |
 | Vitest, Testing Library, jsdom | MIT | Frontend tests (development only) |
 | Playwright, axe-core | Apache-2.0, MPL-2.0 | End-to-end and accessibility tests (development only) |

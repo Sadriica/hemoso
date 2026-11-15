@@ -1,3 +1,39 @@
+/* Self-hosted typefaces (SIL OFL 1.1, public/fonts/OFL.txt). Latin subset
+   only; the unicode-range is the one Google Fonts publishes for it. Root
+   URLs to public/ files: Vite rewrites them against the relative base. */
+@font-face {
+  font-family: 'Barlow Condensed';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/barlow-condensed-latin-600.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Barlow Condensed';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/barlow-condensed-latin-700.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/fonts/inter-latin-var.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/fonts/jetbrains-mono-latin-var.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 /* HeMoSo app shell. The contract is frontend/DESIGN.md (Observatory, locked
    Sat 14 Nov 2026); src/theme/tokens.ts carries the same colour values and
    src/theme.test.ts checks that the two agree.
@@ -6,9 +42,9 @@
    Every colour, size, space and duration on a screen comes from a token here:
    a value that is not in this block is a bug.
 
-   Font files are not bundled yet (a licence row in docs/DECISIONS.md is the
-   gate), so the stacks below name the planned families first and fall back to
-   system fonts. No font is ever loaded from a CDN. */
+   The three families are self-hosted from public/fonts (the @font-face rules
+   above); the stacks below fall back to system fonts while a file loads. No
+   font is ever loaded from a CDN. */
 
 :root {
   color-scheme: dark;
