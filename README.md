@@ -26,8 +26,8 @@ Team ReTardis · NASA Space Apps Challenge 2026 · Medellín
   when a result needs attention. It does not replace either of them.
 - **What changes for the crew.** Each reading is shown against the person's
   own usual range and against limits that cite a source, with the next step in
-  plain words and who acts. It works offline and sends the data when the link
-  returns.
+  plain words and who acts. Once it is open, it keeps working with no
+  connection and sends the data when the link returns.
 
 ## What it does
 
