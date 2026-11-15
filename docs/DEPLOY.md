@@ -48,6 +48,8 @@ slides at most). How the solution is published is recorded in
 - Check both links in a private window, not signed in, before the internal freeze.
 
 ## 2. The 30-second video with English subtitles
+
+Published: https://youtu.be/MsjzAZ2Txwc (YouTube, public, 0:29).
 Record the demo path with Playwright (same resolution every take) or a screen
 recorder, then burn the subtitles with ffmpeg:
 ```bash
