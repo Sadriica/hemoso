@@ -145,6 +145,17 @@ export default function IdentifyPhase({
     chosen?.focus({ preventScroll: true })
   }
 
+  // Face sign-in failed: the Sign in tab takes the focus when the server has
+  // accounts, and the crew picker when it has only the demo crew.
+  const focusSignInWay = () => {
+    if (!session.accountsOffered) {
+      focusPicker()
+      return
+    }
+    setCreating(false)
+    document.getElementById(`${tabsId}-signin`)?.focus({ preventScroll: true })
+  }
+
   const askPin = (personId: string) => {
     setAskedFor(personId)
     setUsername(personId)
@@ -304,7 +315,8 @@ export default function IdentifyPhase({
           <FaceSignIn
             personId={session.personId ?? ''}
             onPersonSelected={faceMatched}
-            onFocusPicker={focusPicker}
+            onFocusPicker={focusSignInWay}
+            fallback={session.accountsOffered ? 'tab' : 'picker'}
             onClose={() => {
               setFaceOpen(false)
               // Back to the control that opened the panel.
@@ -371,6 +383,8 @@ export default function IdentifyPhase({
                       personId={session.personId}
                       onPersonSelected={faceMatched}
                       onFocusPicker={() => offerButtonRef.current?.focus()}
+                      // Signed in already: no tab to point at.
+                      fallback="register"
                       onClose={() => {
                         setFaceOpen(false)
                         setOfferDone(

@@ -9,10 +9,14 @@ import { strings } from '../strings'
 // is never opened in a test, and no user is asked for permission (REQ-36).
 // The model itself is checked in the browser by hand, not in jsdom.
 
-const engine = vi.hoisted(() => ({ descriptorFrom: vi.fn() }))
+const engine = vi.hoisted(() => ({
+  descriptorFrom: vi.fn(),
+  loadModels: vi.fn(),
+}))
 
 vi.mock('../face/engine', () => ({
   descriptorFrom: engine.descriptorFrom,
+  loadModels: engine.loadModels,
 }))
 
 const ORIGINAL_MEDIA_DEVICES = navigator.mediaDevices
@@ -68,6 +72,8 @@ const ORIGINAL_READY_STATE = Object.getOwnPropertyDescriptor(
 beforeEach(() => {
   localStorage.clear()
   engine.descriptorFrom.mockReset()
+  engine.loadModels.mockReset()
+  engine.loadModels.mockResolvedValue('webgl')
   Object.defineProperty(HTMLMediaElement.prototype, 'readyState', {
     configurable: true,
     get: () => 2,
@@ -214,13 +220,13 @@ describe('FaceSignIn', () => {
     await user.click(screen.getByRole('button', { name: strings.face.signIn }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      strings.face.status.notRecognised,
+      strings.face.problem('notRecognised', 'tab'),
     )
     expect(props.onPersonSelected).not.toHaveBeenCalled()
     expect(props.onFocusPicker).toHaveBeenCalledTimes(1)
   })
 
-  it('names a blocked camera as denied and returns the focus to the picker', async () => {
+  it('names a blocked camera as denied and points at the username and PIN', async () => {
     setMediaDevices({
       getUserMedia: vi.fn().mockRejectedValue(namedError('NotAllowedError')),
     })
@@ -231,9 +237,11 @@ describe('FaceSignIn', () => {
     await user.click(screen.getByRole('button', { name: strings.face.register }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      strings.face.camera.denied,
+      strings.face.problem('denied', 'register'),
     )
-    expect(props.onFocusPicker).toHaveBeenCalledTimes(1)
+    // Registering has no other screen to send the person to: Close is the exit.
+    expect(props.onFocusPicker).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: strings.face.closeLabel })).toHaveFocus()
     expect(engine.descriptorFrom).not.toHaveBeenCalled()
   })
 
@@ -246,7 +254,7 @@ describe('FaceSignIn', () => {
     await user.click(screen.getByRole('button', { name: strings.face.continueLabel }))
     await user.click(screen.getByRole('button', { name: strings.face.signIn }))
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      strings.face.camera.missing,
+      strings.face.problem('missing', 'tab'),
     )
 
     setMediaDevices({
@@ -255,7 +263,7 @@ describe('FaceSignIn', () => {
     await user.click(screen.getByRole('button', { name: strings.face.signIn }))
     await waitFor(() =>
       expect(screen.getByRole('alert')).toHaveTextContent(
-        strings.face.camera.busy,
+        strings.face.problem('busy', 'tab'),
       ),
     )
     expect(engine.descriptorFrom).not.toHaveBeenCalled()
@@ -305,20 +313,80 @@ describe('FaceSignIn', () => {
     ).toBeVisible()
   })
 
-  it('says the face check could not run when the model fails, and stops the camera', async () => {
+  it('says face sign-in is not available when registering fails, and stops the camera', async () => {
     const { track } = allowCamera()
-    engine.descriptorFrom.mockRejectedValue(new Error('the chunk did not load'))
+    engine.loadModels.mockRejectedValue(new Error('the chunk did not load'))
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
     const user = userEvent.setup()
     const props = renderPanel()
 
     await user.click(screen.getByRole('button', { name: strings.face.continueLabel }))
     await user.click(screen.getByRole('button', { name: strings.face.register }))
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      strings.face.status.failed,
-    )
-    expect(props.onFocusPicker).toHaveBeenCalledTimes(1)
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent(strings.face.problem('failed', 'register'))
+    expect(alert).toHaveTextContent('username and PIN keep working')
+    expect(alert).not.toHaveTextContent('Pick your name')
+    // The only exit on this screen is Close, and it has the focus.
+    expect(props.onFocusPicker).not.toHaveBeenCalled()
+    expect(screen.getByRole('button', { name: strings.face.closeLabel })).toHaveFocus()
     expect(track.stop).toHaveBeenCalledTimes(1)
+    // The cause reaches the console: name and message, nothing else.
+    expect(warn).toHaveBeenCalledWith(
+      'face: register failed (Error: the chunk did not load)',
+    )
+    warn.mockRestore()
+  })
+
+  it('points at the Sign in tab when signing in with the face fails', async () => {
+    allowCamera()
+    engine.descriptorFrom.mockRejectedValue(new Error('webgl lost'))
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const user = userEvent.setup()
+    const props = renderPanel({ personId: '' })
+
+    await user.click(screen.getByRole('button', { name: strings.face.continueLabel }))
+    await user.click(screen.getByRole('button', { name: strings.face.signIn }))
+
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent(strings.face.problem('failed', 'tab'))
+    expect(alert).toHaveTextContent('Sign in tab')
+    expect(props.onFocusPicker).toHaveBeenCalledTimes(1)
+  })
+
+  it('points at the crew list when the server has no accounts', async () => {
+    allowCamera()
+    engine.descriptorFrom.mockRejectedValue(new Error('webgl lost'))
+    vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const user = userEvent.setup()
+    renderPanel({ personId: '', fallback: 'picker' })
+
+    await user.click(screen.getByRole('button', { name: strings.face.continueLabel }))
+    await user.click(screen.getByRole('button', { name: strings.face.signIn }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      strings.face.problem('failed', 'picker'),
+    )
+  })
+
+  it('shows the download progress while the model files come down', async () => {
+    allowCamera()
+    engine.loadModels.mockImplementation(
+      async (onProgress: (fraction: number) => void) => {
+        onProgress(0.42)
+        await new Promise((resolve) => setTimeout(resolve, 30))
+        return 'wasm'
+      },
+    )
+    engine.descriptorFrom.mockResolvedValue(null)
+    const user = userEvent.setup()
+    renderPanel()
+
+    await user.click(screen.getByRole('button', { name: strings.face.continueLabel }))
+    await user.click(screen.getByRole('button', { name: strings.face.register }))
+
+    expect(await screen.findByText(strings.face.loading(40))).toBeVisible()
+    await screen.findByText(strings.face.status.noFace)
   })
 
   it('says when no face is saved for the selected person', async () => {

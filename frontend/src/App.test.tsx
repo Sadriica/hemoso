@@ -422,7 +422,7 @@ describe('face sign-in on the plain page', () => {
       await user.click(screen.getByRole('button', { name: strings.face.signIn }))
 
       expect(await screen.findByRole('alert')).toHaveTextContent(
-        strings.face.camera.denied,
+        strings.face.problem('denied', 'picker'),
       )
       // The way in that always works has the focus.
       expect(screen.getByRole('radio', { name: PERSON })).toHaveFocus()
