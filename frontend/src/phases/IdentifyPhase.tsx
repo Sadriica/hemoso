@@ -347,7 +347,7 @@ export default function IdentifyPhase({
               <div className="signin__actions">
                 <button
                   type="submit"
-                  className="journey-button journey-button--solid"
+                  className="journey-button"
                   disabled={busy}
                 >
                   <span>
@@ -436,7 +436,7 @@ export default function IdentifyPhase({
 
           <button
             type="button"
-            className="journey-button journey-button--solid signin__begin"
+            className="journey-button signin__begin"
             onClick={goOn}
           >
             <span>{copy.next}</span>
