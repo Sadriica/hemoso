@@ -44,6 +44,14 @@ Eat your full meals this week and measure again next week. Assumption.
 
 Your CMO or flight surgeon confirms.
 
+### watch
+
+Your body mass is below 70 kg.
+
+Eat your full meals this week and measure again next week. Assumption.
+
+The crew checks your record on board.
+
 ## How to prevent problems
 
 Eat enough energy and protein every day. Do the exercise your CMO schedules.
