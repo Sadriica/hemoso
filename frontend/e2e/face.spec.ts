@@ -13,12 +13,6 @@ import { strings } from '../src/strings'
 // Nothing here uses a picture of a person, which is also why the happy paths
 // are not here: registering a face and signing in with it need a real face in
 // front of a real camera, and are checked by hand.
-//
-// Each test opens the camera at most once. A second camera in the same panel
-// starts the detector on a video element that has no frame yet, and the check
-// then never returns: no sentence, the buttons stay disabled. That is a defect
-// of the panel, not of this file; the tests keep one session each until it is
-// fixed.
 const copy = strings.face
 const phasesCopy = strings.phases
 
@@ -132,17 +126,20 @@ test('?face=1: the consent comes before any camera, and Cancel leaves the picker
   await expect(page.getByText(strings.topbar.onDuty(personId))).toBeVisible()
 })
 
-test('?face=1: registering with a camera that shows no face saves nothing', async ({
+test('?face=1: a camera that shows no face registers nobody and names nobody', async ({
   page,
 }) => {
   const models = collectModelRequests(page)
   await openFacePanel(page)
   const panel = await acceptConsent(page)
   const personId = await pickFirstCrew(page)
+  const register = panel.getByRole('button', { name: copy.register })
+  const signIn = panel.getByRole('button', { name: copy.signIn, exact: true })
+  const personField = panel.getByRole('combobox', { name: copy.person })
 
   // Five frames of the test pattern, no face in any of them: nothing is saved
   // and the person reads why.
-  await panel.getByRole('button', { name: copy.register }).click()
+  await register.click()
   await expect(panel.getByRole('alert')).toHaveText(copy.status.noFace, {
     timeout: 60_000,
   })
@@ -156,27 +153,16 @@ test('?face=1: registering with a camera that shows no face saves nothing', asyn
     'face data saved from a camera with no face',
   ).toBeNull()
 
-  await goOnWithPicker(page)
-})
-
-test('?face=1: signing in with a camera that shows no face picks no name', async ({
-  page,
-}) => {
-  const models = collectModelRequests(page)
-  await openFacePanel(page)
-  const panel = await acceptConsent(page)
-  await pickFirstCrew(page)
-
-  // One frame, no face in it, no saved face either: no name is picked, the
-  // panel stays open on the sentence and the check stays on this phase.
-  await panel.getByRole('button', { name: copy.signIn, exact: true }).click()
+  // The second camera of the same panel: one frame, no face in it, no saved
+  // face either. No name is picked, the sentence names what happened and every
+  // control comes back, so the person can try again or pick a name.
+  await signIn.click()
   await expect(panel.getByRole('alert')).toHaveText(copy.status.notRecognised, {
     timeout: 60_000,
   })
-  expect(
-    models.length,
-    'model files fetched once the camera opened',
-  ).toBeGreaterThan(0)
+  await expect(register).toBeEnabled()
+  await expect(signIn).toBeEnabled()
+  await expect(personField).toBeEnabled()
   await expectOnIdentify(page)
   await expect(crewPicker(page).getByRole('radio').first()).toBeFocused()
 
