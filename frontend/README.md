@@ -69,3 +69,18 @@ Entries live in one `localStorage` key, `hemoso:v2`, holding
 `useEntries(store)` and `useOutbox(store)` read the store with
 `useSyncExternalStore`, so a saved entry shows on Home at once and the waiting
 count follows every change.
+
+The reports of the 3D body and the date Flight Day counts from use keys of their
+own:
+- `hemoso:pain:v1` holds `{ version: 1, reports }`, one report per person, day
+  and time, with the regions, the kind of mark and its strength.
+- `hemoso:mission:v1` holds one `YYYY-MM-DD` per person id.
+- `hemoso:pain-outbox:v1` holds what the pain reports still owe the server: one
+  item per region, because the API keeps one report per person, region, mission
+  day and time. A 404 or 405 from that route means the API does not have it yet:
+  the reports stay here and the outbox says it is waiting for the server.
+
+For a person with an account the API is the second copy: the reports go out,
+`GET /people/{id}/pain` merges the server's reports back into the device store,
+and the account's mission start wins over the one on this device. The demo
+astronaut has no account, so nothing is sent and nothing is asked.

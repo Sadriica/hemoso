@@ -1,8 +1,11 @@
 import { useSyncExternalStore } from 'react'
 
-// Each astronaut's mission start, kept on this device only (map personId ->
-// YYYY-MM-DD) until the backend resumes. Storage can be missing or full, so
-// every access is guarded and a failed write still holds for this page load.
+// Each astronaut's mission start on this device (map personId -> YYYY-MM-DD).
+// For a person with an account the copy the server holds wins; this one is the
+// fallback that keeps the screens counting when the request fails, and it is
+// what a new account sends (data/profileClient.ts, hooks/useMissionStartSync.ts).
+// Storage can be missing or full, so every access is guarded and a failed
+// write still holds for this page load.
 export const MISSION_START_KEY = 'hemoso:mission:v1'
 
 const memory: Record<string, string> = {}

@@ -178,7 +178,6 @@
 }
 
 .identify__quiet,
-.identify__more-toggle,
 .crew-begin {
   display: inline-flex;
   align-items: center;
@@ -199,7 +198,6 @@
 }
 
 .identify__quiet:hover,
-.identify__more-toggle:hover,
 .crew-begin:hover {
   border-color: var(--color-accent);
   color: var(--color-accent);
@@ -227,25 +225,45 @@
   font-size: var(--text-body);
 }
 
-/* The secondary row: a capsule that opens the form. */
+/* The account block: two tabs (sign in, create) over one form. */
 .identify__more {
   display: grid;
   gap: var(--space-3);
   justify-items: start;
 }
 
-.identify__more-toggle {
-  min-width: 0;
-  white-space: nowrap;
+.identify__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
 }
 
-.identify__more-chevron {
-  display: inline-block;
-  transition: transform var(--motion-fast) var(--ease-out);
+.identify__tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--tap-min);
+  padding: 0 var(--space-4);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-capsule);
+  background: transparent;
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  cursor: pointer;
 }
 
-.identify__more-toggle[aria-expanded='true'] .identify__more-chevron {
-  transform: rotate(90deg);
+.identify__tab:hover,
+.identify__tab[aria-selected='true'] {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.identify__tab[aria-selected='true'] {
+  border-width: 2px;
 }
 
 .identify__more-body {

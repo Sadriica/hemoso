@@ -323,6 +323,54 @@ test('status: one indicator history, its table and the comparison sentence', asy
   expect(problems, 'console errors and failed requests').toEqual([])
 })
 
+// The trend of one indicator over Flight Days (REQ-15, REQ-27): the chart
+// takes the keyboard, the arrow keys move between readings and the readout
+// names the one in focus. The table under it is the text of the same numbers.
+test('status: the history trend moves by keyboard and reads each point', async ({
+  page,
+}) => {
+  const problems = collectProblems(page)
+
+  await page.goto('/')
+  await walkToStatus(page)
+  await openHistory(page)
+
+  const chart = page.getByRole('group', { name: /^Trend of / })
+  await test.step('Trend: the chart and its controls are there', async () => {
+    await expect(chart).toBeVisible()
+    await expect(
+      page.getByRole('radio', { name: strings.history.trend.last14 }),
+    ).toBeChecked()
+    await expect(chart.locator('.tc__pt').first()).toBeVisible()
+  })
+
+  await test.step('Trend: arrow keys move between points', async () => {
+    await focusByTab(page, chart)
+    const readout = page.locator('.tc__readout-main')
+    await page.keyboard.press('ArrowLeft')
+    await expect(readout).toContainText('FD')
+    const newest = await readout.textContent()
+    await page.keyboard.press('ArrowLeft')
+    await expect(readout).not.toHaveText(newest ?? '')
+    await page.keyboard.press('Home')
+    await expect(page.getByText(/^Reading 1 of /)).toBeVisible()
+    await page.keyboard.press('End')
+    await expect(page.getByText(/^Reading (\d+) of \1$/)).toBeVisible()
+  })
+
+  await test.step('Trend: another context and the full range', async () => {
+    await page.getByRole('radio', { name: strings.history.trend.all }).check()
+    await expect(
+      page.getByRole('radio', { name: strings.history.trend.all }),
+    ).toBeChecked()
+    await expect(chart.locator('.tc__pt').first()).toBeVisible()
+  })
+
+  await expectNoBlockingA11yIssues(page, 'History trend')
+  await expectNoHorizontalScroll(page, 'History trend')
+  expect(problems, 'console errors and failed requests').toEqual([])
+})
+
 // The phone project is 412 px wide, which hides an overflow that only shows at
 // the narrowest screen the app promises (REQ-32). A fixed 320 px window, one
 // phase at a time.
