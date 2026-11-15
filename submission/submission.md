@@ -11,7 +11,8 @@ HeMoSo · a health monitor for astronauts
 ## One-line summary
 
 HeMoSo reads each astronaut's own measurements, compares them with that
-person's history and with sourced clinical limits, and says in plain words what
+person's history and with fixed limits that cite their source or are marked
+Assumption, and says in plain words what
 to do next and who should know.
 
 ## The problem
@@ -29,7 +30,8 @@ an astronaut records health indicators and understands the result.
 - Compares each reading with the person's own earlier readings, not with a
   population range: compared with the person's own recent readings, in a moving
   window.
-- Compares it again with published clinical limits, each one with its source.
+- Compares it again with fixed limits: each one cites its source or is marked
+  Assumption, and only a limit with a source can raise a review.
 - Returns one of four states in plain words: no data yet, in your usual range,
   outside your usual range, or needs review, and names who acts: the crew, the
   crew medical officer on board, or the flight surgeon on the ground.
@@ -70,11 +72,13 @@ both as Assumption, and so does every threshold with no source.
 
 ### Built for a real mission
 
-- **Measured with what flies today.** The instruments named in
+- **Built on instruments documented for the ISS.** The instruments named in
   [`config/data/indicators.csv`](https://github.com/Sadriica/hemoso/blob/main/config/data/indicators.csv), each with a
   source link: Bio-Monitor smart shirt, T-Mini core temperature headband,
   Actiwatch, i-STAT blood analyser, the ISS Reaction Self Test (our check is a
-  90-second adaptation), the metered galley dispenser and SLAMMD. Mood and appetite are daily questions.
+  90-second adaptation), the metered galley dispenser and SLAMMD. The values are
+  typed into the app; it does not connect to those devices. Mood and appetite are
+  daily questions.
 - **Works without contact with Earth.** Readings are saved on the device and
   an outbox sends them when the link returns
   ([`docs/API.md`](https://github.com/Sadriica/hemoso/blob/main/docs/API.md), REQ-13 in
