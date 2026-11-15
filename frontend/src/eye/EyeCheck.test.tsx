@@ -62,9 +62,17 @@ describe('EyeStep, hidden states', () => {
     serverConfigured: false,
   }
 
-  it('renders nothing while the flag is false', () => {
-    const { container } = render(<EyeStep {...props} indicators={indicators} />)
+  it('renders nothing while the flag is false', async () => {
+    vi.resetModules()
+    vi.doMock('./constants', async (original) => ({
+      ...(await original<typeof import('./constants')>()),
+      EYE_CHECK_ENABLED: false,
+    }))
+    const { default: Step } = await import('./EyeStep')
+    const { container } = render(<Step {...props} indicators={indicators} />)
     expect(container).toBeEmptyDOMElement()
+    vi.doUnmock('./constants')
+    vi.resetModules()
   })
 
   describe('with the flag on', () => {
