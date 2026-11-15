@@ -227,14 +227,15 @@ html {
   background: currentcolor;
 }
 
-/* Headline: short, uppercase, stacked lines; the middle line in the accent. */
+/* Headline: the one big line of a phase, uppercase condensed, two or three
+   lines; the middle line in the accent (DESIGN.md 4.2 hero, 12). */
 .headline {
   margin: var(--space-3) 0 0;
   font-family: var(--font-display);
-  font-size: clamp(44px, 7.5vw, 104px);
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: 0.92;
+  font-size: var(--text-hero);
+  font-weight: 700;
+  letter-spacing: var(--tracking-display);
+  line-height: var(--leading-hero);
   text-transform: uppercase;
 }
 
@@ -568,6 +569,12 @@ html {
 
 /* Phone: one column, smaller margins, full-width buttons. */
 @media (max-width: 599px) {
+  /* The hero steps down to 44 / 42 under 600 px (DESIGN.md 4.2). */
+  .headline {
+    --text-hero: 44px;
+    --leading-hero: 42px;
+  }
+
   .topbar {
     padding: var(--space-1) var(--space-3) var(--space-2);
   }
