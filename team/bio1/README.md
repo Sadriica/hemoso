@@ -8,18 +8,16 @@
 ## Current status
 _Update before every checkpoint and at every shift change._
 
-[bio1] ready · done: F-bio1-01, status text shape · next: REQ-04 pilot in B3 · blocked: indicator ids (Phys), attention.csv (Bio 2)
+[bio1] ready · done: 7 content files validated (0 errors), F-bio1-01/02/03, REQ-08 pass, REQ-11 line, video format · next: 2 minute story and video script · blocked: none
 
-- **Time:** Sat 17:05
-- **Done:** F-bio1-01 with the question 2 source for the proposed indicators (`team/bio1/notes/question-2-evidence.md`); F-bio1-02 on space fever; F-bio1-03 proposing fluid intake as the sixth indicator; the REQ-26 text shape and the first texts (`team/bio1/notes/status-texts.md`); the REQ-04 pilot draft (`team/bio1/notes/content-draft-resting-heart-rate.md`)
-- **In progress:** waiting for `config/data/indicators.csv` to start the content files
-- **Next:** pilot `config/content/resting_heart_rate.md` in B3, then the other four
+- **Time:** Sat 19:20
+- **Done:** F-bio1-01 with the question 2 source for the proposed indicators (`team/bio1/notes/question-2-evidence.md`); F-bio1-02 on space fever; F-bio1-03 proposing fluid intake (deferred by the team); the REQ-26 text shape (`team/bio1/notes/status-texts.md`); the seven content files in `config/content/` for the six indicators of the statement, with `check_content.py` at 0 errors
+- **In progress:** waiting for `config/data/indicators.csv` to confirm the ids, and `config/rules/attention.csv` for the level names
+- **Next:** adjust the level headings when `attention.csv` lands, then move to REQ-08 and the pitch
 
 ## Blockers
-- The five ids and units are not published yet (Phys, REQ-03); the content files
-  are named after them.
-- `config/rules/attention.csv` (Bio 2, REQ-05) is needed for the `###
-  <attention_level>` headings.
+- `config/data/indicators.csv` (Phys, REQ-03): the ids and units in the content files are the ones listed in the task, not read from the file.
+- `config/rules/attention.csv` (Bio 2, REQ-05): the three `###` headings per file are provisional.
 
 ## Shift
 - Sleep shift: _(A: 1:00–4:30 · B: 4:30–8:00)_
