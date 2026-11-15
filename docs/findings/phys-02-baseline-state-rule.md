@@ -24,8 +24,8 @@ spreads from the median is "outside your usual range", not a diagnosis.
 ## The rule
 
 ```
-baseline(previous[]):                       # previous = the readings before this one
-    window = last 14 of previous
+baseline(previous[]):                # previous = the readings before this one
+    window = readings of the last 14 days, at most one per day and indicator
     if count(window) < 3:         return no_baseline
     median = median(values of window)
     mad    = median(abs(value - median) for value in window)
@@ -33,11 +33,20 @@ baseline(previous[]):                       # previous = the readings before thi
     return (median, spread)
 
 state(value, baseline, attention):
+    # 1. safety first: a cited limit is absolute, a baseline is personal
+    if attention has a row with a link, crossed by value: return needs_review
+    # 2. nothing to compare the value with yet
     if baseline is no_baseline:   return no_data
-    if attention triggers on value: return needs_review    # only a cited clinical boundary
+    # 3. the person's own range
     if abs(value - median) <= 3 * spread: return in_range
     return outside_range
 ```
+
+The order of the checks is a safety decision taken on Sat 14 Nov with Bio 2 and Eng 2.
+A reading that crosses a limit with a source goes to `needs_review` even when there
+is no baseline: a core temperature of 39.5 °C on the first day of a mission is not
+"no data yet". A row whose source is `Assumption` does **not** trigger this, because
+an invented limit must never raise an alarm on its own.
 
 `1.4826` makes the scaled MAD comparable to a standard deviation for normally
 distributed data. The window moves with every reading: the newest 14 values before
@@ -52,9 +61,7 @@ is an engineering default, not a clinical value.
 | `bp_sys_mmhg` | 5 mmHg | Assumption |
 | `bp_dia_mmhg` | 4 mmHg | Assumption |
 | `temp_core_c` | 0.2 °C | Assumption |
-| `spo2_pct` | 1 % | Assumption |
 | `sleep_h` | 0.5 h | Assumption |
-| `sleep_quality_1_5` | 0.5 | Assumption |
 | `mood_1_5` | 0.5 | Assumption |
 | `glucose_mgdl` | 8 mg/dL | Assumption |
 
@@ -67,17 +74,21 @@ event.
 | Case | Baseline | Value | Clinical boundary | Expected |
 | --- | --- | --- | --- | --- |
 | Two readings only | none | 72 | none | `no_data` |
+| **No baseline, cited limit crossed** | none | 39.5 | 39.0 °C with a link | **`needs_review`** |
+| **No baseline, Assumption limit crossed** | none | 39.5 | 39.0 °C, `Assumption` | **`no_data`** |
+| **No baseline, below any limit** | none | 37.0 | 39.0 °C with a link | **`no_data`** |
 | Typical day | median 70, spread 4 | 72 | none | `in_range` |
 | One point outside | median 70, spread 4 | 85 | none | `outside_range` |
 | Exactly on the edge | median 70, spread 4 | 82 | none | `in_range` |
 | One past the edge | median 70, spread 4 | 83 | none | `outside_range` |
 | Flat history | median 70, spread 0 | 70 | none | `in_range` |
 | Flat history, one jump | median 70, spread 0 | 71 | none | `outside_range` |
-| Clinical boundary first | median 120, spread 5 | 182 | 180 mmHg | `needs_review` |
+| Clinical boundary with baseline | median 120, spread 5 | 182 | 180 mmHg | `needs_review` |
 | Boundary not reached | median 120, spread 5 | 175 | 180 mmHg | `outside_range` |
 
-The `needs_review` case only exists where `config/rules/attention.csv` has a row
-with a source (Bio 2). Without that row, the state stops at `outside_range`.
+The three bold cases are the ones the new order adds: the same value gives a
+different state depending on whether the limit has a source. The `needs_review` case
+only exists where `config/rules/attention.csv` has a row (Bio 2).
 
 ## Confidence
 
@@ -88,17 +99,23 @@ rule.
 ## What it changes in the solution
 
 - The status function in `backend/`: one pure function, around 20 lines, no state
-  and no model. Eng 1 owns the code; these vectors are its tests.
+  and no model. Eng 1 and Eng 2 own the code; these vectors are its tests. The order
+  of the three checks is part of the contract: attention, then baseline, then range.
 - `FORMATS.md` section 2: one more column, `min_spread`, with the table above.
-- `config/rules/attention.csv`: the only place a `needs_review` can come from.
+- `config/rules/attention.csv`: the only place a `needs_review` can come from, and only
+  when the row carries a link.
 
-## Limits and open questions- The window length is a choice. Fourteen readings covers two weeks of daily entries,
-  so a short demo needs three readings before anything is shown, which is honest but
-  must be explained in the pitch.
+## Limits and open questions
+
+- The safety order only works once `attention.csv` has rows with sources. With the
+  file empty, nothing can reach `needs_review` and the first reading still says "no
+  data yet". The order alone does not create the alarm; the sourced row does.
 - The window is counted in readings, not in calendar days. A crew member who records
-  twice on one day moves the window twice. The interval is capped at one reading per
-  day and indicator, which is what makes the 14 readings of this rule the same thing
-  as the 14 days written in `FORMATS.md`.
+  twice on one day moves the window twice, which is why the interval is capped at one
+  reading per day and indicator: that makes the 14 readings of this rule the same
+  thing as the 14 days written in `FORMATS.md`.
+- Three readings are enough to start, so a short demo is undecided for the first days.
+  That is honest and must be explained in the pitch.
 - A real change may be a slow drift, not a jump. A moving window follows the drift
   after a few readings; it does not forecast, and the app must not pretend to.
 - The window hides a change that lasts longer than 14 readings: if a value settles at
