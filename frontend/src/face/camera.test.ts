@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { CameraError, problemFor, startCamera } from './camera'
+import {
+  CameraError,
+  FIRST_FRAME_TIMEOUT_MS,
+  problemFor,
+  startCamera,
+} from './camera'
 
 // The camera of the face panel, with getUserMedia faked: the three reasons the
 // screen writes as a sentence, and the rule that every track is stopped when the
@@ -24,6 +29,24 @@ function videoElement(): HTMLVideoElement {
   return document.createElement('video')
 }
 
+// A video element with a readyState this test drives, and a way to announce the
+// first frame. jsdom has no camera, so the element is all there is to fake.
+function videoWithReadyState(initial: number) {
+  const video = document.createElement('video')
+  let readyState = initial
+  Object.defineProperty(video, 'readyState', {
+    configurable: true,
+    get: () => readyState,
+  })
+  return {
+    video,
+    firstFrame() {
+      readyState = 2
+      video.dispatchEvent(new Event('loadeddata'))
+    },
+  }
+}
+
 function namedError(name: string): Error {
   const error = new Error(name)
   error.name = name
@@ -31,6 +54,7 @@ function namedError(name: string): Error {
 }
 
 afterEach(() => {
+  vi.useRealTimers()
   vi.restoreAllMocks()
   setMediaDevices(ORIGINAL_MEDIA_DEVICES)
 })
@@ -40,7 +64,7 @@ describe('startCamera', () => {
     const { stream } = fakeStream()
     const getUserMedia = vi.fn().mockResolvedValue(stream)
     setMediaDevices({ getUserMedia })
-    const video = videoElement()
+    const { video } = videoWithReadyState(2)
 
     const session = await startCamera(video)
 
@@ -52,7 +76,7 @@ describe('startCamera', () => {
   it('stops every track and clears the element when it closes', async () => {
     const { stream, track } = fakeStream()
     setMediaDevices({ getUserMedia: vi.fn().mockResolvedValue(stream) })
-    const video = videoElement()
+    const { video } = videoWithReadyState(2)
 
     const session = await startCamera(video)
     session.stop()
@@ -65,11 +89,47 @@ describe('startCamera', () => {
     const { stream, track } = fakeStream()
     setMediaDevices({ getUserMedia: vi.fn().mockResolvedValue(stream) })
 
-    const session = await startCamera(videoElement())
+    const session = await startCamera(videoWithReadyState(2).video)
     session.stop()
     session.stop()
 
     expect(track.stop).toHaveBeenCalledTimes(1)
+  })
+
+  it('waits for the first frame, as the second camera of a panel has to', async () => {
+    const { stream } = fakeStream()
+    setMediaDevices({ getUserMedia: vi.fn().mockResolvedValue(stream) })
+    const { video, firstFrame } = videoWithReadyState(0)
+
+    let opened = false
+    const opening = startCamera(video).then((session) => {
+      opened = true
+      return session
+    })
+    await vi.waitFor(() => expect(video.srcObject).toBe(stream))
+    expect(opened, 'handed over before the element had a frame').toBe(false)
+
+    firstFrame()
+    const session = await opening
+    expect(opened).toBe(true)
+    session.stop()
+  })
+
+  it('gives up as a missing camera when no frame arrives', async () => {
+    vi.useFakeTimers()
+    const { stream, track } = fakeStream()
+    setMediaDevices({ getUserMedia: vi.fn().mockResolvedValue(stream) })
+    const { video } = videoWithReadyState(0)
+
+    const outcome = startCamera(video).then(
+      () => 'opened',
+      (error: unknown) => error,
+    )
+    await vi.advanceTimersByTimeAsync(FIRST_FRAME_TIMEOUT_MS)
+
+    await expect(outcome).resolves.toMatchObject({ problem: 'missing' })
+    expect(track.stop).toHaveBeenCalledTimes(1)
+    expect(video.srcObject).toBeNull()
   })
 
   it('reports a browser without getUserMedia as a missing camera', async () => {
