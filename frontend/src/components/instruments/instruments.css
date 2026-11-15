@@ -6,9 +6,15 @@
   line-height: 0;
   transition: color var(--motion-base) var(--ease-out);
 }
-.instrument--state .ins-track,
+/* With a state the whole figure is drawn in the state colour: the outline at
+   full strength, the track quieter. The system colour stays on the small icon
+   next to the name. */
 .instrument--state .ins-outline {
-  stroke: var(--ins-system);
+  stroke: currentColor;
+}
+.instrument--state .ins-track {
+  stroke: currentColor;
+  stroke-opacity: 0.45;
 }
 .instrument--state path.ins-outline:not([fill='none']) {
   stroke-width: 2;

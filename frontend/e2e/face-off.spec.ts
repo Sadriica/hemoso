@@ -26,10 +26,12 @@ test('the plain page shows the face option first and asks for no model', async (
     strings.phases.identify.headline[0],
   )
 
-  // The face option is the first card, a real button, closed, with one line on
-  // how to add a face when none is saved.
-  const cards = page.getByRole('heading', { level: 2 })
-  await expect(cards.first()).toHaveText(strings.signIn.faceHeading)
+  // The face option is a real button, closed, with one line on how to add a
+  // face when none is saved. (Before the username row: covered by the unit
+  // test, since the public demo has no accounts and so no such row.)
+  await expect(
+    page.getByRole('heading', { name: strings.signIn.faceHeading }),
+  ).toBeVisible()
   const faceButton = page.getByRole('button', { name: strings.face.buttonLabel })
   await expect(faceButton).toBeEnabled()
   await expect(faceButton).toHaveAttribute('aria-expanded', 'false')

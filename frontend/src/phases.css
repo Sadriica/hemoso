@@ -238,6 +238,29 @@ html {
   }
 }
 
+/* The offline notice sits full width under the bar row. It only pushes the
+   page down; nothing is reserved while the browser is online. */
+.offline-notice {
+  margin: 0;
+  border-width: 0 0 1px;
+  border-left-width: 0;
+  border-radius: 0;
+  background: var(--status-attention-bg);
+  color: var(--status-attention-text);
+}
+
+.offline-notice .notice__body {
+  max-width: var(--container-width);
+  margin: 0 auto;
+}
+
+/* From 600 to 700 px the stamp would be cut; it is hidden like on a phone. */
+@media (min-width: 600px) and (max-width: 700px) {
+  .topbar__stamp {
+    display: none;
+  }
+}
+
 /* Two rows up to 899 px: who is on duty never shares a row with the chip. */
 @media (min-width: 600px) and (max-width: 899px) {
   .topbar__bar {
@@ -1207,4 +1230,63 @@ input.reading__input::-webkit-inner-spin-button {
   inset: 0;
   z-index: 100;
   background: var(--color-bg);
+}
+
+/* Round 3 shape grammar (DESIGN.md 6.1): one wide main panel per screen, with
+   an optional cut corner, and capsules for state and telemetry. The cut is a
+   painted triangle in the page colour over a square corner, so nothing is
+   clipped: a focus ring or a field edge near it is always whole. */
+.panel {
+  position: relative;
+  padding: var(--space-4);
+  border: var(--border-subtle);
+  border-radius: var(--radius-panel);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-float);
+}
+
+.panel--cut {
+  border-top-right-radius: 0;
+}
+
+.panel--cut::after {
+  content: '';
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  width: var(--cut);
+  height: var(--cut);
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom left,
+    var(--color-bg) 0 calc(50% - 0.5px),
+    var(--color-border) 0 calc(50% + 0.5px),
+    transparent 0
+  );
+}
+
+.capsule {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: fit-content;
+  padding: var(--space-1) var(--space-3);
+  border: var(--border-subtle);
+  border-radius: var(--radius-capsule);
+  background: color-mix(in srgb, var(--color-surface) 80%, transparent);
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+@media (max-width: 599px) {
+  /* On a phone the float shadow would be cut by the sideways clip of the
+     phase, so the panel keeps its border and loses the shadow. */
+  .panel {
+    padding: var(--space-3);
+    box-shadow: none;
+  }
 }

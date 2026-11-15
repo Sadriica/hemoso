@@ -143,8 +143,17 @@ function newApi(): Api {
   return { accounts: new Map(), tokens: new Set(), authorizations: [] }
 }
 
+// The username and PIN form waits behind a closed row on Identify.
+async function openMore(page: Page): Promise<void> {
+  await page.getByRole('button', { name: strings.signIn.moreToggle }).click()
+  await expect(
+    page.getByRole('textbox', { name: strings.signIn.username }),
+  ).toBeVisible()
+}
+
 // The form of the account card, filled and sent.
 async function createAccount(page: Page): Promise<void> {
+  await openMore(page)
   await page.getByRole('textbox', { name: strings.signIn.username }).fill(PERSON)
   await page.getByLabel(strings.signIn.pin, { exact: true }).fill(PIN)
   await page.getByRole('button', { name: strings.signIn.createToggle }).click()
@@ -170,7 +179,7 @@ test('creates an account, signs in and sends its token on the person routes', as
 
   // Worth a sentence when it fails: the options are built, not fetched.
   await expect(
-    page.getByRole('button', { name: strings.signIn.createToggle }),
+    page.getByRole('button', { name: strings.signIn.moreToggle }),
   ).toBeVisible()
 
   await createAccount(page)
@@ -216,6 +225,7 @@ test('signs in with the PIN and the name of an account that exists', async ({
   await mockApi(page, api)
   await page.goto('/')
 
+  await openMore(page)
   await page.getByRole('textbox', { name: strings.signIn.username }).fill(PERSON)
   await page.getByLabel(strings.signIn.pin, { exact: true }).fill(PIN)
   await page.getByRole('button', { name: strings.signIn.action, exact: true }).click()
@@ -235,6 +245,7 @@ test('names a wrong PIN and a username that is taken in plain words', async ({
   await mockApi(page, api)
   await page.goto('/')
 
+  await openMore(page)
   await page.getByRole('textbox', { name: strings.signIn.username }).fill(PERSON)
   await page.getByLabel(strings.signIn.pin, { exact: true }).fill('1111')
   await page.getByRole('button', { name: strings.signIn.action, exact: true }).click()

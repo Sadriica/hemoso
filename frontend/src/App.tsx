@@ -153,6 +153,7 @@ export default function App() {
             headingRef={headingRef}
             personIds={personIds}
             session={session}
+            still={motionReduced}
             onDone={() => setPhase('report')}
           />
         )}

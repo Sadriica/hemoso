@@ -21,6 +21,7 @@ import './identify.css'
 // the models behind it only when the person starts the camera: a plain page
 // load asks for neither (REQ-14, REQ-36).
 const FaceSignIn = lazy(() => import('../screens/FaceSignIn'))
+const OrbitalScene = lazy(() => import('../components/orbital'))
 
 /** The fieldset of crew members: the face panel sends the focus back here. */
 export const CREW_PICKER_ID = 'crew-picker'
@@ -40,6 +41,8 @@ interface IdentifyPhaseProps {
   personIds: string[]
   session: SessionState
   onDone: () => void
+  /** The top bar switch is on: the scene stands still. */
+  still?: boolean
 }
 
 // Phase 1: who is on duty. One centred column, one way in at a time, in the
@@ -53,6 +56,7 @@ export default function IdentifyPhase({
   personIds,
   session,
   onDone,
+  still = false,
 }: IdentifyPhaseProps) {
   const copy = strings.phases.identify
   const signInCopy = strings.signIn
@@ -77,6 +81,12 @@ export default function IdentifyPhase({
   const [offer, setOffer] = useState(false)
   const [offerDone, setOfferDone] = useState(false)
   const offerButtonRef = useRef<HTMLButtonElement>(null)
+  // The username and PIN form waits behind a closed row; a face that needs
+  // its PIN, or an ended session, opens it.
+  const [moreOpened, setMoreOpen] = useState(false)
+  const moreOpen = moreOpened || session.expiredFor !== null
+  const focusPin = useRef(false)
+  const moreId = useId()
 
   const faceButtonRef = useRef<HTMLButtonElement>(null)
   const usernameRef = useRef<HTMLInputElement>(null)
@@ -95,8 +105,15 @@ export default function IdentifyPhase({
   // The notice stays until the person is in again.
   const expired = session.expiredFor
   useEffect(() => {
-    if (expired !== null) pinRef.current?.focus()
+    if (expired !== null) focusPin.current = true
   }, [expired])
+  // The PIN field takes the focus once the form is on screen.
+  useEffect(() => {
+    if (moreOpen && focusPin.current) {
+      focusPin.current = false
+      pinRef.current?.focus()
+    }
+  })
 
   const focusPicker = () => {
     const chosen = document.querySelector<HTMLInputElement>(
@@ -110,7 +127,8 @@ export default function IdentifyPhase({
     setUsername(personId)
     setPin('')
     setProblem(null)
-    pinRef.current?.focus()
+    setMoreOpen(true)
+    focusPin.current = true
   }
 
   // A face matched a saved one: the stored session of that person opens it, or
@@ -225,17 +243,17 @@ export default function IdentifyPhase({
   const problemText = problem === null ? null : signInCopy.errors[problem]
 
   const facePanel = (
-    <section className="signin__option" aria-labelledby={faceTitleId}>
-      <h2 id={faceTitleId} className="signin__title">
+    <section className="identify__face" aria-labelledby={faceTitleId}>
+      <h2 id={faceTitleId} className="identify__row-title">
         {signInCopy.faceHeading}
       </h2>
-      <p className="signin__text">
+      <p className="identify__row-text">
         {hasFace ? signInCopy.faceNote : signInCopy.faceNone}
       </p>
       <button
         ref={faceButtonRef}
         type="button"
-        className={`journey-button${hasFace ? ' journey-button--solid' : ''}`}
+        className="identify__quiet"
         aria-expanded={faceOpen}
         onClick={() => setFaceOpen((open) => !open)}
       >
@@ -263,279 +281,314 @@ export default function IdentifyPhase({
 
   return (
     <section className="phase phase--identify" aria-labelledby="phase-heading">
-      <PhaseHeading
-        ref={headingRef}
-        eyebrow={copy.eyebrow}
-        lines={copy.headline}
-        intro={copy.intro}
-      />
+      <div className="identify__head">
+        <PhaseHeading
+          ref={headingRef}
+          eyebrow={copy.eyebrow}
+          lines={copy.headline}
+          intro={copy.intro}
+        />
+      </div>
 
-      <div className="identify">
-        {session.expiredFor !== null && (
-          <Notice tone="warning">{signInCopy.expired}</Notice>
-        )}
+      {/* The stage: a slot for the orbital object, with a CSS and SVG fallback
+          so the layout stands alone. Decoration only. */}
+      <div className="identify__scene" data-enter="scene" aria-hidden="true">
+        <Suspense fallback={<SceneFallback />}>
+          <OrbitalScene variant="identify" still={still} />
+        </Suspense>
+      </div>
 
-        {session.personId !== null && (
-          <p className="signin__session">
-            <span className="signin__who">
-              {signInCopy.signedInAs(session.personId)}
-            </span>
-            <button
-              type="button"
-              className="signin__signout"
-              onClick={session.signOut}
-            >
-              {signInCopy.signOut}
-            </button>
-          </p>
-        )}
-
-        {!offer && facePanel}
-
-        {offer && session.personId !== null && (
-          <section className="signin__option" aria-labelledby={offerTitleId}>
-            <h2 id={offerTitleId} className="signin__title">
-              {signInCopy.faceOfferHeading}
-            </h2>
-            <p className="signin__text">{signInCopy.faceOfferNote}</p>
-            {faceOpen && (
-              <Suspense fallback={<p role="status">{strings.face.opening}</p>}>
-                <FaceSignIn
-                  personId={session.personId}
-                  onPersonSelected={faceMatched}
-                  onFocusPicker={() => offerButtonRef.current?.focus()}
-                  onClose={() => {
-                    setFaceOpen(false)
-                    setOfferDone(
-                      loadFaces().some((face) => face.personId === session.personId),
-                    )
-                  }}
-                />
-              </Suspense>
+      <div className="identify__main">
+        {(session.expiredFor !== null || session.personId !== null) && (
+          <div className="identify__status" data-enter="rest">
+            {session.expiredFor !== null && (
+              <Notice tone="warning">{signInCopy.expired}</Notice>
             )}
-            {!faceOpen && (
-              <div className="signin__actions">
-                {offerDone ? (
-                  <button type="button" className="journey-button journey-button--solid" onClick={onDone}>
-                    <span>{copy.next}</span>
-                    <span className="journey-button__arrow" aria-hidden="true">
-                      →
-                    </span>
-                  </button>
-                ) : (
-                  <>
-                    <button
-                      ref={offerButtonRef}
-                      type="button"
-                      className="journey-button journey-button--solid"
-                      onClick={() => setFaceOpen(true)}
-                    >
-                      <span>{signInCopy.faceOfferAction}</span>
-                      <span className="journey-button__arrow" aria-hidden="true">
-                        ◎
-                      </span>
-                    </button>
-                    <button type="button" className="signin__link" onClick={onDone}>
-                      {signInCopy.faceOfferSkip}
-                    </button>
-                  </>
-                )}
-              </div>
-            )}
-          </section>
-        )}
-
-        {!offer && session.accountsOffered && (
-          <section className="signin__option" aria-labelledby={accountTitleId}>
-            <h2 id={accountTitleId} className="signin__title">
-              {creating ? signInCopy.createHeading : signInCopy.pinHeading}
-            </h2>
-            {askedFor !== null && !creating && (
-              <p className="signin__text">{signInCopy.askPin(askedFor)}</p>
-            )}
-            <form
-              className="signin__form"
-              onSubmit={creating ? submitCreate : submitPin}
-              noValidate
-            >
-              <div className="signin__field">
-                <label className="signin__label" htmlFor={usernameId}>
-                  {signInCopy.username}
-                </label>
-                <input
-                  ref={usernameRef}
-                  id={usernameId}
-                  className="signin__input"
-                  type="text"
-                  autoComplete="username"
-                  autoCapitalize="none"
-                  spellCheck={false}
-                  value={username}
-                  disabled={busy}
-                  onChange={(event) => setUsername(event.target.value)}
-                />
-              </div>
-              <div className="signin__field">
-                <label className="signin__label" htmlFor={pinId}>
-                  {signInCopy.pin}
-                </label>
-                <input
-                  ref={pinRef}
-                  id={pinId}
-                  className="signin__input signin__input--pin"
-                  type="password"
-                  inputMode="numeric"
-                  autoComplete={creating ? 'new-password' : 'current-password'}
-                  pattern="[0-9]{4,8}"
-                  maxLength={8}
-                  aria-describedby={`${pinId}-hint`}
-                  value={pin}
-                  disabled={busy}
-                  onChange={(event) => setPin(digitsOnly(event.target.value))}
-                />
-                <p className="signin__hint" id={`${pinId}-hint`}>
-                  {signInCopy.pinHint}
-                </p>
-              </div>
-              {creating && (
-                <div className="signin__field">
-                  <label className="signin__label" htmlFor={confirmPinId}>
-                    {signInCopy.confirmPin}
-                  </label>
-                  <input
-                    id={confirmPinId}
-                    className="signin__input signin__input--pin"
-                    type="password"
-                    inputMode="numeric"
-                    autoComplete="new-password"
-                    pattern="[0-9]{4,8}"
-                    maxLength={8}
-                    value={confirmPin}
-                    disabled={busy}
-                    onChange={(event) =>
-                      setConfirmPin(digitsOnly(event.target.value))
-                    }
-                  />
-                </div>
-              )}
-              {creating && (
-                <div className="signin__field">
-                  <label className="signin__label" htmlFor={startDateId}>
-                    {strings.mission.startLabel}
-                  </label>
-                  <input
-                    id={startDateId}
-                    className="signin__input"
-                    type="date"
-                    max={todayIso()}
-                    value={startDate}
-                    disabled={busy}
-                    onChange={(event) => setStartDate(event.target.value)}
-                  />
-                </div>
-              )}
-              <div className="signin__actions">
+            {session.personId !== null && (
+              <p className="signin__session capsule">
+                <span className="signin__who">
+                  {signInCopy.signedInAs(session.personId)}
+                </span>
                 <button
-                  type="submit"
-                  className="journey-button"
-                  disabled={busy}
+                  type="button"
+                  className="signin__signout"
+                  onClick={session.signOut}
                 >
-                  <span>
-                    {creating ? signInCopy.createAction : signInCopy.action}
-                  </span>
+                  {signInCopy.signOut}
+                </button>
+              </p>
+            )}
+          </div>
+        )}
+
+        <div className="identify__panel panel panel--cut" data-enter="panel">
+          {offer && session.personId !== null && (
+              <section className="identify__offer" aria-labelledby={offerTitleId}>
+                <h2 id={offerTitleId} className="capsule signin__title">
+                  {signInCopy.faceOfferHeading}
+                </h2>
+                <p className="signin__text">{signInCopy.faceOfferNote}</p>
+                {faceOpen && (
+                  <Suspense fallback={<p role="status">{strings.face.opening}</p>}>
+                    <FaceSignIn
+                      personId={session.personId}
+                      onPersonSelected={faceMatched}
+                      onFocusPicker={() => offerButtonRef.current?.focus()}
+                      onClose={() => {
+                        setFaceOpen(false)
+                        setOfferDone(
+                          loadFaces().some((face) => face.personId === session.personId),
+                        )
+                      }}
+                    />
+                  </Suspense>
+                )}
+                {!faceOpen && (
+                  <div className="signin__actions">
+                    {offerDone ? (
+                      <button type="button" className="journey-button journey-button--solid" onClick={onDone}>
+                        <span>{copy.next}</span>
+                        <span className="journey-button__arrow" aria-hidden="true">
+                          →
+                        </span>
+                      </button>
+                    ) : (
+                      <>
+                        <button
+                          ref={offerButtonRef}
+                          type="button"
+                          className="journey-button journey-button--solid"
+                          onClick={() => setFaceOpen(true)}
+                        >
+                          <span>{signInCopy.faceOfferAction}</span>
+                          <span className="journey-button__arrow" aria-hidden="true">
+                            ◎
+                          </span>
+                        </button>
+                        <button type="button" className="signin__link" onClick={onDone}>
+                          {signInCopy.faceOfferSkip}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
+              </section>
+          )}
+          {!offer && (
+            <>
+              <section className="identify__demo" aria-labelledby={demoTitleId}>
+      <h2 id={demoTitleId} className="capsule signin__title">
+                  {signInCopy.demoHeading}
+                </h2>
+                <p className="signin__text">{signInCopy.demoNote}</p>
+                <button
+                  type="button"
+                  className="journey-button journey-button--solid identify__primary"
+                  onClick={openDemo}
+                >
+                  <span>{signInCopy.demoAction}</span>
                   <span className="journey-button__arrow" aria-hidden="true">
                     →
                   </span>
                 </button>
+              </section>
+
+              <div className="identify__who">
+                <fieldset
+                  id={CREW_PICKER_ID}
+                  className="crew-picker"
+                  aria-describedby={missing ? 'crew-missing' : undefined}
+                >
+                  <legend className="signin__label">{copy.crewLabel}</legend>
+                  <div className="crew-picker__options">
+                    {personIds.map((id) => (
+                      <label key={id} className="crew-option">
+                        <input
+                          type="radio"
+                          name="crew"
+                          value={id}
+                          // The name a screen reader hears is the person id, the same
+                          // name the rest of the app uses.
+                          aria-label={id}
+                          checked={session.personId === id}
+                          onChange={() => pickName(id)}
+                        />
+                        <span className="crew-option__avatar" aria-hidden="true">
+                          {personInitials(id)}
+                        </span>
+                        <span className="crew-option__body" aria-hidden="true">
+                          <span className="crew-option__name">{personName(id)}</span>
+                          <span className="crew-option__role">
+                            {signInCopy.crewRole}
+                          </span>
+                        </span>
+                        <span className="crew-option__mark" aria-hidden="true">
+                          <svg viewBox="0 0 24 24" focusable="false">
+                            <path d="M7 12.5l3.2 3.2L17 8.8" />
+                          </svg>
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                  {missing && (
+                    <SigninError id="crew-missing">{copy.missing}</SigninError>
+                  )}
+                </fieldset>
+
                 <button
                   type="button"
-                  className="signin__link"
-                  aria-expanded={creating}
-                  disabled={busy}
-                  onClick={() => {
-                    setCreating((open) => !open)
-                    setProblem(null)
-                  }}
+                  className="crew-begin signin__begin"
+                  onClick={goOn}
                 >
-                  {creating ? signInCopy.createBack : signInCopy.createToggle}
+                  <span>{copy.next}</span>
+                  <span className="journey-button__arrow" aria-hidden="true">
+                    →
+                  </span>
                 </button>
               </div>
-            </form>
-            {problemText !== null && (
-              <SigninError>{problemText}</SigninError>
+
+              {facePanel}
+            </>
+          )}
+        </div>
+
+        {!offer && session.accountsOffered && (
+          <div className="identify__more" data-enter="rest">
+            <button
+              type="button"
+              className="identify__more-toggle"
+              aria-expanded={moreOpen}
+              aria-controls={moreId}
+              onClick={() => setMoreOpen((open) => !open)}
+            >
+              <span className="identify__more-chevron" aria-hidden="true">
+                ›
+              </span>
+              {signInCopy.moreToggle}
+            </button>
+            {moreOpen && (
+              <div id={moreId} className="identify__more-body">
+                  <h2 id={accountTitleId} className="signin__title">
+                    {creating ? signInCopy.createHeading : signInCopy.pinHeading}
+                  </h2>
+                  {askedFor !== null && !creating && (
+                    <p className="signin__text">{signInCopy.askPin(askedFor)}</p>
+                  )}
+                  <form
+                    className="signin__form"
+                    onSubmit={creating ? submitCreate : submitPin}
+                    noValidate
+                  >
+                    <div className="signin__field">
+                      <label className="signin__label" htmlFor={usernameId}>
+                        {signInCopy.username}
+                      </label>
+                      <input
+                        ref={usernameRef}
+                        id={usernameId}
+                        className="signin__input"
+                        type="text"
+                        autoComplete="username"
+                        autoCapitalize="none"
+                        spellCheck={false}
+                        value={username}
+                        disabled={busy}
+                        onChange={(event) => setUsername(event.target.value)}
+                      />
+                    </div>
+                    <div className="signin__field">
+                      <label className="signin__label" htmlFor={pinId}>
+                        {signInCopy.pin}
+                      </label>
+                      <input
+                        ref={pinRef}
+                        id={pinId}
+                        className="signin__input signin__input--pin"
+                        type="password"
+                        inputMode="numeric"
+                        autoComplete={creating ? 'new-password' : 'current-password'}
+                        pattern="[0-9]{4,8}"
+                        maxLength={8}
+                        aria-describedby={`${pinId}-hint`}
+                        value={pin}
+                        disabled={busy}
+                        onChange={(event) => setPin(digitsOnly(event.target.value))}
+                      />
+                      <p className="signin__hint" id={`${pinId}-hint`}>
+                        {signInCopy.pinHint}
+                      </p>
+                    </div>
+                    {creating && (
+                      <div className="signin__field">
+                        <label className="signin__label" htmlFor={confirmPinId}>
+                          {signInCopy.confirmPin}
+                        </label>
+                        <input
+                          id={confirmPinId}
+                          className="signin__input signin__input--pin"
+                          type="password"
+                          inputMode="numeric"
+                          autoComplete="new-password"
+                          pattern="[0-9]{4,8}"
+                          maxLength={8}
+                          value={confirmPin}
+                          disabled={busy}
+                          onChange={(event) =>
+                            setConfirmPin(digitsOnly(event.target.value))
+                          }
+                        />
+                      </div>
+                    )}
+                    {creating && (
+                      <div className="signin__field">
+                        <label className="signin__label" htmlFor={startDateId}>
+                          {strings.mission.startLabel}
+                        </label>
+                        <input
+                          id={startDateId}
+                          className="signin__input"
+                          type="date"
+                          max={todayIso()}
+                          value={startDate}
+                          disabled={busy}
+                          onChange={(event) => setStartDate(event.target.value)}
+                        />
+                      </div>
+                    )}
+                    <div className="signin__actions">
+                      <button
+                        type="submit"
+                        className="journey-button"
+                        disabled={busy}
+                      >
+                        <span>
+                          {creating ? signInCopy.createAction : signInCopy.action}
+                        </span>
+                        <span className="journey-button__arrow" aria-hidden="true">
+                          →
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        className="signin__link"
+                        aria-expanded={creating}
+                        disabled={busy}
+                        onClick={() => {
+                          setCreating((open) => !open)
+                          setProblem(null)
+                        }}
+                      >
+                        {creating ? signInCopy.createBack : signInCopy.createToggle}
+                      </button>
+                    </div>
+                  </form>
+                  {problemText !== null && (
+                    <SigninError>{problemText}</SigninError>
+                  )}
+          
+              </div>
             )}
-          </section>
-        )}
-
-        {!offer && (
-        <section className="signin__option" aria-labelledby={demoTitleId}>
-          <h2 id={demoTitleId} className="signin__title">
-            {signInCopy.demoHeading}
-          </h2>
-          <p className="signin__text">{signInCopy.demoNote}</p>
-          <button
-            type="button"
-            className={`journey-button${hasFace ? '' : ' journey-button--solid'}`}
-            onClick={openDemo}
-          >
-            <span>{signInCopy.demoAction}</span>
-            <span className="journey-button__arrow" aria-hidden="true">
-              →
-            </span>
-          </button>
-
-          <fieldset
-            id={CREW_PICKER_ID}
-            className="crew-picker"
-            aria-describedby={missing ? 'crew-missing' : undefined}
-          >
-            <legend className="signin__label">{copy.crewLabel}</legend>
-            <div className="crew-picker__options">
-              {personIds.map((id) => (
-                <label key={id} className="crew-option">
-                  <input
-                    type="radio"
-                    name="crew"
-                    value={id}
-                    // The name a screen reader hears is the person id, the same
-                    // name the rest of the app uses.
-                    aria-label={id}
-                    checked={session.personId === id}
-                    onChange={() => pickName(id)}
-                  />
-                  <span className="crew-option__avatar" aria-hidden="true">
-                    {personInitials(id)}
-                  </span>
-                  <span className="crew-option__body" aria-hidden="true">
-                    <span className="crew-option__name">{personName(id)}</span>
-                    <span className="crew-option__role">
-                      {signInCopy.crewRole}
-                    </span>
-                  </span>
-                  <span className="crew-option__mark" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" focusable="false">
-                      <path d="M7 12.5l3.2 3.2L17 8.8" />
-                    </svg>
-                  </span>
-                </label>
-              ))}
-            </div>
-            {missing && (
-              <SigninError id="crew-missing">{copy.missing}</SigninError>
-            )}
-          </fieldset>
-
-          <button
-            type="button"
-            className="journey-button signin__begin"
-            onClick={goOn}
-          >
-            <span>{copy.next}</span>
-            <span className="journey-button__arrow" aria-hidden="true">
-              →
-            </span>
-          </button>
-        </section>
+          </div>
         )}
       </div>
     </section>
@@ -550,6 +603,33 @@ function SigninError({ id, children }: { id?: string; children: string }) {
       <StatusIcon kind="warning" size={16} />
       <span>{children}</span>
     </p>
+  )
+}
+
+// The stage fallback: arcs, a sphere and a glow in plain SVG, so the layout
+// stands alone until the orbital object is mounted in its place.
+function SceneFallback() {
+  return (
+    <svg
+      className="identify__fallback"
+      viewBox="0 0 400 400"
+      focusable="false"
+      aria-hidden="true"
+    >
+      <defs>
+        <radialGradient id="identify-sphere" cx="38%" cy="34%" r="70%">
+          <stop offset="0" stopColor="var(--color-accent)" stopOpacity="0.9" />
+          <stop offset="1" stopColor="var(--color-interactive)" stopOpacity="0.35" />
+        </radialGradient>
+      </defs>
+      <circle className="identify__arc" cx="200" cy="200" r="190" />
+      <circle className="identify__arc identify__arc--dash" cx="200" cy="200" r="150" />
+      <circle className="identify__arc" cx="200" cy="200" r="110" />
+      <ellipse className="identify__arc identify__arc--tilt" cx="200" cy="200" rx="170" ry="60" />
+      <circle cx="200" cy="200" r="46" fill="url(#identify-sphere)" />
+      <circle className="identify__moon" cx="338" cy="148" r="8" />
+      <circle className="identify__moon" cx="86" cy="262" r="5" />
+    </svg>
   )
 }
 
