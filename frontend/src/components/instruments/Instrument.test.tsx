@@ -106,6 +106,38 @@ describe('Instrument', () => {
     expect(root.className).not.toContain('instrument--state')
   })
 
+  it('lights the steps of the appetite rating, like the mood steps', () => {
+    const filled = (value: number) =>
+      draw('appetite_1_5', value).querySelectorAll('rect:not(.ins-track)').length
+    expect(filled(1)).toBe(1)
+    expect(filled(4)).toBe(4)
+    expect(filled(99)).toBe(5)
+    expect(draw('appetite_1_5', 3).firstElementChild).toHaveStyle({ color: 'var(--system-metabolic)' })
+  })
+
+  it('fills the glass of fluid intake with the volume', () => {
+    const lo = num(draw('fluid_intake_ml', 500).querySelector('.ins-level'), 'data-offset')
+    const hi = num(draw('fluid_intake_ml', 3000).querySelector('.ins-level'), 'data-offset')
+    expect(hi).toBeLessThan(lo)
+    expect(num(draw('fluid_intake_ml', 99999).querySelector('.ins-level'), 'data-offset')).toBe(0)
+  })
+
+  it('turns the needle of the body scale and takes the accent, as it has no system colour', () => {
+    const lo = num(draw('body_mass_kg', 60).querySelector('.ins-needle'), 'data-angle')
+    const hi = num(draw('body_mass_kg', 100).querySelector('.ins-needle'), 'data-angle')
+    expect(hi).toBeGreaterThan(lo)
+    expect(num(draw('body_mass_kg', 999).querySelector('.ins-needle'), 'data-angle')).toBe(90)
+    expect(draw('body_mass_kg', 70).firstElementChild).toHaveAttribute('aria-hidden', 'true')
+    expect(draw('body_mass_kg', 70).firstElementChild).toHaveStyle({ color: 'var(--color-accent)' })
+  })
+
+  it('draws the three new figures still under reduced motion', () => {
+    for (const id of ['appetite_1_5', 'fluid_intake_ml', 'body_mass_kg']) {
+      const root = draw(id, 3, true).firstElementChild!
+      expect(root.className).toContain('instrument--still')
+    }
+  })
+
   it('keeps reduced motion with a state', () => {
     const root = render(<Instrument indicatorId="hr_bpm" value={70} state="review" reducedMotion />).container.firstElementChild!
     expect(root.className).toContain('instrument--still')

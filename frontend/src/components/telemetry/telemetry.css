@@ -83,6 +83,10 @@
   transition: transform var(--motion-base) var(--ease-out);
 }
 
+.tele-marker-rot {
+  transition: transform var(--motion-base) var(--ease-out);
+}
+
 .tele-tag {
   fill: var(--color-text-muted);
   font-family: var(--font-mono);
@@ -160,7 +164,8 @@
 
 .app--still .tele-fill,
 .app--still .tele-arc,
-.app--still .tele-marker {
+.app--still .tele-marker,
+.app--still .tele-marker-rot {
   transition: none;
 }
 
@@ -171,7 +176,8 @@
 
   .tele-fill,
   .tele-arc,
-  .tele-marker {
+  .tele-marker,
+  .tele-marker-rot {
     transition: none;
   }
 }

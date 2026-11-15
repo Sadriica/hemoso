@@ -14,6 +14,11 @@ export const SCALES: Record<string, { min: number; max: number }> = {
   reaction_median_ms: { min: 0, max: 600 },
   reaction_lapses: { min: 0, max: 5 },
   glucose_mgdl: { min: 40, max: 300 },
+  // Drawing bounds of the daily self-rating, the water drunk and the body
+  // mass: where a mark sits on a figure, never a range that means something.
+  appetite_1_5: { min: 1, max: 5 },
+  fluid_intake_ml: { min: 0, max: 4000 },
+  body_mass_kg: { min: 40, max: 140 },
 }
 
 /** Value as 0 to 1 on the drawing scale of `id`, clamped at the bounds. */
