@@ -129,12 +129,17 @@ Query parameters:
 | --- | --- | --- |
 | `value` | number | required; a finite number (the value the astronaut enters) |
 | `context` | string | `rest` (default), `after_exercise`, `on_waking` or `before_sleep`; a reading is only compared with readings in the same context |
+| `mission_day` | integer | optional; the mission day of the value being tested, greater than 0; given with `time` or not at all |
+| `time` | string | optional; the `HH:MM` clock time of the value being tested; given with `mission_day` or not at all |
 
 The rule is FORMATS.md section 3, "How each value is compared", and
 `docs/findings/phys-02-baseline-state-rule.md`:
 
 - The window is the last 14 stored entries for the person and indicator in the
-  same context, oldest first; the `value` being tested is not one of them.
+  same context, oldest first. With `mission_day` and `time`, only the entries
+  strictly earlier than that day and time are kept, so a reading the app has
+  already stored is not compared with its own copy; without them every stored
+  entry counts, as before.
 - `median` is the median of the window; `spread` is
   `max(1.4826 × median absolute deviation, min_spread)`, with `min_spread` from
   that indicator's row in `config/data/indicators.csv`.
@@ -162,9 +167,10 @@ questions in `team/eng1/`:
 Responses: `200` (an `IndicatorState`); `404` when `indicator_id` has no row in
 `config/data/indicators.csv` (also while that file does not exist, because then
 no indicator is known and the noise floor cannot be read); `422` when a path id
-breaks the `snake_case` rule, `value` is missing or not a finite number, or
-`context` is not one of the four; `502` when the upstream store (Supabase) is
-unreachable or returns an error.
+breaks the `snake_case` rule, `value` is missing or not a finite number,
+`context` is not one of the four, only one of `mission_day` and `time` is
+given, or `mission_day` is not a positive integer or `time` is not `HH:MM`;
+`502` when the upstream store (Supabase) is unreachable or returns an error.
 
 | Field | Type | Meaning |
 | --- | --- | --- |
@@ -195,6 +201,65 @@ if (status.attention !== null) {
 The values above are placeholders in a synthetic history (REQ-14); no real crew
 data and no clinical limit is stored in this endpoint.
 
+### GET /people/{person_id}/blood_pressure/state
+
+One blood pressure reading shows the worse of its systolic and diastolic state
+(FORMATS.md section 3 and `docs/findings/bio2-01-pressure-state-rule.md`). Each
+side is computed like the state route, against its own history: `systolic`
+against `bp_sys_mmhg`, `diastolic` against `bp_dia_mmhg`.
+
+Path parameter: `person_id`, a string (same lowercase `snake_case` rule).
+
+Query parameters:
+
+| Name | Type | Rule |
+| --- | --- | --- |
+| `systolic` | number | required; a finite number, in the unit of `bp_sys_mmhg` (mmHg) |
+| `diastolic` | number | required; a finite number, in the unit of `bp_dia_mmhg` (mmHg) |
+| `context` | string | `rest` (default), `after_exercise`, `on_waking` or `before_sleep` |
+| `mission_day` | integer | optional; the mission day of the reading, greater than 0; given with `time` or not at all |
+| `time` | string | optional; the `HH:MM` clock time of the reading; given with `mission_day` or not at all |
+
+The worse state is the one furthest along `no_data` < `in_range` <
+`outside_range` < `needs_review`. A reading of 120/95 is therefore
+`needs_review`, because the diastolic side crossed the attention row of
+`config/rules/attention.csv` while the systolic side stayed in range; 118/75 with
+a usual baseline is `in_range`. When both sides need review, each side's
+`attention` object carries its own level and who is notified.
+
+`mission_day` and `time` work as they do on the state route: with both, each
+window holds only the entries strictly earlier than that day and time, so the
+reading being tested is not compared with a stored copy of itself.
+
+Responses: `200` (a `BloodPressureState`); `404` when `bp_sys_mmhg` or
+`bp_dia_mmhg` has no row in `config/data/indicators.csv` (also while that file
+does not exist); `422` under the same rules as the state route, with `systolic`
+or `diastolic` in place of `value`; `502` when the upstream store (Supabase) is
+unreachable or returns an error.
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `state` | string | the worse of the two states |
+| `systolic` | object | the same body the state route returns, for `bp_sys_mmhg` |
+| `diastolic` | object | the same body the state route returns, for `bp_dia_mmhg` |
+
+```bash
+curl "$VITE_API_BASE_URL/people/demo_astronaut_1/blood_pressure/state?systolic=120&diastolic=95&context=rest"
+# 200 {"state":"needs_review","systolic":{"state":"in_range","median":115.0,"spread":5.0,"n":14,"attention":null},"diastolic":{"state":"needs_review","median":75.0,"spread":4.0,"n":14,"attention":{"attention_level":"consult","notify":"cmo","source":"https://www.who.int/news-room/fact-sheets/detail/hypertension"}}}
+```
+
+```js
+const params = new URLSearchParams({ systolic: "120", diastolic: "95", context: "rest" });
+const response = await fetch(
+  `${VITE_API_BASE_URL}/people/demo_astronaut_1/blood_pressure/state?${params}`
+);
+const pressure = await response.json();
+// show both numbers and pressure.state; the source of the attention row sits
+// next to it, and the CMO or flight surgeon confirms.
+```
+
+The numbers above are placeholders in a synthetic history (REQ-14); the states
+come from the store, never from a fixed range in the code.
 ### GET /people/{person_id}/conditions
 
 Returns the evidence score of every possible condition in

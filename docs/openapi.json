@@ -30,6 +30,34 @@
         "title": "AttentionRow",
         "type": "object"
       },
+      "BloodPressureState": {
+        "description": "One blood pressure reading: the worse of its systolic and diastolic state.\n\n`systolic` and `diastolic` are the same body the single-indicator state\nroute returns, one against `bp_sys_mmhg`'s history and one against\n`bp_dia_mmhg`'s; `state` is the worse of the two states\n(`docs/findings/bio2-01-pressure-state-rule.md`).",
+        "properties": {
+          "diastolic": {
+            "$ref": "#/components/schemas/IndicatorState"
+          },
+          "state": {
+            "enum": [
+              "no_data",
+              "in_range",
+              "outside_range",
+              "needs_review"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "systolic": {
+            "$ref": "#/components/schemas/IndicatorState"
+          }
+        },
+        "required": [
+          "state",
+          "systolic",
+          "diastolic"
+        ],
+        "title": "BloodPressureState",
+        "type": "object"
+      },
       "ConditionScore": {
         "description": "The evidence score of one possible condition (bio2-02, REQ-06).\n\n`score` is the mean of the signals' points, from 0 to 1, or null while\nfewer than two signals are usable; `label` is `no_data` with no score.\nThe score is evidence, not a probability: the CMO or the flight surgeon\nconfirms, and the route never says the person has the condition.",
         "properties": {
@@ -381,6 +409,109 @@
         "summary": "Health"
       }
     },
+    "/people/{person_id}/blood_pressure/state": {
+      "get": {
+        "description": "One blood pressure reading: the worse of its two states (bio2-01).",
+        "operationId": "get_blood_pressure_state_people__person_id__blood_pressure_state_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "person_id",
+            "required": true,
+            "schema": {
+              "title": "Person Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "systolic",
+            "required": true,
+            "schema": {
+              "title": "Systolic",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "diastolic",
+            "required": true,
+            "schema": {
+              "title": "Diastolic",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "context",
+            "required": false,
+            "schema": {
+              "default": "rest",
+              "title": "Context",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "mission_day",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Mission Day"
+            }
+          },
+          {
+            "in": "query",
+            "name": "time",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BloodPressureState"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "A blood pressure indicator is not in config/data/indicators.csv."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Blood Pressure State"
+      }
+    },
     "/people/{person_id}/conditions": {
       "get": {
         "description": "The evidence score of every condition in config/rules/conditions.csv.\n\nOne point per signal: 1 when the newest reading crossed an attention row on\nthe signal's side, 0.5 when it is outside the person's baseline on that\nside (both from `app.state`), 0 otherwise; the score is the mean of the\nusable signals (bio2-02, FORMATS.md section 3 point 3).",
@@ -517,6 +648,38 @@
               "default": "rest",
               "title": "Context",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "mission_day",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Mission Day"
+            }
+          },
+          {
+            "in": "query",
+            "name": "time",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Time"
             }
           }
         ],
