@@ -10,7 +10,15 @@
 
 import './body3d.css'
 
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react'
 import { BodySilhouette, BODY_ZONES } from '../body'
 import type { BodySystem } from '../body/zones'
 import type { InjuryKind } from '../../data/painStore'
@@ -44,6 +52,7 @@ export interface Body3DProps {
 
 /** WebGL, once per session: two contexts asked for one is a waste. */
 let webglSupport: boolean | null = null
+const webglListeners = new Set<() => void>()
 
 function hasWebGL(): boolean {
   if (webglSupport !== null) return webglSupport
@@ -58,6 +67,18 @@ function hasWebGL(): boolean {
     webglSupport = false
   }
   return webglSupport
+}
+
+// The probe can say yes for a context that cannot draw. The first renderer
+// that throws settles it for the session, and every figure on screen hears it.
+function markWebGLBroken(): void {
+  webglSupport = false
+  for (const listener of webglListeners) listener()
+}
+
+function subscribeWebGL(listener: () => void): () => void {
+  webglListeners.add(listener)
+  return () => webglListeners.delete(listener)
 }
 
 function iconSystem(system: string | null | undefined): BodySystem | null {
@@ -91,8 +112,10 @@ export default function Body3D({
 }: Body3DProps) {
   const still = useStillMotion(reducedMotion)
   const listId = useId()
-  const [webgl] = useState<boolean | null>(() =>
-    typeof document === 'undefined' ? null : hasWebGL(),
+  const webgl = useSyncExternalStore<boolean | null>(
+    subscribeWebGL,
+    hasWebGL,
+    () => null,
   )
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const hoverRef = useRef<HTMLSpanElement>(null)
@@ -184,11 +207,20 @@ export default function Body3D({
     if (webgl !== true) return
     const canvas = canvasRef.current
     if (canvas === null) return
-    const scene = createBodyScene(canvas, colors, {
-      onSelect: (regionId) => selectRef.current?.(regionId),
-      onHover: writeHover,
-      onPulse: addRipple,
-    })
+    // A browser can hand out a context and still fail to draw with it (a
+    // blocked GPU, a headless browser, a lost driver). The renderer then
+    // throws; the figure falls back to the flat body and the page stays up.
+    let scene: BodyScene
+    try {
+      scene = createBodyScene(canvas, colors, {
+        onSelect: (regionId) => selectRef.current?.(regionId),
+        onHover: writeHover,
+        onPulse: addRipple,
+      })
+    } catch {
+      markWebGLBroken()
+      return
+    }
     sceneRef.current = scene
     scene.apply(stateRef.current)
     return () => {

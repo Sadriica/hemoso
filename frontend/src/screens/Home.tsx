@@ -28,6 +28,7 @@ import {
 import AttentionBadge from '../components/AttentionBadge'
 import { statusBadgeKind, statusText } from '../components/attentionText'
 import Disclosure from '../components/Disclosure'
+import ErrorBoundary from '../components/ErrorBoundary'
 import IndicatorDetails from '../components/IndicatorDetails'
 import { sourceLabel } from '../components/sourceLabel'
 import Notice from '../components/Notice'
@@ -225,6 +226,9 @@ export default function Home({
       {rows.length > 0 && (
         <div className="board">
           <div className="board__orbit">
+            <ErrorBoundary
+              fallback={<Notice tone="warning">{strings.board.overviewFailed}</Notice>}
+            >
             <Suspense fallback={<BoardLoading />}>
               <Planetarium
                 items={rows.map(({ indicator, latest, status }) => {
@@ -253,6 +257,7 @@ export default function Home({
                 initialView={initialView}
               />
             </Suspense>
+            </ErrorBoundary>
           </div>
         </div>
       )}
@@ -278,6 +283,9 @@ export default function Home({
             />
           </ul>
           <div className="detail__body">
+            {/* The body is an extra: when it cannot be drawn its column stays
+                empty and the card beside it keeps every fact. */}
+            <ErrorBoundary fallback={null}>
             <Suspense
               fallback={<div className="body3d-slot" aria-hidden="true" />}
             >
@@ -297,6 +305,7 @@ export default function Home({
                 />
               )}
             </Suspense>
+            </ErrorBoundary>
           </div>
         </div>
         </>
@@ -434,6 +443,9 @@ function IndicatorRow({
             </span>
           </p>
           {system && (
+            <ErrorBoundary
+              fallback={<span className="instrument-slot" aria-hidden="true" />}
+            >
             <Suspense
               fallback={<span className="instrument-slot" aria-hidden="true" />}
             >
@@ -444,6 +456,7 @@ function IndicatorRow({
                 state={kind}
               />
             </Suspense>
+            </ErrorBoundary>
           )}
         </div>
       )}
