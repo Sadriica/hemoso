@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { loadContent } from './content/load'
 import { LocalEntryStore } from './data/entryStore'
 import { createSyncClient } from './data/sync'
@@ -13,7 +13,11 @@ import Topbar from './components/Topbar'
 import IdentifyPhase from './phases/IdentifyPhase'
 import ReportPhase from './phases/ReportPhase'
 import StatusPhase from './phases/StatusPhase'
+import PhaseTransition from './motion/PhaseTransition'
 import { strings } from './strings'
+
+// The intro is a chunk of its own; it shows once per tab, on the first load.
+const Intro = lazy(() => import('./motion/Intro'))
 
 function prefersReducedMotion(): boolean {
   return (
@@ -43,6 +47,7 @@ export default function App() {
   )
   const [motionReduced, setMotionReduced] = useState(prefersReducedMotion)
 
+  const [introOpen, setIntroOpen] = useState(true)
   const [phase, setPhase] = useState<PhaseId>('identify')
   const [personId, setPersonId] = useState<string | null>(null)
 
@@ -85,6 +90,16 @@ export default function App() {
     <div className={`app${motionReduced ? ' app--still' : ''}`}>
       <Starfield still={motionReduced} />
       <SkipLink />
+      {introOpen && (
+        <Suspense fallback={null}>
+          <Intro
+            still={motionReduced}
+            onDone={() => setIntroOpen(false)}
+            clockText={strings.header.metadata(clock.missionDay, clock.time)}
+            skipLabel={strings.intro.skip}
+          />
+        </Suspense>
+      )}
       <Topbar
         clock={clock}
         personId={phase === 'identify' ? null : personId}
@@ -97,6 +112,7 @@ export default function App() {
         {storageWarnings.length > 0 && (
           <Notice tone="warning">{storageWarnings.join(' ')}</Notice>
         )}
+        <PhaseTransition phase={phase} still={motionReduced}>
         {phase === 'identify' && (
           <IdentifyPhase
             headingRef={headingRef}
@@ -128,6 +144,7 @@ export default function App() {
             personId={personId}
             data={teamView ? data : { ...data, problems: [] }}
             entries={entries}
+            motionReduced={motionReduced}
             onBack={() => setPhase('report')}
             onRestart={() => {
               setPersonId(null)
@@ -135,6 +152,7 @@ export default function App() {
             }}
           />
         )}
+        </PhaseTransition>
       </main>
       <PhaseRail current={phase} />
     </div>

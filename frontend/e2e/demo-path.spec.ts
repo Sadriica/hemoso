@@ -176,7 +176,8 @@ test('guided check by keyboard with axe on every phase', async ({ page }) => {
     await expect(details).toHaveAttribute('aria-expanded', 'false')
   })
 
-  await test.step('Status: the history sentence', async () => {
+  await test.step('Status: the history sentence, behind its disclosure', async () => {
+    await openHistory(page)
     const sentence = page
       .getByText(/^Latest:/)
       .or(page.getByText(strings.history.notEnough))
@@ -209,6 +210,7 @@ test('status: one indicator history, its table and the comparison sentence', asy
   await walkToStatus(page)
 
   await test.step('History: pick the second indicator', async () => {
+    await openHistory(page)
     const select = page.getByLabel(strings.history.indicator)
     await focusByTab(page, select)
     await page.keyboard.press('ArrowDown')
@@ -254,6 +256,15 @@ test('no sideways scrolling at 320 px', async ({ page, isMobile }) => {
   await expect(page.getByRole('heading', { level: 1 })).toContainText(copy.status.headline[0])
   await expectNoHorizontalScroll(page, 'Status at 320 px')
 })
+
+// The history and its table wait behind a closed disclosure on the status
+// phase; open it with the keyboard.
+async function openHistory(page: Page): Promise<void> {
+  const toggle = page.getByRole('button', { name: copy.status.historyToggle })
+  await focusByTab(page, toggle)
+  await page.keyboard.press('Enter')
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true')
+}
 
 // Phase 1 by keyboard: the first crew member, checked with Space.
 async function pickFirstPerson(page: Page): Promise<void> {

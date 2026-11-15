@@ -367,6 +367,30 @@ legend {
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  min-height: 56px;
+  padding-right: var(--space-3);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.field__control:focus-within {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* The unit sits inside the field, after the number (DESIGN.md 8). */
+.field__control input.field__input {
+  min-height: 54px;
+  border: 0;
+  background: transparent;
+  font-family: var(--font-mono);
+  font-size: var(--text-value);
+  line-height: var(--leading-value);
+}
+
+.field__control input.field__input:focus-visible {
+  outline: none;
 }
 
 .field__input,
@@ -374,7 +398,7 @@ legend {
   width: 100%;
 }
 
-.field__control .field__input {
+.field__control input.field__input {
   flex: 1 1 auto;
   min-width: 0;
 }
@@ -389,6 +413,12 @@ legend {
   color: var(--color-text-muted);
 }
 
+/* The save button is a secondary action: the one primary of the screen is the
+   way on to the status. */
+.button--save {
+  min-height: 56px;
+}
+
 /* A 1 to 5 scale is answered with one choice per value (7.6). */
 .field__choices {
   display: flex;
@@ -399,8 +429,9 @@ legend {
 .field__choice {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1);
-  min-height: var(--tap-min);
+  gap: var(--space-2);
+  min-width: 56px;
+  min-height: 56px;
   padding: 0 var(--space-3);
   border: 1px solid var(--color-border-control);
   border-radius: var(--radius-small);
@@ -468,6 +499,27 @@ legend {
   border-left-color: var(--status-attention-text);
 }
 
+.notice--review {
+  border-left-color: var(--status-review-text);
+}
+
+.notice--review .notice__icon {
+  color: var(--status-review-text);
+}
+
+/* The one action of a notice sits on its own line on a phone. */
+.notice {
+  flex-wrap: wrap;
+}
+
+.notice__body {
+  flex: 1 1 200px;
+}
+
+.notice__action {
+  flex: 0 0 auto;
+}
+
 .notice--warning .notice__icon {
   color: var(--status-attention-text);
 }
@@ -507,8 +559,12 @@ legend {
   border-left-color: var(--status-in-range-text);
 }
 
-.indicator-card--attention {
-  border-left-color: var(--status-attention-text);
+.indicator-card--review {
+  border-left-color: var(--status-review-text);
+}
+
+.indicator-card--selected {
+  box-shadow: 0 0 0 1px var(--color-accent);
 }
 
 /* Title and badge: the badge always takes its own row under the name, so every
@@ -516,9 +572,17 @@ legend {
    the name. */
 .indicator-card__top {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   gap: var(--space-2);
+}
+
+.indicator-card__icon {
+  display: inline-flex;
+  flex: none;
+}
+
+.indicator-card__state {
+  display: flex;
 }
 
 .indicator-card__name {
@@ -531,10 +595,18 @@ legend {
 
 .indicator-card__reading {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
   padding-bottom: var(--space-2);
   border-bottom: var(--border-subtle);
+}
+
+.indicator-card__figures {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
 }
 
 .indicator-card__value {
@@ -616,8 +688,8 @@ legend {
 }
 
 .attention-badge--attention {
-  color: var(--status-attention-text);
-  background: var(--status-attention-bg);
+  color: var(--status-review-text);
+  background: var(--status-review-bg);
 }
 
 .attention-badge--no_data {

@@ -40,6 +40,9 @@ export const strings = {
   // sentence of help and one way forward.
   phases: {
     railLabel: 'Health check progress',
+    // What the rail says comes after the current step, and on the last one.
+    next: (name: string): string => `Next: ${name}`,
+    last: 'Last step',
     step: (number: number, total: number): string => `Phase ${number} of ${total}`,
     identify: {
       number: '01',
@@ -72,10 +75,31 @@ export const strings = {
       headline: ['YOUR', 'STATUS', 'TODAY.'],
       intro: 'Each reading against your own usual values. Decisions stay with your CMO and flight surgeon.',
       historyHeading: 'History',
+      historyToggle: 'History and readings table',
       back: 'Back to the report',
       restart: 'Start a new check',
     },
   },
+  // The status board: the planetarium (or its list) and the body zone of the
+  // indicator that is selected. Only labels; no health wording.
+  board: {
+    planetarium: {
+      center: 'You',
+      viewOrbits: 'Orbit view',
+      viewList: 'List view',
+      orbitsHeading: 'Overview of every reading',
+    },
+    // A reading that crossed an attention rule: the notice names how many and
+    // offers to select the first one. No health wording.
+    needsReview: (count: number): string =>
+      `${count} ${count === 1 ? 'reading needs' : 'readings need'} review.`,
+    showFirst: 'Show the first one',
+    bodyLabel: (name: string): string => `Body zone: ${name}`,
+    bodyNone: 'No body zone for this indicator',
+    loading: 'Loading the overview.',
+  },
+  // The first-load intro (skippable with any key or tap).
+  intro: { skip: 'Skip intro' },
   // The bar along the top of every phase (style guide 5, 7.1).
   topbar: {
     tagline: 'CREW HEALTH',
@@ -194,6 +218,9 @@ export const strings = {
     online: 'Online',
     offline: 'Offline',
     sendNow: 'Send now',
+    // The browser is offline and a server is set up: entries stay here.
+    offlineNotice: 'You are offline. Entries wait on this device.',
+    tryAgain: 'Try to send',
     noServer: 'No server set up for this demo',
     notAccepted: (count: number): string =>
       `${count} not accepted by the server`,
@@ -252,7 +279,7 @@ export const strings = {
   // time of a reading. The synthetic data sentence of REQ-14 sits beside it.
   header: {
     metadata: (day: number, time: string): string =>
-      `HEMOSO / ${missionStamp(day, time)}`,
+      missionStamp(day, time),
   },
   // The unit that follows a value on a card: "58 bpm". The 1 to 5 scales hold
   // their range in the unit, so they read "4 / 5" and not "4 1 to 5".

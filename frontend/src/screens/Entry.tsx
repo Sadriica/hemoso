@@ -296,7 +296,7 @@ function EntryForm({
         </div>
 
         <div className="form__actions">
-          <button className="button button--primary" type="submit">
+          <button className="button button--secondary button--save" type="submit">
             {strings.entry.save}
           </button>
         </div>
