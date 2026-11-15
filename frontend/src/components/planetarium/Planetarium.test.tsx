@@ -1,5 +1,6 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { readFileSync } from 'node:fs'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Planetarium } from './index'
 import type { PlanetItem } from './index'
@@ -149,5 +150,23 @@ describe('Planetarium', () => {
     expect(opts).toMatchObject({ duration: 800, easing: 'linear' })
     document.documentElement.style.removeProperty('--motion-cinematic')
     document.documentElement.style.removeProperty('--ease-standard')
+  })
+
+  describe('stylesheet', () => {
+    const css = readFileSync('src/components/planetarium/planetarium.css', 'utf8')
+    it('reserves the final stage size from the first paint', () => {
+      expect(css).toMatch(/\.planetarium__stage \{[^}]*aspect-ratio: 1 \/ 1/)
+    })
+    it('never cuts or hides text', () => {
+      expect(css).not.toMatch(/text-overflow|nowrap|line-clamp/)
+    })
+    it('keeps raw pixel sizes inside the named custom properties', () => {
+      const body = css.replace(/\.planetarium \{[^}]*--planet-target[^}]*\}/, '')
+      expect(body.match(/\d+px/g)?.filter((v) => v !== '899px') ?? []).toEqual([])
+    })
+    it('colours ring, tag edge and state text with the state colour', () => {
+      expect(css).toMatch(/\.planetarium__tag \{[^}]*border: var\(--planet-line\) solid var\(--ring\)/)
+      expect(css).toMatch(/\.planetarium__tag-state \{ color: var\(--ring\)/)
+    })
   })
 })

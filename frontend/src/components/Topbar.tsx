@@ -3,13 +3,19 @@ import type { SyncClient } from '../data/sync'
 import type { MissionClock } from '../domain/clock'
 import { UtilityIcon } from '../icons'
 import { strings } from '../strings'
+import MissionStart from './MissionStart'
 import SyncStatus from './SyncStatus'
 import SyntheticNotice from './SyntheticNotice'
 
 interface TopbarProps {
-  clock: MissionClock
+  /** Mission day and clock of the signed-in person; null hides them (phase 1). */
+  clock: MissionClock | null
   /** The crew member of this check, once phase 1 is done. */
   personId: string | null
+  /** Saved mission start (YYYY-MM-DD) of the person; null when none. */
+  missionStart?: string | null
+  /** Called with the new date; without it the start cannot be edited here. */
+  onChangeMissionStart?: (date: string) => void
   store: EntryStore & Outbox
   client: SyncClient
   motionReduced: boolean
@@ -25,6 +31,8 @@ interface TopbarProps {
 export default function Topbar({
   clock,
   personId,
+  missionStart = null,
+  onChangeMissionStart,
   store,
   client,
   motionReduced,
@@ -47,15 +55,21 @@ export default function Topbar({
           <span className="identity__name">{strings.appName}</span>
         </p>
 
-        <p className="topbar__stamp">
-          {strings.header.metadata(clock.missionDay, clock.time)}
-        </p>
+        {clock && (
+          <p className="topbar__stamp">
+            {strings.header.metadata(clock.missionDay, clock.time)}
+          </p>
+        )}
 
         {personId && (
           <p className="topbar__duty">
             <span className="topbar__dot" aria-hidden="true" />
             {strings.topbar.onDuty(personId)}
           </p>
+        )}
+
+        {personId && onChangeMissionStart && (
+          <MissionStart start={missionStart} onChange={onChangeMissionStart} />
         )}
 
         <div className="topbar__controls">

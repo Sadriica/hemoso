@@ -27,7 +27,7 @@ const STROKE = { fill: 'none', stroke: 'currentColor', strokeWidth: 4, strokeLin
 function Heart() {
   return (
     <g className="ins-beat">
-      <path d="M48 80C20 62 12 46 12 34a18 18 0 0 1 36-4 18 18 0 0 1 36 4c0 12-8 28-36 46z" fill="currentColor" />
+      <path className="ins-outline" d="M48 80C20 62 12 46 12 34a18 18 0 0 1 36-4 18 18 0 0 1 36 4c0 12-8 28-36 46z" fill="currentColor" />
     </g>
   )
 }
@@ -85,7 +85,7 @@ function Moon({ value }: { value: number }) {
           data-offset={offset}
           style={settle({ transform: `translateY(${offset}px)` }, 'translateY(56px)')}
         >
-          <path d="M56 14a30 30 0 1 0 26 44 24 24 0 0 1-26-44z" fill="currentColor" />
+          <path className="ins-outline" d="M56 14a30 30 0 1 0 26 44 24 24 0 0 1-26-44z" fill="currentColor" />
         </g>
       </g>
       <path className="ins-track" d="M8 82h80" strokeWidth={4} strokeLinecap="round" />
@@ -98,7 +98,7 @@ function Face({ value }: { value: number }) {
   const y = r2(64 + (v - 3) * 11)
   return (
     <g className="ins-settle" style={settle({}, 'scale(0.9)', 0)}>
-      <circle cx="48" cy="48" r="36" {...STROKE} />
+      <circle className="ins-outline" cx="48" cy="48" r="36" {...STROKE} />
       <circle cx="35" cy="40" r="4" fill="currentColor" />
       <circle cx="61" cy="40" r="4" fill="currentColor" />
       <path className="ins-mouth" data-y={y} d={`M32 62Q48 ${y} 64 62`} {...STROKE} />
@@ -131,6 +131,16 @@ function Drop({ value }: { value: number }) {
       </g>
     </>
   )
+}
+
+/** Status of the reading, for colour only; the shapes never change with it. */
+export type InstrumentState = 'in_range' | 'outside' | 'review' | 'no_data'
+
+const STATE_TOKEN: Record<InstrumentState, string> = {
+  in_range: '--status-in-range-text',
+  outside: '--status-attention-text',
+  review: '--status-review-text',
+  no_data: '--status-no-data-text',
 }
 
 /**
@@ -168,11 +178,15 @@ function Tally({ value }: { value: number }) {
  *   other id renders nothing.
  * - `value`: the number the card already shows; it only sets the drawing.
  * - `reducedMotion`: draw the final state with no animation.
+ * - `state`: optional. The accent (fill, needle, features) takes the state
+ *   colour and the outline keeps the system colour. The tint changes over
+ *   `--motion-base`. Without it the figure is drawn in the system colour.
  */
 export interface InstrumentProps {
   indicatorId: string
   value: number
   reducedMotion?: boolean
+  state?: InstrumentState
 }
 
 /**
@@ -180,7 +194,7 @@ export interface InstrumentProps {
  * (`aria-hidden`): the card already states the value in words. The heart
  * beats three times at a fixed calm pace, then rests, that does not follow the value.
  */
-export default function Instrument({ indicatorId, value, reducedMotion = false }: InstrumentProps): ReactElement | null {
+export default function Instrument({ indicatorId, value, reducedMotion = false, state }: InstrumentProps): ReactElement | null {
   let figure: ReactElement
   switch (indicatorId) {
     case 'hr_bpm':
@@ -212,10 +226,13 @@ export default function Instrument({ indicatorId, value, reducedMotion = false }
     default:
       return null
   }
+  const system = `var(--system-${COLOR[indicatorId]})`
+  const tint = state && STATE_TOKEN[state]
   return (
     <span
-      className={`instrument ${reducedMotion ? 'instrument--still' : 'instrument--anim'}`}
-      style={{ color: `var(--system-${COLOR[indicatorId]})` }}
+      className={`instrument ${reducedMotion ? 'instrument--still' : 'instrument--anim'}${tint ? ' instrument--state' : ''}`}
+      style={{ color: tint ? `var(${tint})` : system, '--ins-system': system } as CSSProperties}
+      data-state={tint ? state : undefined}
       aria-hidden="true"
       data-indicator={indicatorId}
     >

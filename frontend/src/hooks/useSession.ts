@@ -43,7 +43,10 @@ export interface SessionState {
   signIn(personId: string, pin: string): Promise<AttemptFailure | null>
   createAccount(personId: string, pin: string): Promise<AttemptFailure | null>
   openDemo(): void
-  openPerson(personId: string): OpenResult
+  /** A face matched: a stored session opens without the PIN. */
+  openByFace(personId: string): OpenResult
+  /** A name picked in the list: the PIN is asked, except for the demo crew. */
+  openByName(personId: string): OpenResult
   signOut(): void
   // A new check in the same session: the person is asked again, the token
   // stays.
@@ -106,10 +109,10 @@ export function useSession(accounts: AccountClient): SessionState {
     openAs(DEMO_PERSON_ID, 'demo')
   }, [openAs])
 
-  // A person picked by name or recognised by the face: a demo person opens
-  // straight away, a person with a stored session opens with it, and anyone
-  // else has to give the PIN.
-  const openPerson = useCallback(
+  // A person recognised by the face: a demo person opens straight away, a
+  // person with a stored session opens with it, and anyone else has to give
+  // the PIN. A face is the one thing that opens a stored session on its own.
+  const openByFace = useCallback(
     (person: string): OpenResult => {
       if (isDemoPerson(person)) {
         openAs(person, 'demo')
@@ -117,6 +120,19 @@ export function useSession(accounts: AccountClient): SessionState {
       }
       if (readSession(person) !== null) {
         openAs(person, 'account')
+        return 'opened'
+      }
+      return 'pin'
+    },
+    [openAs],
+  )
+
+  // A name picked in the crew list: a demo person opens straight away, anyone
+  // else gives the PIN, even when a session is stored (DECISIONS.md, Sat 23:08).
+  const openByName = useCallback(
+    (person: string): OpenResult => {
+      if (isDemoPerson(person)) {
+        openAs(person, 'demo')
         return 'opened'
       }
       return 'pin'
@@ -146,7 +162,8 @@ export function useSession(accounts: AccountClient): SessionState {
     signIn,
     createAccount,
     openDemo,
-    openPerson,
+    openByFace,
+    openByName,
     signOut,
     reset,
     forgetExpiry,
