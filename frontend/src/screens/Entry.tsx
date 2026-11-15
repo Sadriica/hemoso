@@ -439,6 +439,7 @@ function ReportForm({
               onClose={() => setOpenMenu(null)}
             />
           )}
+          <p className="rep-keep">{strings.entry.timeHelp}</p>
           {keepOwn > 0 && (
             <p className="rep-keep">{strings.entry.keepOwn(keepOwn)}</p>
           )}

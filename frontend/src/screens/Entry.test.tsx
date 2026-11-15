@@ -167,8 +167,8 @@ describe('Entry', () => {
   }
 
   it('says the context once in the header and tags only the rows that differ', () => {
-    vi.spyOn(Date.prototype, 'getHours').mockReturnValue(7)
-    vi.spyOn(Date.prototype, 'getMinutes').mockReturnValue(30)
+    vi.spyOn(Date.prototype, 'getUTCHours').mockReturnValue(7)
+    vi.spyOn(Date.prototype, 'getUTCMinutes').mockReturnValue(30)
     renderEntry([heartRate, mood])
     // The header carries the context of the clock.
     const header = screen.getByRole('button', { name: headerName })
@@ -185,8 +185,8 @@ describe('Entry', () => {
   })
 
   it('has no tag and no line when every row matches the header', () => {
-    vi.spyOn(Date.prototype, 'getHours').mockReturnValue(13)
-    vi.spyOn(Date.prototype, 'getMinutes').mockReturnValue(0)
+    vi.spyOn(Date.prototype, 'getUTCHours').mockReturnValue(13)
+    vi.spyOn(Date.prototype, 'getUTCMinutes').mockReturnValue(0)
     renderEntry([heartRate, mood])
     expect(rowButton('Heart rate')).not.toHaveTextContent(/\w/)
     expect(rowButton('Mood')).not.toHaveTextContent(/\w/)
@@ -195,8 +195,8 @@ describe('Entry', () => {
   })
 
   it('changing the header moves the rows that were not changed by hand', async () => {
-    vi.spyOn(Date.prototype, 'getHours').mockReturnValue(13)
-    vi.spyOn(Date.prototype, 'getMinutes').mockReturnValue(0)
+    vi.spyOn(Date.prototype, 'getUTCHours').mockReturnValue(13)
+    vi.spyOn(Date.prototype, 'getUTCMinutes').mockReturnValue(0)
     const user = userEvent.setup()
     renderEntry([heartRate, mood])
     // Mood is changed by hand to after exercise.
@@ -206,7 +206,7 @@ describe('Entry', () => {
     expect(rowButton('Mood')).toHaveTextContent(strings.entry.contextLabels.after_exercise)
 
     const group = await openHeader(user)
-    await user.click(within(group).getByRole('radio', { name: 'Before sleep' }))
+    await user.click(within(group).getByRole('radio', { name: strings.entry.contextLabels.before_sleep }))
     // Heart rate followed the header, so it still shows no tag; mood kept its
     // own context and is tagged.
     expect(rowButton('Heart rate')).not.toHaveTextContent(/\w/)
@@ -228,7 +228,7 @@ describe('Entry', () => {
     await user.click(rowButton('Mood'))
     await user.click(
       within(screen.getByRole('group', { name: strings.entry.rowContext('Mood') })).getByRole('radio', {
-        name: 'Before sleep',
+        name: strings.entry.contextLabels.before_sleep,
       }),
     )
     typeInto('Heart rate', '60')
@@ -253,7 +253,7 @@ describe('Entry', () => {
         .map((radio) => (radio as HTMLInputElement).value),
     ).toEqual(['rest', 'after_exercise', 'on_waking', 'before_sleep'])
     expect(
-      within(context).getByRole('radio', { name: 'Before sleep' }),
+      within(context).getByRole('radio', { name: strings.entry.contextLabels.before_sleep }),
     ).toBeInTheDocument()
   })
 

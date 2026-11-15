@@ -46,6 +46,6 @@ describe('Topbar clock', () => {
   it('hides the day and the clock without a person', () => {
     const { container } = bar(null)
     expect(container.querySelector('.topbar__stamp')).toBeNull()
-    expect(screen.queryByText(/Day \d/)).toBeNull()
+    expect(screen.queryByText(/Flight Day \d/)).toBeNull()
   })
 })

@@ -59,7 +59,7 @@ describe('ReactionCheck', () => {
     vi.useFakeTimers()
     // A fixed wall clock: the mission day and the reading context of the two
     // saved entries come from it.
-    vi.setSystemTime(new Date(2026, 10, 14, 14, 30))
+    vi.setSystemTime(new Date(Date.UTC(2026, 10, 14, 14, 30)))
     // The shortest wait every time, so a test advances a known number of ms.
     vi.spyOn(Math, 'random').mockReturnValue(0)
   })

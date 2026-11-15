@@ -53,7 +53,7 @@ export const injuryWords = {
   surgeon: 'Your CMO or flight surgeon looks at this with you.',
   reportsHeading: 'Your reports on this device',
   noReports: 'No report saved on this device yet.',
-  reportWhen: (missionDay: number, time: string): string => `Day ${missionDay}, ${time}`,
+  reportWhen: (missionDay: number, time: string): string => `Flight Day ${missionDay}, GMT ${time}`,
   markLine: (region: string, kind: string, intensity: number): string =>
     `${region}: ${kind.toLowerCase()}, ${intensity} of 10`,
   open: 'Where does it hurt?',

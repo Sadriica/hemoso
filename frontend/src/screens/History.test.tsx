@@ -104,7 +104,7 @@ describe('History', () => {
     ).toBeInTheDocument()
     expect(
       screen.getAllByRole('columnheader').map((cell) => cell.textContent),
-    ).toEqual(['Day', 'Time', 'Context', 'Value', 'Status'])
+    ).toEqual(['Flight Day', 'GMT', 'Context', 'Value', 'Status'])
   })
 
   it('lists the readings newest first', () => {
@@ -206,7 +206,7 @@ describe('History', () => {
     ])
     expect(
       screen.getByText(
-        'Latest: 42 example_unit on Day 10 15:44. ' +
+        'Latest: 42 example_unit on FD 10, GMT 15:44. ' +
           'Your usual at rest: 5 example_unit (last 3 readings). ' +
           'Difference: +37 example_unit.',
       ),
@@ -223,7 +223,7 @@ describe('History', () => {
     ])
     expect(
       screen.getByText(
-        'Latest: 8 example_unit on Day 5 08:00. ' +
+        'Latest: 8 example_unit on FD 5, GMT 08:00. ' +
           'Your usual at rest: 5 example_unit (last 3 readings). ' +
           'Difference: +3 example_unit.',
       ),
@@ -240,7 +240,7 @@ describe('History', () => {
     ])
     expect(
       screen.getByText(
-        'Latest: 6 example_unit on Day 5 08:00. Not enough earlier entries to compare yet.',
+        'Latest: 6 example_unit on FD 5, GMT 08:00. Not enough earlier entries to compare yet.',
       ),
     ).toBeInTheDocument()
   })
@@ -254,7 +254,7 @@ describe('History', () => {
     ])
     expect(
       screen.getByText(
-        'Latest: 8 example_unit on Day 4 08:00. ' +
+        'Latest: 8 example_unit on FD 4, GMT 08:00. ' +
           'Your usual at rest: 11 example_unit (last 3 readings). ' +
           'Difference: -3 example_unit.',
       ),
@@ -270,7 +270,7 @@ describe('History', () => {
     ])
     expect(
       screen.getByText(
-        'Latest: 36.7 example_unit on Day 4 08:00. ' +
+        'Latest: 36.7 example_unit on FD 4, GMT 08:00. ' +
           'Your usual at rest: 36.6 example_unit (last 3 readings). ' +
           'Difference: +0.1 example_unit.',
       ),
@@ -344,7 +344,7 @@ describe('History', () => {
     renderHistory([entry(1, '08:00', 10)])
     expect(
       screen.getByRole('img', {
-        name: 'Latest: 10 example_unit on Day 1 08:00. Not enough earlier entries to compare yet.',
+        name: 'Latest: 10 example_unit on FD 1, GMT 08:00. Not enough earlier entries to compare yet.',
       }),
     ).toBeInTheDocument()
   })
@@ -374,7 +374,7 @@ describe('History', () => {
     renderHistory([entry(1, '08:00', 10)])
     expect(
       screen.getByText(
-        'Latest: 10 example_unit on Day 1 08:00. Not enough earlier entries to compare yet.',
+        'Latest: 10 example_unit on FD 1, GMT 08:00. Not enough earlier entries to compare yet.',
       ),
     ).toBeInTheDocument()
     expect(screen.getAllByRole('row')).toHaveLength(2)
@@ -399,7 +399,7 @@ describe('History', () => {
     expect(screen.queryByText(/2000/)).toBeNull()
     expect(
       screen.getByText(
-        'Latest: 12 example_unit on Day 4 08:00. ' +
+        'Latest: 12 example_unit on FD 4, GMT 08:00. ' +
           'Your usual at rest: 10 example_unit (last 3 readings). ' +
           'Difference: +2 example_unit.',
       ),

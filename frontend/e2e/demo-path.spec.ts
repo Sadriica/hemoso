@@ -185,7 +185,7 @@ test('guided check by keyboard with axe on every phase', async ({ page }) => {
     await expect(statusRegion.getByRole('heading', { level: 3 })).toHaveCount(1)
     const measured = cardFor(statusRegion, names[0])
     await expect(measured.getByText(`${FIRST_VALUE} ${units[0]}`, { exact: true })).toBeVisible()
-    await expect(measured.getByText(new RegExp(`^DAY ${readingDay} · `))).toBeVisible()
+    await expect(measured.getByText(new RegExp(`^FD ${readingDay} · `))).toBeVisible()
 
     for (const name of names.slice(1)) {
       await selectIndicator(page, name)
@@ -200,7 +200,7 @@ test('guided check by keyboard with axe on every phase', async ({ page }) => {
         .locator('.indicator-card__value')
         .filter({ hasText: `${SCALE_VALUE} ${strings.cardUnit(SCALE_UNIT)}` }),
     ).toBeVisible()
-    await expect(scale.getByText(new RegExp(`^DAY ${scaleDay} · `))).toBeVisible()
+    await expect(scale.getByText(new RegExp(`^FD ${scaleDay} · `))).toBeVisible()
     await selectIndicator(page, names[0])
   })
 
