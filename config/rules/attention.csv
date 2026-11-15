@@ -6,7 +6,7 @@ bp_sys_mmhg,above,180,urgent,flight_surgeon,https://www.who.int/news-room/fact-s
 bp_dia_mmhg,above,90,consult,cmo,https://www.who.int/news-room/fact-sheets/detail/hypertension
 bp_dia_mmhg,above,120,urgent,flight_surgeon,https://www.who.int/news-room/fact-sheets/detail/hypertension
 temp_core_c,below,35,urgent,flight_surgeon,https://www.nasa.gov/wp-content/uploads/2023/11/nasa-std-3001-vol-1-rev-c-with-signature.pdf
-temp_core_c,above,38.0,consult,cmo,https://cdn.who.int/media/docs/default-source/influenza/who_ili_sari_case_definitions_2014.pdf
+temp_core_c,above,38.0,consult,cmo,https://medlineplus.gov/ency/article/003090.htm https://cdn.who.int/media/docs/default-source/influenza/who_ili_sari_case_definitions_2014.pdf
 sleep_h,below,6,watch,crew,https://academic.oup.com/sleep/article/45/3/zsac006/6505235
 mood_1_5,below,2,watch,crew,Assumption
 glucose_mgdl,above,126,consult,cmo,https://diabetes.org/about-diabetes/diagnosis
