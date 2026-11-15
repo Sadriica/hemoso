@@ -163,7 +163,7 @@ describe('Home', () => {
     renderHome({ ...homeWith([entry(10, 101)]), rules: [cited] })
     expect(within(card()).getByText('example_level')).toBeInTheDocument()
     expect(
-      within(card()).getByText(/Not enough earlier readings at rest/),
+      within(card()).getByText(/Not enough earlier days with a reading at rest/),
     ).toBeInTheDocument()
     expect(
       within(card()).getByRole('link', { name: 'Example title' }),
