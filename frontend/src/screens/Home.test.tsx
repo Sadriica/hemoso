@@ -35,7 +35,7 @@ const rule: AttentionRule = {
   threshold: 100,
   attentionLevel: 'example_level',
   notify: 'crew',
-  sources: ['Assumption'],
+  sources: [{ title: 'Example limit', url: 'https://example.org/limit' }],
 }
 
 const content: IndicatorContent = {
@@ -142,7 +142,7 @@ describe('Home', () => {
     renderHome(homeWith([...baseline, entry(10, 101)]))
     expect(
       within(card()).getByText(/Limit crossed: above 100 example_unit\./),
-    ).toHaveTextContent('Source: Assumption')
+    ).toHaveTextContent('Source: Example limit')
   })
 
   it('names the person and the context of the reading', () => {
@@ -156,17 +156,13 @@ describe('Home', () => {
   })
 
   it('says needs review for a cited limit even with no baseline', () => {
-    const cited = {
-      ...rule,
-      sources: [{ title: 'Example title', url: 'https://example.org/limit' }],
-    }
-    renderHome({ ...homeWith([entry(10, 101)]), rules: [cited] })
+    renderHome({ ...homeWith([entry(10, 101)]), rules: [rule] })
     expect(within(card()).getByText('example_level')).toBeInTheDocument()
     expect(
       within(card()).getByText(/Not enough earlier readings at rest/),
     ).toBeInTheDocument()
     expect(
-      within(card()).getByRole('link', { name: 'Example title' }),
+      within(card()).getByRole('link', { name: 'Example limit' }),
     ).toHaveAttribute('href', 'https://example.org/limit')
   })
 

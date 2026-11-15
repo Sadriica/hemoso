@@ -45,7 +45,7 @@ const data: LoadedContent = {
       threshold: 100,
       attentionLevel: 'example_level',
       notify: 'crew',
-      sources: ['Assumption'],
+      sources: [{ title: 'Example', url: 'https://example.org' }],
     },
   ],
   contents: {},

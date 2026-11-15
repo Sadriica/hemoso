@@ -70,6 +70,13 @@ const above: AttentionRule = {
   sources: ['Assumption'],
 }
 
+// The same row with a link: the only kind whose crossing may give needs_review
+// (phys-02, "The rule").
+const cited: AttentionRule = {
+  ...above,
+  sources: [{ title: 'Example', url: 'https://example.org' }],
+}
+
 // The latest reading of day 10, compared with the earlier ones of the list.
 function latestOf(rows: Entry[]): Entry {
   return rows.reduce((latest, row) =>
@@ -125,16 +132,51 @@ describe('localState', () => {
 
   it('calls a crossed attention row needs_review and keeps the row', () => {
     const rows = [entry(1, 10), entry(2, 10), entry(3, 10), entry(10, 101)]
-    const state = localState(latestOf(rows), rows, [above], 1)
+    const state = localState(latestOf(rows), rows, [cited], 1)
     expect(state.state).toBe('needs_review')
     expect(state.rule?.attentionLevel).toBe('example_level')
   })
 
+  describe('with a baseline, an Assumption row says nothing', () => {
+    // Three earlier days at 98: the median is 98, the spread is the noise
+    // floor 1, so the band reaches 101 and 120 is outside it.
+    const rows = (value: number) => [
+      entry(1, 98),
+      entry(2, 98),
+      entry(3, 98),
+      entry(10, value),
+    ]
+
+    it('is in_range when the value crosses an Assumption row inside the band', () => {
+      const list = rows(100)
+      const state = localState(latestOf(list), list, [above], 1)
+      expect(state.state).toBe('in_range')
+      expect(state.rule).toBeNull()
+    })
+
+    it('is outside_range when the value crosses an Assumption row past the band', () => {
+      const list = rows(120)
+      const state = localState(latestOf(list), list, [above], 1)
+      expect(state.state).toBe('outside_range')
+      expect(state.rule).toBeNull()
+    })
+
+    it('still needs_review when the crossed row has a link', () => {
+      const list = rows(100)
+      const state = localState(latestOf(list), list, [cited], 1)
+      expect(state.state).toBe('needs_review')
+      expect(state.rule).toBe(cited)
+    })
+
+    it('keeps the cited row when an Assumption row crosses too', () => {
+      const list = rows(100)
+      const state = localState(latestOf(list), list, [above, cited], 1)
+      expect(state.state).toBe('needs_review')
+      expect(state.rule).toBe(cited)
+    })
+  })
+
   describe('without a baseline (phys-02 vectors)', () => {
-    const cited: AttentionRule = {
-      ...above,
-      sources: [{ title: 'Example', url: 'https://example.org' }],
-    }
     const rows = (value: number) => [entry(1, 10), entry(2, 10), entry(10, value)]
 
     it('needs review when the crossed row has a link', () => {
