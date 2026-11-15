@@ -56,13 +56,18 @@ State is never colour alone: each state has its own icon shape and its words.
 | State (astronaut words) | Icon shape | Text token | Fill token |
 | --- | --- | --- | --- |
 | In your usual range | circle with check | `--status-in-range-text` `#5FD49A` / `#14532D` | `--status-in-range-bg` `#0D2A1F` / `#DCFCE7` |
-| Outside your usual range | open ring with a dot offset to one side | `--status-outside-text` `#8EC5FF` / `#0B4AA8` | `--status-outside-bg` `#0F2339` / `#DBEAFE` |
+| Outside your usual range | open ring with a dot offset to one side | `--status-attention-text` `#F5C542` / `#6B3A06` | `--status-attention-bg` `#2C2407` / `#FEF3C7` |
 | Needs review | triangle with a bar | `--status-review-text` `#FF8A70` / `#9A2A14` | `--status-review-bg` `#33140E` / `#FDE4DE` |
 | No data yet | dashed ring | `--status-no-data-text` `#A9B3C1` / `#374151` | `--status-no-data-bg` `#18222F` / `#E5E7EB` |
 | Field error and warnings | diamond with a bar | `--status-attention-text` `#F5C542` / `#6B3A06` | `--status-attention-bg` `#2C2407` / `#FEF3C7` |
 
 `--color-signal` is the most urgent level and destructive actions only, and
 never fills a large area.
+
+Outside the usual range shares the attention pair with a warning, because both
+ask for a look. The open ring and the words keep the two apart, and the diamond
+with a bar stays the warning. The blue pair the state had before the visual
+review is gone from the palette.
 
 ### 2.3 Body systems
 
@@ -103,7 +108,6 @@ re-checks them on each test run.
 | Attention | attention badge | 9.50 | 8.45 | 4.5:1 |
 | Needs review | review badge | 7.31 | 6.38 | 4.5:1 |
 | No data | no-data badge | 7.57 | 8.33 | 4.5:1 |
-| Outside range | outside badge | 8.77 | 6.73 | 4.5:1 |
 | Control edge | page | 4.94 | 3.96 | 3:1 |
 | Control edge | card | 4.34 | 4.37 | 3:1 |
 | Control edge | raised band | 4.67 | 4.37 | 3:1 |
@@ -122,7 +126,6 @@ re-checks them on each test run.
 | In range | card | 9.38 | 9.11 | 3:1 |
 | Attention | card | 10.68 | 9.40 | 3:1 |
 | Needs review | card | 7.53 | 7.73 | 3:1 |
-| Outside range | card | 9.56 | 8.21 | 3:1 |
 Any new pair must be added here and to `theme.test.ts` before it is used.
 
 ## 4. Type
@@ -192,7 +195,9 @@ Rules:
 - A state change animates in 150 to 400 ms, never over 600 ms. Motion shows a
   change of state; it never decorates.
 - Cinematic moments (first load, phase change, planetarium settling) never
-  block input, last at most 1.2 s, and skip with any key or tap.
+  block input, last at most 1.2 s, and skip with any key or tap. The intro is
+  the one exception: it runs about 3.4 s (`--motion-intro`), and any key or tap
+  ends it at once.
 - The Starfield drifts slowly and is the only ambient motion.
 - Everything stops under `prefers-reduced-motion` and with the top bar switch
   (class `app--still`); the app is complete without motion. Animate only
@@ -215,9 +220,12 @@ Rules:
 - **Input and select.** `--color-border-control` edge, `--radius-card`, unit
   visible as a suffix inside the field, label above, error text with the
   attention icon under the field.
-- **Phase rail.** Fixed at the bottom on `--color-bg-raised`: "01 Identify",
-  "02 Report", "03 Status", current step in `--color-accent`, a progress line,
-  `aria-current="step"`. It says where the astronaut is and what comes next.
+- **Phase rail.** Fixed at the bottom on `--color-bg-raised`, `--rail-height`
+  tall: three numbered nodes on one track, the labels under them, the current
+  step in `--color-accent` and a step larger, the steps already walked with a
+  check, and the track filled up to the current node. `aria-current="step"`.
+  It says where the astronaut is; the next step is its own node, so no extra
+  line repeats it.
 - **Top bar.** Logo, mission day and clock, who is on duty, sync state, the
   motion switch. The synthetic-data notice stays visible on every phase.
 - **Chart.** Same tokens as the cards: line in `--color-accent`, the median
@@ -275,7 +283,8 @@ Do not:
 Used by the screens subagent; every one starts with "Follow DESIGN.md tokens;
 no new behaviour".
 
-- **Intro.** First load only, under 1.2 s, skippable with any key or tap:
+- **Intro.** First load only, about 3.4 s, skippable with any key or tap: the
+  sky drifts, the mark draws itself, the name types in, then the first phase:
   the HeMoSo mark and the real mission day and clock, then the first phase. No
   invented status text.
 - **01 Identify.** Eyebrow "01 / IDENTIFY", hero "WHO IS ON DUTY TODAY?" on
