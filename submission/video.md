@@ -1,14 +1,34 @@
 # Video · 30 seconds, English subtitles
 
-Owner: Bio 1. Recorded by Eng 2 (REQ-31). Script v5, Sat 23:05: the opening is
-one sentence, and the 0:10 beat covers the user, the prototype and the NASA data.
+Owner: Bio 1. Recorded by Eng 2 (REQ-31, card #52). Script v6, Sun 15 Nov 08:45.
 
-The submission guide sets the spine: who you are at 0:00, the challenge at 0:02,
-the name at 0:05, the idea and the prototype at 0:10, the future from 0:20 to
-0:30 (https://www.spaceappschallenge.org/resources/project-submission-guide/, as
+This version is written against the app on `main` (3dd596b), after Eng 2's
+recording plan (`team/eng2/notes/t16-recording-plan.md`, Sun 06:55). The plan is
+accepted with the changes below. The story the guide asks for does not change:
+who we are, the challenge, the name, the prototype, the future.
+
+Submission guide, video demo instructions
+(https://www.spaceappschallenge.org/resources/project-submission-guide/), as
 quoted by the team on Sat 14 Nov; the 30 s limit and the English subtitles are
-also in `docs/CHALLENGE.md`). The page did not open from this machine today, so
-the instructions are the team's copy.
+also in `docs/CHALLENGE.md`.
+
+## What changed from v5, and why
+
+1. **The screens are the real ones.** The app has three phases (identify,
+   report, status), four states and an evidence board. It has no yellow, orange
+   or green levels, so the script no longer talks about them.
+2. **Day 46 is out.** The demo data ends on Flight Day 30, and a return to the
+   usual range cannot be shown without inventing days. The evidence board takes
+   that time, and the future beat carries the outlook instead.
+3. **"Symptoms" is out.** The report screen has no symptom field yet (T-80), so
+   the voice does not promise it.
+4. **One staged reading replaces three days.** Eng 2 logs Flight Day 31 with
+   38.5 °C and 96 bpm on a local build. That single reading produces every state
+   the video needs: needs review, outside the usual range, and an evidence board.
+5. **"Baseline" becomes "usual range"** in the spoken line and the subtitles,
+   because that is the phrase on screen. The wording decision of Sat 17:45 used
+   "baseline"; the video follows the interface, and the difference is noted in
+   "Still open".
 
 ## How the team speaks
 
@@ -17,18 +37,12 @@ the instructions are the team's copy.
 | 0:00–0:02 | All five, together | Team name |
 | 0:02–0:05 | V1, Bio 1 | The challenge and the problem |
 | 0:05–0:10 | V2, Phys | Project name and tagline |
-| 0:10–0:20 | V1, Bio 1 | How it works, over the prototype |
+| 0:10–0:20 | V1, Bio 1 | One reading, over the prototype |
 | 0:20–0:26 | V2, Phys | The future |
 | 0:26–0:30 | V2 alone, the team on camera | The closing line |
 
-The team speaks together once, at the start, and is visible again at the end
-while V2 closes. Five people saying the last line together would need four
-seconds and a precision we do not have at 22:00 on a Saturday; one voice says
-it and the five faces carry the rest.
-
-Tone: calm and factual. No rising music, no slow motion, no "imagine". The facts
-are strong enough; the voice does not push them. Look at the lens, speak at
-conversation volume, and let the pauses at 0:05 and 0:26 do the work.
+Tone: calm and factual. No rising music, no slow motion, no "imagine". Let the
+pauses at 0:05 and 0:26 do the work.
 
 ## Script
 
@@ -36,99 +50,79 @@ conversation volume, and let the pauses at 0:05 and 0:26 do the work.
 | --- | --- | --- | --- |
 | 0.0–2.0 | Team | We're team ReTardis. | One voice, five faces, no gesture |
 | 2.0–5.0 | V1 | Astronaut health monitoring, because Earth is far away. | One sentence, a small pause at the comma |
-| 5.0-10.0 | V2 | Meet HeMoSo: your health, monitored against your own usual range. | A short stop after the name |
-| 10.0-20.0 | V1 | She logs pulse, temperature, symptoms. HeMoSo compares them with her usual range, suggests possible causes, and alerts the CMO on board. Built from NASA's open data. | Even pace; the CMO clause one step louder |
+| 5.0–10.0 | V2 | Meet HeMoSo: your health, checked against your usual range. | A short stop after the name |
+| 10.0–20.0 | V1 | She logs 38.5 °C and a fast pulse. HeMoSo compares them with her usual range, shows the evidence, and asks her to tell the CMO. Built from NASA's open data. | Even pace; "tell the CMO" one step louder |
 | 20.0–26.0 | V2 | From lunar missions to Mars: the same daily check, so a change is seen in time. | Same volume, no dreamy tone |
 | 26.0–30.0 | V2 | Because exploring further means taking better care of those who explore. | Slower than the rest, one idea per breath |
 
-76 words, 2.5 per second. If a take runs past 29.5 s, cut "symptoms" from beat 4
-and keep "pulse, temperature"; never shorten the closing.
+77 words, 2.6 per second. If a take runs past 29.5 s, cut "Built from NASA's open
+data" from the voice and keep it in the caption; never shorten the closing.
 
 Line notes:
 
-- "Astronaut health monitoring" names the challenge. Without it a judge scores
+- "Astronaut health monitoring" names the challenge; without it a judge scores
   Relevance from memory, not from the video.
-- "Because Earth is far away" keeps the beat to one sentence. Two sentences
-  ("In space, medical care is limited.") read like a list; a comma and a reason
-  read like someone thinking. The CSA page on long missions supports the point
+- "Because Earth is far away" keeps the beat to one sentence. Two sentences read
+  like a list. The Canadian Space Agency page on long missions supports the point
   (less reliance on Earth for emergency medical help).
-- Beat 4 answers the guide's three questions in order: a user's experience
-  ("she logs"), how it works ("compares, suggests, alerts"), and the data
-  ("built from NASA's open data"). The prototype is on screen the whole time.
-- "Built from", not "using": the data informed the thresholds, the app does not
-  query it at runtime.
-- "suggests possible causes" and the card on screen show the probability and its
-  basis, so the voice does not spell out a number it cannot defend.
-- No "critical", no "early detection saves lives": a claim without a source has
-  no place in 30 seconds.
-- The closing is a fragment that continues the previous sentence: it works
-  spoken, and the subtitle keeps it whole.
+- Beat 4 answers the guide's three questions in order: a user's experience ("she
+  logs"), how it works ("compares, shows the evidence, asks her to tell the CMO")
+  and the data ("built from NASA's open data").
+- "Shows the evidence" is the honest verb for an evidence board with 0.75 and two
+  signals. It is more precise than "suggests" and less than "diagnoses".
+- No "critical", no accuracy figure, no claim we cannot rerun.
 
 ## Shots
 
-Record at 1280 × 800, 30 frames per second, same window, same zoom, one take per
-shot, plus one screenshot per shot.
+Taken from Eng 2's plan, with the changes marked. Record at 1280 × 800, 30
+frames per second, from a local build, one take per shot, and save one PNG per
+shot for the slides.
 
-| Shot | Time (s) | Screen | Must be visible |
+| Shot | Time (s) | Screen on `main` | Must be visible |
 | --- | --- | --- | --- |
-| S0 | 0–2 | Five faces, one frame | Five people, the team name in the lower third with the five first names |
-| S1 | 2–5 | Status, day 41, yellow | The level and the day |
+| S0 | 0–2 | Five faces, one frame | Five people; the team name in the lower third with the five first names |
+| S1 | 2–5 | Status, list view (`s6-status-list.png`) | The "needs review" banner and the day |
 | S2 | 5–7 | Title card | HeMoSo and the tagline, nothing else |
-| S3 | 7–10 | Day 41, full view | The screen the astronaut uses every day |
-| S4 | 10–13 | Entry: pulse, temperature, symptoms | Her hand or cursor entering a value; the fields filled |
-| S5 | 13-16 | Trend, seven days | The usual-range band and three days above it |
-| S6 | 16–18.5 | Status card | The suggestion, its probability and its basis |
-| S7 | 18.5–20 | Day 42, orange | Fever 38.5 °C, sore throat, flight surgeon |
-| S8 | 20-23 | Day 46, green | Both indicators back in her usual range |
+| S3 | 7–10 | Identify (`s3-identify.png`) | "Who is on duty today?" with the demo astronaut |
+| S4 | 10–13 | Report (`s4-entry.png`) | The values typed, 38.5 °C last |
+| S5 | 13–16 | Status, orbit view (`s5-status-orbit.png`) | Each reading against its usual range: "Needs review · consult" and "Outside your usual range" |
+| S6 | 16–18.5 | Evidence board (`s7-fever-evidence.png`) | Fever, evidence 0.75 of 1, the two signals, the ntrs.nasa.gov source |
+| S7 | 18.5–20 | Same board | "Ask your CMO or flight surgeon to check this" |
+| S8 | 20–23 | Status, list view again | The other readings in the usual range: the whole picture, not one number |
 | S9 | 23–26 | Vision card | Moon, Mars, base: three words, no illustration |
 | S10 | 26–30 | Five faces, one frame | The team, with the end card over the lower third |
 
-The shots follow the voice clause by clause: logging, comparing, suggesting,
-alerting. When the voice names an action, the screen shows it, not the screen
+The picture follows the voice clause by clause: logging, comparing, the evidence,
+who acts. When the voice names an action, the screen shows it, not the screen
 before it.
+
+S10 carries three things in four seconds: the faces, the name and the URL, and
+the rule. Two lines of text at most: `HeMoSo · {{DEMO_URL}}` and
+`HeMoSo suggests. Your CMO decides.` If the URL is long, move it to the vision
+card and leave the faces alone for the last four seconds.
 
 From 5 to 26 s the prototype carries a small corner label, `Prototype ·
 synthetic data`. It is true, it costs no words, and it answers the judge who
 wonders whether the fever belongs to a real person.
 
-S10 carries three things in four seconds: the faces, the name and the URL, and
-the rule. Keep it to two lines of text: `HeMoSo · {{DEMO_URL}}` and
-`HeMoSo suggests. Your CMO decides.` If the URL is long, move it to the vision
-card at 23–26 s and leave the faces alone for the last four seconds.
-
-The path through the app is the four moments of
-`team/bio1/notes/elena-demo-texts.md`: day 41, day 42, day 46. Day 22 is not
-needed in 30 s. Eng 2's Playwright test walks the same path.
-
-Record S0 and S10 in the same place, with the same light and the same order of
-people, in one sitting: they are the same shot, 26 seconds apart.
-
-## Name and tagline
-
-1. **HeMoSo: your usual range, watched every day.** The spoken line is "your
-   health, monitored against your own usual range", which says the same and fits
-   the five seconds.
-2. HeMoSo: see the change before the emergency. Stronger, and a claim that only
-   the day 41 screen supports.
-3. HeMoSo: health, followed from your own usual range. Longer, weaker verb.
+Record S0 and S10 in the same place, same light, same order of people, in one
+sitting: they are the same shot, 26 seconds apart.
 
 ## NASA data
 
 The guide asks how NASA's free and open data and partner data made the solution
-possible. The video answers with the voice ("built from NASA's open data") and
-with a caption in two lines: the exact resource and what we took from it. The
-name comes from Phys (`docs/nasa_data.md`, REQ-19). Until it is published the
-caption reads:
+possible. The video answers three times: the voice ("built from NASA's open
+data"), the source line inside the evidence board (`ntrs.nasa.gov`), and a
+caption from 13 to 20 s with two lines, the exact resource and what we took:
 
 ```
 {{NASA_RESOURCE}}
 {{WHAT_WE_TOOK}}
 ```
 
-It shows from 13 to 20 s, white on a dark strip, no logo, no mission patch. If
-Phys also uses a partner agency resource, the second line adds it:
-`{{PARTNER_RESOURCE}} — {{WHAT_WE_TOOK}}`. If not, the video does not mention
-partner data; the guide asks for what we used, not for a longer list.
+The name comes from Phys (`docs/nasa_data.md`, REQ-19). If Phys also uses a
+partner agency resource, the second line adds it; if not, the video does not
+mention partner data.
 
 ## Subtitles
 
@@ -150,21 +144,21 @@ Meet HeMoSo.
 
 4
 00:00:07,500 --> 00:00:10,000
-Your health, monitored
-against your own usual range.
+Your health, checked
+against your usual range.
 
 5
 00:00:10,000 --> 00:00:13,500
-She logs pulse, temperature, symptoms.
+She logs 38.5 °C and a fast pulse.
 
 6
 00:00:13,500 --> 00:00:16,500
 We compare them with her usual range
-and suggest possible causes.
+and show the evidence.
 
 7
 00:00:16,500 --> 00:00:20,000
-The CMO on board is alerted.
+She tells the CMO.
 Built from NASA's open data.
 
 8
@@ -182,39 +176,37 @@ Because exploring further means
 taking better care of those who explore.
 ```
 
-Rules: two lines at most, 42 characters per line, about 20 characters per second.
-White text with a black outline, bottom centre, one eighth of the height free of
-UI, never over the value it talks about. Subtitles are shorter than the voice on
-purpose: they carry the meaning for a muted judge, not a transcript. Cue 10 is
-the only one written exactly as spoken, because the closing line is the one the
-judge should remember word for word.
+Rules: two lines at most, 42 characters per line, about 20 characters per second,
+white with a black outline, bottom centre, one eighth of the height free of UI,
+never over the value it talks about. Subtitles carry the meaning for a muted
+judge, not a transcript. Cue 10 is the only one written exactly as spoken.
 
 ## Recording and export
 
+- Record from a local build, never from https://www.hemoso.space: "Save readings"
+  on the public site writes the staged fever into production and changes
+  `demo_astronaut_1` for every viewer (Eng 2's note, Sun 06:55).
+- The path is Eng 2's: `pnpm --dir frontend build`, `preview --port 4399`, then
+  `team/eng2/notes/t16_record.py`. It saves one WebM and one PNG per shot.
 - Voice: the five team members, English, one microphone, three takes of the
-  unison line. Small natural offsets are fine; a count-in is not, it gets cut.
-- V2 closes on camera. No hand movement, no nod at "explore".
-- Normalise to about −16 LUFS. A generated voice would need the visible watermark
-  and the disclosure (REQ-20), so use real voices.
-- Do not cut the audio track. The command in `docs/DEPLOY.md` §2 ends in `-an`,
-  which removes it; with a voice the export needs `-c:a aac -b:a 128k` instead.
-  That file is Eng 1's, so it has to change there before Sunday.
-- Silent fallback: the same cut with subtitles only. They are written to work
-  alone.
+  unison line. Normalise to about −16 LUFS.
+- `ffmpeg` is not installed on this machine; the cut, the subtitles and the
+  `ffprobe` check happen on Juli's. The export keeps the audio track: `-c:a aac
+  -b:a 128k`, not `-an`.
 - Target 29.5 s. `ffprobe` rounds and the guide sets a maximum.
 - H.264, `yuv420p`, 1280 × 800, no black frame at the start.
 - Check it on a phone, muted, once.
 
 ## What stays off screen
 
-- The full official challenge title: it takes six seconds to say. "Astronaut
-  health monitoring" names it.
-- The 3D body, the camera and the forecast models: each needs more than 4 s to be
-  understood and the product has ten. They stay out of the 30 seconds.
-- Accuracy figures, "detects", "diagnoses". The app suggests with a probability
-  and a basis, and the CMO confirms.
+- The full official challenge title: it takes six seconds to say.
+- The 3D body, the camera and the forecast models: each needs more than 4 s and
+  the product has ten. They belong in the slides.
+- Symptoms: the report screen does not have them yet (T-80).
+- Accuracy figures, "detects", "diagnoses". The board shows evidence and the CMO
+  decides.
 - Real faces, names or medical data of anyone outside the team, and any person
-  under 18. The demo persona is synthetic.
+  under 18. The demo astronaut is synthetic.
 - NASA logos, flags or mission identifiers, and nothing that suggests NASA built
   or endorses HeMoSo.
 
@@ -227,14 +219,17 @@ judge should remember word for word.
 | Subtitles burned in, English, readable muted | REQ-16, REQ-31 |
 | NASA resource named on screen with what we took from it | REQ-19 |
 | Public link opens in a private window, no login | REQ-31 |
-| Watermark and disclosure if any generated image, voice or clip is used | REQ-20 |
+| No generated voice or image without the watermark and the disclosure | REQ-20 |
 | No image, voice or likeness of a person under 18 | REQ-22 |
 
 ## Still open
 
-- The NASA resource and what we took: Phys (REQ-19). It is the one line the guide
-  asks for and we cannot write ourselves.
-- The probability and its basis on the day 41 card: Bio 2.
-- Screens 3 to 7 and the public URL: Eng 2, Sunday B4.
-- Who is V1 and who is V2: V1 knows the demo, V2 is the other voice and closes.
-  Photos and names only of team members who agree to appear.
+- The NASA resource and what we took: Phys (REQ-19).
+- Symptoms in the report: T-80, Eng 2. Until then the video does not mention them.
+- `ffmpeg`, the cut and the final `ffprobe`: Juli's machine.
+- Voices and faces for S0 and S10: the team, before the 9:00 block.
+- "Baseline" (the team's word since Sat 17:45) or "usual range" (the interface's
+  word): the video uses the interface's, because the judge reads it on screen. If
+  Bio 2 prefers one word everywhere, the subtitles change with it.
+- The demo astronaut's name: the video says "she", no name, so it holds even if
+  the persona changes.
