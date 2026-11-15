@@ -7,6 +7,12 @@ import { SESSION_STORAGE_KEY } from './data/session'
 import { STORAGE_KEY } from './data/storedState'
 import { strings } from './strings'
 
+// These tests render the whole app and wait for chunks that load on demand
+// (the overview, the history, the body). On a loaded machine one of them can
+// take longer than the default 5 s; the checks are about what arrives, not
+// how fast, so every test here is given 20 s.
+vi.setConfig({ testTimeout: 20_000 })
+
 const PERSON = 'demo_astronaut_1'
 const copy = strings.phases
 
@@ -94,14 +100,17 @@ describe('guided check', () => {
     // The history waits behind a closed disclosure.
     expect(screen.queryByText(/Your usual|Not enough earlier entries/)).toBeNull()
     await user.click(screen.getByRole('button', { name: copy.status.historyToggle }))
+    // The history is a chunk of its own. On a loaded machine its import can
+    // take several seconds, so the wait and the test are given room: the
+    // check is that it arrives, not how fast.
     expect(
       await screen.findByText(
         /Your usual|Not enough earlier entries/,
         {},
-        { timeout: 3000 },
+        { timeout: 12_000 },
       ),
     ).toBeInTheDocument()
-  })
+  }, 20_000)
 
   it('reads the stored history of every indicator for the chosen person', async () => {
     vi.stubEnv('VITE_API_BASE_URL', 'https://api.example.test')
