@@ -232,3 +232,33 @@ describe('readoutText', () => {
     )
   })
 })
+
+describe('TrendChart threshold labels', () => {
+  it('uses the short series name when there is one', () => {
+    const rule = { ...cited, attentionLevel: 'urgent' }
+    const { container } = renderChart([
+      single({ label: 'Systolic', shortLabel: 'Sys', rules: [rule] }),
+    ])
+    expect(container.querySelector('.tc__threshold-label')?.textContent).toBe('Sys: urgent')
+  })
+})
+
+describe('TrendChart axes', () => {
+  it('draws the 1 to 5 scale as 1 to 5 and keeps every Flight Day label inside the plot', () => {
+    const points = [
+      { entry: entry(1, '21:10', 4, { unit: '1 to 5' }), status: inRange },
+      { entry: entry(2, '21:10', 2, { unit: '1 to 5' }), status: inRange },
+      { entry: entry(3, '21:10', 3, { unit: '1 to 5' }), status: inRange },
+    ]
+    const { container } = renderChart([
+      single({ unit: '1 to 5', rules: [], points, band: { median: 3, spread: 0.5, low: 1.5, high: 4.5 } }),
+    ])
+    const ticks = [...container.querySelectorAll('.tc__tick')].map((n) => n.textContent)
+    expect(ticks).toEqual(expect.arrayContaining(['1', '2', '3', '4', '5']))
+    expect(ticks).not.toContain('0')
+    expect(ticks).not.toContain('10')
+    const first = container.querySelector('.tc__axis ~ g text.tc__tick[text-anchor="middle"]')
+    expect(first?.textContent).toBe('1')
+    expect(Number(first?.getAttribute('x'))).toBeGreaterThan(50)
+  })
+})

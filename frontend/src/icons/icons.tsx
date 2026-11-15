@@ -28,10 +28,13 @@ const SHAPES: Record<string, () => ReactNode> = {
     ...paths('M4 20h16', 'M3 3.5c4 0 4.5 12.5 9 12.5s5-12.5 9-12.5'),
     <circle key="c" cx="12" cy="15.5" r="1.4" fill="currentColor" />,
   ],
-  temp_core_c: () => paths('M10 14V5a2 2 0 0 1 4 0v9a4 4 0 1 1-4 0z', 'M12 10v6'),
+  // The stem is a little wider and the bulb a little larger, so the glyph holds
+  // its own next to the round ones at 16 px.
+  temp_core_c: () => paths('M9.5 14.2V5a2.5 2.5 0 0 1 5 0v9.2a4.6 4.6 0 1 1-5 0z', 'M12 9v8'),
   sleep_h: () => paths('M19 14.5A8 8 0 1 1 9.5 5a6.5 6.5 0 0 0 9.5 9.5z', 'M17 3v3M15.5 4.5h3', 'M21 9v2M20 10h2'),
   mood_1_5: () => [<circle key="c" cx="12" cy="12" r="9" />, ...paths('M9 9.5v1M15 9.5v1', 'M8.5 14.5q3.5 3 7 0')],
-  glucose_mgdl: () => paths('M12 3C8 8.5 6 11.5 6 15a6 6 0 0 0 12 0c0-3.5-2-6.5-6-12z'),
+  // A drop as tall as the other glyphs, so it does not read smaller than they do.
+  glucose_mgdl: () => paths('M12 2.5C7.5 8.5 5.5 11.6 5.5 15.2a6.5 6.5 0 0 0 13 0c0-3.6-2-6.7-6.5-12.7z'),
   // The reaction check (T-71): a stopwatch for the median time, three ticks
   // with one short for the lapses.
   reaction_median_ms: () => [
@@ -39,6 +42,15 @@ const SHAPES: Record<string, () => ReactNode> = {
     ...paths('M12 13.5V9', 'M9.5 2.5h5', 'M18.5 6.5l1.5 1.5'),
   ],
   reaction_lapses: () => paths('M6 5v14', 'M12 5v14', 'M18 5v6'),
+  // The three indicators added on Sun 15 Nov. A bowl with steam for appetite,
+  // a glass with its water line for fluid intake, a scale with its dial for
+  // body mass.
+  appetite_1_5: () => paths('M3.5 12h17a8.5 8.5 0 0 1-17 0z', 'M9 4.5c-1 1.2 1 2 0 3.5', 'M14 4.5c-1 1.2 1 2 0 3.5'),
+  fluid_intake_ml: () => paths('M6.5 3.5h11l-1.6 17h-7.8z', 'M7.3 11.5h9.4'),
+  body_mass_kg: () => [
+    <rect key="r" x="3.5" y="4.5" width="17" height="15" rx="3" />,
+    ...paths('M8 11a4 4 0 0 1 8 0', 'M12 11l1.8-2.4'),
+  ],
 };
 
 const STATUS: Record<StatusKind, () => ReactNode> = {

@@ -40,6 +40,9 @@ or wait for T-80.
 
 ## How to record
 
+The public demo is https://www.hemoso.space (no login, connected to the production API). Record the prototype shots from a local build, not from that link: "Save readings" on the public site sends the staged fever to production and changes the history of `demo_astronaut_1` for every viewer.
+
+
 ```bash
 pnpm --dir frontend build
 pnpm --dir frontend preview --port 4399
@@ -56,6 +59,5 @@ every build).
 | --- | --- |
 | The shot map above accepted or changed | Bio 1 |
 | `ffmpeg` on the recording machine (cut, subtitles, audio, `ffprobe` for 30 s) | Juli |
-| The public link serving `main`: https://hemoso.vercel.app shows only the title and the synthetic notice (Sun 06:30) | Wambi (T-13) |
 | The NASA resource line for the caption | Phys (REQ-19) |
 | Voices and faces for S0 and S10 | The team |

@@ -1,0 +1,466 @@
+{
+  "rule": "baseline_window",
+  "source": "docs/findings/phys-02-baseline-state-rule.md, section \"Window test vectors\" (Phys, Sun 15 Nov): the seven cases of that table, with each history written out. The window is the last 14 mission days that hold a reading before the tested one (an earlier mission day, or the same day at an earlier time); a day counts once as the mean of its readings; median and spread (max(1.4826 x MAD, min_spread)) over those daily values; fewer than 3 days is no_data; a value more than 3 spreads from the median is outside_range. Every reading is in one context and no attention row applies.",
+  "notes": "`spread` is rounded to 4 decimals; compare with the unrounded value. In 'the tested reading left out' the history holds the tested reading itself (day 15, 07:30); it must not enter its own window.",
+  "cases": [
+    {
+      "name": "one day with several readings",
+      "input": {
+        "indicator_id": "glucose_mgdl",
+        "min_spread": 8,
+        "history": [
+          {
+            "mission_day": 1,
+            "time": "07:30",
+            "value": 120
+          },
+          {
+            "mission_day": 1,
+            "time": "13:00",
+            "value": 120
+          },
+          {
+            "mission_day": 1,
+            "time": "20:00",
+            "value": 120
+          },
+          {
+            "mission_day": 2,
+            "time": "07:30",
+            "value": 100
+          },
+          {
+            "mission_day": 3,
+            "time": "07:30",
+            "value": 100
+          }
+        ],
+        "test": {
+          "mission_day": 4,
+          "time": "07:30",
+          "value": 125
+        }
+      },
+      "expected": {
+        "daily_values": [
+          120.0,
+          100.0,
+          100.0
+        ],
+        "median": 100.0,
+        "spread": 8,
+        "n": 3,
+        "state": "outside_range"
+      }
+    },
+    {
+      "name": "gap between days",
+      "input": {
+        "indicator_id": "glucose_mgdl",
+        "min_spread": 8,
+        "history": [
+          {
+            "mission_day": 1,
+            "time": "07:30",
+            "value": 100
+          },
+          {
+            "mission_day": 2,
+            "time": "07:30",
+            "value": 96
+          },
+          {
+            "mission_day": 3,
+            "time": "07:30",
+            "value": 104
+          },
+          {
+            "mission_day": 10,
+            "time": "07:30",
+            "value": 100
+          },
+          {
+            "mission_day": 11,
+            "time": "07:30",
+            "value": 104
+          }
+        ],
+        "test": {
+          "mission_day": 12,
+          "time": "07:30",
+          "value": 118
+        }
+      },
+      "expected": {
+        "daily_values": [
+          100.0,
+          96.0,
+          104.0,
+          100.0,
+          104.0
+        ],
+        "median": 100.0,
+        "spread": 8,
+        "n": 5,
+        "state": "in_range"
+      }
+    },
+    {
+      "name": "more than 14 days, the oldest drop",
+      "input": {
+        "indicator_id": "hr_bpm",
+        "min_spread": 4,
+        "history": [
+          {
+            "mission_day": 1,
+            "time": "07:30",
+            "value": 60
+          },
+          {
+            "mission_day": 2,
+            "time": "07:30",
+            "value": 62
+          },
+          {
+            "mission_day": 3,
+            "time": "07:30",
+            "value": 60
+          },
+          {
+            "mission_day": 4,
+            "time": "07:30",
+            "value": 61
+          },
+          {
+            "mission_day": 5,
+            "time": "07:30",
+            "value": 70
+          },
+          {
+            "mission_day": 6,
+            "time": "07:30",
+            "value": 72
+          },
+          {
+            "mission_day": 7,
+            "time": "07:30",
+            "value": 74
+          },
+          {
+            "mission_day": 8,
+            "time": "07:30",
+            "value": 76
+          },
+          {
+            "mission_day": 9,
+            "time": "07:30",
+            "value": 78
+          },
+          {
+            "mission_day": 10,
+            "time": "07:30",
+            "value": 80
+          },
+          {
+            "mission_day": 11,
+            "time": "07:30",
+            "value": 82
+          },
+          {
+            "mission_day": 12,
+            "time": "07:30",
+            "value": 84
+          },
+          {
+            "mission_day": 13,
+            "time": "07:30",
+            "value": 86
+          },
+          {
+            "mission_day": 14,
+            "time": "07:30",
+            "value": 88
+          },
+          {
+            "mission_day": 15,
+            "time": "07:30",
+            "value": 90
+          },
+          {
+            "mission_day": 16,
+            "time": "07:30",
+            "value": 92
+          },
+          {
+            "mission_day": 17,
+            "time": "07:30",
+            "value": 94
+          },
+          {
+            "mission_day": 18,
+            "time": "07:30",
+            "value": 96
+          }
+        ],
+        "test": {
+          "mission_day": 19,
+          "time": "07:30",
+          "value": 45
+        }
+      },
+      "expected": {
+        "daily_values": [
+          70.0,
+          72.0,
+          74.0,
+          76.0,
+          78.0,
+          80.0,
+          82.0,
+          84.0,
+          86.0,
+          88.0,
+          90.0,
+          92.0,
+          94.0,
+          96.0
+        ],
+        "median": 83.0,
+        "spread": 10.3782,
+        "n": 14,
+        "state": "outside_range"
+      }
+    },
+    {
+      "name": "fewer than 3 days",
+      "input": {
+        "indicator_id": "glucose_mgdl",
+        "min_spread": 8,
+        "history": [
+          {
+            "mission_day": 1,
+            "time": "07:30",
+            "value": 100
+          },
+          {
+            "mission_day": 2,
+            "time": "07:30",
+            "value": 100
+          }
+        ],
+        "test": {
+          "mission_day": 3,
+          "time": "07:30",
+          "value": 150
+        }
+      },
+      "expected": {
+        "daily_values": [
+          100.0,
+          100.0
+        ],
+        "median": null,
+        "spread": null,
+        "n": 2,
+        "state": "no_data"
+      }
+    },
+    {
+      "name": "the tested reading left out",
+      "input": {
+        "indicator_id": "hr_bpm",
+        "min_spread": 4,
+        "history": [
+          {
+            "mission_day": 1,
+            "time": "07:30",
+            "value": 70
+          },
+          {
+            "mission_day": 2,
+            "time": "07:30",
+            "value": 72
+          },
+          {
+            "mission_day": 3,
+            "time": "07:30",
+            "value": 74
+          },
+          {
+            "mission_day": 4,
+            "time": "07:30",
+            "value": 76
+          },
+          {
+            "mission_day": 5,
+            "time": "07:30",
+            "value": 78
+          },
+          {
+            "mission_day": 6,
+            "time": "07:30",
+            "value": 80
+          },
+          {
+            "mission_day": 7,
+            "time": "07:30",
+            "value": 82
+          },
+          {
+            "mission_day": 8,
+            "time": "07:30",
+            "value": 84
+          },
+          {
+            "mission_day": 9,
+            "time": "07:30",
+            "value": 86
+          },
+          {
+            "mission_day": 10,
+            "time": "07:30",
+            "value": 88
+          },
+          {
+            "mission_day": 11,
+            "time": "07:30",
+            "value": 90
+          },
+          {
+            "mission_day": 12,
+            "time": "07:30",
+            "value": 92
+          },
+          {
+            "mission_day": 13,
+            "time": "07:30",
+            "value": 94
+          },
+          {
+            "mission_day": 14,
+            "time": "07:30",
+            "value": 96
+          },
+          {
+            "mission_day": 15,
+            "time": "07:30",
+            "value": 115
+          }
+        ],
+        "test": {
+          "mission_day": 15,
+          "time": "07:30",
+          "value": 115
+        }
+      },
+      "expected": {
+        "daily_values": [
+          70.0,
+          72.0,
+          74.0,
+          76.0,
+          78.0,
+          80.0,
+          82.0,
+          84.0,
+          86.0,
+          88.0,
+          90.0,
+          92.0,
+          94.0,
+          96.0
+        ],
+        "median": 83.0,
+        "spread": 10.3782,
+        "n": 14,
+        "state": "outside_range"
+      }
+    },
+    {
+      "name": "the min_spread floor",
+      "input": {
+        "indicator_id": "glucose_mgdl",
+        "min_spread": 8,
+        "history": [
+          {
+            "mission_day": 1,
+            "time": "07:30",
+            "value": 96
+          },
+          {
+            "mission_day": 2,
+            "time": "07:30",
+            "value": 100
+          },
+          {
+            "mission_day": 3,
+            "time": "07:30",
+            "value": 104
+          },
+          {
+            "mission_day": 4,
+            "time": "07:30",
+            "value": 100
+          }
+        ],
+        "test": {
+          "mission_day": 5,
+          "time": "07:30",
+          "value": 110
+        }
+      },
+      "expected": {
+        "daily_values": [
+          96.0,
+          100.0,
+          104.0,
+          100.0
+        ],
+        "median": 100.0,
+        "spread": 8,
+        "n": 4,
+        "state": "in_range"
+      }
+    },
+    {
+      "name": "three days, wide MAD",
+      "input": {
+        "indicator_id": "hr_bpm",
+        "min_spread": 4,
+        "history": [
+          {
+            "mission_day": 1,
+            "time": "07:30",
+            "value": 70
+          },
+          {
+            "mission_day": 2,
+            "time": "07:30",
+            "value": 80
+          },
+          {
+            "mission_day": 3,
+            "time": "07:30",
+            "value": 100
+          }
+        ],
+        "test": {
+          "mission_day": 4,
+          "time": "07:30",
+          "value": 125
+        }
+      },
+      "expected": {
+        "daily_values": [
+          70.0,
+          80.0,
+          100.0
+        ],
+        "median": 80.0,
+        "spread": 14.826,
+        "n": 3,
+        "state": "outside_range"
+      }
+    }
+  ]
+}

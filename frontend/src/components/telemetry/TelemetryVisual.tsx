@@ -181,6 +181,82 @@ function Steps({ value }: { value: number | null }) {
   )
 }
 
+// The water drunk: a glass that fills from the bottom to the value, with a mark
+// every litre on its side. The bounds are a drawing scale, not an amount that
+// means anything.
+function Glass({ value }: { value: number | null }) {
+  const f = value === null ? 0 : fraction('fluid_intake_ml', value)
+  const top = 6
+  const bottom = 58
+  const height = bottom - top
+  const d = `M80 ${top}H120L114 ${bottom}H86Z`
+  return (
+    <>
+      <clipPath id="tele-glass-clip">
+        <path d={d} />
+      </clipPath>
+      <path className="tele-track" d={d} />
+      <g clipPath="url(#tele-glass-clip)">
+        <rect
+          className="tele-fill"
+          x="78"
+          y={top}
+          width="44"
+          height={height}
+          style={{ transform: `scaleY(${f})`, transformOrigin: `100px ${bottom}px` }}
+        />
+      </g>
+      {[1, 2, 3].map((litre) => (
+        <path
+          key={litre}
+          className="tele-tick"
+          d={`M126 ${bottom - (litre * height) / 4}h8`}
+        />
+      ))}
+      <text className="tele-tag" x="140" y={bottom + 2}>
+        0
+      </text>
+      <text className="tele-tag" x="140" y={top + 8}>
+        4 L
+      </text>
+    </>
+  )
+}
+
+// The body mass as the dial of a scale: ticks along a half circle, one needle,
+// and the figure of the readout under it. Same bounds idea as the pressure
+// gauge: a place on the dial, not a verdict.
+function ScaleDial({ value }: { value: number | null }) {
+  const f = value === null ? 0 : fraction('body_mass_kg', value)
+  const angle = -90 + f * 180
+  const ticks = Array.from({ length: 11 }, (_, i) => -90 + i * 18)
+  return (
+    <g transform="translate(100 54)">
+      {ticks.map((a, i) => (
+        <path
+          key={a}
+          className="tele-tick"
+          d={i % 5 === 0 ? 'M0 -44V-36' : 'M0 -42V-38'}
+          transform={`rotate(${a})`}
+        />
+      ))}
+      <path className="tele-track tele-track--ring" d="M-34 0A34 34 0 0 1 34 0" />
+      {value !== null && (
+        <g className="tele-marker-rot" style={{ transform: `rotate(${angle}deg)` }}>
+          <path className="tele-line tele-line--marker" d="M0 0V-32" />
+        </g>
+      )}
+      <circle className="tele-dot" r="3.5" />
+      <text className="tele-tag" x="-66" y="2">
+        40
+      </text>
+      <text className="tele-tag tele-tag--end" x="66" y="2">
+        140 kg
+      </text>
+    </g>
+  )
+}
+
 /** The figures made of lines only, which can stretch without distortion. */
 const STRETCHED = new Set(['hr_bpm', 'glucose_mgdl'])
 
@@ -196,7 +272,13 @@ function figure(kind: string, values: (number | null)[]): ReactElement {
     case 'sleep_h':
       return <Hours value={first} />
     case 'mood_1_5':
+    case 'appetite_1_5':
+      // Appetite is a 1 to 5 self-rating like mood, so it draws the same steps.
       return <Steps value={first} />
+    case 'fluid_intake_ml':
+      return <Glass value={first} />
+    case 'body_mass_kg':
+      return <ScaleDial value={first} />
     default:
       return <Level id={kind} value={first} />
   }

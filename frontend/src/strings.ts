@@ -131,6 +131,7 @@ export const strings = {
       sleep: 'Sleep',
       neuro: 'Brain and behaviour',
       metabolic: 'Metabolism',
+      musculoskeletal: 'Muscles and bones',
     },
     // The limit a needs-review card was triggered by, then where it comes from.
     limitCrossed: (side: 'above' | 'below', threshold: number, unit: string): string =>
@@ -349,6 +350,9 @@ export const strings = {
       markLegend: 'Marks',
       pickReading: 'Select a reading to see it here.',
       newest: 'Newest reading',
+      // Short series names for the threshold lines of a blood pressure chart.
+      systolicShort: 'Sys',
+      diastolicShort: 'Dia',
       readout: (parts: {
         series: string | null
         value: string

@@ -18,6 +18,49 @@ describe('TelemetryVisual', () => {
     },
   )
 
+  it('draws appetite as the same five steps as mood, lit up to the rating', () => {
+    const lit = (kind: string, value: number | null) =>
+      Array.from(
+        render(<TelemetryVisual kind={kind} values={[value]} />).container.querySelectorAll('.tele-fill'),
+      ).map((el) => (el as SVGElement).style.opacity)
+    expect(lit('appetite_1_5', 3)).toEqual(lit('mood_1_5', 3))
+    expect(lit('appetite_1_5', 3)).toEqual(['0.45', '0.45', '1', '0', '0'])
+    expect(lit('appetite_1_5', null)).toEqual(['0', '0', '0', '0', '0'])
+  })
+
+  it('fills the glass of fluid intake with the volume, within drawing bounds', () => {
+    const level = (value: number | null) =>
+      (render(<TelemetryVisual kind="fluid_intake_ml" values={[value]} />).container.querySelector(
+        '.tele-fill',
+      ) as SVGElement).style.transform
+    expect(level(null)).toBe('scaleY(0)')
+    expect(level(2000)).toBe('scaleY(0.5)')
+    // Past the bound it is drawn at the bound, never as a verdict.
+    expect(level(9000)).toBe('scaleY(1)')
+    expect(level(-5)).toBe('scaleY(0)')
+  })
+
+  it('turns the needle of the body scale with the mass and clamps at the bounds', () => {
+    const angle = (value: number | null) =>
+      (render(<TelemetryVisual kind="body_mass_kg" values={[value]} />).container.querySelector(
+        '.tele-marker-rot',
+      ) as SVGElement | null)?.style.transform
+    expect(angle(null)).toBeUndefined()
+    expect(angle(90)).toBe('rotate(0deg)')
+    expect(angle(40)).toBe('rotate(-90deg)')
+    expect(angle(500)).toBe('rotate(90deg)')
+  })
+
+  it.each(['appetite_1_5', 'fluid_intake_ml', 'body_mass_kg'])(
+    'hides the %s figure from assistive technology and writes no reading in it',
+    (kind) => {
+      const { container } = render(<TelemetryVisual kind={kind} values={[3]} />)
+      const figure = container.querySelector(`[data-telemetry="${kind}"]`)
+      expect(figure).toHaveAttribute('aria-hidden', 'true')
+      expect(figure).toHaveClass('tele--live')
+    },
+  )
+
   it('shows an idle trace with no value and a moving one with a heart rate', () => {
     const idle = render(<TelemetryVisual kind="hr_bpm" values={[null]} />)
     expect(idle.container.querySelector('.tele-sweep')).toBeNull()
