@@ -2,6 +2,7 @@ import {
   lazy,
   Suspense,
   useCallback,
+  useRef,
   useState,
   type RefObject,
 } from 'react'
@@ -64,6 +65,27 @@ export default function StatusPhase({
   // and re-read when the account's start arrives.
   const clock = missionClockFor(entries, personId, useMissionStart(personId))
   const [painOpen, setPainOpen] = useState(false)
+  // A place tapped on the body in the orbits: the picker marks it. The count
+  // makes a second tap on the same place a new request.
+  const [pick, setPick] = useState<{ regionId: string; count: number } | null>(null)
+  const painRef = useRef<HTMLDivElement>(null)
+  // From the body in the orbits or the button under it: open the picker, mark
+  // the place when there is one, and bring the picker into view.
+  const reportPain = useCallback(
+    (regionId?: string) => {
+      setPainOpen(true)
+      if (regionId !== undefined) {
+        setPick((last) => ({ regionId, count: (last?.count ?? 0) + 1 }))
+      }
+      requestAnimationFrame(() => {
+        painRef.current?.scrollIntoView?.({
+          block: 'start',
+          behavior: motionReduced ? 'auto' : 'smooth',
+        })
+      })
+    },
+    [motionReduced],
+  )
   // The indicator the card shows; the History panel follows it.
   const [selectedId, setSelectedId] = useState<string | null>(null)
   // A signal of a possible condition opens the card of its indicator: the same
@@ -111,6 +133,7 @@ export default function StatusPhase({
           motionReduced={motionReduced}
           selectedId={selectedId}
           onSelect={setSelectedId}
+          onReportPain={reportPain}
         />
         <PossibleConditions
           personId={personId}
@@ -136,13 +159,16 @@ export default function StatusPhase({
         </div>
       </div>
 
-      <div className="pain">
+      <div className="pain" ref={painRef}>
         <button
           type="button"
           className="button button--secondary"
           aria-expanded={painOpen}
           aria-controls="pain-panel"
-          onClick={() => setPainOpen((open) => !open)}
+          onClick={() => {
+            setPick(null)
+            setPainOpen((open) => !open)
+          }}
         >
           {painOpen ? injuryWords.close : injuryWords.open}
         </button>
@@ -155,6 +181,7 @@ export default function StatusPhase({
                 time={clock.time}
                 reducedMotion={motionReduced}
                 onSaved={refreshReports}
+                pick={pick ?? undefined}
               />
             </Suspense>
           </div>

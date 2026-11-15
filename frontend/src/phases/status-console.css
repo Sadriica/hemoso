@@ -270,15 +270,9 @@
   color: var(--status-attention-text);
 }
 
-/* Round of Sun 07:00. The top of the orbit stage is empty down to its first
-   row of indicators: pulled up under the strip, the orbits and the card start
-   higher. The stage keeps its size and every tag stays inside it. Only from
-   1100 px: under that the strip wraps to a second row and needs the room. */
-@media (min-width: 1100px) {
-  .phase--status .status-panel .planetarium__stage {
-    margin-top: calc(var(--space-6) * -1);
-  }
-}
+/* Round of Sun 07:00 pulled the stage up under the strip. The first row of
+   indicators now starts at a tenth of a taller stage, so the stage sits where
+   the flow puts it. */
 
 /* Round of Sun 07:10. A baseline that is still being built: three marks, one
    per reading it needs, filled as they arrive. */
@@ -423,15 +417,11 @@
   z-index: 0;
 }
 
-/* Review of Sun 09:40, point 2. On a 900 px tall screen the phase rail cut
-   through the body and hid the lower indicators. From 1100 px the stage is
-   flatter (16 to 7 instead of 16 to 10) and the blocks above it sit closer,
-   so every indicator of the overview is above the rail on the first screen. */
+/* Review of Sun 09:40, point 2, reversed on Sun 15 Nov for the PC view: the
+   flat 16 to 7 stage packed twelve tags and a small body into two columns. The
+   stage keeps 16 to 10 at every wide width, so the body is large and every row
+   has room; the blocks above it still sit closer from 1100 px. */
 @media (min-width: 1100px) {
-  .phase--status .planetarium {
-    --planet-stage-ratio: 16 / 7;
-  }
-
   .phase--status {
     gap: var(--space-3);
   }
