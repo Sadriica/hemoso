@@ -17,9 +17,16 @@
   border: 0;
 }
 
+/* One declaration: the technical grid of styles.css and the cold glow, so the
+   glow does not replace the grid and leave blocks in the side gutters. */
 body {
   background-color: var(--color-bg);
-  background-image: radial-gradient(120% 80% at 80% -10%, rgb(37 99 235 / 18%), transparent 60%);
+  background-image:
+    radial-gradient(120% 80% at 80% -10%, color-mix(in srgb, var(--color-interactive) 12%, transparent), transparent 60%),
+    linear-gradient(to right, var(--color-grid) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--color-grid) 1px, transparent 1px);
+  background-size: 100% 100%, 40px 40px, 40px 40px;
+  background-repeat: no-repeat, repeat, repeat;
 }
 
 .app {
@@ -44,14 +51,14 @@ body {
   inset: 0;
   width: 100%;
   height: 100%;
-  opacity: 0.75;
+  opacity: 0.6;
 }
 
 .cinema__glow {
   position: absolute;
   inset: auto -20% -40% -20%;
   height: 70%;
-  background: radial-gradient(closest-side, rgb(169 214 255 / 10%), transparent);
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--color-accent) 10%, transparent), transparent);
 }
 
 .cinema__vignette {
@@ -71,6 +78,7 @@ html {
   top: var(--space-2);
   left: var(--space-2);
   z-index: 20;
+  min-height: var(--tap-min);
   padding: var(--space-2) var(--space-3);
   background: var(--color-interactive);
   color: var(--color-on-interactive);
@@ -86,25 +94,41 @@ html {
   transform: none;
 }
 
-/* Top bar: mark and name, mission metadata, the motion switch; the synthetic
-   data sentence and the sync facts under them. A hairline closes it. */
+/* Top bar: mark, name and the motion switch; one mono telemetry line from
+   real data; the synthetic data sentence and the sync facts. It sits on the
+   raised band, never on the stars (DESIGN.md 6, 8). */
 .topbar {
-  padding: var(--space-3) var(--space-6) var(--space-2);
-  border-bottom: 1px solid rgb(83 98 115 / 55%);
+  padding: var(--space-2) var(--space-6);
+  border-bottom: var(--border-subtle);
+  background: var(--color-bg-raised);
 }
 
 .topbar__row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-2) var(--space-4);
+  gap: var(--space-1) var(--space-4);
   max-width: var(--container-width);
   margin: 0 auto;
 }
 
+.topbar__row:first-child {
+  flex-wrap: nowrap;
+  justify-content: space-between;
+}
+
+.topbar__row--meta {
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
 .topbar__row--facts {
   justify-content: space-between;
-  margin-top: var(--space-2);
+  gap: var(--space-1) var(--space-4);
 }
 
 .identity {
@@ -115,40 +139,19 @@ html {
 }
 
 .identity__mark {
-  width: 34px;
-  height: 34px;
+  width: 28px;
+  height: 28px;
   fill: none;
   stroke: var(--color-accent);
   stroke-width: 1.5;
 }
 
 .identity__name {
-  display: flex;
-  flex-direction: column;
   font-family: var(--font-display);
   font-size: var(--text-h2);
   font-weight: 700;
-  letter-spacing: 0.08em;
-  line-height: 1;
-}
-
-.identity__name small {
-  margin-top: 4px;
-  color: var(--color-text-muted);
-  font-family: var(--font-mono);
-  font-size: var(--text-label);
-  font-weight: 500;
-  letter-spacing: 0.2em;
-}
-
-.topbar__meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2) var(--space-4);
-  color: var(--color-text-muted);
-  font-family: var(--font-mono);
-  font-size: var(--text-label);
-  letter-spacing: var(--tracking-label);
+  letter-spacing: var(--tracking-display);
+  line-height: var(--leading-h2);
   text-transform: uppercase;
 }
 
@@ -162,7 +165,7 @@ html {
 .topbar__duty i {
   width: 6px;
   height: 6px;
-  border-radius: 50%;
+  border-radius: var(--radius-round);
   background: var(--status-in-range-text);
 }
 
@@ -232,14 +235,15 @@ html {
   background: currentcolor;
 }
 
-/* Headline: short, uppercase, stacked lines; the middle line in the accent. */
+/* Headline: the one big line of a phase, uppercase condensed, two or three
+   lines; the middle line in the accent (DESIGN.md 4.2 hero, 12). */
 .headline {
   margin: var(--space-3) 0 0;
   font-family: var(--font-display);
-  font-size: clamp(44px, 7.5vw, 104px);
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: 0.92;
+  font-size: var(--text-hero);
+  font-weight: 700;
+  letter-spacing: var(--tracking-display);
+  line-height: var(--leading-hero);
   text-transform: uppercase;
 }
 
@@ -254,7 +258,7 @@ html {
 
 .headline__line {
   display: block;
-  animation: headline-rise 700ms cubic-bezier(0.2, 0.7, 0.1, 1) both;
+  animation: headline-rise var(--motion-slow) var(--ease-standard) both;
 }
 
 .headline__line:nth-child(2) {
@@ -271,6 +275,15 @@ html {
     opacity: 1;
     transform: none;
   }
+}
+
+/* Text never sits on the stars: the headline block has a solid page colour
+   (DESIGN.md 6). */
+.phase-heading {
+  width: fit-content;
+  max-width: 100%;
+  padding: var(--space-3) var(--space-4) var(--space-3) 0;
+  background: var(--color-bg);
 }
 
 .phase-heading__intro {
@@ -292,7 +305,7 @@ html {
   padding: 0 var(--space-4);
   border: 1px solid var(--color-border-control);
   border-radius: var(--radius-small);
-  background: rgb(8 11 18 / 40%);
+  background: color-mix(in srgb, var(--color-bg) 40%, transparent);
   color: var(--color-text);
   font-family: var(--font-mono);
   font-size: var(--text-small);
@@ -301,9 +314,9 @@ html {
   text-transform: uppercase;
   cursor: pointer;
   transition:
-    border-color 200ms ease-out,
-    background-color 200ms ease-out,
-    transform 200ms ease-out;
+    border-color var(--motion-base) var(--ease-out),
+    background-color var(--motion-base) var(--ease-out),
+    transform var(--motion-base) var(--ease-out);
 }
 
 .journey-button:hover {
@@ -318,7 +331,7 @@ html {
 }
 
 .journey-button__arrow {
-  font-size: 18px;
+  font-size: var(--text-body-l);
   letter-spacing: 0;
 }
 
@@ -349,7 +362,7 @@ html {
   justify-content: space-between;
   gap: var(--space-3);
   padding-top: var(--space-4);
-  border-top: 1px solid rgb(83 98 115 / 45%);
+  border-top: 1px solid color-mix(in srgb, var(--color-border) 45%, transparent);
 }
 
 /* Phase 1: the face, then the crew list, then the way on. */
@@ -402,7 +415,7 @@ html {
   padding: 0 var(--space-3);
   border: 1px solid var(--color-border-control);
   border-radius: var(--radius-card);
-  background: rgb(24 35 51 / 70%);
+  background: color-mix(in srgb, var(--color-surface) 70%, transparent);
   cursor: pointer;
 }
 
@@ -419,7 +432,7 @@ html {
   width: 14px;
   height: 14px;
   border: 1px solid var(--color-text-muted);
-  border-radius: 50%;
+  border-radius: var(--radius-round);
 }
 
 /* A person id is shown as it is written: never transformed. */
@@ -432,7 +445,7 @@ html {
 
 .crew-option:has(input:checked) {
   border-color: var(--color-accent);
-  background: rgb(169 214 255 / 8%);
+  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
 }
 
 .crew-option:has(input:checked) .crew-option__mark {
@@ -453,9 +466,9 @@ html {
 .report__panel {
   max-width: 640px;
   padding: var(--space-5);
-  border: 1px solid rgb(83 98 115 / 70%);
+  border: 1px solid color-mix(in srgb, var(--color-border) 70%, transparent);
   border-radius: var(--radius-card);
-  background: rgb(16 24 39 / 88%);
+  background: color-mix(in srgb, var(--color-bg-raised) 88%, transparent);
 }
 
 .report__count {
@@ -474,7 +487,7 @@ html {
 
 .status__history {
   padding-top: var(--space-5);
-  border-top: 1px solid rgb(83 98 115 / 45%);
+  border-top: 1px solid color-mix(in srgb, var(--color-border) 45%, transparent);
 }
 
 /* The route rail: three steps on a track, the current one lit. Progress, not
@@ -483,22 +496,22 @@ html {
   position: sticky;
   bottom: 0;
   z-index: 5;
-  padding: var(--space-3) var(--space-6) var(--space-4);
-  border-top: 1px solid rgb(83 98 115 / 55%);
-  background: linear-gradient(to top, rgb(5 9 14 / 96%), rgb(5 9 14 / 82%));
+  padding: var(--space-2) var(--space-6) var(--space-2);
+  border-top: var(--border-subtle);
+  background: var(--color-bg-raised);
 }
 
 .phase-rail__track {
   max-width: var(--container-width);
   height: 2px;
   margin: 0 auto var(--space-3);
-  background: rgb(83 98 115 / 50%);
+  background: color-mix(in srgb, var(--color-border) 50%, transparent);
 }
 
 .phase-rail__progress {
   height: 100%;
   background: var(--color-accent);
-  transition: width 400ms ease-out;
+  transition: width var(--motion-slow) var(--ease-out);
 }
 
 .phase-rail__steps {
@@ -525,33 +538,40 @@ html {
   font-weight: 500;
 }
 
-.phase-rail__step--current {
-  color: var(--color-text);
-}
-
+.phase-rail__step--current,
 .phase-rail__step--current b {
   color: var(--color-accent);
 }
 
+.phase-rail__step--done {
+  color: var(--color-text);
+}
+
+.phase-rail__next {
+  max-width: var(--container-width);
+  margin: var(--space-1) auto 0;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
 /* Light theme: the same layout on light surfaces, no stars or grain. */
 @media (prefers-color-scheme: light) {
-  .cinema__stars {
+  /* No stars, glow or blue wash behind the text on the light theme. */
+  body {
+    background-image: none;
+  }
+
+  .cinema {
     display: none;
   }
 
-  .cinema__vignette {
-    background: none;
-  }
-
-  .topbar,
-  .phase-rail,
   .phase__actions,
   .status__history {
     border-color: var(--color-border);
-  }
-
-  .phase-rail {
-    background: rgb(244 246 249 / 96%);
   }
 
   .journey-button,
@@ -567,8 +587,14 @@ html {
 
 /* Phone: one column, smaller margins, full-width buttons. */
 @media (max-width: 599px) {
+  /* The hero steps down to 44 / 42 under 600 px (DESIGN.md 4.2). */
+  .headline {
+    --text-hero: 44px;
+    --leading-hero: 42px;
+  }
+
   .topbar {
-    padding: var(--space-3) var(--space-3) var(--space-2);
+    padding: var(--space-1) var(--space-3) var(--space-2);
   }
 
   .stage {
@@ -598,6 +624,9 @@ html {
 @media (prefers-reduced-motion: reduce) {
   .headline__line,
   .journey-button,
+  .button,
+  .disclosure__toggle,
+  .disclosure__chevron,
   .phase-rail__progress {
     animation: none;
     transition: none;
@@ -606,7 +635,91 @@ html {
 
 .app--still .headline__line,
 .app--still .journey-button,
+.app--still .button,
+.app--still .disclosure__toggle,
+.app--still .disclosure__chevron,
 .app--still .phase-rail__progress {
   animation: none;
   transition: none;
+}
+
+/* Status board: the planetarium (or its list) with the lit body zone beside
+   it on wide screens; the cards come right after. */
+.board {
+  display: grid;
+  gap: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+.board__orbit {
+  min-width: 0;
+  min-height: 320px;
+}
+
+.board__loading {
+  padding: var(--space-3);
+  border: var(--border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+/* The selected card, with the body zone beside it on wide screens. */
+.detail {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.detail__body {
+  display: none;
+}
+
+.board__body-slot {
+  width: 200px;
+  height: 440px;
+}
+
+@media (min-width: 900px) {
+  .detail {
+    grid-template-columns: minmax(0, 1fr) 240px;
+    align-items: start;
+  }
+
+  .detail__body {
+    display: block;
+    padding: var(--space-3);
+    border: var(--border-subtle);
+    border-radius: var(--radius-card);
+    background: var(--color-surface);
+  }
+
+  .detail__body svg {
+    display: block;
+    width: 100%;
+    max-height: 440px;
+  }
+}
+
+/* The figure of a card sits beside its value, in a box of its final size. */
+.instrument-slot {
+  display: inline-block;
+  width: 96px;
+  height: 96px;
+}
+
+/* One card at a time: it takes the full width of its column. */
+.detail .indicator-list {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* Same size as the intro layer, so nothing shows under it while it loads. */
+.intro-cover {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: var(--color-bg);
 }

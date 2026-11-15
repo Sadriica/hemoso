@@ -26,3 +26,23 @@ describe('Notice', () => {
     expect(container.querySelector('.notice--warning')).not.toBeNull()
   })
 })
+
+describe('Notice states', () => {
+  it('shows its one action next to the words', () => {
+    render(
+      <Notice tone="review" action={<button type="button">Do it</button>}>
+        Example note.
+      </Notice>,
+    )
+    expect(screen.getByRole('button', { name: 'Do it' })).toBeInTheDocument()
+  })
+
+  it('draws the review tone with its own class and a hidden icon', () => {
+    const { container } = render(<Notice tone="review">Example note.</Notice>)
+    expect(container.querySelector('.notice--review')).not.toBeNull()
+    expect(container.querySelector('.notice__icon svg')).toHaveAttribute(
+      'aria-hidden',
+      'true',
+    )
+  })
+})

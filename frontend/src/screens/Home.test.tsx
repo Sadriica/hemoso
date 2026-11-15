@@ -99,6 +99,14 @@ function answer(status: number, body: unknown): Response {
   } as unknown as Response
 }
 
+// The card of the selected indicator, where the badge, the value and the next
+// step live: the planetarium repeats some of the same words.
+function card(): HTMLElement {
+  const list = document.querySelector('.indicator-list')
+  if (list === null) throw new Error('the selected card is not on the screen')
+  return list as HTMLElement
+}
+
 describe('Home', () => {
   it('shows name, latest value with unit, day/time, badge and next step', () => {
     renderHome(homeWith([...baseline, entry(10, 10)]))
@@ -107,19 +115,23 @@ describe('Home', () => {
     ).toBeInTheDocument()
     expect(screen.getByText('10')).toHaveTextContent('10 example_unit')
     expect(screen.getByText(strings.timeLabel(10, '13:30'))).toBeInTheDocument()
-    expect(screen.getByText(strings.badge.inRange)).toBeInTheDocument()
+    expect(
+      within(card()).getByText(strings.badge.inRange),
+    ).toBeInTheDocument()
     expect(screen.getByText('No action needed.')).toBeInTheDocument()
   })
 
   it('says no data yet while the window holds fewer than three readings', () => {
     renderHome(data)
-    expect(screen.getByText(strings.badge.noData)).toBeInTheDocument()
+    expect(
+      within(card()).getByText(strings.badge.noData),
+    ).toBeInTheDocument()
     expect(screen.getByText(strings.nextStep.noData)).toBeInTheDocument()
   })
 
   it('shows the level name and its next step when a value crosses the threshold', () => {
     renderHome(homeWith([...baseline, entry(10, 101)]))
-    expect(screen.getByText('example_level')).toBeInTheDocument()
+    expect(within(card()).getByText('example_level')).toBeInTheDocument()
     expect(screen.getByText('Example next step. Assumption.')).toBeInTheDocument()
   })
 
@@ -176,7 +188,7 @@ describe('Home', () => {
       demoEntries: [entry(1, 40), entry(2, 40), entry(3, 40), entry(10, 35)],
     }
     renderHome(stepped)
-    expect(screen.getByText('needs_review')).toBeInTheDocument()
+    expect(within(card()).getByText('needs_review')).toBeInTheDocument()
     expect(screen.getByText('Contact the CMO.')).toBeInTheDocument()
     expect(screen.getByText('Tell the CMO.')).toBeInTheDocument()
   })
@@ -186,7 +198,7 @@ describe('Home', () => {
     renderHome(data)
 
     // The card has one disclosure: Details owns the sources as well.
-    expect(screen.getAllByRole('button')).toHaveLength(1)
+    expect(within(card()).getAllByRole('button')).toHaveLength(1)
     expect(screen.queryByRole('button', { name: 'Sources' })).toBeNull()
 
     const toggle = screen.getByRole('button', { name: 'Details' })
@@ -367,15 +379,39 @@ describe('Home', () => {
   it('says in your usual range from the person own baseline without an attention rule', () => {
     renderHome({ ...homeWith([...baseline, entry(10, 10)]), rules: [] })
 
-    expect(screen.getByText(strings.badge.inRange)).toBeInTheDocument()
+    expect(within(card()).getByText(strings.badge.inRange)).toBeInTheDocument()
     expect(screen.getByText('No action needed.')).toBeInTheDocument()
   })
 
   it('says outside your usual range when the value is further than the band', () => {
-    renderHome({ ...homeWith([...baseline, entry(10, 40)]), rules: [] })
+    const { container } = render(
+      <Home
+        personId="demo_astronaut_1"
+        data={{ ...homeWith([...baseline, entry(10, 40)]), rules: [] }}
+        entries={[...baseline, entry(10, 40)]}
+        motionReduced
+      />,
+    )
 
-    expect(screen.getByText(strings.badge.outsideRange)).toBeInTheDocument()
+    const badge = within(card()).getByText(strings.badge.outsideRange)
+    expect(badge).toBeInTheDocument()
     expect(screen.getByText(strings.nextStep.outsideRange)).toBeInTheDocument()
+    expect(screen.queryByText(strings.nextStep.inRange)).toBeNull()
+    // Its own look: the blue state shape and edge, never the review one.
+    expect(container.querySelector('.attention-badge--outside')).toHaveTextContent(
+      strings.badge.outsideRange,
+    )
+    expect(
+      container.querySelector('.attention-badge--outside svg'),
+    ).toHaveAttribute('data-icon', 'outside')
+    expect(container.querySelector('.indicator-card--outside')).not.toBeNull()
+  })
+
+  it('says no data yet, never in range, without a baseline to compare', () => {
+    renderHome({ ...data, rules: [] })
+
+    expect(within(card()).getByText(strings.badge.noData)).toBeInTheDocument()
+    expect(screen.getByText(strings.nextStep.noData)).toBeInTheDocument()
     expect(screen.queryByText(strings.badge.inRange)).toBeNull()
     expect(screen.queryByText('No action needed.')).toBeNull()
   })
@@ -402,7 +438,8 @@ describe('Home', () => {
     vi.stubGlobal('fetch', fetchFn)
     renderHome(homeWith([...baseline, entry(10, 100)]))
 
-    expect(await screen.findByText('server_level')).toBeInTheDocument()
+    // The planetarium and the card both take it from the same answer.
+    expect(await screen.findAllByText('server_level')).not.toHaveLength(0)
     expect(screen.getByText('Tell the flight surgeon.')).toBeInTheDocument()
     expect(urls).toHaveLength(1)
     expect(urls[0]).toContain(
@@ -417,7 +454,7 @@ describe('Home', () => {
     renderHome(homeWith([...baseline, entry(10, 101)]))
 
     expect(fetchFn).toHaveBeenCalled()
-    expect(await screen.findByText('example_level')).toBeInTheDocument()
+    expect(await screen.findAllByText('example_level')).not.toHaveLength(0)
   })
 
   it('asks the state route nothing without a base URL', async () => {
@@ -426,7 +463,7 @@ describe('Home', () => {
     renderHome(homeWith([...baseline, entry(10, 101)]))
 
     expect(fetchFn).not.toHaveBeenCalled()
-    expect(screen.getByText('example_level')).toBeInTheDocument()
+    expect(screen.getAllByText('example_level')).not.toHaveLength(0)
   })
 
   it('keeps the local rule when the state route answers another status', async () => {
@@ -437,7 +474,7 @@ describe('Home', () => {
     )
     renderHome(homeWith([...baseline, entry(10, 101)]))
 
-    expect(await screen.findByText('example_level')).toBeInTheDocument()
+    expect(await screen.findAllByText('example_level')).not.toHaveLength(0)
   })
 
   it('names the content still missing instead of the generic notice', () => {
@@ -469,6 +506,90 @@ describe('Home', () => {
       screen.getByText(
         'Showing example content until the team adds config files.',
       ),
+    ).toBeInTheDocument()
+  })
+})
+
+describe('Home board', () => {
+  it('shows the state icon and the words in the badge, and the unit in the value', () => {
+    const { container } = render(
+      <Home
+        personId="demo_astronaut_1"
+        data={homeWith([...baseline, entry(10, 10)])}
+        entries={[...baseline, entry(10, 10)]}
+      />,
+    )
+    const badge = container.querySelector('.attention-badge--in_range')
+    expect(badge?.querySelector('svg')).toHaveAttribute('data-icon', 'in_range')
+    expect(badge).toHaveTextContent(strings.badge.inRange)
+  })
+
+  it('offers a review notice that selects the first reading to review', async () => {
+    const user = userEvent.setup()
+    const second: Indicator = {
+      ...indicator,
+      id: 'second_indicator',
+      name: 'Second indicator',
+    }
+    // The three earlier readings the baseline rule needs before it can put a
+    // value outside the band.
+    const earlier: Entry[] = [1, 2, 3].map((day) => ({
+      ...entry(day, 10),
+      id: `second-baseline-${day}`,
+      indicatorId: 'second_indicator',
+    }))
+    const secondEntry: Entry = {
+      ...entry(10, 101),
+      id: 'second-entry',
+      indicatorId: 'second_indicator',
+    }
+    const two: LoadedContent = {
+      ...data,
+      indicators: [
+        { ...indicator, id: 'first_indicator', name: 'First indicator' },
+        second,
+      ],
+      rules: [{ ...rule, indicatorId: 'second_indicator' }],
+      contents: {},
+      demoEntries: [secondEntry],
+    }
+    render(
+      <Home
+        personId="demo_astronaut_1"
+        data={two}
+        entries={[...earlier, secondEntry]}
+        motionReduced
+      />,
+    )
+    expect(screen.getByText(strings.board.needsReview(1))).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'First indicator' })).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: strings.board.showFirst }))
+    expect(screen.getByRole('heading', { name: 'Second indicator' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'First indicator' })).toBeNull()
+  })
+
+  it('shows only the card of the selected indicator, chosen from the overview', async () => {
+    const user = userEvent.setup()
+    const two: LoadedContent = {
+      ...data,
+      indicators: [indicator, { ...indicator, id: 'other', name: 'Other indicator' }],
+      rules: [],
+      contents: {},
+    }
+    render(<Home personId="demo_astronaut_1" data={two} entries={two.demoEntries} motionReduced />)
+    expect(screen.getAllByRole('heading', { level: 3 })).toHaveLength(1)
+    expect(screen.getByRole('heading', { level: 3, name: 'Example indicator' })).toBeInTheDocument()
+    const rows = await screen.findByRole('list', { name: strings.board.planetarium.orbitsHeading })
+    await user.click(within(rows).getByRole('button', { name: /Other indicator/ }))
+    expect(screen.getByRole('heading', { level: 3, name: 'Other indicator' })).toBeInTheDocument()
+  })
+
+  it('loads the overview and the body zone, with words next to the figures', async () => {
+    render(
+      <Home personId="demo_astronaut_1" data={data} entries={data.demoEntries} motionReduced />,
+    )
+    expect(
+      await screen.findByRole('list', { name: strings.board.planetarium.orbitsHeading }),
     ).toBeInTheDocument()
   })
 })

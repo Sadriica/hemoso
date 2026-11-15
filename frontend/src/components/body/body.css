@@ -1,0 +1,84 @@
+.body-silhouette {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  width: 160px;
+  padding: var(--space-3);
+  box-sizing: content-box;
+  background: var(--color-surface);
+  border-radius: var(--radius-card);
+}
+
+.body-silhouette__svg {
+  display: block;
+  width: 100%;
+  aspect-ratio: 80 / 176;
+  height: auto;
+}
+
+.body-silhouette__outline {
+  fill: none;
+  stroke: var(--color-border-control);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.body-silhouette__zone {
+  opacity: 0;
+  fill: none;
+  stroke: var(--zone);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: opacity var(--motion-base) var(--ease-out);
+}
+
+.body-silhouette__zone[data-lit='true'] {
+  opacity: 1;
+}
+
+.body-silhouette__fill {
+  fill: var(--zone);
+  fill-opacity: 0.3;
+}
+
+.body-silhouette__dot {
+  fill: var(--zone);
+  stroke: none;
+}
+
+.body-silhouette__zone[data-zone='cardiovascular'] { --zone: var(--system-cardiovascular); }
+.body-silhouette__zone[data-zone='thermoregulation'] { --zone: var(--system-thermoregulation); }
+.body-silhouette__zone[data-zone='sleep'] { --zone: var(--system-sleep); }
+.body-silhouette__zone[data-zone='neuro'] { --zone: var(--system-neuro); }
+.body-silhouette__zone[data-zone='metabolic'] { --zone: var(--system-metabolic); }
+
+.body-silhouette__label {
+  min-height: var(--leading-label);
+  margin: 0;
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  text-align: center;
+}
+
+@media (max-width: 360px) {
+  .body-silhouette {
+    width: 120px;
+    padding: var(--space-2);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .body-silhouette__zone {
+    transition: none;
+  }
+}
+
+.app--still .body-silhouette__zone {
+  transition: none;
+}

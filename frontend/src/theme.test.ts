@@ -34,6 +34,9 @@ const TEXT_PAIRS: ColorPair[] = [
   { name: 'in range badge', front: 'status-in-range-text', back: 'status-in-range-bg' },
   { name: 'attention badge', front: 'status-attention-text', back: 'status-attention-bg' },
   { name: 'no data badge', front: 'status-no-data-text', back: 'status-no-data-bg' },
+  { name: 'outside your range badge', front: 'status-outside-text', back: 'status-outside-bg' },
+  { name: 'needs review badge', front: 'status-review-text', back: 'status-review-bg' },
+  { name: 'signal red on the page', front: 'color-signal', back: 'color-bg' },
   { name: 'signal red on a card', front: 'color-signal', back: 'color-surface' },
   // The face panel (T-58): its sentences and its one destructive action sit on
   // the panel surface, which is the card surface.
@@ -49,6 +52,21 @@ const UI_PAIRS: ColorPair[] = [
   { name: 'focus outline on the header band', front: 'color-accent', back: 'color-bg-raised' },
   { name: 'control border on the page', front: 'color-border-control', back: 'color-bg' },
   { name: 'control border on a card', front: 'color-border-control', back: 'color-surface' },
+  { name: 'cardiovascular icon on the page', front: 'system-cardiovascular', back: 'color-bg' },
+  { name: 'cardiovascular icon on a card', front: 'system-cardiovascular', back: 'color-surface' },
+  { name: 'thermoregulation icon on the page', front: 'system-thermoregulation', back: 'color-bg' },
+  { name: 'thermoregulation icon on a card', front: 'system-thermoregulation', back: 'color-surface' },
+  { name: 'sleep icon on the page', front: 'system-sleep', back: 'color-bg' },
+  { name: 'sleep icon on a card', front: 'system-sleep', back: 'color-surface' },
+  { name: 'neuro icon on the page', front: 'system-neuro', back: 'color-bg' },
+  { name: 'neuro icon on a card', front: 'system-neuro', back: 'color-surface' },
+  { name: 'metabolic icon on the page', front: 'system-metabolic', back: 'color-bg' },
+  { name: 'metabolic icon on a card', front: 'system-metabolic', back: 'color-surface' },
+  { name: 'state icon in range on a card', front: 'status-in-range-text', back: 'color-surface' },
+  { name: 'state icon outside on a card', front: 'status-outside-text', back: 'color-surface' },
+  { name: 'state icon attention on a card', front: 'status-attention-text', back: 'color-surface' },
+  { name: 'state icon review on a card', front: 'status-review-text', back: 'color-surface' },
+  { name: 'primary button edge on the page', front: 'color-interactive', back: 'color-bg' },
   { name: 'control border on the header band', front: 'color-border-control', back: 'color-bg-raised' },
 ]
 
