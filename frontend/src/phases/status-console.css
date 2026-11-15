@@ -304,3 +304,26 @@
 .trend__pip--on {
   background: var(--accent-cyan);
 }
+
+/* Round of Sun 07:20. The Details of a card on a wide screen: the sections
+   ran down a single column of 70 characters and left the right half of the
+   card empty. From 1100 px they flow in two columns; the two facts stay
+   across the top and no section is split between columns. */
+@media (min-width: 1100px) {
+  .phase--status .indicator-details {
+    display: block;
+    column-count: 2;
+    column-gap: var(--space-6);
+    column-rule: 1px solid color-mix(in srgb, var(--color-border) 60%, transparent);
+  }
+
+  .phase--status .indicator-details__fact,
+  .phase--status .indicator-details__missing {
+    column-span: all;
+  }
+
+  .phase--status .indicator-details__section {
+    break-inside: avoid;
+    margin-bottom: var(--space-3);
+  }
+}
