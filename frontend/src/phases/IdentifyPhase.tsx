@@ -90,12 +90,11 @@ export default function IdentifyPhase({
   const [offer, setOffer] = useState(false)
   const [offerDone, setOfferDone] = useState(false)
   const offerButtonRef = useRef<HTMLButtonElement>(null)
-  // The username and PIN form waits behind a closed row; a face that needs
-  // its PIN, or an ended session, opens it.
-  const [moreOpened, setMoreOpen] = useState(false)
-  const moreOpen = moreOpened || session.expiredFor !== null
+  // Sign in and Create an account are two tabs of one block that is always on
+  // screen when the server has accounts; nothing waits behind a closed row.
   const focusPin = useRef(false)
-  const moreId = useId()
+  const focusUsername = useRef(false)
+  const tabsId = useId()
 
   const faceButtonRef = useRef<HTMLButtonElement>(null)
   const usernameRef = useRef<HTMLInputElement>(null)
@@ -118,11 +117,26 @@ export default function IdentifyPhase({
   }, [expired])
   // The PIN field takes the focus once the form is on screen.
   useEffect(() => {
-    if (moreOpen && focusPin.current) {
+    if (focusPin.current) {
       focusPin.current = false
       pinRef.current?.focus()
     }
+    if (focusUsername.current) {
+      focusUsername.current = false
+      usernameRef.current?.focus()
+    }
   })
+
+  // Picking a tab moves the focus to the first field of its form.
+  const chooseMode = (create: boolean) => {
+    if (create === creating) return
+    setCreating(create)
+    setProblem(null)
+    setPin('')
+    setConfirmPin('')
+    if (create) setAskedFor(null)
+    focusUsername.current = true
+  }
 
   const focusPicker = () => {
     const chosen = document.querySelector<HTMLInputElement>(
@@ -136,7 +150,7 @@ export default function IdentifyPhase({
     setUsername(personId)
     setPin('')
     setProblem(null)
-    setMoreOpen(true)
+    setCreating(false)
     focusPin.current = true
   }
 
@@ -477,26 +491,58 @@ export default function IdentifyPhase({
 
         {!offer && session.accountsOffered && (
           <div className="identify__more" data-enter="rest">
-            <button
-              type="button"
-              className="identify__more-toggle"
-              aria-expanded={moreOpen}
-              aria-controls={moreId}
-              onClick={() => setMoreOpen((open) => !open)}
+            <div
+              className="identify__tabs"
+              role="tablist"
+              aria-label={signInCopy.accountHeading}
+              onKeyDown={(event) => {
+                if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return
+                event.preventDefault()
+                const next = event.key === 'ArrowRight'
+                chooseMode(next)
+                focusUsername.current = false
+                document.getElementById(`${tabsId}-${next ? 'create' : 'signin'}`)?.focus()
+              }}
             >
-              <span className="identify__more-chevron" aria-hidden="true">
-                ›
-              </span>
-              {signInCopy.moreToggle}
-            </button>
-            {moreOpen && (
-              <div id={moreId} className="identify__more-body">
-                  <h2 id={accountTitleId} className="report-form__heading">
-                    {creating ? signInCopy.createHeading : signInCopy.pinHeading}
-                  </h2>
-                  {askedFor !== null && !creating && (
-                    <p className="signin__text">{signInCopy.askPin(askedFor)}</p>
-                  )}
+              <button
+                type="button"
+                role="tab"
+                id={`${tabsId}-signin`}
+                className="identify__tab"
+                aria-selected={!creating}
+                aria-controls={`${tabsId}-panel`}
+                tabIndex={creating ? -1 : 0}
+                disabled={busy}
+                onClick={() => chooseMode(false)}
+              >
+                {signInCopy.signInTab}
+              </button>
+              <button
+                type="button"
+                role="tab"
+                id={`${tabsId}-create`}
+                className="identify__tab"
+                aria-selected={creating}
+                aria-controls={`${tabsId}-panel`}
+                tabIndex={creating ? 0 : -1}
+                disabled={busy}
+                onClick={() => chooseMode(true)}
+              >
+                {signInCopy.createToggle}
+              </button>
+            </div>
+            <div
+              id={`${tabsId}-panel`}
+              role="tabpanel"
+              aria-labelledby={`${tabsId}-${creating ? 'create' : 'signin'}`}
+              className="identify__more-body"
+            >
+              <h2 id={accountTitleId} className="report-form__heading">
+                {creating ? signInCopy.createHeading : signInCopy.pinHeading}
+              </h2>
+              {askedFor !== null && !creating && (
+                <p className="signin__text">{signInCopy.askPin(askedFor)}</p>
+              )}
                   <form
                     className="signin__form"
                     onSubmit={creating ? submitCreate : submitPin}
@@ -613,26 +659,12 @@ export default function IdentifyPhase({
                           →
                         </span>
                       </button>
-                      <button
-                        type="button"
-                        className="signin__link"
-                        aria-expanded={creating}
-                        disabled={busy}
-                        onClick={() => {
-                          setCreating((open) => !open)
-                          setProblem(null)
-                        }}
-                      >
-                        {creating ? signInCopy.createBack : signInCopy.createToggle}
-                      </button>
                     </div>
                   </form>
-                  {problemText !== null && problem !== 'username' && (
-                    <SigninError>{problemText}</SigninError>
-                  )}
-          
-              </div>
-            )}
+              {problemText !== null && problem !== 'username' && (
+                <SigninError>{problemText}</SigninError>
+              )}
+            </div>
           </div>
         )}
       </div>

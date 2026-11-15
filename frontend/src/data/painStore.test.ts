@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import {
   PAIN_STORAGE_KEY,
+  mergeServerPainReports,
   readPainReports,
   removePainReport,
   savePainReport,
   type PainReport,
+  type ServerPainReport,
 } from './painStore'
 
 function memoryStorage(seed?: string) {
@@ -181,5 +183,88 @@ describe('pain store', () => {
     }
     expect(removePainReport(report.id, blocked)).toBe(false)
     expect(removePainReport(report.id, null)).toBe(false)
+  })
+})
+
+describe('merging the reports the server holds', () => {
+  const ROW: ServerPainReport = {
+    personId: REPORT.personId,
+    regionId: 'left_knee',
+    kind: 'pain',
+    intensity: 4,
+    missionDay: 41,
+    time: '09:15',
+    note: 'From the phone',
+  }
+
+  it('adds a report this device has never seen', () => {
+    const storage = memoryStorage()
+    expect(mergeServerPainReports([ROW], storage)).toBe(true)
+    const read = readPainReports(REPORT.personId, storage)
+    expect(read).toHaveLength(1)
+    expect(read[0]?.missionDay).toBe(41)
+    expect(read[0]?.time).toBe('09:15')
+    expect(read[0]?.note).toBe('From the phone')
+    expect(read[0]?.regions).toEqual([{ regionId: 'left_knee', kind: 'pain', intensity: 4 }])
+  })
+
+  it('keeps the device copy of a report it already has for that region, day and time', () => {
+    const storage = memoryStorage()
+    const { report } = savePainReport(REPORT, storage)
+    expect(mergeServerPainReports([{ ...ROW, intensity: 9, note: 'From the PC' }], storage)).toBe(
+      false,
+    )
+    const read = readPainReports(REPORT.personId, storage)
+    expect(read.map((kept) => kept.id)).toEqual([report.id])
+    // The device's own numbers and words stay: this is the copy the person set.
+    expect(read[0]?.note).toBe('after exercise')
+    expect(read[0]?.regions[0]?.intensity).toBe(6)
+  })
+
+  it('adds a region this device does not have to its report at that time', () => {
+    const storage = memoryStorage()
+    savePainReport(REPORT, storage)
+    expect(mergeServerPainReports([{ ...ROW, regionId: 'right_ankle' }], storage)).toBe(true)
+    const read = readPainReports(REPORT.personId, storage)
+    expect(read).toHaveLength(1)
+    expect(read[0]?.regions.map((mark) => mark.regionId)).toEqual(['left_knee', 'right_ankle'])
+  })
+
+  it('reads a second merge of the same rows as no change', () => {
+    const storage = memoryStorage()
+    mergeServerPainReports([ROW, { ...ROW, regionId: 'neck' }], storage)
+    expect(mergeServerPainReports([ROW, { ...ROW, regionId: 'neck' }], storage)).toBe(false)
+    expect(readPainReports(REPORT.personId, storage)).toHaveLength(1)
+  })
+
+  it('skips a row it cannot read and keeps the ones it can', () => {
+    const storage = memoryStorage()
+    const rows = [
+      { ...ROW, intensity: 11 },
+      { ...ROW, kind: 'sore' as ServerPainReport['kind'] },
+      { ...ROW, time: '9:00' },
+      { ...ROW, missionDay: 0 },
+      { ...ROW, regionId: '' },
+      ROW,
+    ]
+    expect(mergeServerPainReports(rows, storage)).toBe(true)
+    const read = readPainReports(REPORT.personId, storage)
+    expect(read).toHaveLength(1)
+    expect(read[0]?.regions.map((mark) => mark.regionId)).toEqual(['left_knee'])
+  })
+
+  it('merges the reports of another person without touching them', () => {
+    const storage = memoryStorage()
+    savePainReport(REPORT, storage)
+    mergeServerPainReports([{ ...ROW, personId: 'astro_2' }], storage)
+    expect(readPainReports(REPORT.personId, storage)).toHaveLength(1)
+    expect(readPainReports('astro_2', storage)).toHaveLength(1)
+  })
+
+  it('changes nothing without a storage or without rows', () => {
+    const storage = memoryStorage()
+    expect(mergeServerPainReports([ROW], null)).toBe(false)
+    expect(mergeServerPainReports([], storage)).toBe(false)
+    expect(readPainReports(REPORT.personId, storage)).toEqual([])
   })
 })
