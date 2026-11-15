@@ -10,11 +10,20 @@ import {
 import { missionClockFor, type MissionClock } from '../domain/clock'
 import { getMissionStart } from '../data/missionStart'
 import { MEASUREMENT_CONTEXTS, contextForTime } from '../domain/context'
-import { latestEntry } from '../domain/entries'
-import type { Entry as EntryRecord, Indicator, MeasurementContext } from '../domain/types'
+import { latestEntry, newestFirst } from '../domain/entries'
+import { localState, statusFromLocal, type Status } from '../domain/state'
+import type {
+  AttentionRule,
+  Entry as EntryRecord,
+  Indicator,
+  MeasurementContext,
+} from '../domain/types'
 import type { EntryStore } from '../data/entryStore'
 import { IndicatorIcon, StatusIcon, systemColor } from '../icons'
+import AttentionBadge from '../components/AttentionBadge'
+import { statusBadgeKind, statusText } from '../components/attentionText'
 import Notice from '../components/Notice'
+import TelemetryVisual, { Sparkline } from '../components/telemetry/TelemetryVisual'
 import {
   SCALE_VALUES,
   parseReport,
@@ -24,6 +33,7 @@ import {
 } from './entryDraft'
 import { strings } from '../strings'
 import './entry.css'
+import './telemetry-console.css'
 
 // The report screen: one row for every indicator of
 // config/data/indicators.csv, on one shared day, time and context, saved with
@@ -40,19 +50,30 @@ export default function Entry({
   personId,
   indicators,
   entries,
+  rules,
   serverConfigured = false,
   onFilledChange,
+  onProgress,
+  onNext,
 }: {
   store: EntryStore
   personId: string
   indicators: Indicator[]
   entries: EntryRecord[]
+  // The attention rows of config/rules/attention.csv. With them each panel
+  // shows the state of the person's last reading; without them it shows none.
+  rules?: AttentionRule[]
   // True only when a server is set up. Without one nothing is sent, so the
   // saved message does not promise a send.
   serverConfigured?: boolean
   // Told how many rows hold a value that is not saved yet, so the screen can
   // keep one primary action at a time. Presentation only.
   onFilledChange?: (count: number) => void
+  // Told how many rows are done (filled or saved in this check) out of how many
+  // there are, so the scene of the phase can follow. Presentation only.
+  onProgress?: (done: number, total: number) => void
+  // The way on to the status, offered next to the saved message.
+  onNext?: () => void
 }) {
   // Day and time belong to the moment the form opens for this person; the
   // screen is keyed by person in App, so they are read once.
@@ -76,9 +97,12 @@ export default function Entry({
       personId={personId}
       indicators={indicators}
       entries={entries}
+      rules={rules}
       defaults={defaults}
       serverConfigured={serverConfigured}
       onFilledChange={onFilledChange}
+      onProgress={onProgress}
+      onNext={onNext}
     />
   )
 }
@@ -88,36 +112,69 @@ function ReportForm({
   personId,
   indicators,
   entries,
+  rules,
   defaults,
   serverConfigured,
   onFilledChange,
+  onProgress,
+  onNext,
 }: {
   store: EntryStore
   personId: string
   indicators: Indicator[]
   entries: EntryRecord[]
+  rules?: AttentionRule[]
   defaults: MissionClock
   serverConfigured: boolean
   onFilledChange?: (count: number) => void
+  onProgress?: (done: number, total: number) => void
+  onNext?: () => void
 }) {
   const [rows] = useState(() => readingRows(indicators))
+  // Nothing animates while the tab is hidden: the figures pause with it.
+  const [tabHidden, setTabHidden] = useState(false)
+  useEffect(() => {
+    const update = (): void => setTabHidden(document.visibilityState === 'hidden')
+    document.addEventListener('visibilitychange', update)
+    return () => document.removeEventListener('visibilitychange', update)
+  }, [])
   const [values, setValues] = useState<Record<string, string>>({})
   const [missionDayText, setMissionDayText] = useState(
     String(defaults.missionDay),
   )
   const [timeText, setTimeText] = useState(defaults.time)
   // The routine prompt (REQ-09): the readings are taken at the clock time the
-  // form opens with, so the context that fits that time is picked first.
-  // Each row keeps its own context: its usual one from the person's earlier
-  // entries, or the clock's when there are none. The header control sets all.
+  // form opens with, so the context that fits that time is the header's. Each
+  // row opens on its usual context from the person's earlier entries, or the
+  // header's when there are none. Changing the header moves only the rows the
+  // person has not changed by hand.
+  const [headerContext, setHeaderContext] = useState<MeasurementContext>(() =>
+    contextForTime(defaults.time),
+  )
   const [contexts, setContexts] = useState<Record<string, MeasurementContext>>(
     () => rowContexts(rows, entries, contextForTime(defaults.time)),
   )
+  const [touched, setTouched] = useState<Record<string, boolean>>({})
+  // Which set of four choices is open: the header's, a row's key, or none.
+  const [openMenu, setOpenMenu] = useState<string | null>(null)
   const contextOf = (row: ReadingRow): MeasurementContext =>
-    contexts[row.key] ?? contextForTime(defaults.time)
-  const sharedContext = rows.every((row) => contextOf(row) === contextOf(rows[0]))
-    ? contextOf(rows[0])
-    : null
+    contexts[row.key] ?? headerContext
+  const keepOwn = rows.filter((row) => contextOf(row) !== headerContext).length
+  function chooseHeaderContext(choice: MeasurementContext) {
+    setHeaderContext(choice)
+    setContexts((current) =>
+      Object.fromEntries(
+        rows.map((row) => [row.key, touched[row.key] ? (current[row.key] ?? choice) : choice]),
+      ),
+    )
+  }
+  function chooseRowContext(key: string, choice: MeasurementContext) {
+    setContexts((current) => ({ ...current, [key]: choice }))
+    setTouched((current) => ({ ...current, [key]: true }))
+  }
+  function toggleMenu(key: string) {
+    setOpenMenu((current) => (current === key ? null : key))
+  }
   const rowOfField = new Map(
     rows.flatMap((row) => row.fields.map((field) => [field.indicatorId, row] as const)),
   )
@@ -125,6 +182,10 @@ function ReportForm({
   const [dayError, setDayError] = useState<string | undefined>()
   const [timeError, setTimeError] = useState<string | undefined>()
   const [status, setStatus] = useState('')
+  // Rows saved in this check, so they keep reading as done once cleared, and
+  // whether the last action was a save (it offers the way on).
+  const [savedRows, setSavedRows] = useState<Record<string, boolean>>({})
+  const [justSaved, setJustSaved] = useState(false)
 
   const baseId = useId()
   const valueRefs = useRef<Record<string, HTMLInputElement | null>>({})
@@ -185,6 +246,7 @@ function ReportForm({
       setDayError(draft.missionDay)
       setTimeError(draft.time)
       setStatus('')
+      setJustSaved(false)
 
       // The first problem on screen takes the focus: a row, then the day, then
       // the time.
@@ -201,6 +263,7 @@ function ReportForm({
       setValueErrors({})
       setDayError(undefined)
       setTimeError(undefined)
+      // A save from before still stands, so the way on stays offered.
       setStatus(strings.entry.noReading)
       return
     }
@@ -227,6 +290,16 @@ function ReportForm({
         `${reading.value} ${strings.cardUnit(reading.unit)}`,
       ),
     )
+    setJustSaved(true)
+    setSavedRows((current) => ({
+      ...current,
+      ...Object.fromEntries(
+        draft.readings.map((reading) => [
+          (rowOfField.get(reading.indicatorId) ?? rows[0]).key,
+          true,
+        ]),
+      ),
+    }))
     setStatus(
       `${strings.entry.savedList(saved.join(', '))} ${
         serverConfigured ? strings.entry.saved : strings.entry.savedOnDevice
@@ -246,9 +319,19 @@ function ReportForm({
     row.fields.some((field) => (values[field.indicatorId] ?? '').trim() !== ''),
   ).length
   const empty = filled === 0
+  const isFilled = (row: ReadingRow) =>
+    row.fields.some((field) => (values[field.indicatorId] ?? '').trim() !== '')
+  const doneCount = rows.filter((row) => isFilled(row) || savedRows[row.key]).length
+  // Save is the primary until a save is done and nothing new is typed; then the
+  // way on is.
+  const afterSave = justSaved && empty
   useEffect(() => {
     onFilledChange?.(filled)
   }, [filled, onFilledChange])
+  useEffect(() => {
+    onProgress?.(doneCount, rows.length)
+  }, [doneCount, rows.length, onProgress])
+  const headerMenuId = `${baseId}-header-context`
   const progressId = `${baseId}-progress`
   const reasonId = `${baseId}-reason`
 
@@ -272,23 +355,29 @@ function ReportForm({
   }
 
   return (
-    <section aria-labelledby={`${baseId}-heading`} className="report-form rep">
+    <section
+      aria-labelledby={`${baseId}-heading`}
+      className={`report-form rep rep--console${tabHidden ? ' rep--paused' : ''}`}
+    >
       <div className="rep-head">
-        <h2 id={`${baseId}-heading`} className="report-form__heading">
-          {strings.entry.heading}
-        </h2>
+        <div className="rep-title">
+          <p className="rep-eyebrow">{strings.entry.console}</p>
+          <h2 id={`${baseId}-heading`} className="report-form__heading">
+            {strings.entry.heading}
+          </h2>
+        </div>
         <div className="rep-progress capsule">
           <span className="rep-progress__dots" aria-hidden="true">
             {rows.map((row, index) => (
               <span
                 key={row.key}
-                className={`rep-progress__dot${index < filled ? ' rep-progress__dot--on' : ''}`}
+                className={`rep-progress__dot${index < doneCount ? ' rep-progress__dot--on' : ''}`}
               />
             ))}
           </span>
           {/* Not role="status": the save result below is the one status. */}
           <span id={progressId} aria-live="polite">
-            {strings.entry.progress(filled, rows.length)}
+            {strings.entry.progress(doneCount, rows.length)}
           </span>
         </div>
       </div>
@@ -339,6 +428,25 @@ function ReportForm({
                 />
               </label>
             </div>
+            {/* What the person was doing when they took the readings, so each
+                value is compared with readings of the same kind (FORMATS.md
+                section 3). Said once here; a row only says its own when it is
+                another one. */}
+            <div className="rep-chipwrap">
+              <button
+                type="button"
+                className="rep-chip rep-chip--button"
+                aria-expanded={openMenu === 'header'}
+                aria-controls={headerMenuId}
+                onClick={() => toggleMenu('header')}
+              >
+                <span className="rep-chip__label">{strings.entry.context}</span>
+                <span className="rep-chip__value">
+                  {strings.entry.contextLabels[headerContext]}
+                </span>
+                <span className="rep-chip__change">{strings.entry.change}</span>
+              </button>
+            </div>
           </div>
           {(dayError !== undefined || timeError !== undefined) && (
             <div className="rep-chiperrors">
@@ -351,39 +459,33 @@ function ReportForm({
             </div>
           )}
 
-          {/* What the person was doing when they took the readings, so each
-              value is compared with readings of the same kind (FORMATS.md
-              section 3). One segmented control of radios: the arrow keys
-              change it like the scale. */}
-          <fieldset className="rep-segment">
-            <legend className="rep-segment__legend">{strings.entry.applyToAll}</legend>
-            <div className="rep-segment__track">
-              {MEASUREMENT_CONTEXTS.map((choice) => (
-                <label key={choice} className="rep-segment__option">
-                  <input
-                    type="radio"
-                    name={`${baseId}-context`}
-                    value={choice}
-                    checked={sharedContext === choice}
-                    onChange={() =>
-                      setContexts(Object.fromEntries(rows.map((row) => [row.key, choice])))
-                    }
-                  />
-                  <span className="rep-segment__mark" aria-hidden="true">
-                    ✓
-                  </span>
-                  <span>{strings.entry.contextLabels[choice]}</span>
-                </label>
-              ))}
-            </div>
-          </fieldset>
+          {openMenu === 'header' && (
+            <ContextChoices
+              id={headerMenuId}
+              legend={strings.entry.context}
+              name={`${baseId}-context`}
+              value={headerContext}
+              onChoose={chooseHeaderContext}
+              onClose={() => setOpenMenu(null)}
+            />
+          )}
+          <p className="rep-keep">{strings.entry.timeHelp}</p>
+          {keepOwn > 0 && (
+            <p className="rep-keep">{strings.entry.keepOwn(keepOwn)}</p>
+          )}
         </div>
 
+
         <ul className="rep-rows">
-          {rows.map((row) => (
+          {rows.map((row, index) => (
             <ReadingRowField
               key={row.key}
               row={row}
+              index={index}
+              telemetry={telemetryOf(row, values, entries, contextOf(row))}
+              status={
+                rules === undefined ? null : lastStatus(row, entries, indicators, rules)
+              }
               baseId={baseId}
               values={values}
               error={errorOf(row)}
@@ -394,31 +496,48 @@ function ReportForm({
               onEnter={onEnter}
               wide={row.key === lastPlainKey}
               context={contextOf(row)}
-              onContext={(choice) =>
-                setContexts((current) => ({ ...current, [row.key]: choice }))
-              }
+              headerContext={headerContext}
+              done={isFilled(row) || savedRows[row.key] === true}
+              menuOpen={openMenu === row.key}
+              onToggleMenu={() => toggleMenu(row.key)}
+              onContext={(choice) => chooseRowContext(row.key, choice)}
             />
           ))}
         </ul>
 
-        <div className="rep-actions">
-          <button
-            ref={saveRef}
-            className="button button--primary rep-save"
-            type="submit"
-            aria-disabled={empty ? true : undefined}
-            aria-describedby={reasonId}
-          >
-            {strings.entry.save}
-          </button>
-          <p className="rep-actions__reason" id={reasonId}>
-            {empty ? strings.entry.saveNeeds : strings.entry.saveWhat}
-          </p>
+        <div className={`rep-footer${afterSave && onNext !== undefined ? ' rep-footer--saved' : ''}`}>
+          {/* The live region stays in place so the text is read out when it appears. */}
+          <div className="rep-saved">
+            <p className="form__status" role="status">
+              {status}
+            </p>
+            {afterSave && onNext !== undefined && (
+              <button
+                type="button"
+                className="button button--primary rep-next"
+                aria-label={strings.entry.nextLabel}
+                onClick={onNext}
+              >
+                {strings.entry.next}
+                <span className="rep-next__arrow" aria-hidden="true">→</span>
+              </button>
+            )}
+          </div>
+          <div className="rep-actions">
+            <button
+              ref={saveRef}
+              className={`button ${afterSave && onNext !== undefined ? 'button--secondary' : 'button--primary'} rep-save`}
+              type="submit"
+              aria-disabled={empty ? true : undefined}
+              aria-describedby={reasonId}
+            >
+              {strings.entry.save}
+            </button>
+            <p className="rep-actions__reason" id={reasonId}>
+              {empty ? strings.entry.saveNeeds : strings.entry.saveWhat}
+            </p>
+          </div>
         </div>
-        {/* The live region stays in place so the text is read out when it appears. */}
-        <p className="form__status" role="status">
-          {status}
-        </p>
       </form>
     </section>
   )
@@ -426,6 +545,9 @@ function ReportForm({
 
 function ReadingRowField({
   row,
+  index,
+  telemetry,
+  status,
   baseId,
   values,
   error,
@@ -436,9 +558,18 @@ function ReadingRowField({
   onEnter,
   wide,
   context,
+  headerContext,
+  done,
+  menuOpen,
+  onToggleMenu,
   onContext,
 }: {
   row: ReadingRow
+  /** The place of the panel in the console, for its channel number. */
+  index: number
+  telemetry: RowTelemetry
+  /** The state of the last saved reading; null with none or with no rules. */
+  status: Status | null
   baseId: string
   values: Record<string, string>
   error: string | undefined
@@ -449,13 +580,45 @@ function ReadingRowField({
   onEnter: (event: KeyboardEvent<HTMLInputElement>) => void
   wide: boolean
   context: MeasurementContext
+  headerContext: MeasurementContext
+  done: boolean
+  menuOpen: boolean
+  onToggleMenu: () => void
   onContext: (choice: MeasurementContext) => void
 }) {
   const unitId = `${baseId}-${row.key}-unit`
   const lastId = `${baseId}-${row.key}-last`
   const errorId = `${baseId}-${row.key}-error`
   const nameId = `${baseId}-${row.key}-name`
-  const ctxId = `${baseId}-${row.key}-ctx`
+  const menuId = `${baseId}-${row.key}-ctx`
+  // A row says its own context only when it is not the header's: the tag is
+  // the control. A row that matches shows a quiet button with no words, so the
+  // context of one row can still be changed.
+  const differs = context !== headerContext
+  const contextLabel = strings.entry.contextLabels[context]
+  const ctxControl = (
+    <button
+      type="button"
+      className={`rep-ctx${differs ? ' rep-ctx--tag' : ' rep-ctx--quiet'}`}
+      aria-expanded={menuOpen}
+      aria-controls={menuOpen ? menuId : undefined}
+      aria-label={
+        differs
+          ? `${strings.entry.rowContext(row.name)}: ${contextLabel} ${strings.entry.change}`
+          : strings.entry.rowContext(row.name)
+      }
+      onClick={onToggleMenu}
+    >
+      {differs ? (
+        <>
+          <span>{contextLabel}</span>{' '}
+          <span className="rep-ctx__change">{strings.entry.change}</span>
+        </>
+      ) : (
+        <span aria-hidden="true">▾</span>
+      )}
+    </button>
+  )
   // A screen reader reads the name, then the unit, the last reading and the
   // problem of the group it is in.
   const describedBy = [
@@ -488,18 +651,58 @@ function ReadingRowField({
     )
   const errorLine =
     error === undefined ? null : <FieldError id={errorId}>{error}</FieldError>
+  // The state of the last saved reading, in words with its icon. It is about
+  // that reading, never about the value being typed.
+  const stateLine =
+    status === null ? null : (
+      <p className="rep-row__state">
+        <span className="sr-only">{strings.entry.lastState} </span>
+        <AttentionBadge kind={statusBadgeKind(status)} text={statusText(status)} />
+      </p>
+    )
+  // The live figure follows the readout; the small history is the person's
+  // own earlier readings, with the count and the two ends in words.
+  const scope = (
+    <div className="rep-row__scope">
+      <TelemetryVisual kind={row.key} values={telemetry.live} />
+    </div>
+  )
+  const trend =
+    telemetry.history.length === 0 ? null : (
+      <div className="rep-row__trend">
+        <Sparkline values={telemetry.history} pending={telemetry.pending} />
+        <p className="rep-row__history">
+          {strings.entry.history(
+            pair ? row.fields[0].label : null,
+            telemetry.history.length,
+            Math.min(...telemetry.history),
+            Math.max(...telemetry.history),
+            strings.cardUnit(row.unit),
+          )}
+        </p>
+      </div>
+    )
 
   return (
     <li
-      className={`rep-row${row.scale ? ' rep-row--scale' : ''}${wide ? ' rep-row--wide' : ''}`}
+      className={`rep-row${done ? ' rep-row--done' : ''}${row.scale ? ' rep-row--scale' : ''}${wide ? ' rep-row--wide' : ''}${pair ? ' rep-row--pair' : ''}`}
       style={style}
     >
+      <span className="rep-row__channel" aria-hidden="true">
+        {String(index + 1).padStart(2, '0')}
+      </span>
       <span className="rep-row__icon">
         <IndicatorIcon
           indicatorId={row.iconId}
           colored={row.system !== null}
           size={24}
         />
+        {/* Done is a check and a stronger edge, never colour alone. */}
+        {done && (
+          <span className="rep-row__check" aria-hidden="true">
+            ✓
+          </span>
+        )}
       </span>
 
       {row.scale ? (
@@ -513,24 +716,10 @@ function ReadingRowField({
           <div className="rep-row__head">
             {title}
             {lastLine}
-            <span className="rep-ctx">
-              <label className="sr-only" htmlFor={ctxId}>
-                {strings.entry.rowContext(row.name)}
-              </label>
-              <select
-                id={ctxId}
-                className="rep-ctx__select"
-                value={context}
-                onChange={(event) => onContext(event.target.value as MeasurementContext)}
-              >
-                {MEASUREMENT_CONTEXTS.map((choice) => (
-                  <option key={choice} value={choice}>
-                    {strings.entry.contextLabels[choice]}
-                  </option>
-                ))}
-              </select>
-            </span>
+            {ctxControl}
+            {stateLine}
           </div>
+          {scope}
           <div className="rep-pills">
             {SCALE_VALUES.map((choice, index) => (
               <label key={choice} className="rep-pill">
@@ -551,6 +740,7 @@ function ReadingRowField({
             ))}
           </div>
           {errorLine}
+          {trend}
         </div>
       ) : (
         <div
@@ -563,24 +753,10 @@ function ReadingRowField({
           <div className="rep-row__head">
             {title}
             {lastLine}
-            <span className="rep-ctx">
-              <label className="sr-only" htmlFor={ctxId}>
-                {strings.entry.rowContext(row.name)}
-              </label>
-              <select
-                id={ctxId}
-                className="rep-ctx__select"
-                value={context}
-                onChange={(event) => onContext(event.target.value as MeasurementContext)}
-              >
-                {MEASUREMENT_CONTEXTS.map((choice) => (
-                  <option key={choice} value={choice}>
-                    {strings.entry.contextLabels[choice]}
-                  </option>
-                ))}
-              </select>
-            </span>
+            {ctxControl}
+            {stateLine}
           </div>
+          {scope}
 
           {/* One field, one border: the value large on the left, the unit
               inside on the right. The blood pressure is the same field with
@@ -630,14 +806,155 @@ function ReadingRowField({
             </span>
           </span>
           {errorLine}
+          {trend}
         </div>
+      )}
+      {menuOpen && (
+        <ContextChoices
+          id={menuId}
+          legend={strings.entry.rowContext(row.name)}
+          name={`${baseId}-${row.key}-context`}
+          value={context}
+          onChoose={onContext}
+          onClose={onToggleMenu}
+          row
+        />
       )}
     </li>
   )
 }
 
+// The four contexts as one segmented control of radios: the arrow keys change
+// it like the scale. Escape closes it.
+function ContextChoices({
+  id,
+  legend,
+  name,
+  value,
+  onChoose,
+  onClose,
+  row = false,
+}: {
+  id: string
+  legend: string
+  name: string
+  value: MeasurementContext
+  onChoose: (choice: MeasurementContext) => void
+  onClose: () => void
+  row?: boolean
+}) {
+  return (
+    <fieldset
+      id={id}
+      className={`rep-segment${row ? ' rep-segment--row' : ''}`}
+      onKeyDown={(event) => {
+        if (event.key === 'Escape') onClose()
+      }}
+    >
+      <legend className="sr-only">{legend}</legend>
+      <div className="rep-segment__track">
+        {MEASUREMENT_CONTEXTS.map((choice) => (
+          <label key={choice} className="rep-segment__option">
+            <input
+              type="radio"
+              name={name}
+              value={choice}
+              checked={value === choice}
+              onChange={() => onChoose(choice)}
+            />
+            <span className="rep-segment__mark" aria-hidden="true">
+              ✓
+            </span>
+            <span>{strings.entry.contextLabels[choice]}</span>
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  )
+}
+
 // The most recent reading of that row, in the words under its name: "last 72
 // bpm". A pair is only complete when both of its readings exist.
+// What the figures of one panel are drawn from: the value in the readout (or
+// the last reading while it is empty), and the person's earlier readings of
+// the first field in the panel's context, oldest first.
+interface RowTelemetry {
+  live: (number | null)[]
+  history: number[]
+  /** The typed value of the first field, when it is a number. */
+  pending: number | null
+}
+
+/** How many earlier readings the small history shows: the baseline window. */
+const HISTORY_POINTS = 14
+
+function typedNumber(text: string | undefined): number | null {
+  const trimmed = (text ?? '').trim()
+  if (trimmed === '') return null
+  const value = Number(trimmed)
+  return Number.isFinite(value) ? value : null
+}
+
+function telemetryOf(
+  row: ReadingRow,
+  values: Record<string, string>,
+  entries: EntryRecord[],
+  context: MeasurementContext,
+): RowTelemetry {
+  const typed = row.fields.map((field) => typedNumber(values[field.indicatorId]))
+  const live = row.fields.map((field, index) => {
+    if (typed[index] !== null) return typed[index]
+    const latest = latestEntry(
+      entries.filter((entry) => entry.indicatorId === field.indicatorId),
+    )
+    return latest === null ? null : latest.value
+  })
+  const first = row.fields[0].indicatorId
+  const history = newestFirst(
+    entries.filter(
+      (entry) => entry.indicatorId === first && entry.context === context,
+    ),
+  )
+    .slice(0, HISTORY_POINTS)
+    .map((entry) => entry.value)
+    .reverse()
+  return { live, history, pending: typed[0] }
+}
+
+// The four states, least to most serious: a pressure pair shows the worse of
+// its two (docs/findings/bio2-01-pressure-state-rule.md).
+const STATE_RANK = ['no_data', 'in_range', 'outside_range', 'needs_review']
+
+function lastStatus(
+  row: ReadingRow,
+  entries: EntryRecord[],
+  indicators: Indicator[],
+  rules: AttentionRule[],
+): Status | null {
+  let worst: Status | null = null
+  for (const field of row.fields) {
+    const own = entries.filter((entry) => entry.indicatorId === field.indicatorId)
+    const latest = latestEntry(own)
+    const indicator = indicators.find((item) => item.id === field.indicatorId)
+    if (latest === null || indicator === undefined) return null
+    const status = statusFromLocal(
+      localState(
+        latest,
+        own,
+        rules.filter((rule) => rule.indicatorId === field.indicatorId),
+        indicator.minSpread,
+      ),
+    )
+    if (
+      worst === null ||
+      STATE_RANK.indexOf(status.state) > STATE_RANK.indexOf(worst.state)
+    ) {
+      worst = status
+    }
+  }
+  return worst
+}
+
 function lastReading(row: ReadingRow, entries: EntryRecord[]): string | null {
   const latest = row.fields.map((field) =>
     latestEntry(entries.filter((entry) => entry.indicatorId === field.indicatorId)),

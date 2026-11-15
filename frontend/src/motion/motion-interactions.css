@@ -3,7 +3,7 @@
    top bar switch is on (.app--still). The .app prefix wins over the buttons'
    own transitions without editing their files. */
 @media (prefers-reduced-motion: no-preference) {
-  .app:not(.app--still) :is(.journey-button, .button, .crew-option, .indicator-card) {
+  .app:not(.app--still) :is(.journey-button, .button, .crew-option, .indicator-card, .signin__begin) {
     transition:
       transform var(--motion-fast) var(--ease-settle),
       filter var(--motion-fast) var(--ease-out),
@@ -14,18 +14,27 @@
   .app:not(.app--still) .journey-button__arrow {
     transition: transform var(--motion-base) var(--ease-settle);
   }
-
-  .app:not(.app--still) :is(.journey-button, .button, .crew-option, .indicator-card):active:not(:disabled) {
-    transform: translateY(var(--move-press));
-  }
 }
 
 @media (prefers-reduced-motion: no-preference) and (hover: hover) {
-  .app:not(.app--still) :is(.journey-button, .button, .crew-option, .indicator-card):hover:not(:disabled) {
+  .app:not(.app--still) :is(.journey-button, .button, .crew-option, .indicator-card, .signin__begin):hover:not(:disabled) {
     transform: translateY(calc(var(--move-hover) * -1));
   }
 
   .app:not(.app--still) .journey-button:hover:not(:disabled) .journey-button__arrow {
     transform: translateX(var(--move-hover));
+  }
+}
+
+/* Press: it comes after the hover rules so it wins while the pointer is down.
+   The element drops from its hover offset by --move-press, and the arrow of a
+   journey button relaxes back. */
+@media (prefers-reduced-motion: no-preference) {
+  .app:not(.app--still) :is(.journey-button, .button, .crew-option, .indicator-card, .signin__begin):active:not(:disabled) {
+    transform: translateY(calc(var(--move-hover) * -1 + var(--move-press)));
+  }
+
+  .app:not(.app--still) .journey-button:active:not(:disabled) .journey-button__arrow {
+    transform: none;
   }
 }

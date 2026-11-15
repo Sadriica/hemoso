@@ -33,6 +33,12 @@ export function themeColors(): ColorTokens {
  *   systems: cardiovascular #FF7A70 3.6, thermoregulation #F5A524 4.4,
  *   sleep #9AA5FF 4.0, neuro #C39BFF 4.1, metabolic #3ED1C0 4.8.
  * All are at least 3:1; palette.test.ts keeps it so.
+ *
+ * The base stays this dark on purpose: a status colour has a luminance of 0.36
+ * to 0.52, so 3:1 needs a base under about 0.09. The figure still reads against
+ * the stage because scene.ts lights it (sky, key and two rim lights from
+ * behind), so the rendered body is a mid blue-grey with bright edges, and
+ * body3d.css puts a soft pool of the accent colour behind it.
  */
 export function sceneColors(): ColorTokens {
   return COLORS.dark

@@ -1,6 +1,7 @@
 /* The orbital scene: decorative, sized by its parent at 1:1. Colours and
    durations are tokens (styles.css); the angles below are small on purpose. */
 .orbital {
+  --orbital-glow: var(--glow-accent);
   --px: 0;
   --py: 0;
   position: relative;
@@ -8,6 +9,7 @@
   aspect-ratio: 1 / 1;
   pointer-events: none;
   contain: layout paint;
+  container-type: inline-size;
 }
 .orbital svg { display: block; width: 100%; height: 100%; overflow: visible; }
 
@@ -38,4 +40,63 @@
 @media (prefers-reduced-motion: reduce) {
   .orbital .orbital__orbit, .orbital .orbital__turn { animation: none; }
   .orbital .orbital__layer, .orbital .orbital__progress { transition: none; }
+}
+
+/* A tinted disc behind the object: none on the dark stage (the glow carries it),
+   about 9 % accent on the light one, with a stronger local glow. */
+.orbital__tint { opacity: 0; }
+@media (prefers-color-scheme: light) {
+  .orbital { --orbital-glow: color-mix(in srgb, var(--color-accent) 26%, transparent); }
+  .orbital__tint { opacity: 0.1; }
+  .orbital__orbit { stroke-opacity: 0.75; }
+}
+/* On a small stage (a band on a phone) the lines are stronger, so it still reads. */
+@container (max-width: 260px) {
+  .orbital__orbit { stroke-opacity: 0.9; stroke-width: 3; }
+  .orbital__tint { opacity: 0.16; }
+}
+
+/* On a phone the scene never sits behind text. Identify: a small stage in the
+   free corner beside the headline lines, above the intro. Report and Status:
+   the band keeps its own row, and its edges fade so no clipped glow shows. The
+   lines are stronger at this size (see the container rule above). It is
+   decoration, so it is dropped where the headline needs the whole width. */
+@media (max-width: 599px) {
+  .phase--identify .identify__scene {
+    top: calc(var(--space-5) + var(--space-3));
+    right: 0;
+    width: 140px;
+    height: 140px;
+    max-width: none;
+  }
+
+  /* Muted ink instead of the control border, so the small stage still reads. */
+  .phase--identify .identify__scene .orbital__orbit {
+    stroke: var(--color-text-muted);
+    stroke-opacity: 0.75;
+  }
+
+  .phase--identify .identify__scene .orbital__orbit--accent {
+    stroke: var(--color-accent);
+    stroke-opacity: 1;
+  }
+
+  .scene-band .orbital {
+    width: 240px;
+  }
+}
+
+@media (max-width: 359px) {
+  .phase--identify .identify__scene {
+    display: none;
+  }
+}
+
+/* Under 900 px the scene is a 96 px band: its top and bottom fade, so the glow
+   never ends on a hard edge. */
+@media (max-width: 899px) {
+  .scene-band .orbital {
+    mask-image: linear-gradient(to bottom, transparent calc(50% - 48px), #000 calc(50% - 28px), #000 calc(50% + 28px), transparent calc(50% + 48px));
+    -webkit-mask-image: linear-gradient(to bottom, transparent calc(50% - 48px), #000 calc(50% - 28px), #000 calc(50% + 28px), transparent calc(50% + 48px));
+  }
 }

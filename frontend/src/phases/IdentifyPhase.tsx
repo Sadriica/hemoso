@@ -8,6 +8,7 @@ import {
   type FormEvent,
   type RefObject,
 } from 'react'
+import { isUsername, normaliseUsername } from '../domain/username'
 import PhaseHeading from '../components/PhaseHeading'
 import Notice from '../components/Notice'
 import { isIsoDate, setMissionStart, todayIso } from '../data/missionStart'
@@ -27,8 +28,6 @@ const OrbitalScene = lazy(() => import('../components/orbital'))
 /** The fieldset of crew members: the face panel sends the focus back here. */
 export const CREW_PICKER_ID = 'crew-picker'
 
-// A username is the person_id of the contract: lowercase snake_case.
-const USERNAME = /^[a-z][a-z0-9_]{0,63}$/
 // The PIN rule of the contract, checked here too so a mistyped PIN is a
 // sentence and not a round trip.
 const PIN = /^\d{4,8}$/
@@ -61,7 +60,13 @@ export default function IdentifyPhase({
 }: IdentifyPhaseProps) {
   // Starting the report first closes the ring and carries the avatar (src/motion/carry.ts).
   const carry = useCarry(still)
-  const onDone = () => carry.run(switchPhase)
+  // The "signed in" strip must not appear above the panel while the ring
+  // closes: its visibility is fixed at the moment the carry starts.
+  const [stripFrozen, setStripFrozen] = useState<boolean | null>(null)
+  const onDone = () => {
+    setStripFrozen((session.expiredFor ?? session.personId) !== null)
+    carry.run(switchPhase)
+  }
   const copy = strings.phases.identify
   const signInCopy = strings.signIn
   const [faceOpen, setFaceOpen] = useState(false)
@@ -85,12 +90,11 @@ export default function IdentifyPhase({
   const [offer, setOffer] = useState(false)
   const [offerDone, setOfferDone] = useState(false)
   const offerButtonRef = useRef<HTMLButtonElement>(null)
-  // The username and PIN form waits behind a closed row; a face that needs
-  // its PIN, or an ended session, opens it.
-  const [moreOpened, setMoreOpen] = useState(false)
-  const moreOpen = moreOpened || session.expiredFor !== null
+  // Sign in and Create an account are two tabs of one block that is always on
+  // screen when the server has accounts; nothing waits behind a closed row.
   const focusPin = useRef(false)
-  const moreId = useId()
+  const focusUsername = useRef(false)
+  const tabsId = useId()
 
   const faceButtonRef = useRef<HTMLButtonElement>(null)
   const usernameRef = useRef<HTMLInputElement>(null)
@@ -113,17 +117,32 @@ export default function IdentifyPhase({
   }, [expired])
   // The PIN field takes the focus once the form is on screen.
   useEffect(() => {
-    if (moreOpen && focusPin.current) {
+    if (focusPin.current) {
       focusPin.current = false
       pinRef.current?.focus()
     }
+    if (focusUsername.current) {
+      focusUsername.current = false
+      usernameRef.current?.focus()
+    }
   })
+
+  // Picking a tab moves the focus to the first field of its form.
+  const chooseMode = (create: boolean) => {
+    if (create === creating) return
+    setCreating(create)
+    setProblem(null)
+    setPin('')
+    setConfirmPin('')
+    if (create) setAskedFor(null)
+    focusUsername.current = true
+  }
 
   const focusPicker = () => {
     const chosen = document.querySelector<HTMLInputElement>(
       `#${CREW_PICKER_ID} input:checked, #${CREW_PICKER_ID} input`,
     )
-    chosen?.focus()
+    chosen?.focus({ preventScroll: true })
   }
 
   const askPin = (personId: string) => {
@@ -131,7 +150,7 @@ export default function IdentifyPhase({
     setUsername(personId)
     setPin('')
     setProblem(null)
-    setMoreOpen(true)
+    setCreating(false)
     focusPin.current = true
   }
 
@@ -183,13 +202,21 @@ export default function IdentifyPhase({
     onDone()
   }
 
+  // A name the form cannot turn into an id: the sentence sits under the field,
+  // the field is marked invalid and brought into view with the focus on it.
+  function showUsernameProblem(): void {
+    setProblem('username')
+    const field = usernameRef.current
+    field?.focus()
+    field?.scrollIntoView?.({ block: 'center' })
+  }
+
   async function submitPin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (busy) return
-    const person = username.trim()
-    if (!USERNAME.test(person)) {
-      setProblem('username')
-      usernameRef.current?.focus()
+    const person = normaliseUsername(username)
+    if (!isUsername(person)) {
+      showUsernameProblem()
       return
     }
     if (!PIN.test(pin)) {
@@ -214,10 +241,9 @@ export default function IdentifyPhase({
   async function submitCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (busy) return
-    const person = username.trim()
-    if (!USERNAME.test(person)) {
-      setProblem('username')
-      usernameRef.current?.focus()
+    const person = normaliseUsername(username)
+    if (!isUsername(person)) {
+      showUsernameProblem()
       return
     }
     if (!PIN.test(pin)) {
@@ -245,6 +271,13 @@ export default function IdentifyPhase({
   }
 
   const problemText = problem === null ? null : signInCopy.errors[problem]
+  // The id the form will send, shown under the field as soon as it differs
+  // from what was typed and can work ("Juan Perez" -> juan_perez).
+  const normalisedUsername = normaliseUsername(username)
+  const usernamePreview =
+    normalisedUsername !== username && isUsername(normalisedUsername)
+      ? normalisedUsername
+      : null
 
   const facePanel = (
     <section className="identify__face" aria-labelledby={faceTitleId}>
@@ -303,7 +336,7 @@ export default function IdentifyPhase({
       </div>
 
       <div className="identify__main">
-        {(session.expiredFor !== null || session.personId !== null) && (
+        {(stripFrozen ?? (session.expiredFor !== null || session.personId !== null)) && (
           <div className="identify__status" data-enter="rest">
             {session.expiredFor !== null && (
               <Notice tone="warning">{signInCopy.expired}</Notice>
@@ -458,26 +491,58 @@ export default function IdentifyPhase({
 
         {!offer && session.accountsOffered && (
           <div className="identify__more" data-enter="rest">
-            <button
-              type="button"
-              className="identify__more-toggle"
-              aria-expanded={moreOpen}
-              aria-controls={moreId}
-              onClick={() => setMoreOpen((open) => !open)}
+            <div
+              className="identify__tabs"
+              role="tablist"
+              aria-label={signInCopy.accountHeading}
+              onKeyDown={(event) => {
+                if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return
+                event.preventDefault()
+                const next = event.key === 'ArrowRight'
+                chooseMode(next)
+                focusUsername.current = false
+                document.getElementById(`${tabsId}-${next ? 'create' : 'signin'}`)?.focus()
+              }}
             >
-              <span className="identify__more-chevron" aria-hidden="true">
-                ›
-              </span>
-              {signInCopy.moreToggle}
-            </button>
-            {moreOpen && (
-              <div id={moreId} className="identify__more-body">
-                  <h2 id={accountTitleId} className="signin__title">
-                    {creating ? signInCopy.createHeading : signInCopy.pinHeading}
-                  </h2>
-                  {askedFor !== null && !creating && (
-                    <p className="signin__text">{signInCopy.askPin(askedFor)}</p>
-                  )}
+              <button
+                type="button"
+                role="tab"
+                id={`${tabsId}-signin`}
+                className="identify__tab"
+                aria-selected={!creating}
+                aria-controls={`${tabsId}-panel`}
+                tabIndex={creating ? -1 : 0}
+                disabled={busy}
+                onClick={() => chooseMode(false)}
+              >
+                {signInCopy.signInTab}
+              </button>
+              <button
+                type="button"
+                role="tab"
+                id={`${tabsId}-create`}
+                className="identify__tab"
+                aria-selected={creating}
+                aria-controls={`${tabsId}-panel`}
+                tabIndex={creating ? 0 : -1}
+                disabled={busy}
+                onClick={() => chooseMode(true)}
+              >
+                {signInCopy.createToggle}
+              </button>
+            </div>
+            <div
+              id={`${tabsId}-panel`}
+              role="tabpanel"
+              aria-labelledby={`${tabsId}-${creating ? 'create' : 'signin'}`}
+              className="identify__more-body"
+            >
+              <h2 id={accountTitleId} className="report-form__heading">
+                {creating ? signInCopy.createHeading : signInCopy.pinHeading}
+              </h2>
+              {askedFor !== null && !creating && (
+                <p className="signin__text">{signInCopy.askPin(askedFor)}</p>
+              )}
                   <form
                     className="signin__form"
                     onSubmit={creating ? submitCreate : submitPin}
@@ -497,8 +562,30 @@ export default function IdentifyPhase({
                         spellCheck={false}
                         value={username}
                         disabled={busy}
-                        onChange={(event) => setUsername(event.target.value)}
+                        aria-invalid={problem === 'username' ? true : undefined}
+                        aria-describedby={
+                          problem === 'username'
+                            ? `${usernameId}-error`
+                            : usernamePreview !== null
+                              ? `${usernameId}-preview`
+                              : undefined
+                        }
+                        onChange={(event) => {
+                          setUsername(event.target.value)
+                          if (problem === 'username') setProblem(null)
+                        }}
                       />
+                      {problem === 'username' ? (
+                        <SigninError id={`${usernameId}-error`}>
+                          {signInCopy.errors.username}
+                        </SigninError>
+                      ) : (
+                        usernamePreview !== null && (
+                          <p className="signin__hint" id={`${usernameId}-preview`}>
+                            {signInCopy.willSignInAs(usernamePreview)}
+                          </p>
+                        )
+                      )}
                     </div>
                     <div className="signin__field">
                       <label className="signin__label" htmlFor={pinId}>
@@ -572,26 +659,12 @@ export default function IdentifyPhase({
                           →
                         </span>
                       </button>
-                      <button
-                        type="button"
-                        className="signin__link"
-                        aria-expanded={creating}
-                        disabled={busy}
-                        onClick={() => {
-                          setCreating((open) => !open)
-                          setProblem(null)
-                        }}
-                      >
-                        {creating ? signInCopy.createBack : signInCopy.createToggle}
-                      </button>
                     </div>
                   </form>
-                  {problemText !== null && (
-                    <SigninError>{problemText}</SigninError>
-                  )}
-          
-              </div>
-            )}
+              {problemText !== null && problem !== 'username' && (
+                <SigninError>{problemText}</SigninError>
+              )}
+            </div>
           </div>
         )}
       </div>

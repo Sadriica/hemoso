@@ -1,4 +1,12 @@
-import { lazy, Suspense, useEffect, useId, useRef, useState } from 'react'
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type RefObject,
+} from 'react'
 import { attentionFor } from '../domain/attention'
 import { latestEntry } from '../domain/entries'
 import type {
@@ -18,8 +26,13 @@ import {
   type Status,
 } from '../domain/state'
 import AttentionBadge from '../components/AttentionBadge'
-import { statusBadgeKind, statusText } from '../components/attentionText'
+import {
+  statusBadgeKind,
+  statusText,
+  type BadgeKind,
+} from '../components/attentionText'
 import Disclosure from '../components/Disclosure'
+import ErrorBoundary from '../components/ErrorBoundary'
 import IndicatorDetails from '../components/IndicatorDetails'
 import { sourceLabel } from '../components/sourceLabel'
 import Notice from '../components/Notice'
@@ -96,6 +109,7 @@ export default function Home({
   // from the parent never move the page.
   const scrollAfterPick = useRef(false)
   const detailRef = useRef<HTMLDivElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
   const smooth = useMotionAllowed(motionReduced)
   const setChosenId = (id: string): void => {
     scrollAfterPick.current = true
@@ -212,10 +226,14 @@ export default function Home({
           {strings.board.needsReview(reviewRows.length)}
         </Notice>
       )}
-      <div className="status-panel panel panel--cut" data-enter="panel">
+      <div ref={panelRef} className="status-panel panel panel--cut" data-enter="panel">
+      {rows.length > 0 && <SystemStrip rows={rows} />}
       {rows.length > 0 && (
         <div className="board">
           <div className="board__orbit">
+            <ErrorBoundary
+              fallback={<Notice tone="warning">{strings.board.overviewFailed}</Notice>}
+            >
             <Suspense fallback={<BoardLoading />}>
               <Planetarium
                 items={rows.map(({ indicator, latest, status }) => {
@@ -244,15 +262,17 @@ export default function Home({
                 initialView={initialView}
               />
             </Suspense>
+            </ErrorBoundary>
           </div>
         </div>
       )}
       {selected && (
         <>
-        {/* The line from the selected body to its card, in the state colour. */}
-        <div
-          className={`status-link status-link--${statusBadgeKind(selected.status)}`}
-          aria-hidden="true"
+        <StatusLink
+          panelRef={panelRef}
+          selectedId={selected.indicator.id}
+          kind={statusBadgeKind(selected.status)}
+          still={motionReduced}
         />
         <div className="detail home__detail" ref={detailRef}>
           <ul className="indicator-list">
@@ -268,6 +288,10 @@ export default function Home({
             />
           </ul>
           <div className="detail__body">
+            {wide && <p className="detail__eyebrow">{strings.board.twin}</p>}
+            {/* The body is an extra: when it cannot be drawn its column stays
+                empty and the card beside it keeps every fact. */}
+            <ErrorBoundary fallback={null}>
             <Suspense
               fallback={<div className="body3d-slot" aria-hidden="true" />}
             >
@@ -287,12 +311,40 @@ export default function Home({
                 />
               )}
             </Suspense>
+            </ErrorBoundary>
           </div>
         </div>
         </>
       )}
       </div>
     </section>
+  )
+}
+
+// The system strip of the console: how many channels there are and how many
+// of them are in each state right now. Counted from the same statuses the
+// cards show; a state with no channel is left out.
+const STRIP_ORDER: BadgeKind[] = ['review', 'outside', 'in_range', 'no_data']
+
+function SystemStrip({ rows }: { rows: Row[] }) {
+  const copy = strings.board.strip
+  const counts = new Map<BadgeKind, number>()
+  for (const row of rows) {
+    const kind = statusBadgeKind(row.status)
+    counts.set(kind, (counts.get(kind) ?? 0) + 1)
+  }
+  return (
+    <ul className="sys-strip" aria-label={copy.label}>
+      <li className="sys-strip__item sys-strip__item--total">
+        {copy.channels(rows.length)}
+      </li>
+      {STRIP_ORDER.filter((kind) => counts.has(kind)).map((kind) => (
+        <li key={kind} className={`sys-strip__item sys-strip__item--${kind}`}>
+          <StatusIcon kind={kind} size={16} />
+          <span>{copy.count[kind](counts.get(kind) ?? 0)}</span>
+        </li>
+      ))}
+    </ul>
   )
 }
 
@@ -424,6 +476,9 @@ function IndicatorRow({
             </span>
           </p>
           {system && (
+            <ErrorBoundary
+              fallback={<span className="instrument-slot" aria-hidden="true" />}
+            >
             <Suspense
               fallback={<span className="instrument-slot" aria-hidden="true" />}
             >
@@ -434,6 +489,7 @@ function IndicatorRow({
                 state={kind}
               />
             </Suspense>
+            </ErrorBoundary>
           )}
         </div>
       )}
@@ -599,4 +655,89 @@ function dedupeSources(sources: Source[]): Source[] {
     }
   }
   return result
+}
+
+// The line from the selected body of the planetarium to the top of its card: a
+// thin path measured from the two elements, drawn in on each selection, with a
+// dot in the state colour where it lands. In the list view there is no body to
+// start from, so a short stub marks the link instead. Decoration only.
+function StatusLink({
+  panelRef,
+  selectedId,
+  kind,
+  still,
+}: {
+  panelRef: RefObject<HTMLDivElement | null>
+  selectedId: string
+  kind: string
+  still: boolean
+}) {
+  const [geo, setGeo] = useState<{ d: string; x: number; y: number } | null>(null)
+  const allowed = useMotionAllowed(still)
+
+  // After the commit, so the panel's ref is set (a child's layout effect runs
+  // before its parent's ref is attached).
+  useEffect(() => {
+    const panel = panelRef.current
+    if (!panel) return
+    const measure = () => {
+      const orb = panel.querySelector<HTMLElement>(
+        '.planetarium__stage button[aria-pressed="true"]',
+      )
+      const card = panel.querySelector<HTMLElement>('.indicator-card')
+      if (!orb || !card) {
+        setGeo(null)
+        return
+      }
+      const base = panel.getBoundingClientRect()
+      const a = orb.getBoundingClientRect()
+      const b = card.getBoundingClientRect()
+      const x1 = a.left + a.width / 2 - base.left
+      const y1 = a.bottom - base.top
+      const x2 = Math.min(Math.max(x1, b.left - base.left + 32), b.right - base.left - 32)
+      const y2 = b.top - base.top
+      const mid = (y2 - y1) / 2
+      const round = (n: number) => Math.round(n * 10) / 10
+      setGeo({
+        d: `M${round(x1)} ${round(y1)} C${round(x1)} ${round(y1 + mid)} ${round(x2)} ${round(y2 - mid)} ${round(x2)} ${round(y2)}`,
+        x: round(x2),
+        y: round(y2),
+      })
+    }
+    measure()
+    // The planetarium loads on its own and the view can change inside the
+    // panel, so the line is measured again when the panel resizes or its
+    // content changes (one frame at most).
+    let frame = 0
+    const later = () => {
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(measure)
+    }
+    const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(later) : null
+    observer?.observe(panel)
+    const mutations = new MutationObserver(later)
+    mutations.observe(panel, { childList: true, subtree: true, attributes: true, attributeFilter: ['aria-pressed'] })
+    window.addEventListener('resize', measure)
+    return () => {
+      cancelAnimationFrame(frame)
+      mutations.disconnect()
+      observer?.disconnect()
+      window.removeEventListener('resize', measure)
+    }
+  }, [panelRef, selectedId])
+
+  if (geo === null) {
+    return <div className={`status-link status-link--${kind}`} aria-hidden="true" />
+  }
+  return (
+    <svg
+      key={selectedId}
+      className={`status-path status-link--${kind}${allowed ? '' : ' status-path--still'}`}
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path d={geo.d} pathLength={1} data-draw="" />
+      <circle cx={geo.x} cy={geo.y} r="4" />
+    </svg>
+  )
 }

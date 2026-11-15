@@ -35,15 +35,23 @@ function fakeCamera() {
   })
 }
 
+// The usernames the form sent, so a test can read what a typed name became.
+const sent: { signIn: string[]; create: string[] } = { signIn: [], create: [] }
+
 function accounts(): AccountClient {
   return {
     isConfigured: () => true,
-    signIn: () =>
-      Promise.resolve({
+    signIn: (credentials) => {
+      sent.signIn.push(credentials.personId)
+      return Promise.resolve({
         kind: 'signedIn',
         session: { personId: 'cadet_okoro', token: 'abc', expiresAt: FAR },
-      }),
-    createAccount: () => Promise.resolve('created'),
+      })
+    },
+    createAccount: (credentials) => {
+      sent.create.push(credentials.personId)
+      return Promise.resolve('created')
+    },
   }
 }
 
@@ -108,16 +116,11 @@ afterEach(() => {
   })
 })
 
-// The username and PIN form waits behind a closed row.
-async function openMore(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole('button', { name: strings.signIn.moreToggle }))
-}
-
 // The face is the first sign-in method: its button comes before the row that
 // opens the username and PIN form.
 function expectFaceBeforeUsernameForm() {
   const face = screen.getByRole('button', { name: strings.face.buttonLabel })
-  const more = screen.getByRole('button', { name: strings.signIn.moreToggle })
+  const more = screen.getByRole('tab', { name: strings.signIn.signInTab })
   expect(
     face.compareDocumentPosition(more) & Node.DOCUMENT_POSITION_FOLLOWING,
   ).toBeTruthy()
@@ -141,7 +144,6 @@ describe('Identify', () => {
     const user = userEvent.setup()
     render(<Harness onDone={onDone} />)
 
-    await openMore(user)
     await user.type(screen.getByLabelText(strings.signIn.username), 'cadet_okoro')
     await user.type(screen.getByLabelText(strings.signIn.pin, { exact: true }), '4821')
     await user.click(screen.getByRole('button', { name: strings.signIn.action }))
@@ -218,16 +220,25 @@ describe('Identify', () => {
     expect(onDone).not.toHaveBeenCalled()
   })
 
-  it('keeps the username and PIN form closed until its row is opened', async () => {
+  it('shows sign in, create an account and the demo without opening anything', () => {
+    render(<Harness onDone={vi.fn()} />)
+
+    expect(screen.getByRole('tab', { name: strings.signIn.signInTab })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    )
+    expect(screen.getByRole('tab', { name: strings.signIn.createToggle })).toBeVisible()
+    expect(screen.getByRole('button', { name: strings.signIn.demoAction })).toBeVisible()
+    expect(screen.getByLabelText(strings.signIn.username)).toBeVisible()
+  })
+
+  it('moves the focus to the first field of the chosen form', async () => {
     const user = userEvent.setup()
     render(<Harness onDone={vi.fn()} />)
 
-    expect(screen.queryByLabelText(strings.signIn.username)).toBeNull()
-    expect(
-      screen.getByRole('button', { name: strings.signIn.moreToggle }),
-    ).toHaveAttribute('aria-expanded', 'false')
-    await openMore(user)
-    expect(screen.getByLabelText(strings.signIn.username)).toBeInTheDocument()
+    await user.click(screen.getByRole('tab', { name: strings.signIn.createToggle }))
+    expect(screen.getByLabelText(strings.signIn.username)).toHaveFocus()
+    expect(screen.getByLabelText(strings.signIn.confirmPin)).toBeInTheDocument()
   })
 
   it('opens the demo with no PIN at all', async () => {
@@ -238,6 +249,19 @@ describe('Identify', () => {
     await user.click(screen.getByRole('button', { name: strings.signIn.demoAction }))
 
     expect(onDone).toHaveBeenCalledTimes(1)
+  })
+
+  it('adds nothing above the panel while the carry runs, then switches', async () => {
+    vi.unstubAllGlobals() // motion on: the carry takes about 500 ms
+    const onDone = vi.fn()
+    const user = userEvent.setup()
+    render(<Harness onDone={onDone} />)
+
+    await user.click(screen.getByRole('button', { name: strings.signIn.demoAction }))
+
+    expect(screen.queryByText(strings.signIn.signedInAs(PERSON))).toBeNull()
+    expect(onDone).not.toHaveBeenCalled()
+    await waitFor(() => expect(onDone).toHaveBeenCalledTimes(1))
   })
 
   it('names the person on duty and offers the way out', async () => {
@@ -255,7 +279,6 @@ describe('Identify', () => {
     const user = userEvent.setup()
     render(<Harness onDone={vi.fn()} />)
 
-    await openMore(user)
     await user.type(screen.getByLabelText(strings.signIn.username), 'cadet_okoro')
     await user.type(screen.getByLabelText(strings.signIn.pin), '11')
     await user.click(screen.getByRole('button', { name: strings.signIn.action }))
@@ -263,6 +286,93 @@ describe('Identify', () => {
     expect(screen.getByRole('alert')).toHaveTextContent(
       strings.signIn.errors.pin,
     )
+  })
+
+  it('turns a typed name into its id, shows it, and signs in with it', async () => {
+    sent.signIn.length = 0
+    const user = userEvent.setup()
+    render(<Harness onDone={vi.fn()} />)
+
+    const field = screen.getByLabelText(strings.signIn.username)
+    await user.type(field, 'Juan Pérez')
+    expect(
+      screen.getByText(strings.signIn.willSignInAs('juan_perez')),
+    ).toBeInTheDocument()
+    expect(field).toHaveAccessibleDescription(
+      strings.signIn.willSignInAs('juan_perez'),
+    )
+    await user.type(screen.getByLabelText(strings.signIn.pin, { exact: true }), '4821')
+    await user.click(screen.getByRole('button', { name: strings.signIn.action }))
+
+    await waitFor(() => expect(sent.signIn).toEqual(['juan_perez']))
+  })
+
+  it('creates the account with the normalised name', async () => {
+    sent.create.length = 0
+    const user = userEvent.setup()
+    render(<Harness onDone={vi.fn()} />)
+
+    await user.click(screen.getByRole('tab', { name: strings.signIn.createToggle }))
+    await user.type(screen.getByLabelText(strings.signIn.username), '  Wambi ')
+    await user.type(screen.getByLabelText(strings.signIn.pin, { exact: true }), '4821')
+    await user.type(screen.getByLabelText(strings.signIn.confirmPin), '4821')
+    await user.click(
+      screen.getByRole('button', { name: strings.signIn.createAction }),
+    )
+
+    await waitFor(() => expect(sent.create).toEqual(['wambi']))
+  })
+
+  it('offers to add a face right after the account is created', async () => {
+    fakeCamera()
+    const onDone = vi.fn()
+    const user = userEvent.setup()
+    render(<Harness onDone={onDone} />)
+
+    await user.click(screen.getByRole('tab', { name: strings.signIn.createToggle }))
+    await user.type(screen.getByLabelText(strings.signIn.username), 'wambi')
+    await user.type(screen.getByLabelText(strings.signIn.pin, { exact: true }), '4821')
+    await user.type(screen.getByLabelText(strings.signIn.confirmPin), '4821')
+    await user.click(screen.getByRole('button', { name: strings.signIn.createAction }))
+
+    expect(
+      await screen.findByRole('heading', { name: strings.signIn.faceOfferHeading }),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: strings.signIn.faceOfferAction }),
+    ).toBeEnabled()
+    expect(onDone).not.toHaveBeenCalled()
+  })
+
+  it('shows no preview for a name that is already an id', async () => {
+    const user = userEvent.setup()
+    render(<Harness onDone={vi.fn()} />)
+
+    await user.type(screen.getByLabelText(strings.signIn.username), 'cadet_okoro')
+    expect(screen.queryByText(/You will sign in as/)).toBeNull()
+  })
+
+  it('puts the error of a name that cannot work on the field and sends nothing', async () => {
+    sent.signIn.length = 0
+    const user = userEvent.setup()
+    render(<Harness onDone={vi.fn()} />)
+
+    const field = screen.getByLabelText(strings.signIn.username)
+    await user.type(field, 'w@mbi')
+    await user.type(screen.getByLabelText(strings.signIn.pin, { exact: true }), '4821')
+    await user.click(screen.getByRole('button', { name: strings.signIn.action }))
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      strings.signIn.errors.username,
+    )
+    expect(field).toHaveAttribute('aria-invalid', 'true')
+    expect(field).toHaveAccessibleDescription(strings.signIn.errors.username)
+    expect(field).toHaveFocus()
+    expect(sent.signIn).toEqual([])
+
+    // Typing again clears the error.
+    await user.type(field, 'x')
+    expect(field).not.toHaveAttribute('aria-invalid')
   })
 
   it('keeps someone who is not the demo behind a PIN, and shows the id as a name', () => {

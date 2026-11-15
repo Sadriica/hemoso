@@ -1,6 +1,7 @@
 // Where does it hurt: the pain mode of the 3D body with one row per chosen
 // place (kind of mark, strength), an optional note, and a Save that writes the
-// report to this device only (data/painStore.ts). No condition names, no
+// report to this device (data/painStore.ts); for an account it is also sent to
+// the server when the server has the route (data/painOutbox.ts). No condition names, no
 // "you have": the words say what was marked and that the CMO or flight surgeon
 // reads it with the astronaut.
 
@@ -15,6 +16,7 @@ import {
   type PainReport,
   type PainStorage,
 } from '../../data/painStore'
+import ErrorBoundary from '../ErrorBoundary'
 import { bodyRegionName } from './regions'
 import { bodyWords, injuryWords } from './words'
 
@@ -96,6 +98,9 @@ export default function PainPicker({
       </h3>
       <p className="pain-picker__intro">{injuryWords.intro}</p>
       <div className="pain-picker__body">
+        <ErrorBoundary
+          fallback={<p className="pain-picker__error" role="alert">{bodyWords.failed}</p>}
+        >
         <Suspense fallback={<div className="body3d-slot" aria-hidden="true" />}>
           <Body3D
             mode="pain"
@@ -106,6 +111,7 @@ export default function PainPicker({
             onSelect={toggleRegion}
           />
         </Suspense>
+        </ErrorBoundary>
         <div className="pain-picker__form">
           {marks.length === 0 ? (
             <p className="pain-picker__hint">{bodyWords.listHint}</p>

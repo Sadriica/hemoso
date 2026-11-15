@@ -43,7 +43,7 @@ describe('parseDraft', () => {
       const draft = parseDraft({ ...measured, value: '1', missionDay })
       expect(draft, missionDay).toEqual({
         ok: false,
-        errors: { missionDay: 'Enter a whole mission day, 1 or more.' },
+        errors: { missionDay: strings.entry.errors.missionDay },
       })
     }
   })
@@ -53,7 +53,7 @@ describe('parseDraft', () => {
       const draft = parseDraft({ ...measured, value: '1', time })
       expect(draft, time).toEqual({
         ok: false,
-        errors: { time: 'Enter a time as HH:MM.' },
+        errors: { time: strings.entry.errors.time },
       })
     }
   })
@@ -64,8 +64,8 @@ describe('parseDraft', () => {
         ok: false,
         errors: {
           value: 'Enter a value.',
-          missionDay: 'Enter a whole mission day, 1 or more.',
-          time: 'Enter a time as HH:MM.',
+          missionDay: strings.entry.errors.missionDay,
+          time: strings.entry.errors.time,
         },
       },
     )

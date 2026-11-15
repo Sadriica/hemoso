@@ -1,0 +1,164 @@
+/* The status phase in the console grammar of DESIGN.md section 16: a system
+   strip, the card and the 3D body as instrument panels, and the possible
+   conditions as an evidence board. Tokens only. */
+
+.sys-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-3);
+  padding: 0;
+  list-style: none;
+}
+
+.sys-strip__item {
+  --strip: var(--color-text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--space-5);
+  padding: 0 var(--space-3);
+  border: 1px solid color-mix(in srgb, var(--strip) 45%, var(--color-border));
+  border-radius: var(--radius-small);
+  background: var(--color-bg-raised);
+  color: var(--strip);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.sys-strip__item--total {
+  --strip: var(--accent-cyan);
+}
+
+.sys-strip__item--review {
+  --strip: var(--status-review-text);
+}
+
+.sys-strip__item--outside {
+  --strip: var(--status-attention-text);
+}
+
+.sys-strip__item--in_range {
+  --strip: var(--status-in-range-text);
+}
+
+/* The card of one indicator: the state colour on the top edge, the name in
+   display uppercase, the frame with two corner marks. */
+.phase--status .indicator-card {
+  position: relative;
+  border-left-width: 1px;
+  border-left-color: var(--color-border);
+  border-top: 2px solid var(--status-no-data-text);
+  background: var(--color-bg-raised);
+}
+
+.phase--status .indicator-card--in_range {
+  border-top-color: var(--status-in-range-text);
+}
+
+.phase--status .indicator-card--outside {
+  border-top-color: var(--status-attention-text);
+}
+
+.phase--status .indicator-card--review {
+  border-top-color: var(--status-review-text);
+}
+
+.phase--status .indicator-card__name {
+  font-family: var(--font-display);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.phase--status .indicator-card::before,
+.phase--status .indicator-card::after,
+.phase--status .detail__body::before,
+.phase--status .detail__body::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  width: var(--space-3);
+  height: var(--space-3);
+  border-bottom: 2px solid var(--color-border-control);
+  pointer-events: none;
+}
+
+.phase--status .indicator-card::before,
+.phase--status .detail__body::before {
+  left: -1px;
+  border-left: 2px solid var(--color-border-control);
+}
+
+.phase--status .indicator-card::after,
+.phase--status .detail__body::after {
+  right: -1px;
+  border-right: 2px solid var(--color-border-control);
+}
+
+/* The 3D body beside the card: wider, framed and named, so it reads as the
+   centrepiece of the console and not as a thumbnail. */
+.phase--status .detail__eyebrow {
+  margin: 0 0 var(--space-2);
+  color: var(--accent-cyan);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+@media (min-width: 900px) {
+  .phase--status .detail {
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+  }
+
+  .phase--status .detail__body {
+    position: relative;
+    padding: var(--space-3);
+    border: var(--border-subtle);
+    border-top: 2px solid var(--accent-violet);
+    border-radius: var(--radius-card);
+    background: var(--color-bg-raised);
+  }
+}
+
+/* The possible conditions as an evidence board. */
+.conditions__eyebrow {
+  margin: 0;
+  color: var(--accent-cyan);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.phase--status .condition {
+  position: relative;
+  border-left-width: 1px;
+  border-left-color: var(--color-border);
+  border-top: 2px solid var(--step);
+}
+
+.phase--status .condition--review,
+.phase--status .condition--possible {
+  border-left-width: 1px;
+  border-top-width: 4px;
+}
+
+.phase--status .condition__name {
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.phase--status .condition__sentence,
+.phase--status .condition__score {
+  font-family: var(--font-mono);
+}
+
+.phase--status .condition__sentence {
+  font-family: var(--font-body);
+}

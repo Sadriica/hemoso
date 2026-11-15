@@ -57,7 +57,7 @@
 
 /* On a wide screen the rows sit in two columns, so the name and its field stay
    close together; the mood scale takes the full width. */
-@media (min-width: 1000px) {
+@media (min-width: 1200px) {
   .phase--report .rep .rep-rows {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -71,11 +71,16 @@
   }
 
   .phase--report .rep .rep-row--wide .rep-row__body {
-    grid-template-columns: minmax(0, 1fr) 260px;
+    grid-template-columns: minmax(0, 1fr) 240px;
   }
 
   .phase--report .rep .rep-row__body {
     grid-template-columns: minmax(0, 1fr) 200px;
+  }
+
+  /* The blood pressure holds two values and a unit: a wider column. */
+  .phase--report .rep .rep-row--pair .rep-row__body {
+    grid-template-columns: minmax(0, 1fr) 240px;
   }
 
   .phase--report .rep .rep-row--scale .rep-row__body {
@@ -166,4 +171,78 @@
     width: calc(var(--space-6) * 2);
     height: calc(var(--space-6) * 2);
   }
+}
+
+/* The measured connection from the selected body to its card. */
+.status-path {
+  --link: var(--status-no-data-text);
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.status-path path {
+  fill: none;
+  stroke: color-mix(in srgb, var(--color-accent) 45%, transparent);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+}
+
+.status-path circle {
+  fill: var(--link);
+}
+
+.status-path.status-link--in_range { --link: var(--status-in-range-text); }
+.status-path.status-link--outside { --link: var(--status-attention-text); }
+.status-path.status-link--review { --link: var(--status-review-text); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .app:not(.app--still) .status-path:not(.status-path--still) path {
+    animation: status-path-draw var(--motion-base) var(--ease-settle) both;
+  }
+
+  .app:not(.app--still) .status-path:not(.status-path--still) circle {
+    animation: status-path-dot var(--motion-base) var(--ease-settle) both;
+  }
+}
+
+@keyframes status-path-draw {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes status-path-dot {
+  from { opacity: 0; }
+  60% { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* A person's id never leaves a lone digit on a line. */
+.phase--status .home__heading {
+  text-wrap: balance;
+}
+
+/* The board ends where the planetarium does. */
+.phase--status .status-panel .board__orbit {
+  min-height: 0;
+}
+
+/* The square stage leaves air under the last orbit: trim it to one step. */
+.phase--status .status-panel .planetarium__stage {
+  margin-bottom: calc(var(--space-6) * -1);
+}
+
+/* The connection runs behind the bodies and their tags, never across them. */
+.phase--status .status-panel > :not(.status-path) {
+  position: relative;
+  z-index: 1;
+}
+
+.phase--status .status-panel > .status-path {
+  z-index: 0;
 }

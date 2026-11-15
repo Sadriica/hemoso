@@ -1,17 +1,16 @@
 import type { EntryStore, Outbox } from '../data/entryStore'
 import type { SyncClient } from '../data/sync'
-import { UtilityIcon } from '../icons'
 import { useOutbox } from '../hooks/useOutbox'
 import { useSync } from '../hooks/useSync'
 import { strings } from '../strings'
 
-// The sending state of the outbox (REQ-28) as one chip: the connection, then
-// the one thing that matters about it, which is the readings waiting or the
-// last send that went wrong. "Send now" appears only while something waits and
-// a server is set up; a button that can never work would only add noise. The
-// icon draws the same state as the words, so the chip is never colour alone
-// (REQ-15), and its title is the whole sentence, which is what a narrow screen
-// keeps after it drops the word "waiting".
+// The sending state of the outbox (REQ-28) as one line of quiet text: a small
+// dot, the connection, then the one thing that matters about it, which is the
+// readings waiting or the last send that went wrong. "Send now" is a text link
+// that appears only while something waits and a server is set up; a button
+// that can never work would only add noise. The dot repeats the words, so the
+// state is never colour alone (REQ-15), and the title is the whole sentence,
+// which is what a narrow screen keeps after it drops the word "waiting".
 export default function SyncStatus({
   store,
   client,
@@ -53,9 +52,7 @@ export default function SyncStatus({
         className={`sync-chip sync-chip--${tone}`}
         title={strings.sync.chip(state, detail)}
       >
-        <span className="sync-chip__icon" aria-hidden="true">
-          <UtilityIcon kind={online ? 'wifi' : 'wifi-off'} size={16} />
-        </span>
+        <span className="sync-chip__dot" aria-hidden="true" />
         <span className="sync-chip__state">{state}</span>
         <span className="sync-chip__rest">
           <span className="sync-chip__separator">{' · '}</span>
