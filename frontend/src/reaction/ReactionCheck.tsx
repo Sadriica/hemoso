@@ -1,8 +1,9 @@
 import { useEffect, useId, useLayoutEffect, useReducer, useRef, useState } from 'react'
-import { missionNow } from '../domain/clock'
+import { missionClockFor } from '../domain/clock'
 import { contextForTime } from '../domain/context'
 import type { Entry as EntryRecord, Indicator } from '../domain/types'
 import type { EntryStore } from '../data/entryStore'
+import { getMissionStart } from '../data/missionStart'
 import { useMotionAllowed } from '../motion/motion'
 import { createTonePlayer, type TonePlayer } from './audio'
 import {
@@ -87,8 +88,9 @@ function persistRun(state: ReactionState, latest: Latest): number {
   const median = indicators.find((item) => item.id === REACTION_MEDIAN_ID)
   const lapses = indicators.find((item) => item.id === REACTION_LAPSES_ID)
   if (median === undefined || lapses === undefined) return 0
-  const own = entries.filter((entry) => entry.personId === personId)
-  const now = missionNow(own)
+  // The Flight Day counts from the person's mission start, read at save time
+  // like the symptom list, so a start synced after the panel opened still counts.
+  const now = missionClockFor(entries, personId, getMissionStart(personId))
   // The context of a reading without a stated one: the one the local clock
   // picks, the same rule the Entry screen offers (REQ-09).
   const context = contextForTime(now.time)

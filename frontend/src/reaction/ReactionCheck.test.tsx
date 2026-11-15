@@ -17,6 +17,7 @@ import {
 } from './constants'
 import { REACTION_LAPSES_ID, REACTION_MEDIAN_ID } from './ids'
 import { reactionStrings } from './strings'
+import { MISSION_START_KEY, setMissionStart } from '../data/missionStart'
 
 const indicator = (id: string, name: string, unit: string): Indicator => ({
   id,
@@ -257,6 +258,19 @@ describe('ReactionCheck', () => {
     expect(screen.getByText(reactionStrings.saved(2, false))).toBeVisible()
     expect(store.list().map((entry) => entry.value)).toEqual([300, 0])
     expect(store.pending()).toHaveLength(2)
+  })
+
+  it('stamps the Flight Day from the mission start saved after it opened', () => {
+    const store = memoryStore()
+    draw(store, { search: '' })
+    // The account's start arrives once the panel is open: day 1 was 3 Nov, so
+    // 14 Nov is Flight Day 12.
+    setMissionStart('demo_astronaut_1', '2026-11-03')
+    START()
+    answerTrials(REACTION_MIN_SAVE_TRIALS)
+    fireEvent.keyDown(window, { key: 'Escape' })
+    expect(store.list().map((entry) => entry.missionDay)).toEqual([12, 12])
+    localStorage.removeItem(MISSION_START_KEY)
   })
 
   it('keeps what was answered when the screen is left, once, also under StrictMode', () => {
