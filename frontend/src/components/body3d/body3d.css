@@ -21,11 +21,19 @@
   min-height: 320px;
   overflow: hidden;
   border-radius: var(--radius-card);
+  /* Two soft pools of the accent colour behind the figure: a wide one that
+     lifts the page tone and a tighter one at the torso, so the outline of the
+     body stands against a lighter ground instead of the page. */
   background:
     radial-gradient(
-      circle at 50% 32%,
-      color-mix(in srgb, var(--color-accent) 12%, transparent),
-      transparent 62%
+      ellipse 40% 36% at 50% 50%,
+      color-mix(in srgb, var(--color-accent) 16%, transparent),
+      transparent
+    ),
+    radial-gradient(
+      circle at 50% 40%,
+      color-mix(in srgb, var(--color-accent) 10%, transparent),
+      transparent 70%
     ),
     var(--color-bg-raised);
 }
