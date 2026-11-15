@@ -324,6 +324,8 @@ def check_attention_order(rep: Reporter, bounds: dict) -> None:
                           f"notify the same or more")
 
 
+BASELINE_STATES = ("in_range", "outside_range", "no_data")
+BASELINE_STATES_REQUIRED = ("in_range", "outside_range")
 SIGNAL_SIDES = ("above", "below")
 
 
@@ -510,12 +512,22 @@ def check_content_file(rep: Reporter, path: Path, rel: str, stem: str, state: di
                 rep.error(f"{rel}: '### {block['heading']}' must be under '## Status and next steps'")
             subheads.append(block["heading"])
 
+    # The baseline states the API returns (backend/app/state.py): in_range and
+    # outside_range need their own text, no_data may have one; needs_review is
+    # told per attention_level of rules/attention.csv.
+    for st in BASELINE_STATES_REQUIRED:
+        if st not in subheads:
+            rep.error(f"{rel}: no '### {st}' heading for the baseline state of indicator '{stem}'")
+    for h, count in Counter(subheads).items():
+        if count > 1:
+            rep.error(f"{rel}: duplicate heading '### {h}'")
     attention = state.get("attention")
     if attention is not None:
         levels = attention.get(stem, set())
         for h in subheads:
-            if h not in levels:
-                rep.error(f"{rel}: '### {h}' is not an attention_level for indicator '{stem}'")
+            if h not in levels and h not in BASELINE_STATES:
+                rep.error(f"{rel}: '### {h}' is neither a baseline state ({', '.join(BASELINE_STATES)}) "
+                          f"nor an attention_level for indicator '{stem}'")
         for level in sorted(levels - set(subheads)):
             rep.error(f"{rel}: no '### {level}' heading for attention_level of indicator '{stem}'")
     else:
