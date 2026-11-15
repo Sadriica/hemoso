@@ -385,3 +385,40 @@ describe('Home', () => {
     ).toBeInTheDocument()
   })
 })
+
+describe('Home board', () => {
+  it('shows the state icon and the words in the badge, and the unit in the value', () => {
+    const { container } = render(
+      <Home personId="demo_astronaut_1" data={data} entries={data.demoEntries} />,
+    )
+    const badge = container.querySelector('.attention-badge--in_range')
+    expect(badge?.querySelector('svg')).toHaveAttribute('data-icon', 'in_range')
+    expect(badge).toHaveTextContent('In range')
+  })
+
+  it('offers a review notice that selects the first reading to review', async () => {
+    const user = userEvent.setup()
+    render(
+      <Home
+        personId="demo_astronaut_1"
+        data={{ ...data, demoEntries: [entry(10, 101)] }}
+        entries={[entry(10, 101)]}
+        motionReduced
+      />,
+    )
+    expect(screen.getByText(strings.board.needsReview(1))).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: strings.board.showFirst }))
+    expect(
+      screen.getByRole('heading', { name: 'Example indicator' }).closest('li'),
+    ).toHaveClass('indicator-card--selected')
+  })
+
+  it('loads the overview and the body zone, with words next to the figures', async () => {
+    render(
+      <Home personId="demo_astronaut_1" data={data} entries={data.demoEntries} motionReduced />,
+    )
+    expect(
+      await screen.findByRole('list', { name: strings.board.planetarium.orbitsHeading }),
+    ).toBeInTheDocument()
+  })
+})

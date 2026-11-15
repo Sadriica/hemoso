@@ -89,10 +89,17 @@ export const strings = {
       viewList: 'List view',
       orbitsHeading: 'Overview of every reading',
     },
+    // A reading that crossed an attention rule: the notice names how many and
+    // offers to select the first one. No health wording.
+    needsReview: (count: number): string =>
+      `${count} ${count === 1 ? 'reading needs' : 'readings need'} review.`,
+    showFirst: 'Show the first one',
     bodyLabel: (name: string): string => `Body zone: ${name}`,
     bodyNone: 'No body zone for this indicator',
     loading: 'Loading the overview.',
   },
+  // The first-load intro (skippable with any key or tap).
+  intro: { skip: 'Skip intro' },
   // The bar along the top of every phase (style guide 5, 7.1).
   topbar: {
     tagline: 'CREW HEALTH',
@@ -211,6 +218,9 @@ export const strings = {
     online: 'Online',
     offline: 'Offline',
     sendNow: 'Send now',
+    // The browser is offline and a server is set up: entries stay here.
+    offlineNotice: 'You are offline. Entries wait on this device.',
+    tryAgain: 'Try to send',
     noServer: 'No server set up for this demo',
     notAccepted: (count: number): string =>
       `${count} not accepted by the server`,

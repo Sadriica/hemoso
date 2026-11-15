@@ -380,7 +380,7 @@ legend {
 }
 
 /* The unit sits inside the field, after the number (DESIGN.md 8). */
-.field__control .field__input {
+.field__control input.field__input {
   min-height: 54px;
   border: 0;
   background: transparent;
@@ -389,7 +389,7 @@ legend {
   line-height: var(--leading-value);
 }
 
-.field__control .field__input:focus-visible {
+.field__control input.field__input:focus-visible {
   outline: none;
 }
 
@@ -398,7 +398,7 @@ legend {
   width: 100%;
 }
 
-.field__control .field__input {
+.field__control input.field__input {
   flex: 1 1 auto;
   min-width: 0;
 }
@@ -497,6 +497,27 @@ legend {
 
 .notice--warning {
   border-left-color: var(--status-attention-text);
+}
+
+.notice--review {
+  border-left-color: var(--status-review-text);
+}
+
+.notice--review .notice__icon {
+  color: var(--status-review-text);
+}
+
+/* The one action of a notice sits on its own line on a phone. */
+.notice {
+  flex-wrap: wrap;
+}
+
+.notice__body {
+  flex: 1 1 200px;
+}
+
+.notice__action {
+  flex: 0 0 auto;
 }
 
 .notice--warning .notice__icon {

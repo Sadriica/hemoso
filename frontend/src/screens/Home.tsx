@@ -71,6 +71,7 @@ export default function Home({
       : { kind: 'no_data' }
     return { indicator, latest, attention, content: data.contents[indicator.id] }
   })
+  const reviewRows = rows.filter((row) => row.attention.kind === 'attention')
   const selected = rows.find((row) => row.indicator.id === selectedId)
   const selectedSystem = selected ? systemOf(selected.indicator.id) : null
 
@@ -95,6 +96,22 @@ export default function Home({
               ))}
             </ul>
           </Disclosure>
+        </Notice>
+      )}
+      {reviewRows.length > 0 && (
+        <Notice
+          tone="review"
+          action={
+            <button
+              type="button"
+              className="button button--secondary"
+              onClick={() => setChosenId(reviewRows[0].indicator.id)}
+            >
+              {strings.board.showFirst}
+            </button>
+          }
+        >
+          {strings.board.needsReview(reviewRows.length)}
         </Notice>
       )}
       {rows.length > 0 && (

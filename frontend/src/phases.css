@@ -44,7 +44,7 @@ body {
   inset: 0;
   width: 100%;
   height: 100%;
-  opacity: 0.75;
+  opacity: 0.6;
 }
 
 .cinema__glow {
@@ -267,6 +267,13 @@ html {
     opacity: 1;
     transform: none;
   }
+}
+
+/* Text never sits on the stars: the headline block has a solid page colour
+   (DESIGN.md 6). */
+.phase-heading {
+  padding-block: var(--space-3);
+  background: var(--color-bg);
 }
 
 .phase-heading__intro {
@@ -543,12 +550,13 @@ html {
 
 /* Light theme: the same layout on light surfaces, no stars or grain. */
 @media (prefers-color-scheme: light) {
-  .cinema__stars {
-    display: none;
+  /* No stars, glow or blue wash behind the text on the light theme. */
+  body {
+    background-image: none;
   }
 
-  .cinema__vignette {
-    background: none;
+  .cinema {
+    display: none;
   }
 
   .phase__actions,
