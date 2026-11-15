@@ -2,6 +2,34 @@
 
 Written by Eng 1 at every merge into `main`. Newest entry first.
 
+## Pre-submission · Sunday 12:40 (merges #158 to #206 and #186)
+- eng1: the README as a product page with screenshots and the award story on
+  the submission page (#186); urgent symptoms lead the evidence board and
+  low-priority cards fold on phones; the Flight Day follows the synced
+  mission start in Report and in a saved reaction run, with a second-browser
+  e2e; a send count while readings go out; a larger desktop orbit where a tap
+  on the body opens the pain picker; the top bar without overlap and an
+  app-styled mission start field (#205); the reaction check stays the 90 s
+  simple test of F-phys-06 (#206, a 50 s colour version was reverted).
+- eng1, #159 to #201: visual rounds on Report, Status, History and Identify;
+  face sign-in on more devices with a scan, success and failure animation;
+  readings sent as soon as they are saved; keyboard and screen-reader fixes on
+  the judges' path; frontend parity with the API (daily window, on-threshold
+  rows); symptoms in Report and in the device score; the intro title under the
+  orbits and idle performance fixes.
+- eng2: pain report kind and mission start in the API (#171), a value on a
+  threshold triggers it (#173), the window checked against the shared vectors
+  (#181), the video stills and draft v4 (#177, #180, #203).
+- phys: symptoms, source index and the PVT-B correction (#162), NASA resource
+  label, body mass on both sides (#187), the NIH fever definition (#198),
+  flight instruments checked row by row and the eye closure check written as
+  EAR, not PERCLOS (#204).
+- bio1: reaction and nutrition texts (#163, #169), the video shot table and
+  nutrition floors (#202).
+- bio2: every conditions row has its symptoms cell (#176), the body mass floor
+  at 45 kg (#190), the fever line cites NIH MedlinePlus and WHO (#192, #199).
+- Left out: the on-device eye check (#195, #197 closed; the branches stay).
+
 ## cp3 · Sunday 07:27 (tag `cp3`, merges #155 phys, #156 bio2, #151 eng2, #157 eng1)
 - phys: indicators with tier and system, glucose at tier A with the i-STAT,
   `docs/nasa_data.md` and five findings; the baseline window as the daily mean
