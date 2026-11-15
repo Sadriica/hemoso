@@ -8,15 +8,19 @@ import { bodyWords } from './words'
 // silhouette and the same list of body parts. The canvas path is proved by the
 // e2e spec in e2e/body3d.spec.ts, on a real browser.
 describe('Body3D without WebGL', () => {
-  it('draws the 2D silhouette with the label and lists every region', () => {
+  it('draws the 2D silhouette with the label and no inert list of regions', () => {
     const { container } = render(
       <Body3D mode="status" system="neuro" label="Body zone: Mood" />,
     )
     expect(screen.getByRole('img', { name: 'Body zone: Mood' })).toBeInTheDocument()
     expect(container.querySelector('.body-silhouette')).not.toBeNull()
-    const list = screen.getByRole('list', { name: bodyWords.regionsLabel })
-    expect(within(list).getAllByRole('listitem')).toHaveLength(25)
-    expect(screen.getByText(bodyWords.noWebgl)).toBeInTheDocument()
+    expect(screen.queryByRole('list')).toBeNull()
+    expect(screen.queryByRole('group', { name: bodyWords.regionsLabel })).toBeNull()
+  })
+
+  it('names the lit places in text a screen reader reads', () => {
+    render(<Body3D mode="status" system="cardiovascular" state="review" />)
+    expect(screen.getByText(/^Lit: .*Chest/)).toBeInTheDocument()
   })
 
   it('lights the zone of the system it is given', () => {
@@ -41,7 +45,11 @@ describe('Body3D without WebGL', () => {
         onSelect={onSelect}
       />,
     )
-    const list = screen.getByRole('list', { name: bodyWords.regionsLabel })
+    const list = screen.getByRole('group', { name: bodyWords.regionsLabel })
+    expect(within(list).getAllByRole('listitem')).toHaveLength(25)
+    expect(
+      within(list).getByRole('list', { name: bodyWords.groups.left_leg }),
+    ).toBeInTheDocument()
     expect(within(list).getByRole('button', { name: 'Left knee' })).toHaveAttribute(
       'aria-pressed',
       'true',

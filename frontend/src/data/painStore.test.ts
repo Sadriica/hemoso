@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   PAIN_STORAGE_KEY,
   readPainReports,
+  removePainReport,
   savePainReport,
   type PainReport,
 } from './painStore'
@@ -149,5 +150,36 @@ describe('pain store', () => {
     expect(saved).toBe(false)
     expect(report.regions).toHaveLength(1)
     expect(readPainReports(REPORT.personId, null)).toEqual([])
+  })
+
+  it('removes one report and keeps the others, of any person', () => {
+    const storage = memoryStorage()
+    const first = savePainReport(REPORT, storage).report
+    const second = savePainReport({ ...REPORT, missionDay: 42 }, storage).report
+    const other = savePainReport({ ...REPORT, personId: 'demo_astronaut_2' }, storage).report
+
+    expect(removePainReport(first.id, storage)).toBe(true)
+    expect(readPainReports(REPORT.personId, storage).map((r) => r.id)).toEqual([second.id])
+    expect(readPainReports('demo_astronaut_2', storage).map((r) => r.id)).toEqual([other.id])
+  })
+
+  it('treats an id that is not stored as already removed', () => {
+    const storage = memoryStorage()
+    savePainReport(REPORT, storage)
+    expect(removePainReport('missing', storage)).toBe(true)
+    expect(readPainReports(REPORT.personId, storage)).toHaveLength(1)
+  })
+
+  it('says so when the removal cannot be written', () => {
+    const storage = memoryStorage()
+    const { report } = savePainReport(REPORT, storage)
+    const blocked = {
+      getItem: storage.getItem,
+      setItem: () => {
+        throw new Error('blocked')
+      },
+    }
+    expect(removePainReport(report.id, blocked)).toBe(false)
+    expect(removePainReport(report.id, null)).toBe(false)
   })
 })

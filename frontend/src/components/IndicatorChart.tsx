@@ -34,6 +34,8 @@ const Y_TICKS = 4
 // Smallest gap between two threshold labels, so two close lines stay readable.
 const LABEL_GAP = 14
 const LABEL_OFFSET = 6
+// A label under its line sits lower: the text hangs from its baseline.
+const LABEL_BELOW = 14
 // Smallest gap between two day labels, in pixels: below it the axis keeps every
 // other day instead of printing unreadable numbers.
 const LABEL_MIN_GAP = 44
@@ -207,8 +209,9 @@ export default function IndicatorChart({
             />
             <text
               className="chart__threshold-label"
-              x={plot.left + 6}
+              x={plot.right - 4}
               y={threshold.labelY}
+              textAnchor="end"
             >
               {threshold.level}
             </text>
@@ -335,29 +338,32 @@ function buildChart(
   }
 }
 
-// Threshold lines sorted from the lowest value up, with labels pushed apart so
-// two close thresholds do not print on top of each other.
+// Threshold lines with their labels at the right end, where the line is
+// usually free of readings: just above an `above` line and just below a
+// `below` line, on the side the value must cross into. Labels that would print
+// on top of each other are pushed apart.
 function thresholdLines(
   rules: AttentionRule[],
   yPosition: (value: number) => number,
   plot: Plot,
 ): ThresholdLine[] {
-  let previousLabelY = Number.POSITIVE_INFINITY
-  return [...rules]
-    .sort((a, b) => a.threshold - b.threshold)
-    .map((rule) => {
-      const y = yPosition(rule.threshold)
-      const labelY = Math.max(
-        plot.top + 10,
-        Math.min(y - LABEL_OFFSET, previousLabelY - LABEL_GAP),
-      )
-      previousLabelY = labelY
-      return {
-        key: `${rule.attentionLevel}:${rule.side}:${rule.threshold}`,
-        level: rule.attentionLevel,
-        y,
-        labelY,
-      }
+  const lines = rules.map((rule) => {
+    const y = yPosition(rule.threshold)
+    const wanted = rule.side === 'above' ? y - LABEL_OFFSET : y + LABEL_BELOW
+    return {
+      key: `${rule.attentionLevel}:${rule.side}:${rule.threshold}`,
+      level: rule.attentionLevel,
+      y,
+      labelY: Math.min(plot.bottom - 4, Math.max(plot.top + 10, wanted)),
+    }
+  })
+  let previous = Number.NEGATIVE_INFINITY
+  return lines
+    .sort((a, b) => a.labelY - b.labelY)
+    .map((line) => {
+      const labelY = Math.max(line.labelY, previous + LABEL_GAP)
+      previous = labelY
+      return { ...line, labelY }
     })
 }
 

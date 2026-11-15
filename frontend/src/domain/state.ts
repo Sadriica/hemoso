@@ -128,7 +128,23 @@ export function localState(
         )
 
   const attention = attentionFor(latest.value, rules)
-  const rule = attention.kind === 'attention' ? attention.rule : null
+  const crossed = attention.kind === 'attention' ? attention.rule : null
+
+  // Safety first (phys-02, "The rule"): without a baseline, a crossed row whose
+  // source is a link still needs review, and a row that is only an Assumption
+  // says nothing, so the card does not name its level.
+  if (middle === null && crossed !== null) {
+    const cited = crossed.sources.some((source) => source !== 'Assumption')
+    return {
+      state: cited ? 'needs_review' : 'no_data',
+      median: null,
+      spread: null,
+      n: values.length,
+      rule: cited ? crossed : null,
+    }
+  }
+
+  const rule = crossed
   return {
     state: baselineState(
       latest.value,

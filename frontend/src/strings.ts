@@ -59,7 +59,8 @@ export const strings = {
     indicatorTexts: 'indicator texts',
   },
   personPickerLabel: 'Person',
-  personHeading: (personId: string): string => `Status for ${personId}`,
+  personHeading: (personId: string): string =>
+    `Status for ${personName(personId)}`,
   // The guided check: three phases in a fixed order, never a free menu. Each
   // phase has a numbered eyebrow, a short headline set as stacked lines, one
   // sentence of help and one way forward.
@@ -118,8 +119,24 @@ export const strings = {
     needsReview: (count: number): string =>
       `${count} ${count === 1 ? 'reading needs' : 'readings need'} review.`,
     showFirst: 'Show the first one',
-    bodyLabel: (name: string): string => `Body zone: ${name}`,
+    // The caption of the body: the system first, then the indicator.
+    bodyLabel: (system: string, name: string): string => `${system} · ${name}`,
+    // Plain names of the systems `systemOf` returns.
+    systemNames: {
+      cardiovascular: 'Cardiovascular system',
+      thermoregulation: 'Temperature control',
+      sleep: 'Sleep',
+      neuro: 'Brain and behaviour',
+      metabolic: 'Metabolism',
+    },
+    // The limit a needs-review card was triggered by, then where it comes from.
+    limitCrossed: (side: 'above' | 'below', threshold: number, unit: string): string =>
+      `Limit crossed: ${side} ${threshold} ${unit}.`,
+    limitSource: 'Source:',
     bodyNone: 'No body zone for this indicator',
+    // A new account with no reading at all.
+    noReadings:
+      'No readings yet. Log your first readings in the report, then come back here.',
     loading: 'Loading the overview.',
   },
   // The first-load intro (skippable with any key or tap).
@@ -132,9 +149,18 @@ export const strings = {
     above: 'Higher than usual',
     below: 'Lower than usual',
     within: 'Close to usual',
-    usual: (median: number, unit: string): string => `Usual: ${median} ${unit}`,
-    notEnough: (count: number, needed: number): string =>
-      `Not enough earlier readings to compare yet (${count} of ${needed}).`,
+    // The number and its unit follow in a span of their own, so the unit keeps
+    // its case (STANDARDS.md section 3).
+    usualLabel: 'Usual:',
+    // How each context reads inside a sentence.
+    contextPhrase: {
+      rest: 'at rest',
+      after_exercise: 'after exercise',
+      on_waking: 'on waking',
+      before_sleep: 'before sleep',
+    },
+    notEnough: (count: number, needed: number, context?: string): string =>
+      `Not enough earlier readings${context ? ` ${context}` : ''} to compare yet (${count} of ${needed}).`,
   },
   // The bar along the top of every phase: the mark, the mission line, the sync
   // chip and the motion switch, all on one row.
@@ -215,22 +241,38 @@ export const strings = {
     columns: {
       day: 'Day',
       time: 'Time',
+      context: 'Context',
       value: 'Value',
       status: 'Status',
     },
+    // The table shows the newest readings first; the button shows the rest.
+    tableRegion: (name: string): string => `Readings table for ${name}`,
+    showAll: (count: number): string => `Show all ${count} readings`,
+    showFewer: 'Show fewer',
     noEntries: 'No entries for this indicator yet.',
     notEnough: 'Not enough earlier entries to compare yet.',
+    // The latest value is still said when there is nothing to compare it with.
+    latestOnly: (parts: {
+      value: string
+      unit: string
+      day: number
+      time: string
+    }): string =>
+      `Latest: ${parts.value} ${parts.unit} on Day ${parts.day} ${parts.time}. ` +
+      'Not enough earlier entries to compare yet.',
     summary: (parts: {
       value: string
       unit: string
       day: number
       time: string
+      // How the context reads in a sentence: "at rest".
+      context: string
       median: string
       count: number
       difference: string
     }): string =>
       `Latest: ${parts.value} ${parts.unit} on Day ${parts.day} ${parts.time}. ` +
-      `Your earlier median: ${parts.median} ${parts.unit} (${entryCount(
+      `Your usual ${parts.context}: ${parts.median} ${parts.unit} (${readingCount(
         parts.count,
       )}). ` +
       `Difference: ${parts.difference} ${parts.unit}.`,
@@ -248,6 +290,8 @@ export const strings = {
     // A review is needed and the server named no level: the app does not invent
     // one.
     needsReview: 'Needs review',
+    // The same with the level Bio 2 wrote for the row: "Needs review · consult".
+    needsReviewLevel: (level: string): string => `Needs review · ${level}`,
   },
   nextStep: {
     inRange: 'No action needed.',
@@ -267,6 +311,7 @@ export const strings = {
     label: 'Sources',
     assumption: 'Assumption',
     empty: 'No sources listed.',
+    opensNewTab: '(opens in a new tab)',
   },
   // The panel behind "Details" on a Home card (REQ-01): the facts of
   // data/indicators.csv, then the sections of config/content/<id>.md.
@@ -281,9 +326,14 @@ export const strings = {
     sections: {
       why: 'Why it matters',
       spaceflight: 'How spaceflight affects it',
+      attention: 'When it needs attention',
       steps: 'Measurement steps',
       prevent: 'How to prevent problems',
     },
+    // One line of the attention section, built from one row of attention.csv.
+    ruleSide: { below: 'Below', above: 'Above' },
+    rule: (side: string, value: string, level: string): string =>
+      `${side} ${value}: ${level}.`,
   },
   problems: {
     label: 'Content problems (for the team)',
@@ -408,7 +458,8 @@ export const strings = {
   },
   // The mission time of a reading on a card: the technical label style, with
   // the middle dot between the day and the clock time (guide 7.3).
-  timeLabel: (day: number, time: string): string => `DAY ${day} · ${time}`,
+  timeLabel: (day: number, time: string, context?: string): string =>
+    context ? `DAY ${day} · ${time} · ${context}` : `DAY ${day} · ${time}`,
   // The metadata line of the top bar: the mission day of the latest reading and
   // the device clock, on one row with who is on duty. The synthetic data
   // sentence of REQ-14 sits in the strip under the bar.
@@ -420,9 +471,9 @@ export const strings = {
   cardUnit: (unit: string): string => (unit === SCALE_UNIT ? '/ 5' : unit),
 }
 
-// "(1 entry)" and "(9 entries)": the count inside the history sentence.
-function entryCount(count: number): string {
-  return `${count} ${count === 1 ? 'entry' : 'entries'}`
+// "last 1 reading" and "last 9 readings": the count inside the history sentence.
+function readingCount(count: number): string {
+  return `last ${count} ${count === 1 ? 'reading' : 'readings'}`
 }
 
 // The mission time of the header band, in the technical label style of

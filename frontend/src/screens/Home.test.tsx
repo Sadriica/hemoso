@@ -114,7 +114,7 @@ describe('Home', () => {
       screen.getByRole('heading', { name: 'Example indicator' }),
     ).toBeInTheDocument()
     expect(screen.getByText('10')).toHaveTextContent('10 example_unit')
-    expect(screen.getByText(strings.timeLabel(10, '13:30'))).toBeInTheDocument()
+    expect(screen.getByText(strings.timeLabel(10, '13:30', strings.entry.contextLabels.rest))).toBeInTheDocument()
     expect(
       within(card()).getByText(strings.badge.inRange),
     ).toBeInTheDocument()
@@ -133,6 +133,51 @@ describe('Home', () => {
     renderHome(homeWith([...baseline, entry(10, 101)]))
     expect(within(card()).getByText('example_level')).toBeInTheDocument()
     expect(screen.getByText('Example next step. Assumption.')).toBeInTheDocument()
+  })
+
+  it('names the limit that was crossed and its source on a needs-review card', () => {
+    renderHome(homeWith([...baseline, entry(10, 101)]))
+    expect(
+      within(card()).getByText(/Limit crossed: above 100 example_unit\./),
+    ).toHaveTextContent('Source: Assumption')
+  })
+
+  it('names the person and the context of the reading', () => {
+    renderHome(homeWith([...baseline, entry(10, 10)]))
+    expect(
+      screen.getByRole('heading', { name: 'Status for Demo astronaut 1' }),
+    ).toBeInTheDocument()
+    expect(
+      within(card()).getByText(/^DAY 10 · 13:30 · At rest$/),
+    ).toBeInTheDocument()
+  })
+
+  it('says needs review for a cited limit even with no baseline', () => {
+    const cited = {
+      ...rule,
+      sources: [{ title: 'Example title', url: 'https://example.org/limit' }],
+    }
+    renderHome({ ...homeWith([entry(10, 101)]), rules: [cited] })
+    expect(within(card()).getByText('example_level')).toBeInTheDocument()
+    expect(
+      within(card()).getByText(/Not enough earlier readings at rest/),
+    ).toBeInTheDocument()
+    expect(
+      within(card()).getByRole('link', { name: 'Example title' }),
+    ).toHaveAttribute('href', 'https://example.org/limit')
+  })
+
+  it('labels an untitled limit source like Details does, with the same link attributes', () => {
+    const url = 'https://www.who.int/news-room/fact-sheets/detail/hypertension'
+    const cited = { ...rule, sources: [{ title: url, url }] }
+    renderHome({ ...homeWith([entry(10, 101)]), rules: [cited] })
+    const link = within(card()).getByRole('link', {
+      name: 'who.int \u00b7 hypertension',
+    })
+    expect(link).toHaveAttribute('title', url)
+    expect(link).toHaveAttribute('target', '_blank')
+    expect(link).toHaveAttribute('rel', 'noreferrer noopener')
+    expect(link).toHaveAccessibleDescription(strings.sources.opensNewTab)
   })
 
   it('shows the content text for in_range when the file has one', () => {
@@ -253,7 +298,7 @@ describe('Home', () => {
       demoEntries: [entry(1, 40), entry(2, 40), entry(3, 40), entry(10, 35)],
     }
     renderHome(stepped)
-    expect(within(card()).getByText('needs_review')).toBeInTheDocument()
+    expect(within(card()).getByText('Needs review · needs_review')).toBeInTheDocument()
     expect(screen.getByText('Contact the CMO.')).toBeInTheDocument()
     expect(screen.getByText('Tell the CMO.')).toBeInTheDocument()
   })
@@ -270,7 +315,8 @@ describe('Home', () => {
     toggle.focus()
     await user.keyboard('{Enter}')
     expect(screen.getByRole('link', { name: 'Example title' })).toBeInTheDocument()
-    expect(screen.getByText('Assumption')).toBeInTheDocument()
+    // The attention row and the source list each carry the word.
+    expect(screen.getAllByText('Assumption').length).toBeGreaterThan(0)
   })
 
   it('opens Details by keyboard and shows the content sections', async () => {
@@ -358,7 +404,7 @@ describe('Home', () => {
       'Hazards: Isolation and confinement',
     )
     expect(screen.queryByText(/isolation_and_confinement/)).toBeNull()
-    expect(screen.getByText('Assumption')).toBeInTheDocument()
+    expect(screen.getAllByText('Assumption').length).toBeGreaterThan(0)
     expect(
       screen.queryByRole('heading', { level: 4, name: 'Why it matters' }),
     ).toBeNull()
@@ -404,7 +450,7 @@ describe('Home', () => {
     const saved: Entry = { ...entry(11, 42), id: 'saved-entry' }
     render(<Home personId="demo_astronaut_1" data={data} entries={[saved]} />)
     expect(screen.getByText('42')).toHaveTextContent('42 example_unit')
-    expect(screen.getByText(strings.timeLabel(11, '13:30'))).toBeInTheDocument()
+    expect(screen.getByText(strings.timeLabel(11, '13:30', strings.entry.contextLabels.rest))).toBeInTheDocument()
   })
 
   it('shows a 1 to 5 scale reading as the value over 5', () => {
@@ -504,7 +550,7 @@ describe('Home', () => {
     renderHome(homeWith([...baseline, entry(10, 100)]))
 
     // The planetarium and the card both take it from the same answer.
-    expect(await screen.findAllByText('server_level')).not.toHaveLength(0)
+    expect(await screen.findAllByText('Needs review · server_level')).not.toHaveLength(0)
     expect(screen.getByText('Tell the flight surgeon.')).toBeInTheDocument()
     expect(urls).toHaveLength(1)
     expect(urls[0]).toBe(
@@ -658,5 +704,89 @@ describe('Home board', () => {
     expect(
       await screen.findByRole('list', { name: strings.board.planetarium.orbitsHeading }),
     ).toBeInTheDocument()
+  })
+
+  it('explains an empty account with one notice', () => {
+    render(
+      <Home personId="demo_astronaut_9" data={data} entries={data.demoEntries} motionReduced />,
+    )
+    expect(screen.getByText(strings.board.noReadings)).toBeInTheDocument()
+  })
+
+  it('shows no empty-account notice once the person has a reading', () => {
+    render(
+      <Home personId="demo_astronaut_1" data={data} entries={data.demoEntries} motionReduced />,
+    )
+    expect(screen.queryByText(strings.board.noReadings)).toBeNull()
+  })
+
+  it('does not scroll on the first render and scrolls the card into view after a pick', async () => {
+    const user = userEvent.setup()
+    const scrollIntoView = vi.fn()
+    Element.prototype.scrollIntoView = scrollIntoView
+    const two: LoadedContent = {
+      ...data,
+      indicators: [indicator, { ...indicator, id: 'other', name: 'Other indicator' }],
+      rules: [],
+      contents: {},
+    }
+    try {
+      render(<Home personId="demo_astronaut_1" data={two} entries={two.demoEntries} />)
+      expect(scrollIntoView).not.toHaveBeenCalled()
+      const rows = await screen.findByRole('list', { name: strings.board.planetarium.orbitsHeading })
+      await user.click(within(rows).getByRole('button', { name: /Other indicator/ }))
+      expect(scrollIntoView).toHaveBeenCalledTimes(1)
+      expect(scrollIntoView.mock.calls[0][0]).toMatchObject({ block: 'nearest' })
+      expect(scrollIntoView.mock.instances[0]).toHaveClass('detail')
+    } finally {
+      // @ts-expect-error jsdom has no scrollIntoView; remove the fake again.
+      delete Element.prototype.scrollIntoView
+    }
+  })
+
+  it('jumps without animation when motion is reduced', async () => {
+    const user = userEvent.setup()
+    const scrollIntoView = vi.fn()
+    Element.prototype.scrollIntoView = scrollIntoView
+    const two: LoadedContent = {
+      ...data,
+      indicators: [indicator, { ...indicator, id: 'other', name: 'Other indicator' }],
+      rules: [],
+      contents: {},
+    }
+    try {
+      render(<Home personId="demo_astronaut_1" data={two} entries={two.demoEntries} motionReduced />)
+      const rows = await screen.findByRole('list', { name: strings.board.planetarium.orbitsHeading })
+      await user.click(within(rows).getByRole('button', { name: /Other indicator/ }))
+      expect(scrollIntoView.mock.calls[0][0]).toMatchObject({ behavior: 'auto' })
+    } finally {
+      // @ts-expect-error jsdom has no scrollIntoView; remove the fake again.
+      delete Element.prototype.scrollIntoView
+    }
+  })
+
+  it('follows a selection kept by the parent and reports the pick', async () => {
+    const user = userEvent.setup()
+    const onSelect = vi.fn()
+    const two: LoadedContent = {
+      ...data,
+      indicators: [indicator, { ...indicator, id: 'other', name: 'Other indicator' }],
+      rules: [],
+      contents: {},
+    }
+    render(
+      <Home
+        personId="demo_astronaut_1"
+        data={two}
+        entries={two.demoEntries}
+        motionReduced
+        selectedId="other"
+        onSelect={onSelect}
+      />,
+    )
+    expect(screen.getByRole('heading', { level: 3, name: 'Other indicator' })).toBeInTheDocument()
+    const rows = await screen.findByRole('list', { name: strings.board.planetarium.orbitsHeading })
+    await user.click(within(rows).getByRole('button', { name: /Example indicator/ }))
+    expect(onSelect).toHaveBeenCalledWith('example_indicator')
   })
 })
