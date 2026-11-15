@@ -92,6 +92,9 @@ export const strings = {
           : `${count} ${count === 1 ? 'reading' : 'readings'} logged in this check.`,
       back: 'Back',
       next: 'See my status',
+      // The reaction check is optional and sits behind one closed line.
+      reactionOptional: 'Reaction check, optional',
+      reactionDone: (result: string): string => `Reaction check, done: ${result}`,
     },
     status: {
       number: '03',
@@ -179,7 +182,7 @@ export const strings = {
   },
   topbar: {
     tagline: 'CREW HEALTH',
-    onDuty: (personId: string): string => `on duty ${personId}`,
+    onDuty: (personId: string): string => `On duty: ${personName(personId)}`,
     reduceMotion: 'Reduce motion',
     // What the motion switch turns off, in words for its tooltip.
     motionOn: 'Motion is on',
@@ -193,21 +196,27 @@ export const strings = {
     bloodPressure: 'Blood pressure',
     systolic: 'Systolic',
     diastolic: 'Diastolic',
-    missionDay: 'Mission day',
-    time: 'Time',
+    // The crew's own words (STANDARDS.md section 5): the day of the mission is
+    // the Flight Day, and the station clock runs on GMT. The plain words are
+    // the helper under the two fields.
+    missionDay: 'Flight Day',
+    time: 'GMT',
+    timeHelp: 'Flight Day is the day of your mission. GMT is station time.',
     // What the astronaut was doing when they took the readings (FORMATS.md
     // section 3, `context`). The choice that fits the local clock is picked
     // first, and the person can change it.
     context: 'Context',
-    // The header control sets every row's own context at once.
-    applyToAll: 'Apply to all rows',
-    applyToAllHint: 'Tap one to set every row at once.',
+    // The header says the context once; a row names its own only when it
+    // differs, and that tag opens the four choices for the row.
+    change: 'change',
+    keepOwn: (count: number): string =>
+      count === 1 ? '1 row keeps its own context' : `${count} rows keep their own context`,
     rowContext: (name: string): string => `Context for ${name}`,
     contextLabels: {
       rest: 'At rest',
       after_exercise: 'After exercise',
-      on_waking: 'On waking',
-      before_sleep: 'Before sleep',
+      on_waking: 'Post-sleep · on waking',
+      before_sleep: 'Pre-sleep · before bed',
     },
     // The mood scale of FORMATS.md section 2 (1 = very low to 5 = very good).
     // The app writes no health word of its own beyond these.
@@ -219,6 +228,9 @@ export const strings = {
     progress: (filled: number, total: number): string => `${filled} of ${total} filled`,
     saveNeeds: 'Fill in at least one reading to save.',
     saveWhat: 'Saves every filled row for this day and time.',
+    // The way on, offered next to the saved message.
+    next: 'See my status',
+    nextLabel: 'See my status, your readings are saved',
     // What was saved, one item per reading: "Heart rate 72 bpm, Mood 3 / 5".
     savedList: (items: string): string => `Saved: ${items}.`,
     reading: (name: string, value: string): string => `${name} ${value}`,
@@ -233,8 +245,8 @@ export const strings = {
       valueRequired: 'Enter a value.',
       valueNumber: 'Enter a number.',
       valueScale: 'Choose a value from 1 to 5.',
-      missionDay: 'Enter a whole mission day, 1 or more.',
-      time: 'Enter a time as HH:MM.',
+      missionDay: 'Enter a whole Flight Day, 1 or more.',
+      time: 'Enter the GMT time as HH:MM.',
     },
   },
   // The history of one indicator against the person's own earlier readings
@@ -245,8 +257,8 @@ export const strings = {
     indicator: 'Indicator',
     tableCaption: (name: string): string => `Readings for ${name}`,
     columns: {
-      day: 'Day',
-      time: 'Time',
+      day: 'Flight Day',
+      time: 'GMT',
       context: 'Context',
       value: 'Value',
       status: 'Status',
@@ -264,7 +276,7 @@ export const strings = {
       day: number
       time: string
     }): string =>
-      `Latest: ${parts.value} ${parts.unit} on Day ${parts.day} ${parts.time}. ` +
+      `Latest: ${parts.value} ${parts.unit} on FD ${parts.day}, GMT ${parts.time}. ` +
       'Not enough earlier entries to compare yet.',
     summary: (parts: {
       value: string
@@ -277,7 +289,7 @@ export const strings = {
       count: number
       difference: string
     }): string =>
-      `Latest: ${parts.value} ${parts.unit} on Day ${parts.day} ${parts.time}. ` +
+      `Latest: ${parts.value} ${parts.unit} on FD ${parts.day}, GMT ${parts.time}. ` +
       `Your usual ${parts.context}: ${parts.median} ${parts.unit} (${readingCount(
         parts.count,
       )}). ` +
@@ -476,7 +488,9 @@ export const strings = {
   // The mission time of a reading on a card: the technical label style, with
   // the middle dot between the day and the clock time (guide 7.3).
   timeLabel: (day: number, time: string, context?: string): string =>
-    context ? `DAY ${day} · ${time} · ${context}` : `DAY ${day} · ${time}`,
+    context
+      ? `FD ${day} · GMT ${time} · ${context}`
+      : `FD ${day} · GMT ${time}`,
   // The metadata line of the top bar: the mission day of the latest reading and
   // the device clock, on one row with who is on duty. The synthetic data
   // sentence of REQ-14 sits in the strip under the bar.
@@ -496,5 +510,5 @@ function readingCount(count: number): string {
 // The mission time of the header band, in the technical label style of
 // STANDARDS.md section 4: the day, then the clock, on one line.
 function missionStamp(day: number, time: string): string {
-  return `Day ${day} · ${time}`
+  return `Flight Day ${day} · GMT ${time}`
 }

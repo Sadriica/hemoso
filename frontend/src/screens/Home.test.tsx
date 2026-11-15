@@ -148,7 +148,7 @@ describe('Home', () => {
       screen.getByRole('heading', { name: 'Status for Demo astronaut 1' }),
     ).toBeInTheDocument()
     expect(
-      within(card()).getByText(/^DAY 10 · 13:30 · At rest$/),
+      within(card()).getByText(/^FD 10 · GMT 13:30 · At rest$/),
     ).toBeInTheDocument()
   })
 

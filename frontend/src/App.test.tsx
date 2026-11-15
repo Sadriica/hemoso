@@ -186,7 +186,7 @@ describe('guided check', () => {
 
     // The day after the latest one in the store, so the new entry is the latest
     // one whatever the clock says.
-    const day = screen.getByLabelText('Mission day') as HTMLInputElement
+    const day = screen.getByLabelText(strings.entry.missionDay) as HTMLInputElement
     const nextDay = String(Number(day.value) + 1)
     await user.clear(day)
     await user.type(day, nextDay)
@@ -204,7 +204,7 @@ describe('guided check', () => {
     await user.click(screen.getByRole('button', { name: copy.report.next }))
     expect(screen.getAllByText('1234567').length).toBeGreaterThan(0)
     expect(
-      screen.getAllByText(new RegExp(`^DAY ${nextDay} · 15:44`)).length,
+      screen.getAllByText(new RegExp(`^FD ${nextDay} · GMT 15:44`)).length,
     ).toBeGreaterThan(0)
   })
 })
@@ -279,7 +279,7 @@ describe('sign in', () => {
 
     // The day after the latest one in the store, so the new reading is the
     // latest whatever the clock says (CI runs in UTC).
-    const day = screen.getByLabelText('Mission day') as HTMLInputElement
+    const day = screen.getByLabelText(strings.entry.missionDay) as HTMLInputElement
     const nextDay = String(Number(day.value) + 1)
     await user.clear(day)
     await user.type(day, nextDay)
@@ -313,7 +313,7 @@ describe('top bar', () => {
   it('puts the day and the clock on one muted line, with who is on duty', async () => {
     const user = userEvent.setup()
     render(<App />)
-    const stamp = /^Day \d+ · \d\d:\d\d$/
+    const stamp = /^Flight Day \d+ · GMT \d\d:\d\d$/
     // Nothing before sign-in: the day belongs to the person.
     expect(screen.queryByText(stamp)).toBeNull()
     await signInByName(user)

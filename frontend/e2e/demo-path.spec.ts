@@ -79,9 +79,19 @@ test('guided check by keyboard with axe on every phase', async ({ page }) => {
       page.getByRole('group', { name: strings.entry.bloodPressure }),
     ).toBeVisible()
     await expect(page.getByLabel(strings.entry.missionDay)).toBeVisible()
+    // The context of the check is said once, in the header; its four choices
+    // open with the "change" button.
+    const contextChip = page.getByRole('button', {
+      name: new RegExp(`^${strings.entry.context}(?! for)`),
+    })
+    await expect(contextChip).toBeVisible()
+    await contextChip.click()
     await expect(
-      page.getByRole('group', { name: strings.entry.applyToAll }),
+      page.getByRole('group', { name: strings.entry.context, exact: true }),
     ).toBeVisible()
+    await contextChip.click()
+    // The walk below starts from the heading, as the phase opens.
+    await page.getByRole('heading', { level: 1 }).focus()
   })
 
   await test.step('Report: fill a measured row and the scale, then save once', async () => {
@@ -147,7 +157,15 @@ test('guided check by keyboard with axe on every phase', async ({ page }) => {
   })
 
   await test.step('Report: go on to the status', async () => {
-    await focusByTab(page, page.getByRole('button', { name: copy.report.next }))
+    // After a save the way on is also offered inside the form panel, with a
+    // longer accessible name; the plain button below stays for this path.
+    await expect(
+      page.getByRole('button', { name: strings.entry.nextLabel }),
+    ).toBeVisible()
+    await focusByTab(
+      page,
+      page.getByRole('button', { name: copy.report.next, exact: true }),
+    )
     await page.keyboard.press('Enter')
     const heading = page.getByRole('heading', { level: 1 })
     await expect(heading).toContainText(copy.status.headline[0])
@@ -167,7 +185,7 @@ test('guided check by keyboard with axe on every phase', async ({ page }) => {
     await expect(statusRegion.getByRole('heading', { level: 3 })).toHaveCount(1)
     const measured = cardFor(statusRegion, names[0])
     await expect(measured.getByText(`${FIRST_VALUE} ${units[0]}`, { exact: true })).toBeVisible()
-    await expect(measured.getByText(new RegExp(`^DAY ${readingDay} · `))).toBeVisible()
+    await expect(measured.getByText(new RegExp(`^FD ${readingDay} · `))).toBeVisible()
 
     for (const name of names.slice(1)) {
       await selectIndicator(page, name)
@@ -182,7 +200,7 @@ test('guided check by keyboard with axe on every phase', async ({ page }) => {
         .locator('.indicator-card__value')
         .filter({ hasText: `${SCALE_VALUE} ${strings.cardUnit(SCALE_UNIT)}` }),
     ).toBeVisible()
-    await expect(scale.getByText(new RegExp(`^DAY ${scaleDay} · `))).toBeVisible()
+    await expect(scale.getByText(new RegExp(`^FD ${scaleDay} · `))).toBeVisible()
     await selectIndicator(page, names[0])
   })
 
