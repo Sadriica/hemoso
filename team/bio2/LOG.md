@@ -4,6 +4,7 @@ One entry per decision. Newest first.
 
 | Time | What | Why | Source | AI used |
 | --- | --- | --- | --- | --- |
+| Sat 19:55 | Every signal in `conditions.csv` now carries its side (`glucose_mgdl:above`) | The format requires it; without a side a high glucose also scored for hypoglycaemia, and `low_mood` was identical to `sleep_debt` | `FORMATS.md`, `scripts/check_content.py` | Yes |
 | Sat 19:35 | Verified the five members on the Members tab of ReTardis: bio1, bio2, phys, eng1, eng2, all registered for Medellín | REQ-24 asks for the five on the tab before the submission closes; nobody can be added after | Checked by Cami on the platform, screenshot kept | No |
 | Sat 18:25 | `attention.csv` now has 12 rows, one per indicator | The checker warned that sleep and mood had no state; each gets a `watch` row at the mildest level | Jones et al. 2022 for sleep, `Assumption` for mood | Yes |
 | Sat 18:20 | Adopted the hypothermia and hypoglycaemia rows with their sources | NASA-STD-3001 Appendix C sets hypothermia below 35 °C and the ADA sets low glucose below 70 mg/dL; both are stronger than my `Assumption` rows | NASA-STD-3001 Rev. C, ADA low blood glucose | Yes |
