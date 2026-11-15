@@ -2,8 +2,8 @@ import type { ConditionRule, ConditionSignalRule } from "../domain/types";
 import { parseCsvFile } from "./csv";
 
 // The required columns of FORMATS.md section 3. The header may also hold the
-// optional `symptoms` column (T-78), which a row may leave out; the symptom
-// layer is scored by the server, so the device only has to read past it.
+// optional `symptoms` column (T-78), which a row may leave out. An id written
+// twice in one row is one symptom.
 const REQUIRED_COLUMNS = ["condition_id", "name", "based_on", "source"];
 const OPTIONAL_COLUMN = "symptoms";
 
@@ -56,7 +56,10 @@ export function parseConditions(
         );
       }
     }
-    conditions.push({ id, name, signals, source });
+    const symptoms = [
+      ...new Set((row.symptoms ?? "").split(/\s+/).filter((token) => token !== "")),
+    ];
+    conditions.push({ id, name, signals, symptoms, source });
   }
   return conditions;
 }
