@@ -209,8 +209,9 @@ export const strings = {
     // Progress through the rows of the report, and why Save waits.
     progress: (filled: number, total: number): string => `${filled} of ${total} filled`,
     saveNeeds: 'Fill in at least one reading to save.',
+    saveWhat: 'Saves every filled row for this day and time.',
     // What was saved, one item per reading: "Heart rate 72 bpm, Mood 3 / 5".
-    savedList: (items: string): string => `Saved: ${items}`,
+    savedList: (items: string): string => `Saved: ${items}.`,
     reading: (name: string, value: string): string => `${name} ${value}`,
     // Whether the readings leave the device is the sentence after this one, so
     // this one never promises a send the demo cannot make.
@@ -363,6 +364,14 @@ export const strings = {
   signIn: {
     faceHeading: 'Sign in with your face',
     faceNote: 'A face saved on this device opens your session.',
+    // No face on this device yet: how to add one, in one line.
+    faceNone: 'Sign in with your PIN once, then add your face on this device',
+    // Offered after a PIN sign-in when no face of that person is saved here.
+    faceOfferHeading: 'Add face sign-in on this device',
+    faceOfferNote:
+      'Your face is turned into numbers kept only on this device. You read the details before the camera opens.',
+    faceOfferAction: 'Add face sign-in on this device',
+    faceOfferSkip: 'Not now',
     pinHeading: 'Username and PIN',
     username: 'Username',
     pin: 'PIN',
@@ -411,7 +420,7 @@ export const strings = {
     registeredFor: (personId: string): string =>
       `Your face is saved for ${personId} on this device.`,
     chooseFirst:
-      'Choose your name in the demo section first. Your face is saved for that person.',
+      'Sign in first. Your face is saved for the person who is signed in.',
     register: 'Register face',
     signIn: 'Use my face',
     // The label of the camera picture. The panel is the only place in the app

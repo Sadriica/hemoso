@@ -129,7 +129,7 @@ describe('History', () => {
     // threshold, and the first three days have too few earlier readings.
     expect(status).toEqual([
       'In your usual range',
-      'Needs review · example_level',
+      'example_level',
       'In your usual range',
       'No data yet',
       'No data yet',

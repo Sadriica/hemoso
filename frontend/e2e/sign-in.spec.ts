@@ -152,6 +152,15 @@ async function createAccount(page: Page): Promise<void> {
   await page.getByRole('button', { name: strings.signIn.createAction }).click()
 }
 
+// A PIN sign-in on a browser with a camera offers to add a face before the
+// report; these tests are about the PIN, so they decline it.
+async function declineFaceOffer(page: Page): Promise<void> {
+  await expect(
+    page.getByRole('heading', { name: strings.signIn.faceOfferHeading }),
+  ).toBeVisible()
+  await page.getByRole('button', { name: strings.signIn.faceOfferSkip }).click()
+}
+
 test('creates an account, signs in and sends its token on the person routes', async ({
   page,
 }) => {
@@ -165,6 +174,7 @@ test('creates an account, signs in and sends its token on the person routes', as
   ).toBeVisible()
 
   await createAccount(page)
+  await declineFaceOffer(page)
 
   // The account was created and its PIN signed in: the report is open.
   await expect(page.getByRole('heading', { level: 1 })).toContainText(
@@ -208,7 +218,8 @@ test('signs in with the PIN and the name of an account that exists', async ({
 
   await page.getByRole('textbox', { name: strings.signIn.username }).fill(PERSON)
   await page.getByLabel(strings.signIn.pin, { exact: true }).fill(PIN)
-  await page.getByRole('button', { name: strings.signIn.action }).click()
+  await page.getByRole('button', { name: strings.signIn.action, exact: true }).click()
+  await declineFaceOffer(page)
 
   await expect(page.getByRole('heading', { level: 1 })).toContainText(
     strings.phases.report.headline[0],
@@ -226,7 +237,7 @@ test('names a wrong PIN and a username that is taken in plain words', async ({
 
   await page.getByRole('textbox', { name: strings.signIn.username }).fill(PERSON)
   await page.getByLabel(strings.signIn.pin, { exact: true }).fill('1111')
-  await page.getByRole('button', { name: strings.signIn.action }).click()
+  await page.getByRole('button', { name: strings.signIn.action, exact: true }).click()
   await expect(page.getByRole('alert')).toHaveText(
     strings.signIn.errors.wrong,
   )

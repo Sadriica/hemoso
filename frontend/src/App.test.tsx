@@ -12,8 +12,7 @@ const copy = strings.phases
 
 beforeEach(() => {
   localStorage.clear()
-  // Every test starts on the plain page: the face panel only exists with
-  // ?face=1, and some tests open it.
+  // Every test starts on the plain page, and some tests open the face panel.
   window.history.replaceState({}, '', '/')
 })
 
@@ -354,17 +353,18 @@ describe('top bar', () => {
   })
 })
 
-describe('face sign-in behind ?face=1', () => {
-  it('renders no face control on the plain page', () => {
+describe('face sign-in on the plain page', () => {
+  it('shows the face option without a flag, with the panel closed', () => {
     render(<App />)
-    expect(screen.queryByRole('button', { name: strings.face.buttonLabel })).toBeNull()
+    expect(
+      screen.getByRole('button', { name: strings.face.buttonLabel }),
+    ).toHaveAttribute('aria-expanded', 'false')
     expect(
       screen.queryByRole('region', { name: strings.face.heading }),
     ).toBeNull()
   })
 
-  it('shows the face button above the crew list with the flag', () => {
-    window.history.replaceState({}, '', '/?face=1')
+  it('shows the face button above the crew list', () => {
     render(<App />)
     expect(screen.getByRole('group', { name: copy.identify.crewLabel })).toBeInTheDocument()
     expect(
@@ -373,7 +373,6 @@ describe('face sign-in behind ?face=1', () => {
   })
 
   it('opens the panel with the consent text and closes it on Escape', async () => {
-    window.history.replaceState({}, '', '/?face=1')
     const user = userEvent.setup()
     render(<App />)
     const button = screen.getByRole('button', { name: strings.face.buttonLabel })
@@ -395,7 +394,6 @@ describe('face sign-in behind ?face=1', () => {
   })
 
   it('puts the focus on the crew list when the camera is blocked', async () => {
-    window.history.replaceState({}, '', '/?face=1')
     const original = navigator.mediaDevices
     const blocked = new Error('blocked')
     blocked.name = 'NotAllowedError'

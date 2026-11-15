@@ -118,12 +118,12 @@ describe('Intro', () => {
     expect(onDone).toHaveBeenCalledOnce()
     expect(container).toBeEmptyDOMElement()
   })
-  it('shows once per tab', () => {
-    render(<Intro onDone={() => {}} still={false} />)
-    const onDone = vi.fn()
-    const { container } = render(<Intro onDone={onDone} still={false} />)
-    expect(container).toBeEmptyDOMElement()
-    expect(onDone).toHaveBeenCalledOnce()
+  it('shows again on a new page load, with nothing stored', () => {
+    const first = render(<Intro onDone={() => {}} still={false} />)
+    first.unmount()
+    const { container } = render(<Intro onDone={() => {}} still={false} />)
+    expect(container.querySelector('.intro__layer')).not.toBeNull()
+    expect(sessionStorage.length).toBe(0)
   })
   it('does not throw when storage fails', () => {
     vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {

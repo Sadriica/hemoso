@@ -2,9 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import { tokenMs, useMotionAllowed } from './motion'
 import './motion.css'
 
-const KEY = 'hemoso-intro-seen'
-let seenInPage = false
-
 // The stars of the intro, drawn from a small fixed set so the sky is the same
 // on every visit and in every screenshot. Decoration only.
 const STARS = [
@@ -20,26 +17,8 @@ const STARS = [
   { x: 74, y: 88, size: 1.3, delay: 500 },
 ]
 
-/** Has the intro run in this tab? Falls back to once per page load if storage fails. */
-function seen(): boolean {
-  try {
-    return !!sessionStorage.getItem(KEY)
-  } catch {
-    return seenInPage
-  }
-}
-
-function mark() {
-  seenInPage = true
-  try {
-    sessionStorage.setItem(KEY, '1')
-  } catch {
-    /* storage blocked: the module flag covers this page load */
-  }
-}
-
 /**
- * First-load intro, once per tab: the sky drifts, the mark draws itself and the
+ * First-load intro, on every full page load: the sky drifts, the mark draws itself and the
  * name types in, in about three and a half seconds. `onDone` runs once, when it
  * ends or on any key, pointer or touch, so a person never waits for it. `still`
  * is the top bar switch. `clockText` is the mission day and time (shown only if
@@ -58,7 +37,7 @@ export default function Intro({
   skipLabel?: string
 }) {
   const allowed = useMotionAllowed(still)
-  const [show] = useState(() => allowed && !seen())
+  const [show] = useState(allowed)
   const [open, setOpen] = useState(show)
   const layer = useRef<HTMLDivElement>(null)
   const done = useRef(false)
@@ -78,7 +57,6 @@ export default function Intro({
       finish()
       return
     }
-    mark()
     const id = setTimeout(
       finish,
       tokenMs(layer.current, '--motion-intro', 3400),

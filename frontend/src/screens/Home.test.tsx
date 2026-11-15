@@ -131,7 +131,7 @@ describe('Home', () => {
 
   it('shows the level name and its next step when a value crosses the threshold', () => {
     renderHome(homeWith([...baseline, entry(10, 101)]))
-    expect(within(card()).getByText('Needs review · example_level')).toBeInTheDocument()
+    expect(within(card()).getByText('example_level')).toBeInTheDocument()
     expect(screen.getByText('Example next step. Assumption.')).toBeInTheDocument()
   })
 
@@ -158,7 +158,7 @@ describe('Home', () => {
       sources: [{ title: 'Example title', url: 'https://example.org/limit' }],
     }
     renderHome({ ...homeWith([entry(10, 101)]), rules: [cited] })
-    expect(within(card()).getByText('Needs review · example_level')).toBeInTheDocument()
+    expect(within(card()).getByText('example_level')).toBeInTheDocument()
     expect(
       within(card()).getByText(/Not enough earlier readings at rest/),
     ).toBeInTheDocument()
@@ -553,7 +553,7 @@ describe('Home', () => {
     renderHome(homeWith([...baseline, entry(10, 101)]))
 
     expect(fetchFn).toHaveBeenCalled()
-    expect(await screen.findAllByText('Needs review · example_level')).not.toHaveLength(0)
+    expect(await screen.findAllByText('example_level')).not.toHaveLength(0)
   })
 
   it('asks the state route nothing without a base URL', async () => {
@@ -562,7 +562,7 @@ describe('Home', () => {
     renderHome(homeWith([...baseline, entry(10, 101)]))
 
     expect(fetchFn).not.toHaveBeenCalled()
-    expect(screen.getAllByText('Needs review · example_level')).not.toHaveLength(0)
+    expect(screen.getAllByText('example_level')).not.toHaveLength(0)
   })
 
   it('keeps the local rule when the state route answers another status', async () => {
@@ -573,7 +573,7 @@ describe('Home', () => {
     )
     renderHome(homeWith([...baseline, entry(10, 101)]))
 
-    expect(await screen.findAllByText('Needs review · example_level')).not.toHaveLength(0)
+    expect(await screen.findAllByText('example_level')).not.toHaveLength(0)
   })
 
   it('names the content still missing instead of the generic notice', () => {
@@ -648,7 +648,8 @@ describe('Home board', () => {
         { ...indicator, id: 'first_indicator', name: 'First indicator' },
         second,
       ],
-      rules: [{ ...rule, indicatorId: 'second_indicator' }],
+      // A row for the CMO is the one that reads as needs review.
+      rules: [{ ...rule, indicatorId: 'second_indicator', notify: 'cmo' }],
       contents: {},
       demoEntries: [secondEntry],
     }

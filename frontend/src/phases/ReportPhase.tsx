@@ -35,6 +35,10 @@ export default function ReportPhase({
   // Entries present when the phase opened; the rest were logged in this check.
   const [startCount] = useState(entries.length)
   const logged = Math.max(entries.length - startCount, 0)
+  // One primary at a time: Save while values wait, the way on once a save is
+  // done and nothing new is typed.
+  const [unsaved, setUnsaved] = useState(0)
+  const ready = logged > 0 && unsaved === 0
 
   return (
     <section className="phase phase--report" aria-labelledby="phase-heading">
@@ -48,6 +52,7 @@ export default function ReportPhase({
             indicators={indicators}
             entries={entries}
             serverConfigured={serverConfigured}
+            onFilledChange={setUnsaved}
           />
         </div>
         <p className="report__count" role="status">
@@ -68,7 +73,7 @@ export default function ReportPhase({
         <button type="button" className="text-link" onClick={onBack}>
           <span aria-hidden="true">←</span> {copy.back}
         </button>
-        <button type="button" className="journey-button journey-button--solid" onClick={onDone}>
+        <button type="button" className={`journey-button${ready ? ' journey-button--solid' : ''}`} onClick={onDone}>
           <span>{copy.next}</span>
           <span className="journey-button__arrow" aria-hidden="true">→</span>
         </button>
