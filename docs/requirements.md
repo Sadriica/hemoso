@@ -51,13 +51,14 @@ consideration the statement offers, or a team quality rule) · **context**
 | REQ-35 | Two-minute story for the mentors rehearsed three times | operations | P0 | Bio 1 (@sofiaruizt) | Submit Sun 12-14 | The story is read aloud in two minutes or less, three times, before 14:00 on Sunday |
 | REQ-36 | Sign in with the face, on the device only (optional, off by default) | context | P2 | Wambi (@Sadriica) | B3 Sat 17-1 | Off unless the URL has `?face=1`; the person consents first; a face is registered once and matched in the browser with bundled models; no image or face data leaves the device; the person can delete it; the person picker works without a camera |
 | REQ-37 | Sign in with a username and a PIN checked on the server; the face unlocks it on a device | context | P1 | Wambi (@Sadriica) | B3 Sat 17-1 | A person creates an account with a username and a 4 to 8 digit PIN; the server stores only a salted scrypt hash; signing in returns a session token and the routes of a person with an account refuse requests without it; the same account works on any device; after one PIN sign-in on a device the face unlocks that stored session (the face data stays on the device, REQ-36); the synthetic demo astronaut opens with one click and no PIN (REQ-32) |
+| REQ-38 | Reaction check and the current psychological state | context | P1 | Wambi (@Sadriica) | B3 Sat 17-1 | The astronaut can take a short reaction test with a light or a sound; it stores the median reaction time and the lapses as two indicators compared with the person's own baseline; a neuro-behavioural condition joins them with mood and sleep as an evidence score that describes the current state, never a label or diagnosis, and says the CMO or flight surgeon confirms; works offline, keyboard and touch, without sound for people who choose light only |
 
 ## By owner
 
 - **Bio 1 (@sofiaruizt)**: REQ-04, REQ-08, REQ-11, REQ-17, REQ-21, REQ-22, REQ-26, REQ-35
 - **Bio 2 (@pamirestrepo-code)**: REQ-05, REQ-06, REQ-10, REQ-16, REQ-20, REQ-23, REQ-24, REQ-25, REQ-34
 - **Phys (@IsabellaCabreraquintero)**: REQ-03, REQ-07, REQ-19, REQ-29
-- **Wambi (@Sadriica)**: REQ-01, REQ-02, REQ-09, REQ-12, REQ-13, REQ-14, REQ-15, REQ-18, REQ-28, REQ-30, REQ-32, REQ-33, REQ-36, REQ-37
+- **Wambi (@Sadriica)**: REQ-01, REQ-02, REQ-09, REQ-12, REQ-13, REQ-14, REQ-15, REQ-18, REQ-28, REQ-30, REQ-32, REQ-33, REQ-36, REQ-37, REQ-38
 - **Juli (@julimejia)**: REQ-27, REQ-31
 
 ## Sources
@@ -101,6 +102,7 @@ consideration the statement offers, or a team quality rule) · **context**
 | REQ-35 | Medellín event schedule · SG: Submission guide · https://www.spaceappschallenge.org/resources/project-submission-guide/ (local judging times may differ) |
 | REQ-36 | Our design · @vladmandic/face-api README (distance below 0.6 is a match) · team/eng2/notes/face-login-proposal.md |
 | REQ-37 | Team decision (Wambi), Sat 21:55 · docs/DECISIONS.md (Accounts row) · docs/API.md (accounts and sessions) |
+| REQ-38 | Team decision (Wambi with Bio 2), Sat 22:41 · mentor's notes · UPenn Unit for Experimental Psychiatry, Astronaut Behavioral Health (PVT-B, 3 minutes, ISS) https://www.med.upenn.edu/uep/astronaut.html · Nasrini et al. 2020, HERA https://www.frontiersin.org/journals/physiology/articles/10.3389/fphys.2020.00394/full |
 
 ## Judging criteria
 
