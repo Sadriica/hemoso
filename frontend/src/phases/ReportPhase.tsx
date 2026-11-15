@@ -118,7 +118,9 @@ export default function ReportPhase({
             onNext={onDone}
           />
         </div>
-        <p className="report__count" role="status">
+        {/* Not a live region: the save result of the form is the one status
+            announced when a reading is saved. */}
+        <p className="report__count">
           {copy.logged(logged)}
         </p>
       </div>

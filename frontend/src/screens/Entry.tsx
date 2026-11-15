@@ -796,12 +796,18 @@ function ReadingRowField({
                     /
                   </span>
                 )}
-                <label
-                  className="sr-only"
-                  htmlFor={`${baseId}-${field.indicatorId}`}
-                >
-                  {field.label}
-                </label>
+                {/* A single field is named by the visible title above it; a
+                    second label would make a screen reader say the name
+                    twice. The two blood pressure fields have no title of
+                    their own, so each keeps a hidden one. */}
+                {pair && (
+                  <label
+                    className="sr-only"
+                    htmlFor={`${baseId}-${field.indicatorId}`}
+                  >
+                    {field.label}
+                  </label>
+                )}
                 <input
                   ref={(element) => {
                     valueRefs.current[field.indicatorId] = element

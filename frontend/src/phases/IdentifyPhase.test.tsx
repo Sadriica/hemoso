@@ -224,7 +224,7 @@ describe('Identify', () => {
     const user = userEvent.setup()
     render(<Harness onDone={onDone} personIds={[PERSON, 'cadet_okoro']} />)
 
-    await user.click(screen.getByRole('radio', { name: 'cadet_okoro' }))
+    await user.click(screen.getByRole('radio', { name: personName('cadet_okoro') }))
 
     expect(
       await screen.findByText(strings.signIn.askPin('cadet_okoro')),
@@ -280,7 +280,7 @@ describe('Identify', () => {
     const user = userEvent.setup()
     render(<Harness onDone={vi.fn()} />)
 
-    await user.click(screen.getByRole('radio', { name: PERSON }))
+    await user.click(screen.getByRole('radio', { name: personName(PERSON) }))
     expect(screen.getByText(strings.signIn.signedInAs(PERSON))).toBeVisible()
 
     await user.click(screen.getByRole('button', { name: strings.signIn.signOut }))

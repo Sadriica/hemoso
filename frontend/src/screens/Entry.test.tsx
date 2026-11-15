@@ -115,6 +115,9 @@ describe('Entry', () => {
     expect(rows).toHaveLength(3)
 
     const heart = screen.getByLabelText('Heart rate')
+    // One label, so a screen reader says the name once.
+    expect((heart as HTMLInputElement).labels).toHaveLength(1)
+    expect(heart).toHaveAccessibleName('Heart rate')
     expect(heart).toHaveAttribute('inputmode', 'decimal')
     expect(heart).not.toHaveAttribute('type', 'number')
     expect(heart).toHaveAccessibleDescription('bpm last 58 bpm')

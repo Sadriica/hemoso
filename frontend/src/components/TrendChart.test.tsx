@@ -71,6 +71,10 @@ function renderChart(series: TrendSeriesInput[] = [single()]) {
   )
 }
 
+const main = (): HTMLElement =>
+  document.querySelector('.tc__readout-main') as HTMLElement
+const live = (): HTMLElement =>
+  document.querySelector('[aria-live="polite"]') as HTMLElement
 const group = () => screen.getByRole('group', { name: 'Trend of Heart rate' })
 
 describe('TrendChart', () => {
@@ -131,17 +135,17 @@ describe('TrendChart', () => {
     expect(group()).toHaveFocus()
     // First key lands on the newest reading.
     await user.keyboard('{ArrowLeft}')
-    expect(screen.getByText(/105 bpm · FD 4 · GMT 09:30/)).toBeInTheDocument()
+    expect(main()).toHaveTextContent(/105 bpm · FD 4 · GMT 09:30/)
     await user.keyboard('{ArrowLeft}')
-    expect(screen.getByText(/75 bpm · FD 3/)).toBeInTheDocument()
+    expect(main()).toHaveTextContent(/75 bpm · FD 3/)
     await user.keyboard('{Home}')
-    expect(screen.getByText(/58 bpm · FD 1/)).toBeInTheDocument()
+    expect(main()).toHaveTextContent(/58 bpm · FD 1/)
     await user.keyboard('{ArrowLeft}')
-    expect(screen.getByText(/58 bpm · FD 1/)).toBeInTheDocument()
+    expect(main()).toHaveTextContent(/58 bpm · FD 1/)
     await user.keyboard('{End}')
-    expect(screen.getByText(/105 bpm · FD 4/)).toBeInTheDocument()
+    expect(main()).toHaveTextContent(/105 bpm · FD 4/)
     await user.keyboard('{ArrowRight}')
-    expect(screen.getByText(/105 bpm · FD 4/)).toBeInTheDocument()
+    expect(main()).toHaveTextContent(/105 bpm · FD 4/)
     await user.keyboard('{Escape}')
     expect(screen.getByText('Newest reading')).toBeInTheDocument()
   })
@@ -200,11 +204,11 @@ describe('TrendChart', () => {
     expect(container.querySelectorAll('.tc__line')).toHaveLength(2)
     await user.tab()
     await user.keyboard('{End}')
-    expect(screen.getByText(/^Systolic: 122 mmHg/)).toBeInTheDocument()
+    expect(main()).toHaveTextContent(/^Systolic: 122 mmHg/)
     await user.keyboard('{ArrowDown}')
-    expect(screen.getByText(/^Diastolic: 81 mmHg/)).toBeInTheDocument()
+    expect(main()).toHaveTextContent(/^Diastolic: 81 mmHg/)
     await user.keyboard('{ArrowUp}')
-    expect(screen.getByText(/^Systolic: 122 mmHg/)).toBeInTheDocument()
+    expect(main()).toHaveTextContent(/^Systolic: 122 mmHg/)
   })
 
   it('pauses its motion while the tab is hidden', () => {
@@ -230,6 +234,20 @@ describe('readoutText', () => {
     expect(text).toBe(
       'Systolic: 118 mmHg · FD 12 · GMT 08:30 · Post-sleep · on waking · In your usual range',
     )
+  })
+})
+
+describe('TrendChart announcements', () => {
+  it('announces a reading only once it is picked, not the newest one at rest', async () => {
+    const user = userEvent.setup()
+    renderChart()
+    expect(live()).toHaveTextContent('')
+    expect(document.querySelector('.tc__readout')).toHaveAttribute('aria-hidden', 'true')
+    await user.tab()
+    await user.keyboard('{End}')
+    expect(live()).toHaveTextContent(/105 bpm · FD 4 · GMT 09:30 · At rest · Needs review · consult\. Reading 4 of 4/)
+    await user.keyboard('{Escape}')
+    expect(live()).toHaveTextContent('')
   })
 })
 
