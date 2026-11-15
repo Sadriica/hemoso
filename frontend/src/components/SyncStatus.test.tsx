@@ -156,6 +156,20 @@ describe('SyncStatus', () => {
     expect(screen.queryByRole('button', { name: strings.sync.sendNow })).toBeNull()
   })
 
+  it('sends every reading of a report saved in one go', async () => {
+    const fake = fakeFetch([201, 201, 201, 201, 201])
+    const store = renderStatus(new HttpSync('https://api.test', fake.fetchFn))
+
+    // Five readings, one after the other, as one save of the report does.
+    act(() => {
+      for (const value of [79, 80, 81, 82, 83]) {
+        store.add({ ...newEntry(value), time: `09:${value - 60}` })
+      }
+    })
+    await waitFor(() => expect(store.pending()).toHaveLength(0))
+    expect(fake.calls()).toBe(5)
+  })
+
   it('does not start a round of its own for a reading saved off line', async () => {
     const fake = fakeFetch([201])
     const store = renderStatus(new HttpSync('https://api.test', fake.fetchFn), [

@@ -20,11 +20,23 @@ export function useSync(
   const [online, setOnline] = useState(() => isOnline())
   const running = useRef(false)
 
+  // Set when a reading is saved while a round runs: the round took its list
+  // of readings when it started, so the new one needs a round of its own.
+  const again = useRef(false)
+
   const sendNow = useCallback(() => {
-    if (running.current || !client.isConfigured()) return
+    if (!client.isConfigured()) return
+    if (running.current) return
     running.current = true
-    void sendPending(store, client, missionNow(store.list())).finally(() => {
+    const round = (): Promise<unknown> =>
+      sendPending(store, client, missionNow(store.list())).then(() => {
+        if (!again.current) return
+        again.current = false
+        return round()
+      })
+    void round().finally(() => {
       running.current = false
+      again.current = false
     })
   }, [store, client])
 
@@ -61,7 +73,11 @@ export function useSync(
       const count = store.getOutboxSnapshot().pendingCount
       const grew = count > known
       known = count
-      if (grew && isOnline()) sendNow()
+      if (!grew || !isOnline()) return
+      // A report saves several readings in a row: the first starts the round
+      // and the others ask it to go once more when it ends.
+      if (running.current) again.current = true
+      else sendNow()
     })
   }, [store, sendNow])
 
