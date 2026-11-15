@@ -1,15 +1,21 @@
 # Pitch script · two minutes
 
-**Status:** draft · **Owner:** Bio 1 · Sat 14, 23:30 · read aloud three times
-before Sun 14:00 (REQ-35)
+**Status:** not presented · **Owner:** Bio 1 · Sun 15 Nov 10:15
 
-For the mentors on Sunday at 14:00. Spoken, not read: short sentences, one idea
-each, and the app on screen during the story. 276 words, about 1:55 at a
-conversation pace.
+The team dropped the two-minute pitch on Sunday morning: the submission is judged
+on the project page and the demo, so the spoken story adds no score. This file
+stays because two things in it are still used: the REQ-11 line, word for word,
+and the map of where each judging criterion is answered, which Bio 2 can quote on
+the submission page.
 
-Language: English. Question 2 for the Medellín lead (the language of the
-presentation) is still open; if the mentors prefer Spanish, this is the text to
-translate, not to rewrite.
+What it is no longer: a text to rehearse, and a reason to keep a presenter free
+before 14:00.
+
+For the record: the Medellín programme lists a presentation to mentors at 14:00
+(`docs/CHALLENGE.md`). Checked with the local lead as feedback and not scoring;
+if that changes, this file is ready to read again.
+
+Language: English. The 276 words below take about 1:55 at a conversation pace.
 
 ## Demo format (REQ-17)
 
@@ -98,19 +104,16 @@ surgeon would sign off, and a longer test inside a real mission routine.
 | Relevance | 0:20 and 0:40: the astronaut's own assessment, on a real mission day |
 | Presentation | The demo path is fixed and under 40 seconds; the limit is said out loud |
 
-## Before the presentation
+## If it is read again
 
-- Read it aloud three times with a timer (REQ-35). Target 1:55. If it passes
-  2:05, cut "and answer two questions" first, then the second sentence of
-  1:20–1:35.
-- Update the story with the real screens and the real probability from Bio 2.
-  Until they exist, `{{PROBABILITY_AND_BASIS}}` stays a placeholder.
-- Confirm the name of the demo persona. If Elena is a real astronaut, change it.
-- Confirm the NASA resource Phys uses (REQ-19). The line at 1:35 names the risk
-  pages, because those are the ones this script was written from; if
-  `docs/nasa_data.md` ends up listing another resource, that line changes.
-- If the app fails during the demo, play the 30 s video and keep talking: the
-  story fits in 40 seconds, so the video covers the same ground.
+- Read it aloud with a timer. Target 1:55. If it passes 2:05, cut "and answer two
+  questions" first, then the second sentence of 1:20–1:35.
+- Replace `{{PROBABILITY_AND_BASIS}}` with what Bio 2 published, and check the
+  name of the demo persona.
+- The line at 1:35 names the risk pages and the nutrition report; Phys's label in
+  `docs/nasa_data.md` is broader (it adds the cardiovascular report and the other
+  hazards). If the story comes back, that line follows the label.
+- If the app fails, the 30 s video covers the same ground in 40 seconds.
 
 ## Sources for this script
 
