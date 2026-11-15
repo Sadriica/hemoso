@@ -1,8 +1,10 @@
 """Record the prototype shots of the demo video (T-16, REQ-31).
 
 Walks the demo path of `submission/video.md` (shot map of Sun 08:47) on a build
-of `main` at 1280 x 800 and saves one WebM take plus one PNG per shot: S3, S4,
-S5, S1, S6 and S7, then S8. Synthetic data only: the demo
+of `main` at 1280 x 800 (stills at 2x pixels) and saves one WebM take plus the
+PNG stills `team/eng1/notes/t16_edit.py` reads, by those names: s3-identify,
+s4-entry, s5-status-orbit, s6-status-list (S1 and S8), s7-fever-evidence (S6 and
+S7), plus s8-status-list-again. Synthetic data only: the demo
 astronaut, values typed in the report.
 
     pnpm --dir frontend build && pnpm --dir frontend preview --port 4399
@@ -51,6 +53,8 @@ def main() -> None:
         browser = p.chromium.launch()
         context = browser.new_context(
             viewport={"width": 1280, "height": 800},
+            # 2x pixels: team/eng1/notes/t16_edit.py zooms up to 1.45x.
+            device_scale_factor=2,
             record_video_dir=str(OUT),
             record_video_size={"width": 1280, "height": 800},
             reduced_motion="no-preference",
@@ -80,10 +84,10 @@ def main() -> None:
 
         if page.get_by_role("button", name="List view").count():
             click(page, "List view")
-        still(page, "s1-status-list", 2500)
+        still(page, "s6-status-list", 2500)
 
         page.get_by_role("heading", name="Possible conditions").first.scroll_into_view_if_needed()
-        still(page, "s6-s7-fever-evidence", 3000)
+        still(page, "s7-fever-evidence", 3000)
 
         # S8: back to the list, the other readings in their usual range.
         page.get_by_role("heading", name="Status for Demo astronaut 1").first.scroll_into_view_if_needed()
