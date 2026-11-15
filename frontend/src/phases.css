@@ -699,3 +699,11 @@ html {
 .detail .indicator-list {
   grid-template-columns: minmax(0, 1fr);
 }
+
+/* Same size as the intro layer, so nothing shows under it while it loads. */
+.intro-cover {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: var(--color-bg);
+}

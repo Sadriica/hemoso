@@ -14,7 +14,7 @@ import IndicatorDetails from '../components/IndicatorDetails'
 import Notice from '../components/Notice'
 import type { LoadedContent } from '../content/load'
 import { IndicatorIcon, StatusIcon, systemColor, systemOf } from '../icons'
-import { useCountUp, useMotionAllowed } from '../motion'
+import { useCountUp, useMotionAllowed } from '../motion/motion'
 import { attentionText } from '../components/attentionText'
 import { strings } from '../strings'
 
