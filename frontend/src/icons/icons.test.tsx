@@ -41,6 +41,18 @@ describe('icons', () => {
     expect(markup(<IndicatorIcon indicatorId="bp" />)).not.toBe(sys);
   });
 
+  it('gives the two reaction indicators their own glyph and the neuro colour', () => {
+    const median = render(<IndicatorIcon indicatorId="reaction_median_ms" colored />).container.querySelector('svg')!;
+    const lapses = render(<IndicatorIcon indicatorId="reaction_lapses" colored />).container.querySelector('svg')!;
+    expect(median.getAttribute('data-icon')).toBe('reaction_median_ms');
+    expect(lapses.getAttribute('data-icon')).toBe('reaction_lapses');
+    // Two drawings, and neither is the neutral ring of an id without one.
+    expect(median.innerHTML).not.toBe(lapses.innerHTML);
+    expect(median.innerHTML).not.toBe(markup(<IndicatorIcon indicatorId="nope" />));
+    expect(median.style.color).toBe('var(--system-neuro)');
+    expect(lapses.style.color).toBe('var(--system-neuro)');
+  });
+
   it('colours only on request and honours size', () => {
     const a = render(<IndicatorIcon indicatorId="sleep_h" size={ICON_SIZES.hero} colored />).container.querySelector('svg')!;
     expect(a.style.color).toBe('var(--system-sleep)');

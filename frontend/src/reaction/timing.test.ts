@@ -1,21 +1,35 @@
 import { describe, expect, it } from 'vitest'
-import { REACTION_RESPONSE_WINDOW_MS, REACTION_WAIT_MAX_MS } from './constants'
 import {
+  REACTION_LAPSE_CUTOFF_MS,
+  REACTION_MIN_VALID_MS,
+  REACTION_TRIAL_WINDOW_MS,
+  REACTION_WAIT_MAX_MS,
+  REACTION_WAIT_MIN_MS,
+} from './constants'
+import {
+  elapsedMs,
   initialReactionState,
   median,
   randomWait,
   reactionReducer,
+  remainingMs,
   summarize,
   type ReactionState,
 } from './timing'
 
 // The timing logic with a fake clock: every moment is a number a test passes
 // in, so these tests are instant and the arithmetic is exact.
-function start(modality: 'light' | 'sound' = 'light', total = 3): ReactionState {
-  return reactionReducer(initialReactionState(), {
+
+const LENGTH = 30_000
+
+// A run of a known length, started at `at`.
+function start(modality: 'light' | 'sound' = 'light', at = 0): ReactionState {
+  const idle = initialReactionState(modality, LENGTH)
+  return reactionReducer(idle, {
     type: 'start',
     modality,
-    total,
+    at,
+    durationMs: LENGTH,
   })
 }
 
@@ -54,11 +68,13 @@ describe('median', () => {
 })
 
 describe('reactionReducer', () => {
-  it('starts a run with a fresh pre-stimulus wait', () => {
-    const state = start('sound')
+  it('starts a run with a fresh pre-stimulus wait and a deadline', () => {
+    const state = start('sound', 5000)
     expect(state.phase).toBe('waiting')
     expect(state.modality).toBe('sound')
     expect(state.done).toBe(0)
+    expect(state.startedAt).toBe(5000)
+    expect(state.endsAt).toBe(5000 + LENGTH)
     expect(state.waitToken).toBe(1)
   })
 
@@ -76,8 +92,29 @@ describe('reactionReducer', () => {
     expect(state.done).toBe(0)
     expect(state.phase).toBe('waiting')
     expect(state.tooEarly).toBe(true)
+    expect(state.stimulusAt).toBeNull()
     // The wait starts again, so the component arms a new one.
     expect(state.waitToken).toBe(2)
+  })
+
+  it('counts an answer under the minimum as a false start, not as a fast reaction', () => {
+    const stimulus = reactionReducer(start(), { type: 'stimulus', at: 2000 })
+    const state = reactionReducer(stimulus, {
+      type: 'answer',
+      at: 2000 + REACTION_MIN_VALID_MS - 1,
+    })
+    expect(state.falseStarts).toBe(1)
+    expect(state.done).toBe(0)
+    expect(state.reactions).toEqual([])
+    expect(state.phase).toBe('waiting')
+    expect(state.tooEarly).toBe(true)
+    expect(state.waitToken).toBe(2)
+  })
+
+  it('takes an answer at the minimum as a valid trial', () => {
+    const state = trial(start(), 2000, REACTION_MIN_VALID_MS)
+    expect(state.reactions).toEqual([REACTION_MIN_VALID_MS])
+    expect(state.falseStarts).toBe(0)
   })
 
   it('clears the "too early" message when the next stimulus appears', () => {
@@ -88,7 +125,7 @@ describe('reactionReducer', () => {
   })
 
   it('counts an answer after the cut-off as a lapse', () => {
-    const state = trial(start(), 2000, 501)
+    const state = trial(start(), 2000, REACTION_LAPSE_CUTOFF_MS + 1)
     expect(state.lapses).toBe(1)
     expect(state.reactions).toEqual([])
     expect(state.done).toBe(1)
@@ -98,13 +135,13 @@ describe('reactionReducer', () => {
     const stimulus = reactionReducer(start(), { type: 'stimulus', at: 2000 })
     const early = reactionReducer(stimulus, {
       type: 'timeout',
-      at: 2000 + REACTION_RESPONSE_WINDOW_MS - 1,
+      at: 2000 + REACTION_TRIAL_WINDOW_MS - 1,
     })
     expect(early.phase).toBe('stimulus')
 
     const state = reactionReducer(early, {
       type: 'timeout',
-      at: 2000 + REACTION_RESPONSE_WINDOW_MS,
+      at: 2000 + REACTION_TRIAL_WINDOW_MS,
     })
     expect(state.lapses).toBe(1)
     expect(state.done).toBe(1)
@@ -124,22 +161,39 @@ describe('reactionReducer', () => {
     expect(late.stimulusAt).toBe(2000)
   })
 
-  it('finishes after the last trial and keeps nothing armed', () => {
-    let state = start('light', 2)
+  it('ends when the length is over, keeping the trials already measured', () => {
+    let state = start()
     state = trial(state, 2000, 300)
+    state = reactionReducer(state, { type: 'tick', at: LENGTH - 1 })
     expect(state.phase).toBe('waiting')
-    state = trial(state, 6000, 300)
+
+    state = reactionReducer(state, { type: 'tick', at: LENGTH })
     expect(state.phase).toBe('finished')
+    expect(state.stopped).toBe(false)
+    expect(state.stimulusAt).toBeNull()
     expect(summarize(state)).toEqual({
       medianMs: 300,
       lapses: 0,
       falseStarts: 0,
-      trials: 2,
+      trials: 1,
     })
   })
 
+  it('ends at the deadline even with a stimulus showing', () => {
+    const stimulus = reactionReducer(start(), { type: 'stimulus', at: LENGTH - 500 })
+    const state = reactionReducer(stimulus, { type: 'tick', at: LENGTH })
+    expect(state.phase).toBe('finished')
+    expect(state.done).toBe(0)
+  })
+
+  it('ends when the answer lands after the length, keeping that trial', () => {
+    const state = trial(start(), LENGTH - 300, 400)
+    expect(state.phase).toBe('finished')
+    expect(state.reactions).toEqual([400])
+  })
+
   it('stops mid-run and keeps what was measured', () => {
-    const one = trial(start('light', 5), 2000, 280)
+    const one = trial(start(), 2000, 280)
     const stopped = reactionReducer(one, { type: 'stop' })
     expect(stopped.phase).toBe('finished')
     expect(stopped.stopped).toBe(true)
@@ -147,29 +201,31 @@ describe('reactionReducer', () => {
     expect(summarize(stopped).trials).toBe(1)
   })
 
-  it('ignores stop and stimulus outside a run', () => {
+  it('ignores stop, tick and stimulus outside a run', () => {
     const idle = initialReactionState()
     expect(reactionReducer(idle, { type: 'stop' })).toBe(idle)
     expect(reactionReducer(idle, { type: 'stimulus', at: 1 })).toBe(idle)
+    expect(reactionReducer(idle, { type: 'tick', at: 1 })).toBe(idle)
   })
 
   it('resets to the chosen modality, keeping the length', () => {
-    const state = reactionReducer(start('sound', 5), {
+    const state = reactionReducer(start('sound'), {
       type: 'reset',
       modality: 'light',
     })
     expect(state.phase).toBe('idle')
-    expect(state.total).toBe(5)
+    expect(state.durationMs).toBe(LENGTH)
     expect(state.modality).toBe('light')
+    expect(state.endsAt).toBeNull()
   })
 })
 
 describe('summarize', () => {
-  it('reports a median reaction, the lapses and the early answers', () => {
-    let state = start('light', 10)
+  it('reports the median of the valid trials, the lapses and the early answers', () => {
+    let state = start()
     state = trial(state, 2000, 250)
     state = trial(state, 6000, 400)
-    state = trial(state, 10000, 900)
+    state = trial(state, 10000, REACTION_LAPSE_CUTOFF_MS + 400)
     state = reactionReducer(state, { type: 'answer', at: 12000 })
     expect(summarize(state)).toEqual({
       medianMs: 325,
@@ -180,9 +236,9 @@ describe('summarize', () => {
   })
 
   it('has no median when nobody answered in time', () => {
-    let state = start('light', 2)
-    state = trial(state, 2000, REACTION_RESPONSE_WINDOW_MS, 'timeout')
-    state = trial(state, 8000, REACTION_RESPONSE_WINDOW_MS, 'timeout')
+    let state = start()
+    state = trial(state, 2000, REACTION_TRIAL_WINDOW_MS, 'timeout')
+    state = trial(state, 8000, REACTION_TRIAL_WINDOW_MS, 'timeout')
     expect(summarize(state)).toEqual({
       medianMs: null,
       lapses: 2,
@@ -194,10 +250,31 @@ describe('summarize', () => {
 
 describe('randomWait', () => {
   it('stays inside the range, whatever the random number is', () => {
-    expect(randomWait(() => 0)).toBe(2000)
+    expect(randomWait(() => 0)).toBe(REACTION_WAIT_MIN_MS)
     expect(randomWait(() => 1)).toBe(REACTION_WAIT_MAX_MS)
-    const middle = randomWait(() => 0.5)
-    expect(middle).toBeGreaterThan(2000)
-    expect(middle).toBeLessThan(REACTION_WAIT_MAX_MS)
+    expect(randomWait(() => 0.5)).toBe(6000)
+  })
+
+  it('follows the random source it is given', () => {
+    expect(randomWait(() => 0.25)).toBe(4000)
+    expect(randomWait(() => 0.75)).toBe(8000)
+  })
+})
+
+describe('remainingMs and elapsedMs', () => {
+  it('measure the run against its length, never outside it', () => {
+    const state = start('light', 1000)
+    expect(remainingMs(state, 1000)).toBe(LENGTH)
+    expect(remainingMs(state, 1000 + LENGTH / 2)).toBe(LENGTH / 2)
+    expect(remainingMs(state, 1000 + LENGTH + 500)).toBe(0)
+    expect(elapsedMs(state, 1000)).toBe(0)
+    expect(elapsedMs(state, 1000 + LENGTH / 2)).toBe(LENGTH / 2)
+    expect(elapsedMs(state, 1000 + LENGTH + 500)).toBe(LENGTH)
+  })
+
+  it('are zero before the run starts', () => {
+    const idle = initialReactionState()
+    expect(remainingMs(idle, 500)).toBe(0)
+    expect(elapsedMs(idle, 500)).toBe(0)
   })
 })

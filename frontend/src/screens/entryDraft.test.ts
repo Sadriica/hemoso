@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { parseDraft, parseReport, readingRows } from './entryDraft'
 import type { Indicator } from '../domain/types'
+import {
+  REACTION_INDICATOR_IDS,
+  REACTION_LAPSES_ID,
+  REACTION_MEDIAN_ID,
+} from '../reaction/ids'
 import { strings } from '../strings'
 
 // The rules behind the Entry form, away from the DOM: the browser's own number
@@ -269,6 +274,18 @@ describe('readingRows', () => {
     const rows = readingRows([indicator('mood_1_5', 'Mood', '1 to 5')])
     expect(rows[0].scale).toBe(true)
     expect(rows[0].system).toBe('neuro')
+  })
+
+  it('leaves out the two ids the reaction check measures itself', () => {
+    const rows = readingRows([
+      indicator('hr_bpm', 'Heart rate', 'bpm'),
+      indicator(REACTION_MEDIAN_ID, 'Reaction time median', 'ms'),
+      indicator('temp_core_c', 'Core temperature', '°C'),
+      indicator(REACTION_LAPSES_ID, 'Reaction lapses', 'count'),
+    ])
+    expect(rows.map((row) => row.key)).toEqual(['hr_bpm', 'temp_core_c'])
+    // The one list the check writes and this screen skips stay the same list.
+    expect([REACTION_MEDIAN_ID, REACTION_LAPSES_ID]).toEqual(REACTION_INDICATOR_IDS)
   })
 })
 
