@@ -53,6 +53,7 @@ export interface ColorTokens {
   'system-sleep': string
   'system-neuro': string
   'system-metabolic': string
+  'system-musculoskeletal': string
 }
 
 export const COLORS: Record<ThemeMode, ColorTokens> = {
@@ -84,6 +85,7 @@ export const COLORS: Record<ThemeMode, ColorTokens> = {
     'system-sleep': '#9AA5FF',
     'system-neuro': '#C39BFF',
     'system-metabolic': '#3ED1C0',
+    'system-musculoskeletal': '#F28CC8',
   },
   light: {
     'color-bg': '#F3F4F0',
@@ -113,6 +115,7 @@ export const COLORS: Record<ThemeMode, ColorTokens> = {
     'system-sleep': '#4F46E5',
     'system-neuro': '#7C3AED',
     'system-metabolic': '#0F766E',
+    'system-musculoskeletal': '#B4237A',
   },
 }
 
