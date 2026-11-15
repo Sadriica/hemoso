@@ -1,0 +1,103 @@
+/* The layered stage behind every phase (DESIGN.md 6.3). It sits over the star
+   field and under everything else, takes no pointer event and paints with the
+   two console accents at low strength. */
+.depth {
+  --depth-shift: 0px;
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* A scientific grid: fine lines every 24 px and a stronger one every 120 px,
+   fading toward the edges. It shifts the least. */
+.depth__grid {
+  position: absolute;
+  inset: calc(var(--space-4) * -1);
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--accent-cyan) 9%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--accent-cyan) 9%, transparent) 1px, transparent 1px),
+    linear-gradient(to right, color-mix(in srgb, var(--accent-cyan) 4%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--accent-cyan) 4%, transparent) 1px, transparent 1px);
+  background-size:
+    120px 120px,
+    120px 120px,
+    24px 24px,
+    24px 24px;
+  mask-image: radial-gradient(ellipse at 50% 40%, #000 20%, transparent 78%);
+  transform: translate3d(0, calc(var(--depth-shift) * -0.35), 0);
+}
+
+.depth__orbit {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: translate3d(0, calc(var(--depth-shift) * -0.7), 0);
+}
+
+.depth__arc {
+  fill: none;
+  stroke: var(--accent-violet);
+  stroke-width: 1;
+  stroke-dasharray: 2 10;
+  opacity: 0.35;
+  vector-effect: non-scaling-stroke;
+}
+
+.depth__arc--far {
+  stroke: var(--accent-cyan);
+  stroke-dasharray: none;
+  opacity: 0.12;
+}
+
+.depth__body {
+  fill: var(--accent-cyan);
+  opacity: 0.8;
+}
+
+/* One slow turn of the orbit: four minutes a lap. */
+.depth__turn {
+  transform-origin: 500px 300px;
+  animation: depth-turn 240s linear infinite;
+}
+
+@keyframes depth-turn {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* A soft pool of light where the active panel sits, so the panel stands
+   forward of the sky. It shifts the most. */
+.depth__glow {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 46% 34% at 50% 58%, color-mix(in srgb, var(--accent-violet) 12%, transparent), transparent 70%),
+    radial-gradient(ellipse 30% 22% at 50% 56%, color-mix(in srgb, var(--accent-cyan) 9%, transparent), transparent 72%);
+  transform: translate3d(0, calc(var(--depth-shift) * -1), 0);
+}
+
+.app--still .depth__turn {
+  animation: none;
+}
+
+.app--still .depth__grid,
+.app--still .depth__orbit,
+.app--still .depth__glow {
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .depth__turn {
+    animation: none;
+  }
+
+  .depth__grid,
+  .depth__orbit,
+  .depth__glow {
+    transform: none;
+  }
+}

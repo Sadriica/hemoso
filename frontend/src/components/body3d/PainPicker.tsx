@@ -1,6 +1,7 @@
 // Where does it hurt: the pain mode of the 3D body with one row per chosen
 // place (kind of mark, strength), an optional note, and a Save that writes the
-// report to this device only (data/painStore.ts). No condition names, no
+// report to this device (data/painStore.ts); for an account it is also sent to
+// the server when the server has the route (data/painOutbox.ts). No condition names, no
 // "you have": the words say what was marked and that the CMO or flight surgeon
 // reads it with the astronaut.
 

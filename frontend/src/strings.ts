@@ -155,8 +155,6 @@ export const strings = {
         no_data: (count: number): string => `${count} with no data yet`,
       },
     },
-    // The label over the 3D body beside the card.
-    twin: 'Digital twin',
     // The overview figure failed to draw; the cards and the history still work.
     overviewFailed: 'The overview could not be drawn. Reload the page to try again.',
   },
@@ -499,8 +497,9 @@ export const strings = {
   // wording. The PIN is never written down here or anywhere in the browser.
   signIn: {
     faceHeading: 'Sign in with your face',
-    // The closed row that holds the username and PIN form and the new account.
-    moreToggle: 'Username and PIN',
+    // The two tabs above the username and PIN form: sign in or create.
+    accountHeading: 'Account',
+    signInTab: 'Sign in',
     faceNote: 'A face saved on this device opens your session.',
     // No face on this device yet: how to add one, in one line.
     faceNone: 'Sign in with your PIN once, then add your face on this device',
@@ -518,7 +517,6 @@ export const strings = {
     createToggle: 'Create an account',
     createHeading: 'Create an account',
     createAction: 'Create my account',
-    createBack: 'Back to signing in',
     confirmPin: 'PIN again',
     demoHeading: 'Demo',
     demoNote: 'The demo astronaut has no account. Every value in it is synthetic.',

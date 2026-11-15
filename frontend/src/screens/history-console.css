@@ -65,15 +65,18 @@
   color: var(--color-text-muted);
 }
 
-/* Segmented controls: real radio buttons, the segments are their look. */
+/* Segmented controls: real radio buttons, the segments are their look. One
+   column, context on top and the window under it: a flex row let the window
+   sit past the right edge on a phone, where the phase clips it. */
 .hc-controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2) var(--space-4);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: start;
+  gap: var(--space-2);
 }
 
 .hc-seg--context {
-  flex: 1 1 100%;
+  justify-self: stretch;
 }
 
 .hc-seg {
