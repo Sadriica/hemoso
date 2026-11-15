@@ -35,11 +35,12 @@ opinion, which is the same limit.
 
 ```
 score(condition, record):
-    signals = condition.based_on  with a usable value and a baseline
+    signals = condition.based_on  with a usable value (a baseline is not required)
     if len(signals) < 2:            return no_data
     points = 0
     for each signal with value v:
         if v crossed a row in attention.csv:   points += 1
+        elif no baseline for v:                skip the signal (no evidence either way)
         elif v is outside the baseline:        points += 0.5
         else:                                  points += 0
     return points / len(signals)
@@ -53,9 +54,16 @@ Labels, and what the astronaut reads:
 | 0.3 to 0.6 | Possible | "Possible. These signals point to it: ..." |
 | 0.6 to 1 | Review | "Ask your CMO or flight surgeon to check this" |
 
-The app always adds that the CMO or the flight surgeon confirms. A signal with
-no baseline yet is left out of the denominator, and with fewer than two signals
-the condition shows "not enough data", never a low score.
+The app always adds that the CMO or the flight surgeon confirms. A clinical
+boundary does not need a baseline: a value beyond a published limit counts as
+evidence on its own. A signal with no baseline and no crossed boundary adds
+nothing and is left out of the denominator, and with fewer than two signals the
+condition shows "not enough data", never a low score.
+
+The order is the same one Wambi proposed for the state function on Sat 20:10:
+the boundary is checked first, and the baseline only answers the second
+question ("is this unusual for this person?"). A temperature of 39.5 °C is a
+review on the first day of a mission, before any baseline exists.
 
 ## Every signal needs a side
 
