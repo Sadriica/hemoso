@@ -518,6 +518,9 @@ describe('History trend', () => {
     expect(document.querySelectorAll('.tc__svg .tc__pt')).toHaveLength(2)
     await user.click(screen.getByRole('radio', { name: 'After exercise' }))
     expect(screen.getByText('No readings in this context yet.')).toBeInTheDocument()
+    expect(
+      screen.getByText('Readings are in: At rest, Post-sleep · on waking.'),
+    ).toBeInTheDocument()
     // The table keeps every reading: it is the text of all the numbers.
     expect(within(screen.getByRole('table')).getAllByRole('row')).toHaveLength(6)
   })

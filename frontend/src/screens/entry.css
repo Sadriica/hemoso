@@ -648,9 +648,9 @@
   justify-content: center;
   /* The button keeps its 44 px target but adds no height to the row. */
   margin-block: calc(var(--space-3) * -1);
-  font-size: var(--text-body);
+  gap: var(--space-1);
   min-width: var(--tap-min);
-  padding: 0;
+  padding: 0 var(--space-2);
   border-color: transparent;
   background: transparent;
   color: var(--color-text-muted);
@@ -849,7 +849,26 @@
 }
 
 .report__reaction {
-  max-width: 760px;
+  /* The same width as the readings panel above it, so the row reads as part of
+     the report and not as a stray control. */
+  max-width: none;
+}
+
+.report__reaction .disclosure__toggle {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: calc(var(--tap-min) + var(--space-2));
+  padding: 0 var(--space-4);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  text-align: left;
+}
+
+.report__reaction .disclosure__toggle:hover {
+  border-color: var(--color-accent);
 }
 
 /* Beside the field there is no room for the word "change": the tag keeps it in

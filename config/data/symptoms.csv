@@ -1,0 +1,11 @@
+symptom_id,name,red_flag,shared,source
+thirst,Thirst,no,no,https://diabetes.org/about-diabetes/warning-signs-symptoms
+frequent_urination,Frequent urination,no,no,https://diabetes.org/about-diabetes/warning-signs-symptoms
+blurred_vision,Blurred vision,no,no,https://diabetes.org/about-diabetes/warning-signs-symptoms
+fatigue,Fatigue,no,yes,https://diabetes.org/about-diabetes/warning-signs-symptoms
+vomiting,Vomiting,yes,no,https://diabetes.org/living-with-diabetes/treatment-care/hyperglycemia
+shakiness,Shakiness,no,no,https://diabetes.org/living-with-diabetes/hypoglycemia-low-blood-glucose/symptoms-treatment
+sweating,Sweating,no,no,https://diabetes.org/living-with-diabetes/hypoglycemia-low-blood-glucose/symptoms-treatment
+hunger,Hunger,no,no,https://diabetes.org/living-with-diabetes/hypoglycemia-low-blood-glucose/symptoms-treatment
+confusion,Confusion,yes,yes,https://diabetes.org/living-with-diabetes/hypoglycemia-low-blood-glucose/symptoms-treatment
+fast_heartbeat,Fast heartbeat,no,no,https://diabetes.org/living-with-diabetes/hypoglycemia-low-blood-glucose/symptoms-treatment

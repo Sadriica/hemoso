@@ -128,6 +128,11 @@ export default function History({
             : [seriesInput(partner, partnerRows, partnerRules, context, trendWindow, true)]),
         ].sort((x, y) => order(x.key) - order(y.key))
   const counts = contextCounts([...rows, ...partnerRows])
+  const contextsWithReadings = (
+    Object.keys(counts) as MeasurementContext[]
+  )
+    .filter((key) => counts[key] > 0)
+    .map((key) => strings.entry.contextLabels[key])
   const latest = rows[0] ?? null
   // The backend median covers the window the state rule uses: the last 14
   // readings in the same context (docs/API.md). Without an answer, or without
@@ -214,7 +219,16 @@ export default function History({
               counts={counts}
             />
             {trendInputs.every((item) => item.points.length === 0) ? (
-              <p className="hc__empty">{strings.history.trend.noneInContext}</p>
+              <div className="hc__empty">
+                <p>{strings.history.trend.noneInContext}</p>
+                {contextsWithReadings.length > 0 && (
+                  <p className="hc__empty-hint">
+                    {strings.history.trend.readingsIn(
+                      contextsWithReadings.join(', '),
+                    )}
+                  </p>
+                )}
+              </div>
             ) : (
               <TrendChart
                 series={trendInputs}

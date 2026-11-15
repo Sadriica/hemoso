@@ -16,7 +16,6 @@
   position: relative;
   display: grid;
   gap: var(--space-3);
-  max-width: 720px;
   margin-bottom: var(--space-3);
   padding: var(--space-3);
   border: 1px solid var(--color-border);
@@ -55,6 +54,15 @@
   font-weight: 400;
   letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
+}
+
+.hc__empty p {
+  margin: 0;
+}
+
+.hc__empty-hint {
+  margin-top: var(--space-1);
+  font-size: var(--text-small);
 }
 
 .hc__empty {
@@ -463,5 +471,49 @@
   .tc__readout {
     min-height: 5em;
     padding: var(--space-2);
+  }
+}
+
+/* Phone table: the context may wrap, the status column is narrower and every
+   row has one height, so the five columns need less sideways scroll at 390 px
+   and 320 px (REQ-32). */
+@media (max-width: 599px) {
+  .history__table th,
+  .history__table td {
+    padding: var(--space-2) 6px;
+    font-size: var(--text-small);
+  }
+
+  .history__table th {
+    font-size: var(--text-label);
+    white-space: normal;
+    vertical-align: bottom;
+  }
+
+  .history__table td:nth-child(3) {
+    white-space: normal;
+    min-width: 5.5em;
+  }
+
+  .history__table tbody tr {
+    height: 48px;
+  }
+
+  /* "In your usual range" on two lines at most. */
+  .history__status {
+    min-width: 8.5em;
+    align-items: flex-start;
+  }
+
+  .history__table .history__unit {
+    font-size: var(--text-label);
+  }
+}
+
+/* Phone: the History panel sits closer to the rule of its disclosure, which
+   gives the chart and the table 8 px more width. */
+@media (max-width: 599px) {
+  .status__history .disclosure__panel {
+    padding-left: var(--space-2);
   }
 }

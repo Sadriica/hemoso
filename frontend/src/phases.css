@@ -1350,3 +1350,67 @@ input.reading__input::-webkit-inner-spin-button {
     box-shadow: none;
   }
 }
+
+/* Round of Sun 07:00: the rail on a wide screen. At 88 px it covered a tenth
+   of the screen under every phase. The name of each step now sits beside its
+   node, on the track, so the rail is one row of 60 px; the label paints the
+   raised band over the line, as the node does. */
+@media (min-width: 600px) {
+  :root:root {
+    --rail-height: 60px;
+  }
+
+  .phase-rail {
+    padding-block: var(--space-2);
+  }
+
+  .phase-rail__step {
+    grid-template-rows: var(--rail-row);
+    grid-template-columns: auto auto;
+    justify-content: center;
+    column-gap: 0;
+    row-gap: 0;
+  }
+
+  .phase-rail__label {
+    position: relative;
+    z-index: 1;
+    padding-inline: var(--space-2) var(--space-3);
+    background: var(--color-bg-raised);
+  }
+}
+
+/* Round of Sun 07:05: the top bar between 900 and 1279 px. The one-row layout
+   only fits from 1280 px (with a waiting count the controls are wider, and
+   the sentence ran under them at 1100 px). Until then the sentence takes the
+   second row, as it does on a tablet, and the dot that joins the day to the
+   person is dropped wherever that line can wrap. */
+@media (min-width: 1100px) and (max-width: 1279px) {
+  .topbar__bar {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      'brand mission controls'
+      'notice notice notice';
+  }
+
+  .synthetic-notice {
+    padding-bottom: var(--space-1);
+    text-align: left;
+  }
+}
+
+@media (max-width: 1099px) {
+  .topbar__stamp + .topbar__duty::before {
+    display: none;
+  }
+}
+
+/* Round of Sun 07:15: the dot that joins the day to the person. Under 1100 px
+   the line can wrap, and a dot at the start of the second line reads as a
+   stray mark, so it closes the first part instead: at the end of the day and
+   the clock, whether the person follows on the same line or on the next. */
+@media (max-width: 1099px) {
+  .topbar__stamp:has(+ .topbar__duty)::after {
+    content: ' ·';
+  }
+}

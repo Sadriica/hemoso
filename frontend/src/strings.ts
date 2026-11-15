@@ -249,6 +249,8 @@ export const strings = {
       unit: string,
     ): string =>
       `${label === null ? '' : `${label}: `}${count} earlier ${count === 1 ? 'reading' : 'readings'} · ${low} to ${high} ${unit}`,
+    // A panel with no earlier reading yet: one plain line instead of a blank.
+    noHistory: 'No earlier readings yet.',
     // The console the report is: its name and the tag every screen keeps.
     console: 'Physiology telemetry',
     save: 'Save readings',
@@ -337,6 +339,8 @@ export const strings = {
       hint: 'Arrow keys move between readings. Home and End jump to the first and last.',
       hintPair: 'Up and down switch between the two series.',
       noneInContext: 'No readings in this context yet.',
+      // The contexts that do have readings, so the person knows where to look.
+      readingsIn: (contexts: string): string => `Readings are in: ${contexts}.`,
       usualBand: (series: string | null): string =>
         series === null ? 'Usual band' : `${series} usual band`,
       noBand: 'The usual band needs 3 earlier readings in this context.',
@@ -344,6 +348,7 @@ export const strings = {
         series === null ? level : `${series}: ${level}`,
       markLegend: 'Marks',
       pickReading: 'Select a reading to see it here.',
+      newest: 'Newest reading',
       readout: (parts: {
         series: string | null
         value: string
