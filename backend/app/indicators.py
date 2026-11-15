@@ -6,8 +6,10 @@
 and who acts" (REQ-05). `rules/conditions.csv` answers "what may the astronaut
 have and which signals does it rest on" (REQ-06), scored by `app.conditions`;
 its optional fifth column, `symptoms`, adds the reported symptoms a condition
-lists (T-79). `data/symptoms.csv` answers "which symptoms can be reported and
-which of them are red flags" (T-79). Every file is read as FORMATS.md defines
+lists (T-78), and a row that still has four cells keeps working (T-79).
+`data/symptoms.csv` answers "which symptoms can be reported, which
+of them are red flags and which weigh less because more than one condition
+lists them" (T-78). Every file is read as FORMATS.md defines
 it; a missing file reads as no rows, as it does while the team fills `config/`.
 """
 
@@ -15,11 +17,16 @@ from __future__ import annotations
 
 import csv
 import os
+from collections.abc import Sequence
 from pathlib import Path
 
 from .models import Entry
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+
+# The columns of rules/conditions.csv, in file order (FORMATS.md section 3).
+# `symptoms` is the optional fifth one; a four-cell row has no cell for it.
+CONDITION_COLUMNS = ("condition_id", "name", "based_on", "symptoms", "source")
 
 
 def config_dir() -> Path:
@@ -89,30 +96,51 @@ def load_demo_people() -> set[str]:
 def load_condition_rows() -> list[dict[str, str]]:
     """rules/conditions.csv in file order; [] while the file is missing.
 
-    `based_on` keeps its column text; `app.conditions` splits it into
-    `indicator_id:side` pairs. The optional `symptoms` column keeps its text
-    too, and a file with four columns has no such key at all (T-79).
+    The header names the cells, so the reader does not depend on how wide the
+    file is. A row with four cells is the row the file had before `symptoms`: its
+    fourth cell is `source` and it lists no symptom (T-79). A file whose header
+    still has four columns reads the same way, and a five-cell row under it takes
+    its fourth cell as `symptoms` and its last as `source`. `based_on` keeps its
+    column text; `app.conditions` splits it into `indicator_id:side` pairs.
     """
     path = config_dir() / "rules" / "conditions.csv"
     if not path.exists():
         return []
     with path.open(newline="", encoding="utf-8-sig") as handle:
-        return [
-            {key: (value or "").strip() for key, value in row.items()}
-            for row in csv.DictReader(handle)
-            if row["condition_id"].strip()
-        ]
+        reader = csv.reader(handle)
+        header = next(reader, [])
+        rows = [condition_row(header, cells) for cells in reader]
+    return [row for row in rows if row["condition_id"]]
+
+
+def condition_row(header: Sequence[str], cells: Sequence[str]) -> dict[str, str]:
+    """One line of conditions.csv keyed by the header's column names.
+
+    The count of cells decides whether the row carries `symptoms`: four cells
+    have none, five have one. The header names the rest, so a row that still has
+    four cells keeps its fourth cell as `source` even under the five-column
+    header, and the other way round while the header is the old four-column one.
+    """
+    names = [name.strip() for name in header]
+    values = [cell.strip() for cell in cells]
+    if len(values) == len(names) - 1 and "symptoms" in names:
+        names = [name for name in names if name != "symptoms"]
+    elif len(values) == len(names) + 1 and "symptoms" not in names:
+        names = [*names[:-1], "symptoms", names[-1]]
+    row = dict(zip(names, values))
+    return {column: row.get(column, "") for column in CONDITION_COLUMNS}
 
 
 def load_symptom_rows() -> dict[str, dict[str, str]]:
     """symptom_id -> the whole symptoms.csv row; {} while the file is missing.
 
-    The file is optional (T-79): `symptom_id`, `name`, `red_flag` and `source`,
-    as Bio 2 proposes in `team/bio2/notes/complementary-proposals.md` section 4.
+    The columns are `symptom_id`, `name`, `red_flag`, `shared` and `source`
+    (FORMATS.md section 3, T-78). `shared` is what decides a symptom's weight in
+    the condition score and `red_flag` what makes a condition `urgent`.
     The key is lowercased because an id the API accepts is always lowercase: a
     `Shaky` row in the file still answers for a stored `shaky`, instead of
-    silently losing the red flag. `scripts/check_content.py` is the right place
-    to reject such a row once T-78 teaches it to read this file.
+    silently losing the red flag. A row like that is why the checker has to read
+    this file: `scripts/check_content.py` does not read it yet (T-78 opens it).
     """
     path = config_dir() / "data" / "symptoms.csv"
     if not path.exists():

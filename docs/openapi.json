@@ -73,7 +73,7 @@
         "type": "object"
       },
       "ConditionScore": {
-        "description": "The evidence score of one possible condition (bio2-02, REQ-06, T-79).\n\n`score` is the mean of the signals' points, from 0 to 1, or null while\nfewer than two signals are usable; `label` is `no_data` with no score.\n`red_flag` appears as `true` only when the person reported a symptom that\nthis condition lists and `config/data/symptoms.csv` marks as a red flag; it\nis not a diagnosis and adds no text. The score is evidence, not a\nprobability: the CMO or the flight surgeon confirms, and the route never\nsays the person has the condition.",
+        "description": "The evidence score of one possible condition (bio2-02, REQ-06, T-79).\n\n`score` is the weighted mean of the signals' evidence, from 0 to 1, or null\nwhile there is no score: fewer than two usable signals, unless one crossed a\ncited clinical boundary. A score that comes only from symptoms stops at 0.5.\n`label` is `no_data` with no score, and `urgent` when the person reported a\nsymptom that this condition lists and `config/data/symptoms.csv` marks as a\nred flag; the label wins, and `score` and `red_flag` stay in the answer so\nthe screen can show what it rests on. The score is evidence, not a\nprobability: the CMO or the flight surgeon confirms, and the route never\nsays the person has the condition.",
         "properties": {
           "condition_id": {
             "title": "Condition Id",
@@ -84,7 +84,8 @@
               "no_data",
               "low",
               "possible",
-              "review"
+              "review",
+              "urgent"
             ],
             "title": "Label",
             "type": "string"
@@ -133,7 +134,7 @@
         "type": "object"
       },
       "ConditionSignal": {
-        "description": "One signal a condition rests on (bio2-02, T-79).\n\n`kind` is `indicator` for a measured signal and `symptom` for one the\nperson reported; a symptom signal carries `symptom_id` and a point of its\nown, and the indicator fields stay empty. `side` is the side of the\nperson's range that counts for the condition, or null when `based_on` left\nit out; `contribution` is the point the signal added, or null while it is\nnot usable (no reading, no side, no baseline, or a symptom not reported);\n`value` is the newest reading, or null when there is none.\n\nThe route leaves out the fields a signal does not set\n(`response_model_exclude_unset`), so an indicator signal keeps the four\nfields it had before the symptom layer and a symptom signal adds `kind` and\n`symptom_id`.",
+        "description": "One signal a condition rests on (bio2-02, T-79).\n\n`kind` is `indicator` for a measured signal and `symptom` for one the\nperson reported; a symptom signal carries `symptom_id` and a point of its\nown, and the indicator fields stay empty. `side` is the side of the\nperson's range that counts for the condition, or null when `based_on` left\nit out; `contribution` is the signal's term in the weighted mean, its\nweight times its evidence, or null while it is not usable (no reading, no\nside, no baseline, or a symptom not reported); `value` is the newest\nreading, or null when there is none. `weight` is set on a symptom signal\nonly (0.5 specific, 0.25 shared): an indicator signal weighs 1.\n\nThe route leaves out the fields a signal does not set\n(`response_model_exclude_unset`), so an indicator signal keeps the four\nfields it had before the symptom layer and a symptom signal adds `kind`,\n`symptom_id` and `weight`.",
         "properties": {
           "contribution": {
             "anyOf": [
@@ -202,6 +203,17 @@
               }
             ],
             "title": "Value"
+          },
+          "weight": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weight"
           }
         },
         "title": "ConditionSignal",
@@ -813,7 +825,7 @@
     },
     "/people/{person_id}/conditions": {
       "get": {
-        "description": "The evidence score of every condition in config/rules/conditions.csv.\n\nOne point per signal: 1 when the newest reading crossed an attention row on\nthe signal's side, 0.5 when it is outside the person's baseline on that\nside (both from `app.state`), 0 otherwise; the score is the mean of the\nusable signals (bio2-02, FORMATS.md section 3 point 3). A reported symptom\nthat a row lists in its optional `symptoms` column is one more usable\nsignal (T-79): 0.5 when only that row lists it, 0.25 when two or more do.\n\nFields a condition leaves unset are left out of the answer, so a\nfour-column `conditions.csv` returns exactly the body it returned before\nthe symptom layer: no `kind` on an indicator signal, no `red_flag`.",
+        "description": "The evidence score of every condition in config/rules/conditions.csv.\n\nThe score is a weighted mean over the usable signals (T-78, FORMATS.md\nsection 3 point 3): an indicator signal weighs 1, with evidence 1 when the\nnewest reading crossed a cited attention row on the signal's side and 0.5\nwhen it is outside the person's baseline on that side (both from\n`app.state`); a reported symptom weighs 0.5 when `data/symptoms.csv` marks\nit specific and 0.25 when it marks it shared. Fewer than two usable signals\nis `no_data` unless an indicator crossed a cited boundary, a symptom-only\nscore stops at 0.5, and a reported red flag makes the label `urgent`.\n\nFields a condition leaves unset are left out of the answer, so a\nfour-column `conditions.csv` returns exactly the body it returned before\nthe symptom layer: no `kind` on an indicator signal, no `red_flag`.",
         "operationId": "get_conditions_people__person_id__conditions_get",
         "parameters": [
           {
@@ -1184,7 +1196,7 @@
         "summary": "List Symptoms"
       },
       "post": {
-        "description": "Store one symptom report (T-79, pending T-78).\n\nThe person is in the path, so the same report sent twice from the\nfrontend's outbox answers 200 with the stored report and adds nothing; a\ndifferent severity for the same person, day, time and symptom is a 409.\nWhile `config/data/symptoms.csv` exists the symptom id must be one of its\nrows; without that file any lowercase `snake_case` id is accepted. The\nseverity is stored as the astronaut set it and adds nothing to the score.",
+        "description": "Store one symptom report (T-79; the format is in FORMATS.md section 3).\n\nThe person is in the path, so the same report sent twice from the\nfrontend's outbox answers 200 with the stored report and adds nothing; a\ndifferent severity for the same person, day, time and symptom is a 409.\nWhile `config/data/symptoms.csv` exists the symptom id must be one of its\nrows; without that file any lowercase `snake_case` id is accepted. The\nseverity is stored as the astronaut set it and adds nothing to the score.",
         "operationId": "create_symptom_people__person_id__symptoms_post",
         "parameters": [
           {

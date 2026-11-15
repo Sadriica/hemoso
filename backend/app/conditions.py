@@ -1,28 +1,45 @@
-"""The evidence score of one condition, from the person's own readings.
+"""The evidence score of one condition, from the person's own records.
 
 `rules/conditions.csv` says what the astronaut may have and which signals each
 row rests on, written `indicator_id:above` or `indicator_id:below` (FORMATS.md
-section 3, "How each value is compared", point 3). The score is the mean of one
-point scale over those signals: 1 when the newest reading of the signal crossed
-a row of `rules/attention.csv` on the signal's side, 0.5 when it is outside the
-person's baseline on that side, 0 otherwise. Fewer than two usable signals is
-`no_data`, never a low score. The rule and its test vectors are in
-`docs/findings/bio2-02-evidence-score.md`.
+section 3, "How each value is compared", point 3). An optional fifth column,
+`symptoms`, names the symptom ids that also support the row, read against
+`data/symptoms.csv` and `data/symptom_log.csv`.
 
-The optional fifth column of `rules/conditions.csv`, `symptoms`, adds the
-symptoms the person reported and this condition lists (Bio 2's proposal,
-`team/bio2/notes/complementary-proposals.md` section 4; T-79). A reported
-symptom counts as one more usable signal, worth `SYMPTOM_SPECIFIC_POINT` when
-only this condition lists it and `SYMPTOM_SHARED_POINT` when two or more
-conditions do. A reported symptom that `data/symptoms.csv` marks `red_flag`
-`yes` and this condition lists sets `red_flag` on the result, whatever the
-score. The score never becomes a diagnosis: no text is written here, and the
-CMO or the flight surgeon confirms.
+The score is a weighted mean. Every usable signal has a weight and an evidence:
+
+- An indicator signal weighs 1. Its evidence is 1 when the newest reading
+  crossed a row of `rules/attention.csv` on the signal's side, 0.5 when it is
+  outside the person's baseline on that side, and 0 otherwise.
+- A symptom signal weighs 0.5 when `data/symptoms.csv` marks the symptom
+  `shared` `no` and 0.25 when it marks it `yes`. Its evidence is 1 when the
+  person reported it on the day of the score. A symptom the condition lists and
+  the person did not report is not usable: it stays out of both sums, and it is
+  not a zero.
+
+`score = sum(weight * evidence) / sum(weight)` over the usable signals.
+
+Fewer than two usable signals is `no_data`, except when the one usable signal
+is an indicator that crossed a cited clinical boundary: a crossed limit counts
+on its own, so a low glucose before any symptom is reported is evidence, not
+silence. A score that comes only from symptoms is capped at `SYMPTOM_ONLY_CAP`
+(0.5), so a condition with no measured signal stops at `possible`.
+
+A symptom `data/symptoms.csv` marks `red_flag` `yes`, listed by this condition
+and reported that day, makes the `label` `urgent` whatever the score. The flag
+sits outside the weighted mean and outranks the label; `red_flag` stays `true`
+and the computed `score` (or null) stays in the answer, so a screen can still
+show what each signal rests on. The score never becomes a diagnosis: no text is
+written here, and the CMO or the flight surgeon confirms.
+
+The rule and its test vectors are `team/bio2/notes/symptom-test-vectors.md`
+(T-78); the arithmetic before symptoms is
+`docs/findings/bio2-02-evidence-score.md`.
 
 The arithmetic is pure: no file, network or clock access. The route reads the
 rows with `app.indicators` and the history and reports with the store, so the
-same functions can be checked against the finding's vectors in
-`tests/test_conditions.py` and Bio 2's example in `tests/test_symptoms.py`.
+same functions can be checked against the vectors in `tests/test_conditions.py`
+and `tests/test_symptom_vectors.py`.
 
 Where the decision leaves room, this module resolves it as follows:
 
@@ -51,14 +68,24 @@ Where the decision leaves room, this module resolves it as follows:
   band starts at its bound, which asks for a review sooner; no vector of the
   finding touches either end.
 - The score is reported with three decimals, as the finding's vectors write it
-  (0.167, 0.667); the label is read from the unrounded mean.
-- A symptom counts once, through the newest mission day that holds any report
-  of that person (`newest_day_reports`): an older day is history, not evidence
-  for today, and every condition reads the same day. `severity` is stored but
-  adds nothing to the score. A symptom this condition lists and the person did
-  not report is still shown, with no point, so the screen can tell what the
-  score rests on. The red flag needs `data/symptoms.csv`: without that file no
-  row says which symptoms are red flags, and no flag is set.
+  (0.167, 0.667); the label is read from the unrounded mean. Bio 2's shared
+  vectors write one third as 0.33; the route answers 0.333, the same value.
+- A symptom counts once, on the newest mission day that holds any report of
+  that person (`newest_day_reports`): an older day is history, not evidence for
+  today, and every condition reads the same day. `severity` is stored but adds
+  nothing to the score.
+- A symptom id in the `symptoms` column that `data/symptoms.csv` does not define
+  is ignored: the weight and the red flag come from that row, and only the
+  checker can call the row an error. An id written twice in one row is one
+  symptom. Without `data/symptoms.csv` no symptom is defined, so no symptom
+  signal is scored.
+- The finding's last vector reads one usable signal as `no_data`. Rule 3 of
+  the agreed vector file supersedes that row when the signal crossed a cited
+  boundary: the limit counts on its own, and `tests/test_conditions.py` records
+  the difference.
+- The cap reads the usable signals only: a condition with any usable indicator
+  signal is never capped, even when that indicator's evidence is 0. The cap is
+  about a missing measurement, not about its result.
 """
 
 from __future__ import annotations
@@ -69,24 +96,28 @@ from dataclasses import dataclass
 from .models import ConditionScore, ConditionSignal, Entry, SymptomReport
 from .state import attention_for, baseline, cited_rows, state_for, window
 
-# One signal whose newest value crossed an attention row on its side.
+# Which evidence a signal can carry.
+# A signal whose newest value crossed an attention row on its side.
 ATTENTION_POINT = 1.0
-# One signal outside the person's baseline on its side.
+# A signal outside the person's baseline on its side.
 BASELINE_POINT = 0.5
-# A reported symptom that only this condition lists (Bio 2's proposal, T-79:
-# "a specific symptom"; Assumption, pending T-78).
-SYMPTOM_SPECIFIC_POINT = 0.5
-# A reported symptom that two or more conditions list ("shared"; Bio 2's
-# proposal, T-79; Assumption, pending T-78).
-SYMPTOM_SHARED_POINT = 0.25
-# How many condition rows must list a symptom before it counts as shared. The
-# proposal names five shared symptoms instead of a count; a count keeps the
-# rule from depending on which conditions exist (Assumption, pending T-78).
-SYMPTOM_SHARED_FROM = 2
-# The cell value of `red_flag` in data/symptoms.csv that marks a red flag.
-RED_FLAG_YES = "yes"
-# Fewer usable signals than this gives no_data (bio2-02).
+# A symptom the person reported on the day of the score.
+SYMPTOM_POINT = 1.0
+# Weight of one indicator signal in the weighted mean.
+INDICATOR_WEIGHT = 1.0
+# Weight of a reported symptom only this condition lists ("specific").
+SYMPTOM_SPECIFIC_WEIGHT = 0.5
+# Weight of a reported symptom `data/symptoms.csv` marks `shared` `yes`.
+SYMPTOM_SHARED_WEIGHT = 0.25
+# A score that comes only from symptoms stops here, so its label is at most
+# `possible`: no measurement supports it (T-78).
+SYMPTOM_ONLY_CAP = 0.5
+# The cell value of `red_flag` and `shared` in data/symptoms.csv that applies.
+YES = "yes"
+# Fewer usable signals than this gives no_data, unless one crossed a boundary.
 MIN_USABLE_SIGNALS = 2
+# The label of a condition with a reported red-flag symptom: outside the score.
+LABEL_URGENT = "urgent"
 # The label bands, narrowest first: a score takes the first label it is below.
 # Each band is closed at its lower end, so 0.3 is `possible` and 0.6 `review`.
 LABEL_STEPS: tuple[tuple[str, float], ...] = (
@@ -114,6 +145,36 @@ class LatestValue:
     median: float | None
     spread: float | None
     attention: tuple[dict, ...]
+
+
+@dataclass(frozen=True)
+class SignalScore:
+    """One signal's place in the weighted mean.
+
+    `weight` is `INDICATOR_WEIGHT` for an indicator signal and the symptom's
+    weight for a symptom one; `evidence` is what the signal adds, or None while
+    it is not usable (no reading, no side, no baseline, or no report that day).
+    A usable indicator whose evidence is `ATTENTION_POINT` crossed a cited
+    clinical boundary, so it scores alone when nothing else is usable.
+    """
+
+    weight: float
+    evidence: float | None
+    kind: str = "indicator"
+
+    @property
+    def usable(self) -> bool:
+        return self.evidence is not None
+
+    @property
+    def contribution(self) -> float | None:
+        """The signal's term in the numerator: its weight times its evidence."""
+        return None if self.evidence is None else self.weight * self.evidence
+
+    @property
+    def boundary(self) -> bool:
+        """Whether this signal crossed a cited limit and may score on its own."""
+        return self.kind == "indicator" and self.evidence == ATTENTION_POINT
 
 
 def latest_value(
@@ -156,10 +217,10 @@ def parse_signals(based_on: str) -> list[tuple[str, str | None]]:
 
 
 def signal_point(latest: LatestValue | None, side: str | None) -> float | None:
-    """The point one signal adds, or None while the signal is not usable.
+    """The evidence one indicator signal adds, or None while it is not usable.
 
     A signal is usable with a reading, a side, and either a baseline or a cited
-    limit crossed on that side. The point is 1 when the value crossed a cited
+    limit crossed on that side. The evidence is 1 when the value crossed a cited
     row of `rules/attention.csv` on the signal's side, 0.5 when it is outside
     the baseline on that side, and 0 otherwise.
     """
@@ -182,18 +243,37 @@ def signal_point(latest: LatestValue | None, side: str | None) -> float | None:
     return BASELINE_POINT
 
 
-def score_for(points: Sequence[float | None]) -> float | None:
-    """The mean of the usable points; None with fewer than two of them."""
-    usable = [point for point in points if point is not None]
-    if len(usable) < MIN_USABLE_SIGNALS:
+def score_for(
+    signals: Sequence[SignalScore], single_boundary: bool = False
+) -> float | None:
+    """The weighted mean of the usable signals, or None while there is no score.
+
+    None when no signal is usable, and when fewer than two are: `no_data`. With
+    `single_boundary`, one usable signal that crossed a cited clinical boundary
+    scores on its own (T-78 rule 3). The caller passes it only for a row that
+    lists symptoms, so a row without the `symptoms` column keeps the score it
+    had before T-79 (vector "four-cell row after the change: same score as
+    before"). A score that comes only from symptoms is capped at
+    `SYMPTOM_ONLY_CAP`.
+    """
+    usable = [signal for signal in signals if signal.usable]
+    if not usable:
         return None
-    return sum(usable) / len(usable)
+    if len(usable) < MIN_USABLE_SIGNALS and not (
+        single_boundary and usable[0].boundary
+    ):
+        return None
+    total = sum(signal.weight for signal in usable)
+    score = sum(signal.contribution for signal in usable) / total
+    if all(signal.kind == "symptom" for signal in usable):
+        return min(score, SYMPTOM_ONLY_CAP)
+    return score
 
 
 def symptom_ids(row: Mapping[str, str]) -> list[str]:
     """The `symptoms` column of one conditions.csv row, in file order.
 
-    A file with four columns has no `symptoms` key, so every row lists none and
+    A four-cell row is read with an empty `symptoms` cell, so it lists none and
     the score is the one the indicator signals alone give (T-79). An id written
     twice in one row is one symptom: it cannot count twice.
     """
@@ -217,27 +297,38 @@ def newest_day_reports(reports: Iterable[SymptomReport]) -> list[SymptomReport]:
     return [report for report in rows if report.mission_day == newest]
 
 
-def shared_symptoms(rows: Iterable[Mapping[str, str]]) -> set[str]:
-    """The symptom ids that `SYMPTOM_SHARED_FROM` or more conditions list.
+def is_yes(row: Mapping[str, str], column: str) -> bool:
+    """Whether a symptoms.csv row has `yes` in `column`."""
+    return str(row.get(column, "")).strip().lower() == YES
 
-    `rows` are all rows of `rules/conditions.csv`: a symptom both glucose
-    conditions list is "shared" and counts less than a symptom only one of
-    them names (Bio 2's proposal, T-79).
+
+def is_shared(row: Mapping[str, str]) -> bool:
+    """Whether a symptoms.csv row marks the symptom as shared by conditions."""
+    return is_yes(row, "shared")
+
+
+def is_red_flag(row: Mapping[str, str]) -> bool:
+    """Whether a symptoms.csv row marks the symptom as a red flag."""
+    return is_yes(row, "red_flag")
+
+
+def shared_ids(symptom_rows: Mapping[str, Mapping[str, str]]) -> set[str]:
+    """The symptom ids `data/symptoms.csv` marks `shared` `yes`.
+
+    The file decides, not the number of conditions that list the symptom: the
+    same list of symptoms must weigh the same tomorrow, when another condition
+    names one of them.
     """
-    counts: dict[str, int] = {}
-    for row in rows:
-        for symptom_id in symptom_ids(row):
-            counts[symptom_id] = counts.get(symptom_id, 0) + 1
     return {
         symptom_id
-        for symptom_id, count in counts.items()
-        if count >= SYMPTOM_SHARED_FROM
+        for symptom_id, row in symptom_rows.items()
+        if is_shared(row)
     }
 
 
-def symptom_point(symptom_id: str, shared: Collection[str]) -> float:
-    """The point one reported symptom adds: shared or specific."""
-    return SYMPTOM_SHARED_POINT if symptom_id in shared else SYMPTOM_SPECIFIC_POINT
+def symptom_weight(symptom_id: str, shared: Collection[str]) -> float:
+    """The weight one symptom adds: less when the symptom is shared."""
+    return SYMPTOM_SHARED_WEIGHT if symptom_id in shared else SYMPTOM_SPECIFIC_WEIGHT
 
 
 def reported_ids(reports: Iterable[SymptomReport]) -> set[str]:
@@ -245,37 +336,42 @@ def reported_ids(reports: Iterable[SymptomReport]) -> set[str]:
     return {report.symptom_id for report in reports}
 
 
-def is_red_flag(row: Mapping[str, str]) -> bool:
-    """Whether a symptoms.csv row marks the symptom as a red flag."""
-    return str(row.get("red_flag", "")).strip().lower() == RED_FLAG_YES
-
-
-def symptom_signals(
+def symptom_scores(
     row: Mapping[str, str],
     reports: Sequence[SymptomReport],
     shared: Collection[str],
-) -> list[ConditionSignal]:
-    """One signal per symptom this condition lists, in the column's order.
+    symptom_rows: Mapping[str, Mapping[str, str]],
+) -> list[tuple[ConditionSignal, SignalScore]]:
+    """One (signal, score) pair per symptom this condition lists and the file defines.
 
-    A symptom the person reported on the newest day adds its point; one they
-    did not report is listed with no point, so the screen shows what the score
-    rests on. `severity` does not change the point.
+    A symptom the person reported on the newest day is usable and adds its
+    weight; one they did not report is listed with no contribution, so the
+    screen shows what the score rests on. `severity` does not change the
+    evidence. An id `data/symptoms.csv` does not define is left out: its weight
+    and its red flag would be invented.
     """
     reported = reported_ids(reports)
-    signals: list[ConditionSignal] = []
+    pairs: list[tuple[ConditionSignal, SignalScore]] = []
     for symptom_id in symptom_ids(row):
-        signals.append(
-            ConditionSignal(
-                kind="symptom",
-                symptom_id=symptom_id,
-                contribution=(
-                    symptom_point(symptom_id, shared)
-                    if symptom_id in reported
-                    else None
+        if symptom_id not in symptom_rows:
+            continue
+        score = SignalScore(
+            symptom_weight(symptom_id, shared),
+            SYMPTOM_POINT if symptom_id in reported else None,
+            "symptom",
+        )
+        pairs.append(
+            (
+                ConditionSignal(
+                    kind="symptom",
+                    symptom_id=symptom_id,
+                    weight=score.weight,
+                    contribution=score.contribution,
                 ),
+                score,
             )
         )
-    return signals
+    return pairs
 
 
 def has_red_flag(
@@ -292,7 +388,11 @@ def has_red_flag(
 
 
 def label_for(score: float | None) -> str:
-    """`no_data` without a score, else `low`, `possible` or `review`."""
+    """`no_data` without a score, else `low`, `possible` or `review`.
+
+    `urgent` is not a band: it comes from a reported red flag and is set by
+    `condition_result`, whatever the score.
+    """
     if score is None:
         return "no_data"
     for name, upper in LABEL_STEPS:
@@ -312,33 +412,38 @@ def condition_result(
 
     `reports` are the person's symptom reports, oldest first; only the newest
     mission day counts (`newest_day_reports`). `symptom_rows` is
-    `data/symptoms.csv` and `shared` the ids `shared_symptoms` returned; both
-    may be empty, which leaves every symptom specific and no flag set.
+    `data/symptoms.csv` and `shared` the ids `shared_ids` returned; both may be
+    empty, which leaves the symptoms unscored and no flag set.
     """
     today = newest_day_reports(reports)
+    rows = symptom_rows or {}
     signals: list[ConditionSignal] = []
+    scores: list[SignalScore] = []
     for indicator_id, side in parse_signals(row["based_on"]):
         newest = latest.get(indicator_id)
+        point = signal_point(newest, side)
         signals.append(
             ConditionSignal(
                 indicator_id=indicator_id,
                 side=side,
-                contribution=signal_point(newest, side),
+                contribution=point,
                 value=None if newest is None else newest.value,
             )
         )
-    signals.extend(symptom_signals(row, today, shared))
-    score = score_for([signal.contribution for signal in signals])
-    rows = symptom_rows or {}
+        scores.append(SignalScore(INDICATOR_WEIGHT, point, "indicator"))
+    for signal, score in symptom_scores(row, today, shared, rows):
+        signals.append(signal)
+        scores.append(score)
+    score = score_for(scores, single_boundary=bool(symptom_ids(row)))
     # `red_flag` is passed only when it is true: the route leaves unset fields
     # out, so a condition with no red flag keeps the fields it had before T-79.
-    flag = {"red_flag": True} if has_red_flag(row, today, rows) else {}
+    flagged = has_red_flag(row, today, rows)
     return ConditionScore(
         condition_id=row["condition_id"],
         name=row["name"],
         score=None if score is None else round(score, SCORE_DECIMALS),
-        label=label_for(score),
+        label=LABEL_URGENT if flagged else label_for(score),
         signals=signals,
         source=row["source"],
-        **flag,
+        **({"red_flag": True} if flagged else {}),
     )

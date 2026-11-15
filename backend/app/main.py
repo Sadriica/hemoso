@@ -17,7 +17,7 @@ from .conditions import (
     condition_result,
     latest_value,
     parse_signals,
-    shared_symptoms,
+    shared_ids,
     symptom_ids,
 )
 from .indicators import (
@@ -385,12 +385,14 @@ def get_conditions(
 ) -> list[ConditionScore]:
     """The evidence score of every condition in config/rules/conditions.csv.
 
-    One point per signal: 1 when the newest reading crossed an attention row on
-    the signal's side, 0.5 when it is outside the person's baseline on that
-    side (both from `app.state`), 0 otherwise; the score is the mean of the
-    usable signals (bio2-02, FORMATS.md section 3 point 3). A reported symptom
-    that a row lists in its optional `symptoms` column is one more usable
-    signal (T-79): 0.5 when only that row lists it, 0.25 when two or more do.
+    The score is a weighted mean over the usable signals (T-78, FORMATS.md
+    section 3 point 3): an indicator signal weighs 1, with evidence 1 when the
+    newest reading crossed a cited attention row on the signal's side and 0.5
+    when it is outside the person's baseline on that side (both from
+    `app.state`); a reported symptom weighs 0.5 when `data/symptoms.csv` marks
+    it specific and 0.25 when it marks it shared. Fewer than two usable signals
+    is `no_data` unless an indicator crossed a cited boundary, a symptom-only
+    score stops at 0.5, and a reported red flag makes the label `urgent`.
 
     Fields a condition leaves unset are left out of the answer, so a
     four-column `conditions.csv` returns exactly the body it returned before
@@ -432,7 +434,7 @@ def get_conditions(
             None if indicator is None else float(indicator["min_spread"]),
             load_attention_rows(indicator_id),
         )
-    shared = shared_symptoms(rows)
+    shared = shared_ids(symptom_rows)
     return [
         condition_result(row, latest, reports, symptom_rows, shared) for row in rows
     ]
@@ -527,7 +529,7 @@ def create_symptom(
     request: Request,
     response: Response,
 ) -> SymptomReport:
-    """Store one symptom report (T-79, pending T-78).
+    """Store one symptom report (T-79; the format is in FORMATS.md section 3).
 
     The person is in the path, so the same report sent twice from the
     frontend's outbox answers 200 with the stored report and adds nothing; a

@@ -25,8 +25,9 @@ Notify = Literal["crew", "cmo", "flight_surgeon"]
 Side = Literal["above", "below"]
 # What a signal of a condition is: a measured indicator or a reported symptom.
 SignalKind = Literal["indicator", "symptom"]
-# The three-step label of an evidence score, plus no_data (bio2-02).
-ConditionLabel = Literal["no_data", "low", "possible", "review"]
+# The three-step label of an evidence score, plus no_data (bio2-02) and the
+# label a reported red flag gives, outside the score (T-78).
+ConditionLabel = Literal["no_data", "low", "possible", "review", "urgent"]
 
 
 def is_valid_id(value: str) -> bool:
@@ -238,20 +239,23 @@ class ConditionSignal(BaseModel):
     person reported; a symptom signal carries `symptom_id` and a point of its
     own, and the indicator fields stay empty. `side` is the side of the
     person's range that counts for the condition, or null when `based_on` left
-    it out; `contribution` is the point the signal added, or null while it is
-    not usable (no reading, no side, no baseline, or a symptom not reported);
-    `value` is the newest reading, or null when there is none.
+    it out; `contribution` is the signal's term in the weighted mean, its
+    weight times its evidence, or null while it is not usable (no reading, no
+    side, no baseline, or a symptom not reported); `value` is the newest
+    reading, or null when there is none. `weight` is set on a symptom signal
+    only (0.5 specific, 0.25 shared): an indicator signal weighs 1.
 
     The route leaves out the fields a signal does not set
     (`response_model_exclude_unset`), so an indicator signal keeps the four
-    fields it had before the symptom layer and a symptom signal adds `kind` and
-    `symptom_id`.
+    fields it had before the symptom layer and a symptom signal adds `kind`,
+    `symptom_id` and `weight`.
     """
 
     kind: SignalKind = "indicator"
     indicator_id: str | None = None
     symptom_id: str | None = None
     side: Side | None = None
+    weight: float | None = None
     contribution: float | None = None
     value: float | None = None
 
@@ -259,11 +263,13 @@ class ConditionSignal(BaseModel):
 class ConditionScore(BaseModel):
     """The evidence score of one possible condition (bio2-02, REQ-06, T-79).
 
-    `score` is the mean of the signals' points, from 0 to 1, or null while
-    fewer than two signals are usable; `label` is `no_data` with no score.
-    `red_flag` appears as `true` only when the person reported a symptom that
-    this condition lists and `config/data/symptoms.csv` marks as a red flag; it
-    is not a diagnosis and adds no text. The score is evidence, not a
+    `score` is the weighted mean of the signals' evidence, from 0 to 1, or null
+    while there is no score: fewer than two usable signals, unless one crossed a
+    cited clinical boundary. A score that comes only from symptoms stops at 0.5.
+    `label` is `no_data` with no score, and `urgent` when the person reported a
+    symptom that this condition lists and `config/data/symptoms.csv` marks as a
+    red flag; the label wins, and `score` and `red_flag` stay in the answer so
+    the screen can show what it rests on. The score is evidence, not a
     probability: the CMO or the flight surgeon confirms, and the route never
     says the person has the condition.
     """

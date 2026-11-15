@@ -6,10 +6,9 @@ mission day and at what time. The API stores it, answers the same when the same
 report is sent twice (the frontend's outbox re-sends) and lists it oldest first.
 
 The score reads those reports only when `config/rules/conditions.csv` has the
-optional fifth column `symptoms` (Bio 2's proposal, `team/bio2/notes/
-complementary-proposals.md` section 4). With four columns, no `symptoms.csv` and
-no reports the response is the one the conditions tests already check; the last
-tests here pin that.
+optional fifth column `symptoms` (FORMATS.md section 3, agreed in T-78). With
+four columns, no `symptoms.csv` and no reports the response is the one the
+conditions tests already check; the last tests here pin that.
 """
 
 from __future__ import annotations
@@ -18,7 +17,8 @@ import httpx
 import pytest
 
 from app import accounts, storage
-from app.conditions import newest_day_reports, shared_symptoms, symptom_point
+from app.conditions import newest_day_reports, shared_ids, symptom_weight
+from app.indicators import load_condition_rows
 from app.main import app
 from app.models import SymptomReport
 
@@ -49,19 +49,20 @@ INDICATORS_CSV = (
 ATTENTION_CSV = (
     "indicator_id,side,threshold,attention_level,notify,source\n"
     f"glucose_mgdl,below,70,consult,cmo,{CITED}\n"
-    f"glucose_mgdl,above,180,consult,cmo,{CITED}\n"
+    f"glucose_mgdl,above,126,consult,cmo,{CITED}\n"
 )
 
 SYMPTOMS_CSV = (
-    "symptom_id,name,red_flag,source\n"
-    "shaky,Shaky,no,Assumption\n"
-    "sweating,Sweating or clammy skin,no,Assumption\n"
-    "confusion,Confusion,yes,Assumption\n"
-    "thirst,Thirst,no,Assumption\n"
-    "vomiting,Vomiting,yes,Assumption\n"
+    "symptom_id,name,red_flag,shared,source\n"
+    "shaky,Shaky,no,no,Assumption\n"
+    "sweating,Sweating or clammy skin,no,no,Assumption\n"
+    "confusion,Confusion,yes,yes,Assumption\n"
+    "thirst,Thirst,no,no,Assumption\n"
+    "vomiting,Vomiting,yes,no,Assumption\n"
 )
 
-# The two glucose conditions of Bio 2's proposal, with the symptoms column.
+# The two glucose conditions, with the agreed `symptoms` column (FORMATS.md
+# section 3, T-78). Confusion is `shared` in SYMPTOMS_CSV, so it weighs less.
 CONDITIONS_FIVE = (
     "condition_id,name,based_on,symptoms,source\n"
     "hypoglycaemia,Hypoglycaemia,glucose_mgdl:below,shaky sweating confusion,"
@@ -651,19 +652,17 @@ def test_newest_day_reports_with_no_report_is_empty():
     assert newest_day_reports([]) == []
 
 
-def test_shared_symptoms_are_the_ones_two_conditions_list():
-    rows = [
-        {"symptoms": "shaky sweating confusion"},
-        {"symptoms": "thirst confusion"},
-    ]
+def test_shared_ids_are_the_rows_symptoms_csv_marks_shared():
+    rows = {
+        "shaky": {"symptom_id": "shaky", "shared": "no"},
+        "confusion": {"symptom_id": "confusion", "shared": "yes"},
+    }
 
-    assert shared_symptoms(rows) == {"confusion"}
+    assert shared_ids(rows) == {"confusion"}
 
 
-def test_shared_symptoms_ignores_a_row_without_the_column():
-    rows = [{"symptoms": "confusion"}, {"based_on": "glucose_mgdl:below"}]
-
-    assert shared_symptoms(rows) == set()
+def test_a_row_without_the_shared_column_is_specific():
+    assert shared_ids({"shaky": {"symptom_id": "shaky"}}) == set()
 
 
 def test_a_symptom_written_twice_in_one_row_counts_once(client, tmp_path):
@@ -678,19 +677,25 @@ def test_a_symptom_written_twice_in_one_row_counts_once(client, tmp_path):
     condition = conditions(client)[0]
 
     assert len(condition["signals"]) == 2
-    assert condition["score"] == 0.75
+    assert condition["score"] == 1.0
 
 
-def test_a_specific_symptom_adds_more_than_a_shared_one():
-    assert symptom_point("shaky", {"confusion"}) == 0.5
-    assert symptom_point("confusion", {"confusion"}) == 0.25
+def test_a_shared_symptom_weighs_less_than_a_specific_one():
+    assert symptom_weight("shaky", {"confusion"}) == 0.5
+    assert symptom_weight("confusion", {"confusion"}) == 0.25
 
 
 # The score: the conditions route.
 
 
 def test_four_columns_ignore_the_reports(client, tmp_path):
-    """No symptoms column, reports stored: the condition scores as it did."""
+    """No symptoms column, reports stored: the score is the one before T-79.
+
+    Glucose 60 crossed the cited row below 70, but it is the only usable signal
+    of a four-cell row, so the condition stays `no_data` as before T-79 (vector
+    "four-cell row after the change: same score as before"). The stored report
+    is ignored because the row lists no symptoms.
+    """
     write_config(tmp_path, CONDITIONS_FOUR, symptoms=None)
     post_glucose(client, 60.0)
     post_symptom(client, "shaky", mission_day=12)
@@ -715,13 +720,76 @@ def test_no_config_and_no_reports_leaves_the_conditions_route_empty(client):
     assert conditions(client) == []
 
 
+# conditions.csv is read by column name: four- and five-cell rows both work.
+
+FOUR_CELL_SOURCE = "https://example.org/hypoglycaemia"
+FIVE_CELL_SOURCE = "https://example.org/hyperglycaemia"
+
+MIXED_CONDITIONS = (
+    "condition_id,name,based_on,symptoms,source\n"
+    f"hypoglycaemia,Hypoglycaemia,glucose_mgdl:below,{FOUR_CELL_SOURCE}\n"
+    f"hyperglycaemia,Hyperglycaemia,glucose_mgdl:above,thirst,{FIVE_CELL_SOURCE}\n"
+)
+
+
+def test_a_four_cell_row_keeps_its_source_under_the_five_column_header(client, tmp_path):
+    write_config(tmp_path, MIXED_CONDITIONS)
+    post_glucose(client, 60.0)
+
+    row = conditions(client)[0]
+
+    assert row["source"] == FOUR_CELL_SOURCE
+    assert [signal["indicator_id"] for signal in row["signals"]] == ["glucose_mgdl"]
+
+
+def test_a_five_cell_row_under_the_four_column_header_keeps_its_symptoms(
+    client, tmp_path
+):
+    conditions_csv = (
+        "condition_id,name,based_on,source\n"
+        f"hypoglycaemia,Hypoglycaemia,glucose_mgdl:below,shaky,{FOUR_CELL_SOURCE}\n"
+    )
+    write_config(tmp_path, conditions_csv)
+    post_glucose(client, 60.0)
+    assert post_symptom(client, "shaky").status_code == 201
+
+    row = conditions(client)[0]
+
+    assert row["source"] == FOUR_CELL_SOURCE
+    assert [signal.get("symptom_id") for signal in row["signals"]] == [None, "shaky"]
+
+
+def test_load_condition_rows_reads_a_four_cell_row_as_no_symptoms(tmp_path):
+    write_config(tmp_path, MIXED_CONDITIONS)
+
+    rows = load_condition_rows()
+
+    assert rows == [
+        {
+            "condition_id": "hypoglycaemia",
+            "name": "Hypoglycaemia",
+            "based_on": "glucose_mgdl:below",
+            "symptoms": "",
+            "source": FOUR_CELL_SOURCE,
+        },
+        {
+            "condition_id": "hyperglycaemia",
+            "name": "Hyperglycaemia",
+            "based_on": "glucose_mgdl:above",
+            "symptoms": "thirst",
+            "source": FIVE_CELL_SOURCE,
+        },
+    ]
+
+
 def test_bio2_example_low_glucose_with_three_symptoms(client, tmp_path):
     """Bio 2's example: glucose 60 mg/dL and shaky, sweating, confusion.
 
-    One indicator signal crossed the cited row (1.0), two symptoms are specific
-    to this condition (0.5 each) and confusion is shared with hyperglycaemia
-    (0.25): (1 + 0.5 + 0.5 + 0.25) / 4 = 0.5625, "possible". Confusion is a red
-    flag in `symptoms.csv`, so the condition carries `red_flag: true`.
+    The weighted mean: glucose weighs 1 and its evidence is 1 (it crossed the
+    cited row below 70), shaky and sweating weigh 0.5 each, confusion is
+    `shared` and weighs 0.25; (1 + 0.5 + 0.5 + 0.25) / (1 + 0.5 + 0.5 + 0.25) =
+    1.0. Confusion is a red flag in `symptoms.csv`, so the label is `urgent`
+    and the score stays in the answer.
     """
     write_config(tmp_path)
     post_glucose(client, 60.0)
@@ -731,8 +799,8 @@ def test_bio2_example_low_glucose_with_three_symptoms(client, tmp_path):
     condition = conditions(client)[0]
 
     assert condition["condition_id"] == "hypoglycaemia"
-    assert condition["score"] == 0.562
-    assert condition["label"] == "possible"
+    assert condition["score"] == 1.0
+    assert condition["label"] == "urgent"
     assert condition["red_flag"] is True
     assert condition["signals"] == [
         {
@@ -741,9 +809,19 @@ def test_bio2_example_low_glucose_with_three_symptoms(client, tmp_path):
             "contribution": 1.0,
             "value": 60.0,
         },
-        {"kind": "symptom", "symptom_id": "shaky", "contribution": 0.5},
-        {"kind": "symptom", "symptom_id": "sweating", "contribution": 0.5},
-        {"kind": "symptom", "symptom_id": "confusion", "contribution": 0.25},
+        {"kind": "symptom", "symptom_id": "shaky", "weight": 0.5, "contribution": 0.5},
+        {
+            "kind": "symptom",
+            "symptom_id": "sweating",
+            "weight": 0.5,
+            "contribution": 0.5,
+        },
+        {
+            "kind": "symptom",
+            "symptom_id": "confusion",
+            "weight": 0.25,
+            "contribution": 0.25,
+        },
     ]
 
 
@@ -776,7 +854,7 @@ def test_only_the_newest_day_of_reports_counts(client, tmp_path):
         ("sweating", 0.5),
         ("confusion", None),
     ]
-    assert condition["score"] == 0.75
+    assert condition["score"] == 1.0
     assert condition["label"] == "review"
 
 
@@ -786,8 +864,8 @@ def test_a_symptom_not_reported_is_listed_but_not_usable(client, tmp_path):
 
     condition = conditions(client)[0]
 
-    assert condition["score"] is None
-    assert condition["label"] == "no_data"
+    assert condition["score"] == 1.0
+    assert condition["label"] == "review"
     assert [signal["contribution"] for signal in condition["signals"]] == [
         1.0,
         None,
@@ -825,8 +903,8 @@ def test_an_empty_symptoms_cell_lists_no_symptom(client, tmp_path):
     ]
 
 
-def test_a_red_flag_sets_the_field_whatever_the_score(client, tmp_path):
-    """One usable signal is `no_data`, and the red flag is still set."""
+def test_a_red_flag_sets_the_label_whatever_the_score(client, tmp_path):
+    """No score at all, and the label is still `urgent`."""
     conditions_csv = (
         "condition_id,name,based_on,symptoms,source\n"
         "hypoglycaemia,Hypoglycaemia,glucose_mgdl:below,confusion,Assumption\n"
@@ -837,7 +915,7 @@ def test_a_red_flag_sets_the_field_whatever_the_score(client, tmp_path):
     condition = conditions(client)[0]
 
     assert condition["score"] is None
-    assert condition["label"] == "no_data"
+    assert condition["label"] == "urgent"
     assert condition["red_flag"] is True
 
 
@@ -864,7 +942,13 @@ def test_a_red_flag_of_an_older_day_does_not_set_the_field(client, tmp_path):
 
 
 def test_a_low_score_and_a_red_flag_can_arrive_together(client, tmp_path):
-    """The flag outranks the label: a low mean does not hide a red flag."""
+    """The flag outranks the label: the label is `urgent`, and the score stays.
+
+    Glucose 100 is inside its baseline (evidence 0), shaky is specific (0.5) and
+    confusion is shared (0.25): the weighted mean is (0 * 1 + 1 * 0.5 + 1 *
+    0.25) / (1 + 0.5 + 0.25) = 0.429, `possible` on its own. The red flag makes
+    the label `urgent` and the score is still reported.
+    """
     write_config(tmp_path)
     for day in (9, 10, 11, 12):
         post_glucose(client, 100.0, mission_day=day)
@@ -873,8 +957,8 @@ def test_a_low_score_and_a_red_flag_can_arrive_together(client, tmp_path):
 
     condition = conditions(client)[0]
 
-    assert condition["score"] == 0.25
-    assert condition["label"] == "low"
+    assert condition["score"] == 0.429
+    assert condition["label"] == "urgent"
     assert condition["red_flag"] is True
 
 
@@ -925,12 +1009,18 @@ def test_the_conditions_route_never_writes_a_diagnosis(client, tmp_path):
 
     text = str(conditions(client)).lower()
 
-    for forbidden in ("you have", "urgent", "diagnosis", "certain", "confirmed"):
+    # `urgent` is the label a red flag gives since T-78; the rest stays out.
+    for forbidden in ("you have", "diagnosis", "certain", "confirmed"):
         assert forbidden not in text
 
 
-def test_an_id_missing_from_symptoms_csv_is_still_scored(client, tmp_path):
-    """Without `symptoms.csv` any id is stored, and the column still counts it."""
+def test_an_id_missing_from_symptoms_csv_is_ignored(client, tmp_path):
+    """The file is what defines a symptom: what it lacks is left out.
+
+    Without `symptoms.csv` no id is defined, so the column adds no signal and
+    the condition scores on its indicator alone: glucose 60 crossed the cited
+    row below 70.
+    """
     conditions_csv = (
         "condition_id,name,based_on,symptoms,source\n"
         "hypoglycaemia,Hypoglycaemia,glucose_mgdl:below,not_a_known_symptom,"
@@ -942,8 +1032,13 @@ def test_an_id_missing_from_symptoms_csv_is_still_scored(client, tmp_path):
 
     condition = conditions(client)[0]
 
-    assert condition["signals"][1] == {
-        "kind": "symptom",
-        "symptom_id": "not_a_known_symptom",
-        "contribution": 0.5,
-    }
+    assert condition["signals"] == [
+        {
+            "indicator_id": "glucose_mgdl",
+            "side": "below",
+            "contribution": 1.0,
+            "value": 60.0,
+        }
+    ]
+    assert condition["score"] == 1.0
+    assert condition["label"] == "review"

@@ -369,15 +369,19 @@ response says the person has the condition.
 
 Path parameter: `person_id` (same lowercase `snake_case` rule).
 
-The rule is FORMATS.md section 3, "How each value is compared", point 3:
+The rule is FORMATS.md section 3, "How each value is compared", point 3, with
+the test vectors of `team/bio2/notes/symptom-test-vectors.md` (T-78). The score
+is a weighted mean over the usable signals:
 
 | Question | Answer |
 | --- | --- |
 | Which reading is scored? | The newest stored entry of the signal. Its `context` decides what it is compared with. |
 | What is its baseline? | `state.py`'s: the last 14 readings before the newest one in that same context, median and spread with the indicator's `min_spread`. |
-| What does one signal add? | `1` when the value crossed a row of `config/rules/attention.csv` whose `side` is the signal's side and whose `source` is a link, with or without a baseline. Rows marked `Assumption` never add this point. `0.5` when it is outside the baseline on that side. `0` otherwise, including a value on the wrong side of the condition, whatever its distance from the baseline: a glucose of 180 mg/dL adds nothing to `hypoglycaemia`. |
-| When is a signal not usable? | With no reading, no side in `based_on`, or no baseline (fewer than 3 readings in that context, or no row in `config/data/indicators.csv`) and no cited limit crossed. It is listed, with `contribution` and `value` null, and left out of the mean. |
-| How is the score computed? | The mean of the usable signals, from 0 to 1, shown with three decimals. Fewer than 2 usable signals gives `score` null and `label` `no_data`, never a low score. |
+| What does an indicator signal add? | Weight `1`. Evidence `1` when the value crossed a row of `config/rules/attention.csv` whose `side` is the signal's side and whose `source` is a link, with or without a baseline. Rows marked `Assumption` never give this evidence. Evidence `0.5` when it is outside the baseline on that side. `0` otherwise, including a value on the wrong side of the condition, whatever its distance from the baseline: a glucose of 180 mg/dL adds nothing to `hypoglycaemia`. |
+| What does a symptom signal add? | Weight `0.5` when `config/data/symptoms.csv` marks the symptom `shared` `no` and `0.25` when it marks it `yes`. Evidence `1` when `person_id` reported it in `config/data/symptom_log.csv` on the day of the score. A symptom the condition lists and the person did not report is not usable: it is not a zero. |
+| When is a signal not usable? | With no reading, no side in `based_on`, or no baseline (fewer than 3 readings in that context, or no row in `config/data/indicators.csv`) and no cited limit crossed; for a symptom, with no report that day, or with no row in `config/data/symptoms.csv`. It is listed (an unknown symptom id is not, see below), with `contribution` null, and left out of both sums. |
+| How is the score computed? | `score = sum(weight * evidence) / sum(weight)` over the usable signals, from 0 to 1, shown with three decimals. Fewer than 2 usable signals gives `score` null and `label` `no_data`, never a low score, **except** in a row that lists symptoms, when the one usable signal is an indicator that crossed a cited clinical boundary: a crossed limit scores on its own there, so a glucose of 62 mg/dL below a cited 70 is 1.0 `review` for `hypoglycaemia` with nothing else recorded. A row without symptoms keeps the minimum of two. |
+| Is there a cap? | Yes, for symptoms alone: a score whose usable signals are all symptoms stops at `0.5` (`SYMPTOM_ONLY_CAP` in `backend/app/conditions.py`), so its label is at most `possible`. A condition with any usable indicator signal is never capped. |
 
 Labels:
 
@@ -387,57 +391,63 @@ Labels:
 | 0.3 to 0.6 | `possible` | "Possible. These signals point to it: ..." |
 | 0.6 to 1 | `review` | "Ask your CMO or flight surgeon to check this" |
 | null | `no_data` | "Not enough data yet", with the signals still missing |
+| any score, or null | `urgent` | "Call your CMO now", before any score |
 
-#### Symptoms in the score (pending T-78)
+#### Symptoms in the score
 
-The optional fifth column of `config/rules/conditions.csv`, `symptoms`, is not
-agreed yet: T-78 owns the format, from Bio 2's proposal
-(`team/bio2/notes/complementary-proposals.md`, section 4). The route reads the
-column when it is there and does nothing different when it is not: with four
-columns there are no symptom signals, the reports are not even read from the
-store, and each condition returns the body it returned before this change.
+The optional fifth column of `config/rules/conditions.csv`, `symptoms`, names
+the symptom ids that support the row. The format is FORMATS.md section 3
+(`config/data/symptoms.csv`, `config/data/symptom_log.csv`) and the rule with
+its vectors is `team/bio2/notes/symptom-test-vectors.md` (T-78). A row with
+four cells has no symptoms: no symptom signals, the reports are not even read
+from the store, and the body is the one the route returned before the column
+existed, with the same score: the single crossed boundary rule below applies
+only to rows that list symptoms.
 
 - A symptom the row lists and the person reported is one more usable signal:
-  `0.5` when only that row lists it, `0.25` when two or more rows list it
-  ("shared"). The score is still the mean over all usable signals, the
-  indicator ones and the symptom ones together.
+  weight `0.5` when `symptoms.csv` marks it `shared` `no`, `0.25` when it marks
+  it `yes`. The score is the weighted mean over every usable signal, indicator
+  and symptom together, so one symptom out of two signals moves the score less
+  than a measurement does.
+- The weight comes from the `shared` cell, not from how many conditions list
+  the symptom: the same list weighs the same tomorrow, when another condition
+  names one of its symptoms.
 - Only the reports of the newest mission day that holds any symptom report
   count (`app.conditions.newest_day_reports`). An older day is history. The day
   is chosen over every report of the person, not per condition, so all
-  conditions read the same day.
+  conditions read the same day. An empty day is no data, not "no symptoms".
 - `severity` is stored and adds nothing: a mild and a severe report of the same
-  symptom on the same day add the same point.
-- A reported symptom that `config/data/symptoms.csv` marks `red_flag` `yes` and
-  the row lists sets `red_flag: true` on that condition, whatever the score,
-  `no_data` included. It is data only: no text and no diagnosis, and the CMO or
-  the flight surgeon confirms. Without `symptoms.csv` no row says which
-  symptoms are red flags, so no flag is set.
+  symptom on the same day add the same evidence.
 - A symptom the row lists and the person did not report stays in `signals`
-  with `contribution` null, so the screen can show what the score rests on.
+  with `contribution` null, so the screen can show what the score rests on. Its
+  `weight` is still shown, which is what it would add.
+- A symptom id the row lists and `symptoms.csv` does not define is left out of
+  the answer: its weight and its red flag would be invented. This is also what
+  happens when `symptoms.csv` does not exist at all: no symptom is defined, so
+  no symptom is scored.
+- A symptom id written twice in one row counts once.
+- A reported symptom that `symptoms.csv` marks `red_flag` `yes` and the row
+  lists sets `label: urgent` on that condition, whatever the score, `no_data`
+  included. `red_flag: true` stays in the answer, and so does the computed
+  `score` (or null): the label wins over the band, and the screen still shows
+  what the score rests on. The CMO or the flight surgeon confirms. Without
+  `symptoms.csv` no row says which symptoms are red flags, so no flag is set.
 
-A red flag is not a second score and never waits for one. It outranks the
-label: a condition can read `label: low` ("Not likely with what you have
-recorded") and `red_flag: true` at the same time, because the flag rests on the
-presence of a symptom `symptoms.csv` marks as a red flag, not on the mean. The
-screen shows the flag and the CMO or the flight surgeon sees it whatever the
-label says. The flag describes the newest day that has a report, like the
-points: it carries no day of its own, so a screen that shows it also shows the
-day of the reports it was read from.
+Where the symptom layer stands with `config/` and the checker: the backend
+reads the five-column `conditions.csv` and both symptom files today, and a
+four-column file keeps working. `scripts/check_content.py` still fixes
+`conditions.csv` at four columns and does not read `symptoms.csv` or
+`symptom_log.csv`, so a five-column row fails the merge check and an unknown or
+repeated symptom id is not reported anywhere yet. That check is T-78's other
+half, with Eng 1; until it lands, a real `config/` cannot carry symptoms.
 
-Two gates stand between this code and a real `config/`:
-`scripts/check_content.py` still fixes `conditions.csv` at four columns, so the
-five-column file fails the merge check until T-78 updates the checker, and
-`FORMATS.md` still documents four columns. Until both are done the symptom
-layer cannot appear in the product, and `config/data/symptoms.csv` is not
-checked at all.
+The constants are in `backend/app/conditions.py`: `INDICATOR_WEIGHT` (1),
+`ATTENTION_POINT` (1), `BASELINE_POINT` (0.5), `SYMPTOM_SPECIFIC_WEIGHT`
+(0.5), `SYMPTOM_SHARED_WEIGHT` (0.25), `SYMPTOM_ONLY_CAP` (0.5) and
+`MIN_USABLE_SIGNALS` (2). They are the team's rule, agreed in T-78; no clinical
+source calibrates the weights.
 
-The three numbers are constants in `backend/app/conditions.py`:
-`SYMPTOM_SPECIFIC_POINT` (0.5), `SYMPTOM_SHARED_POINT` (0.25) and
-`SYMPTOM_SHARED_FROM` (2, the number of rows that makes a symptom shared). Each
-is marked "Assumption, pending T-78": Bio 2's proposal chooses them and no
-clinical source calibrates them.
-
-Four points the finding does not settle, resolved here:
+Points the vectors do not settle, resolved here:
 
 - The bands are written in the finding with both ends (`0 to 0.3`, `0.3 to
   0.6`, `0.6 to 1`). They are read closed at the lower end, so exactly 0.3 is
@@ -445,14 +455,16 @@ Four points the finding does not settle, resolved here:
 - The context is the newest reading's own: heart rate after exercise is
   compared with readings after exercise, and a context with fewer than 3
   readings leaves the signal without a baseline.
-- A signal without a baseline still adds 1 when its value crossed a cited
-  attention row on its side (bio2-02: "a clinical boundary does not need a
-  baseline"); with no cited row crossed it is left out of the score.
+- A signal without a baseline still adds evidence 1 when its value crossed a
+  cited attention row on its side (bio2-02: "a clinical boundary does not need
+  a baseline"); with no cited row crossed it is left out of the score.
 - The finding's fourth vector gives a diastolic of 120 the baseline point for
   `orthostatic_intolerance`, whose diastolic signal is `below`, and reads 0.667
   `review`. With the side it adds 0, and the condition scores 0.5 `possible`.
   Open with Bio 2; the rule in words, FORMATS.md and this route agree on the
   side.
+- The vectors write one third as 0.33; the route answers 0.333 and the label
+  reads the unrounded mean, so the two agree.
 
 Responses: `200` (a JSON array, empty when `config/rules/conditions.csv` does
 not exist); `422` when `person_id` breaks the `snake_case` rule; `502` when the
@@ -463,8 +475,8 @@ the route does not look up an indicator.
 | --- | --- | --- |
 | `condition_id` | string | the id from `config/rules/conditions.csv` |
 | `name` | string | the plain name from that row |
-| `score` | number or null | the mean of the usable signals, 0 to 1, three decimals |
-| `label` | string | `no_data`, `low`, `possible` or `review` |
+| `score` | number or null | the weighted mean of the usable signals, 0 to 1, three decimals; null when there is no score |
+| `label` | string | `no_data`, `low`, `possible`, `review` or `urgent` |
 | `signals` | array | one object per signal in `based_on` and per symptom in `symptoms`, in file order |
 | `source` | string | the row's link or `Assumption` |
 | `red_flag` | boolean | `true` only when a red-flag symptom the row lists was reported; the field is left out of the object while it is not true |
@@ -477,11 +489,16 @@ Each signal object:
 | `indicator_id` | string | the signal's indicator; left out of a symptom signal |
 | `symptom_id` | string | the reported symptom; left out of an indicator signal |
 | `side` | string or null | `above` or `below`, the side that counts for this condition; null when `based_on` has no side |
-| `contribution` | number or null | `1`, `0.5`, `0.25` or `0`, the point the signal added; null while it is not usable |
+| `weight` | number | the symptom's weight: `0.5` specific, `0.25` shared. Left out of an indicator signal, which weighs `1`. |
+| `contribution` | number or null | the signal's term in the weighted mean, its weight times its evidence: `1`, `0.5`, `0.25` or `0`; null while it is not usable |
 | `value` | number or null | the newest reading, or null when there is none |
 
 A four-column `conditions.csv` returns exactly the body this route returned
-before the symptom layer: no `kind`, no `symptom_id`, no `red_flag`.
+before the symptom layer: no `kind`, no `symptom_id`, no `weight`, no
+`red_flag`, and the same score. The rule that lets a single crossed cited
+boundary score on its own (T-78 rule 3) applies only to a row with symptoms, so
+a four-cell row with one usable signal still answers `no_data` (vector
+"four-cell row after the change: same score as before").
 
 `docs/openapi.json` marks the signal fields optional because one model covers
 both kinds; the body is the one in the table above. A client that reads
@@ -495,12 +512,14 @@ curl "$VITE_API_BASE_URL/people/demo_astronaut_1/conditions"
 # 200 [{"condition_id":"orthostatic_intolerance","name":"Orthostatic intolerance","score":0.5,"label":"possible","signals":[{"indicator_id":"hr_bpm","side":"above","contribution":1.0,"value":112.0},{"indicator_id":"bp_sys_mmhg","side":"below","contribution":0.5,"value":95.0},{"indicator_id":"bp_dia_mmhg","side":"below","contribution":0.0,"value":74.0}],"source":"http://humanresearchroadmap.nasa.gov/Evidence/reports/ORTHO.pdf"}]
 ```
 
-With the fifth column (pending T-78) and the reports of the day, a condition
-lists the symptoms behind the score too:
+With the fifth column and the reports of the day, a condition lists the
+symptoms behind the score too. Glucose 60 crossed the cited row below 70 and
+the person reported shaky, sweating and confusion; confusion is `shared` in
+`symptoms.csv` and a red flag, so it weighs 0.25 and the label is `urgent`:
 
 ```bash
 curl "$VITE_API_BASE_URL/people/demo_astronaut_1/conditions"
-# 200 [..., {"condition_id":"hypoglycaemia","name":"Hypoglycaemia","score":0.562,"label":"possible","signals":[{"indicator_id":"glucose_mgdl","side":"below","contribution":1.0,"value":60.0},{"kind":"symptom","symptom_id":"shaky","contribution":0.5},{"kind":"symptom","symptom_id":"sweating","contribution":0.5},{"kind":"symptom","symptom_id":"confusion","contribution":0.25}],"source":"https://diabetes.org/living-with-diabetes/hypoglycemia-low-blood-glucose","red_flag":true}]
+# 200 [..., {"condition_id":"hypoglycaemia","name":"Hypoglycaemia","score":1.0,"label":"urgent","signals":[{"indicator_id":"glucose_mgdl","side":"below","contribution":1.0,"value":60.0},{"kind":"symptom","symptom_id":"shaky","weight":0.5,"contribution":0.5},{"kind":"symptom","symptom_id":"sweating","weight":0.5,"contribution":0.5},{"kind":"symptom","symptom_id":"confusion","weight":0.25,"contribution":0.25}],"source":"https://diabetes.org/living-with-diabetes/hypoglycemia-low-blood-glucose","red_flag":true}]
 ```
 
 ```js
@@ -509,6 +528,10 @@ const response = await fetch(
 );
 const conditions = await response.json(); // one entry per condition, in file order
 for (const condition of conditions) {
+  if (condition.label === "urgent") {
+    // "Call your CMO now", before any score: condition.red_flag is true
+    continue;
+  }
   if (condition.score === null) {
     // condition.label is "no_data": show the name and which signals are still
     // missing (contribution === null), never a low score
@@ -636,12 +659,12 @@ stored in this endpoint.
 
 ### POST /people/{person_id}/symptoms
 
-Stores one symptom report (T-79; the format is pending T-78, Bio 2's proposal
-in `team/bio2/notes/complementary-proposals.md` section 4): which symptom from
-`config/data/symptoms.csv`, how strong, the mission day and the time. The
-severity is kept as the astronaut set it: this route does not read it, and
-`GET /people/{person_id}/conditions` uses only the fact that the symptom was
-reported. Nothing here is a diagnosis.
+Stores one symptom report (T-79; the format is FORMATS.md section 3): which
+symptom from `config/data/symptoms.csv`, how strong, the mission day and the
+time. It is the row of `config/data/symptom_log.csv` that the condition score
+reads. The severity is kept as the astronaut set it: this route does not read
+it, and `GET /people/{person_id}/conditions` uses only the fact that the
+symptom was reported. Nothing here is a diagnosis.
 
 The same report can be re-sent (the frontend re-sends what waits in its outbox,
 REQ-13) without adding a second row: one report is kept per `person_id`,
@@ -873,9 +896,9 @@ body breaks a rule:
 | a field is missing | `Field required` |
 
 With a plain-string `detail` it answers `422` `unknown symptom` when
-`config/data/symptoms.csv` exists, holds rows, and the id is not one of them
-(pending T-78; while that file is missing or holds only its header, any
-`snake_case` id is accepted). It returns `409` with
+`config/data/symptoms.csv` exists, holds rows, and the id is not one of them;
+while that file is missing or holds only its header, any `snake_case` id is
+accepted and stored. It returns `409` with
 the plain string `a symptom report for this person, day, time and symptom
 already exists with a different severity` when that key already holds another
 report. Both symptom routes return `422` with a plain-string `detail` when
