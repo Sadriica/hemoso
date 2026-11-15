@@ -1,6 +1,7 @@
-/* The look of the face check (T-70, #104): a ring and a scan line over the
-   camera picture while the face is read, then the same ring in a state colour
-   with a check or a cross. Decoration only: the overlay is aria-hidden and the
+/* The look of the face check (T-70, #104): a viewfinder guide (corner brackets
+   and a segmented oval), a soft scan sweep and faint dots while the face is
+   read, a progress arc while registering, then the guide closes into a ring in
+   a state colour with a check or a cross. Decoration only: the overlay is aria-hidden and the
    status text beside it says the same thing in words (DESIGN.md 2.4, 7.1).
    Animated with transform, opacity and stroke-dashoffset only. */
 
@@ -14,8 +15,17 @@
   display: block;
 }
 
+/* The overlay sits on the camera picture, not on the page, so it does not
+   follow the page theme: the light-theme tokens are dark colours made for text
+   on a light surface and vanish over a dark or mid-grey frame. These are the
+   dark-theme values of --accent-cyan, --status-in-range-text and
+   --status-review-text in both themes, with a thin dark halo on the SVG so
+   they also read over a light frame. */
 .face-scan {
-  --scan-color: var(--accent-cyan);
+  --overlay-scanning: #5ee6ff;
+  --overlay-success: #5fd49a;
+  --overlay-failure: #ff8a70;
+  --scan-color: var(--overlay-scanning);
   position: absolute;
   inset: 0;
   overflow: hidden;
@@ -25,21 +35,24 @@
 }
 
 .face-scan[data-state='success'] {
-  --scan-color: var(--status-in-range-text);
+  --scan-color: var(--overlay-success);
 }
 
 .face-scan[data-state='failure'] {
-  --scan-color: var(--status-review-text);
+  --scan-color: var(--overlay-failure);
 }
 
 .face-scan__svg {
   display: block;
   width: 100%;
   height: 100%;
+  filter: drop-shadow(0 0 2px rgb(0 0 0 / 60%));
 }
 
 .face-scan__ring,
-.face-scan__arc,
+.face-scan__bracket,
+.face-scan__progress,
+.face-scan__glow,
 .face-scan__done,
 .face-scan__mark {
   fill: none;
@@ -48,56 +61,111 @@
   stroke-linejoin: round;
 }
 
+.face-scan__bracket {
+  stroke-width: 3;
+  opacity: 0.9;
+}
+
+/* Four segments of the oval; the closing ring draws over the gaps. */
 .face-scan__ring {
   stroke-width: 2;
-  opacity: 0.45;
+  stroke-dasharray: 21 4;
+  opacity: 0.55;
 }
 
-.face-scan__arc,
+.face-scan__guide {
+  transform-origin: 160px 120px;
+}
+
+.face-scan[data-state='scanning'] .face-scan__guide {
+  animation: face-scan-pulse 1.8s ease-in-out infinite;
+}
+
+.face-scan__dot {
+  fill: var(--scan-color);
+  opacity: 0;
+  animation: face-scan-dot 500ms ease-out forwards;
+}
+
+.face-scan__progress {
+  stroke-width: 4;
+  stroke-dasharray: 100;
+  transition: stroke-dashoffset 350ms var(--ease-out, ease-out);
+}
+
 .face-scan__done {
   stroke-width: 4;
-}
-
-.face-scan__arc {
-  stroke-dasharray: 26 74;
-  transform-origin: center;
-  transform-box: fill-box;
-  animation: face-scan-turn 1.1s linear infinite;
-}
-
-.face-scan__done {
   stroke-dasharray: 100;
   stroke-dashoffset: 100;
   animation: face-scan-draw 350ms var(--ease-out, ease-out) forwards;
+}
+
+.face-scan__glow {
+  stroke-width: 12;
+  opacity: 0;
+  animation: face-scan-glow 550ms ease-out 300ms forwards;
 }
 
 .face-scan__mark {
   stroke-width: 7;
   stroke-dasharray: 100;
   stroke-dashoffset: 100;
-  animation: face-scan-draw 400ms var(--ease-out, ease-out) 250ms forwards;
+  animation: face-scan-draw 300ms var(--ease-out, ease-out) 300ms forwards;
 }
 
 .face-scan__line {
   position: absolute;
-  left: 18%;
-  right: 18%;
+  left: 22%;
+  right: 22%;
   top: 0;
-  height: 45%;
+  height: 40%;
   background: linear-gradient(to bottom, transparent, var(--scan-color));
-  border-bottom: 2px solid var(--scan-color);
-  opacity: 0.5;
+  border-bottom: 1px solid var(--scan-color);
+  opacity: 0.28;
   transform: translateY(-100%);
-  animation: face-scan-sweep 1.4s var(--ease-standard, ease-in-out) infinite;
+  animation: face-scan-sweep 1.8s var(--ease-standard, ease-in-out) infinite;
 }
 
 .face-scan[data-state='failure'] .face-scan__svg {
-  animation: face-scan-shake 400ms linear 1;
+  animation: face-scan-shake 300ms linear 1;
 }
 
-@keyframes face-scan-turn {
+.face-scan[data-state='failure'] .face-scan__done {
+  animation-duration: 250ms;
+}
+
+.face-scan[data-state='failure'] .face-scan__mark {
+  animation-duration: 250ms;
+  animation-delay: 200ms;
+}
+
+@keyframes face-scan-pulse {
+  0%,
+  100% {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.015);
+  }
+}
+
+@keyframes face-scan-dot {
   to {
-    transform: rotate(360deg);
+    opacity: 0.55;
+  }
+}
+
+@keyframes face-scan-glow {
+  0% {
+    opacity: 0;
+  }
+  40% {
+    opacity: 0.3;
+  }
+  100% {
+    opacity: 0.12;
   }
 }
 
@@ -106,7 +174,7 @@
     transform: translateY(-100%);
   }
   to {
-    transform: translateY(240%);
+    transform: translateY(260%);
   }
 }
 
@@ -121,40 +189,56 @@
   100% {
     transform: translateX(0);
   }
-  15% {
-    transform: translateX(-10px);
+  20% {
+    transform: translateX(-9px);
   }
-  30% {
-    transform: translateX(10px);
+  40% {
+    transform: translateX(9px);
   }
-  50% {
-    transform: translateX(-7px);
+  60% {
+    transform: translateX(-6px);
   }
-  70% {
-    transform: translateX(7px);
-  }
-  85% {
-    transform: translateX(-3px);
+  80% {
+    transform: translateX(4px);
   }
 }
 
 /* No motion: the final state, drawn at once. While the face is read there is
-   only the static ring in the scan colour. */
-.app--still .face-scan__arc,
+   only the static guide in the scan colour. */
 .app--still .face-scan__line,
-.face-scan[data-motion='still'] .face-scan__arc,
-.face-scan[data-motion='still'] .face-scan__line {
+.app--still .face-scan__dot,
+.face-scan[data-motion='still'] .face-scan__line,
+.face-scan[data-motion='still'] .face-scan__dot {
   display: none;
 }
 
+.app--still .face-scan__guide,
 .app--still .face-scan__svg,
 .app--still .face-scan__done,
 .app--still .face-scan__mark,
+.face-scan[data-motion='still'] .face-scan__guide,
 .face-scan[data-motion='still'] .face-scan__svg,
 .face-scan[data-motion='still'] .face-scan__done,
 .face-scan[data-motion='still'] .face-scan__mark {
   animation: none;
   stroke-dashoffset: 0;
+}
+
+.app--still .face-scan__guide,
+.face-scan[data-motion='still'] .face-scan__guide {
+  opacity: 1;
+  transform: none;
+}
+
+.app--still .face-scan__progress,
+.face-scan[data-motion='still'] .face-scan__progress {
+  transition: none;
+}
+
+.app--still .face-scan__glow,
+.face-scan[data-motion='still'] .face-scan__glow {
+  animation: none;
+  opacity: 0.12;
 }
 
 .app--still .face-scan__ring,
@@ -163,16 +247,28 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .face-scan__arc,
-  .face-scan__line {
+  .face-scan__line,
+  .face-scan__dot {
     display: none;
   }
 
+  .face-scan__guide,
   .face-scan__svg,
   .face-scan__done,
   .face-scan__mark {
     animation: none;
     stroke-dashoffset: 0;
+    opacity: 1;
+    transform: none;
+  }
+
+  .face-scan__progress {
+    transition: none;
+  }
+
+  .face-scan__glow {
+    animation: none;
+    opacity: 0.12;
   }
 
   .face-scan__ring {
