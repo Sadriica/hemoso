@@ -274,6 +274,12 @@ describe('sign in', () => {
       screen.getByRole('button', { name: strings.signIn.demoAction }),
     )
 
+    // The day after the latest one in the store, so the new reading is the
+    // latest whatever the clock says (CI runs in UTC).
+    const day = screen.getByLabelText('Mission day') as HTMLInputElement
+    const nextDay = String(Number(day.value) + 1)
+    await user.clear(day)
+    await user.type(day, nextDay)
     await user.type(screen.getByLabelText('Heart rate'), '7654321')
     await user.click(screen.getByRole('button', { name: strings.entry.save }))
     expect(
