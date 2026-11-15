@@ -24,16 +24,13 @@
 .ins-fill {
   transform-box: view-box;
 }
-.instrument--anim {
-  --instrument-beat: 1600ms;
-}
 .instrument--anim .ins-settle {
   animation: ins-settle var(--motion-slow) var(--ease-standard) both;
 }
 .instrument--anim .ins-beat {
   transform-box: fill-box;
   transform-origin: center;
-  animation: ins-beat var(--instrument-beat) var(--ease-out) infinite;
+  animation: ins-beat var(--motion-cinematic) var(--ease-out) 3;
 }
 @keyframes ins-settle {
   from {
