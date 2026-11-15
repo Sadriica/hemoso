@@ -66,7 +66,7 @@ HARD RULES (never break, ask Wambi if one is in the way)
    prefer CSS, SVG drawn by hand, and the existing Starfield.
 5. Dependencies: none without Wambi's yes and a licence row in
    docs/DECISIONS.md. MUI was rejected for weight. Keep the first-load
-   JavaScript under 300 kB raw / 90 kB gzip (it is ~290 / 88 today). Fonts are
+   JavaScript under 600 kB raw (raised from 300 kB on Sat 21:20, docs/DECISIONS.md). Fonts are
    self-hosted from frontend/public with their licence file (Fontshare's ITF
    Free Font License or SIL OFL); no font or asset from a CDN at runtime.
 6. The app works offline after the first load (REQ-28): nothing you add may
