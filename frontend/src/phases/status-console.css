@@ -394,3 +394,18 @@
   border-radius: 0;
   background: none;
 }
+
+/* Round of Sun 07:55. The review notice: its words and its button share one
+   centre line on a wide screen, and on a phone the button takes the full
+   width under the words, so it is one clear target for a thumb. */
+.phase--status .notice--review {
+  align-items: center;
+}
+
+@media (max-width: 599px) {
+  .phase--status .notice--review .notice__action,
+  .phase--status .notice--review .notice__action .button {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+}
