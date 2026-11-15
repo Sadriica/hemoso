@@ -46,7 +46,8 @@ HARD RULES (never break, ask Wambi if one is in the way)
 1. The solution idea is the team's. Space Apps forbids using AI to come up with
    it. You restyle what exists and what docs/DECISIONS.md decided (3D body by
    layers, colour coding with icon and words, routine prompts, streak without
-   rankings, mission environments, short animations, camera sign-in). Do not
+   rankings, mission environments, short animations, camera sign-in, and the
+   visual direction below with its figures, decided Sat 20:05). Do not
    add screens, features, data, health logic or claims. If a visual idea needs a
    new behaviour, write it as a proposal for Wambi and stop.
 2. Health wording is not yours. Never write or change a medical sentence. A
@@ -85,6 +86,64 @@ HARD RULES (never break, ask Wambi if one is in the way)
     `python scripts/si_use.py`. Tell Wambi which rows to commit; you do not
     write outside frontend/ yourself.
 
+VISUAL DIRECTION (decided by Wambi, Sat 14 Nov 20:05; build within it)
+Feeling: a futuristic planetarium inside a space mission. Very comfortable to
+look at for long, calm and precise, relatively simple and always functional.
+Beauty never costs a click or a second of the demo.
+
+Guided, progressive, never a wall of data:
+- The app leads the astronaut one step at a time inside the three phases
+  (identify → report → status). Each screen asks or shows ONE main thing; the
+  next action is always obvious and single.
+- Details appear on demand (Disclosure, a tap on a card, the history), never
+  all at once. First the state in words and its icon, then the value, then the
+  trend, then sources.
+- The phase rail always says where the astronaut is and what comes next.
+
+Palette: inspired by space agency colours, NOT a copy of any brand. A range of
+deep space blues (near-black navy to a clear blue for interactive elements), a
+signal red-orange used sparingly for the most urgent level and destructive
+actions, cold whites and soft greys for text, plus one colour per body system
+for icons (below). Do not use the exact pair #0B3D91 and #FC3D21, and no logo,
+insignia, flag, mission patch or mission name. Define every colour as a token
+in DESIGN.md with dark and light values and its contrast grid.
+
+Icons: own SVG, drawn in the repository (frontend/src/icons/), one per
+indicator, consistent stroke, 24 px grid, coloured by body system, always next
+to the indicator's name in words:
+| Indicator | Icon | System colour role |
+| --- | --- | --- |
+| hr_bpm | heart with an ECG trace | cardiovascular (coral red, not the urgent red) |
+| bp_sys_mmhg / bp_dia_mmhg | pressure gauge or cuff, one icon for the pair | cardiovascular |
+| temp_core_c | thermometer | thermoregulation (amber) |
+| sleep_h | crescent moon with small stars | sleep (indigo) |
+| mood_1_5 | face on a 1 to 5 scale | neuro_behavioural (violet) |
+| glucose_mgdl | drop | metabolic (teal) |
+Status icons (in range, outside your range, needs review, no data yet) are a
+separate set with their own shape, so state never depends on colour alone.
+
+Figures (three, all decided as visual use of existing data, no new logic):
+1. An animated instrument per indicator card: the heart beats at a calm pace,
+   the gauge needle settles on the value, the thermometer fills, the moon
+   rises with the hours of sleep, the mood face changes expression, the drop
+   fills. Driven only by the value already shown.
+2. A body silhouette that lights the zone of the system of the selected
+   indicator. It is the first layer (body zones) of the 3D body the team
+   decided to build by layers; 2D SVG now, ready to grow.
+3. A planetarium view on the status phase: the astronaut at the centre and each
+   indicator as a body on its own orbit, with its icon, a ring in the state
+   colour and the state in words. It must have a keyboard path and an
+   equivalent plain list (the list stays the default on small screens and for
+   screen readers).
+
+Motion: lively but short for state changes (200 to 400 ms, never over 600 ms:
+icon pulse, value counting up, chart drawing, card entering); cinematic only in
+a few moments (first load, the move between phases, the planetarium settling),
+up to 1.2 s, never blocking input and skippable with any key or tap; the
+Starfield drifts slowly. Everything stops under prefers-reduced-motion and with
+the top bar switch, and the app is complete without motion. Keep the 30-second
+demo in mind: the demo path must not wait on an animation.
+
 METHOD (plan with care, build in small verified steps)
 Step 0 · Audit. From the screenshots and the code, list what breaks the
   feeling of one designed product: inconsistent spacing, more than one type
@@ -92,11 +151,10 @@ Step 0 · Audit. From the screenshots and the code, list what breaks the
   dense or empty areas, charts that do not match the cards, states that look
   unfinished (empty, loading, offline, error, needs review). Rank by impact on
   the 30-second demo. Show Wambi the list, in Spanish, before building.
-Step 1 · Direction. Propose 2 or 3 directions in a short table (mood, type
-  pair, palette, density, motion, one reference each and WHY that reference:
-  navigation, density, motion or type). The frame Juli built is "cinematic
-  mission control at night": calm, dark, precise, never alarming. Keep that
-  unless Wambi picks otherwise. Wait for his choice.
+Step 1 · Direction. The direction above is decided. Propose 2 or 3 concrete
+  takes on it in a short table (type pair, exact palette, density, motion
+  style, one reference each and WHY that reference: navigation, density,
+  motion or type). Wait for Wambi's choice.
 Step 2 · DESIGN.md. Write frontend/DESIGN.md in the open DESIGN.md format
   (Google Stitch spec, as used by Devault and Refero): colour roles with hex for
   dark and light, a WCAG contrast grid of every text/background pair you use,
@@ -188,5 +246,6 @@ Lessons from the same threads, as rules:
 
 FIRST MESSAGE TO WAMBI
 In Spanish, five lines at most: what you read, the three worst visual problems
-for the demo, and the 2 or 3 directions for him to choose from.
+for the demo, and your 2 or 3 takes on the decided direction for him to choose
+from.
 ```
