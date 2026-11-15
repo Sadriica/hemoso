@@ -27,17 +27,32 @@ an astronaut records health indicators and understands the result.
 - Records a measurement per indicator (heart rate, both blood pressures, core
   temperature, blood glucose, sleep hours, mood, reaction time and lapses).
 - Compares each reading with the person's own earlier readings, not with a
-  population range: the median and spread of the last 14 readings.
+  population range: the median and spread of the person's recent readings, a
+  moving window of up to 14 mission days.
 - Compares it again with published clinical limits, each one with its source.
 - Returns one of four states in plain words: no data yet, in your usual range,
   outside your usual range, or needs review, and names who acts: the crew, the
   crew medical officer on board, or the flight surgeon on the ground.
-- Shows the next step for that state, written for someone who is not a doctor.
+- Shows the next step for that state, written for someone who is not a doctor,
+  for seven of the nine indicators.
 - Suggests possible conditions as an evidence score with the signals behind it,
   never as a percentage and never as a certainty. The crew medical officer or
   the flight surgeon confirms.
-- Works offline and keeps an outbox for what could not be sent to the ground.
+- Readings are saved on the device without a connection and sent when the link
+  returns, with a notice while the app is offline.
 - Uses synthetic data only, labelled in the interface.
+
+## What is not in the demo yet
+
+Each of these is designed and written in the repository, and none of them is
+shown as working:
+
+- Symptoms as a second kind of evidence, with red flags that escalate at once
+  (`config/data/symptoms.csv`, task T-78). Waiting for the checker and the data.
+- The app reopening with no network. A service worker is not part of this build.
+- Face and eye analysis for fatigue, stress and sleep. The camera today only
+  signs a crew member in; it does not read affect.
+- Learning from each person's records beyond the moving window above.
 
 ## How it works
 
@@ -56,8 +71,9 @@ Two rules make the result reproducible and explainable:
 1. **A sourced limit never needs a history.** A core temperature of 39.5 °C is
    a review on the first day of a mission.
 2. **The baseline answers a different question.** Inside or outside the
-   person's usual range comes from the median of the last 14 readings and three
-   spreads, so one bad reading does not move the reference.
+   person's usual range comes from the median of their readings over the moving
+   window of 14 mission days and three spreads, so one bad reading does not move
+   the reference.
 
 ## NASA data and resources used
 
