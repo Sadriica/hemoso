@@ -131,18 +131,9 @@ def test_baseline_vectors(case):
     assert got == case["expected"]
 
 
-# The shared vectors still record a strict comparison at the threshold, a case
-# they mark `undefined_by_formats`. Bio 2 decided on Sun 15 Nov that the
-# threshold itself counts ("or higher", Q4), so those two vectors are replaced
-# by `test_a_value_on_the_threshold_triggers_the_row` below until Eng 1 updates
-# `scripts/fixtures/format_rules/attention.json`.
-ON_THE_THRESHOLD = {
-    "exactly on an above threshold does not trigger",
-    "exactly on a below threshold does not trigger",
-}
-SHARED_ATTENTION = [
-    case for case in ATTENTION["cases"] if case["name"] not in ON_THE_THRESHOLD
-]
+# The shared vectors now record that a value on the threshold triggers its
+# row (Bio 2's Q4 decision, Sun 15 Nov); every case of the file runs here.
+SHARED_ATTENTION = ATTENTION["cases"]
 
 
 @pytest.mark.parametrize("case", SHARED_ATTENTION, ids=lambda case: case["name"])
@@ -177,13 +168,6 @@ def test_a_value_on_the_threshold_triggers_the_row(side, threshold, value, match
     }
 
     assert (attention_for([row], value) is not None) is matches
-
-
-def test_the_shared_vectors_still_hold_the_strict_cases():
-    """Fails once Eng 1 updates the shared file, so this exclusion is removed."""
-    names = {case["name"] for case in ATTENTION["cases"]}
-
-    assert ON_THE_THRESHOLD <= names
 
 
 def temperature_row(source: str) -> dict:
