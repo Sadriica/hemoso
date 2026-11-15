@@ -50,9 +50,16 @@ slides at most). How the solution is published is recorded in
 Record the demo path with Playwright (same resolution every take) or a screen
 recorder, then burn the subtitles with ffmpeg:
 ```bash
+# Voice recorded with the screen (demo.webm has audio):
 ffmpeg -i demo.webm \
   -vf "subtitles=subs.srt:force_style='FontSize=24,BorderStyle=3'" \
-  -c:v libx264 -preset veryfast -crf 23 -pix_fmt yuv420p -an demo.mp4
+  -c:v libx264 -preset veryfast -crf 23 -pix_fmt yuv420p \
+  -c:a aac -b:a 128k demo.mp4
+# Voice recorded apart (voice.m4a), Playwright video has no audio:
+ffmpeg -i demo.webm -i voice.m4a -map 0:v -map 1:a \
+  -vf "subtitles=subs.srt:force_style='FontSize=24,BorderStyle=3'" \
+  -c:v libx264 -preset veryfast -crf 23 -pix_fmt yuv420p \
+  -c:a aac -b:a 128k -shortest demo.mp4
 ffprobe -v error -show_entries format=duration -of csv=p=0 demo.mp4   # 30 or less
 ```
 `subs.srt` uses the usual format (`1`, `00:00:00,000 --> 00:00:04,000`, the line).
