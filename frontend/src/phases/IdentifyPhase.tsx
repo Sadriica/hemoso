@@ -12,6 +12,7 @@ import PhaseHeading from '../components/PhaseHeading'
 import Notice from '../components/Notice'
 import { isIsoDate, setMissionStart, todayIso } from '../data/missionStart'
 import { StatusIcon } from '../icons'
+import { useCarry } from '../motion/carry'
 import { loadFaces } from '../face/descriptors'
 import type { AttemptFailure, SessionState } from '../hooks/useSession'
 import { personInitials, personName, strings } from '../strings'
@@ -55,9 +56,12 @@ export default function IdentifyPhase({
   headingRef,
   personIds,
   session,
-  onDone,
+  onDone: switchPhase,
   still = false,
 }: IdentifyPhaseProps) {
+  // Starting the report first closes the ring and carries the avatar (src/motion/carry.ts).
+  const carry = useCarry(still)
+  const onDone = () => carry.run(switchPhase)
   const copy = strings.phases.identify
   const signInCopy = strings.signIn
   const [faceOpen, setFaceOpen] = useState(false)
@@ -294,7 +298,7 @@ export default function IdentifyPhase({
           so the layout stands alone. Decoration only. */}
       <div className="identify__scene" data-enter="scene" aria-hidden="true">
         <Suspense fallback={<SceneFallback />}>
-          <OrbitalScene variant="identify" still={still} />
+          <OrbitalScene variant="identify" still={still} progress={carry.progress} />
         </Suspense>
       </div>
 

@@ -11,6 +11,9 @@ const PERSON = 'demo_astronaut_1'
 const copy = strings.phases
 
 beforeEach(() => {
+  // The carry to the next phase takes half a second; these tests are about what
+  // the phase does, so motion is off (src/motion/carry.test.tsx covers the carry).
+  vi.stubGlobal('matchMedia', () => ({ matches: true, addEventListener() {}, removeEventListener() {} }))
   localStorage.clear()
   // Every test starts on the plain page, and some tests open the face panel.
   window.history.replaceState({}, '', '/')
@@ -330,6 +333,7 @@ describe('top bar', () => {
   })
 
   it('switches motion off and says so with aria-pressed', async () => {
+    vi.unstubAllGlobals()
     const user = userEvent.setup()
     render(<App />)
     const toggle = screen.getByRole('button', { name: strings.topbar.reduceMotion })

@@ -212,6 +212,7 @@ export default function Home({
           {strings.board.needsReview(reviewRows.length)}
         </Notice>
       )}
+      <div className="status-panel panel panel--cut" data-enter="panel">
       {rows.length > 0 && (
         <div className="board">
           <div className="board__orbit">
@@ -247,6 +248,12 @@ export default function Home({
         </div>
       )}
       {selected && (
+        <>
+        {/* The line from the selected body to its card, in the state colour. */}
+        <div
+          className={`status-link status-link--${statusBadgeKind(selected.status)}`}
+          aria-hidden="true"
+        />
         <div className="detail home__detail" ref={detailRef}>
           <ul className="indicator-list">
             <IndicatorRow
@@ -282,7 +289,9 @@ export default function Home({
             </Suspense>
           </div>
         </div>
+        </>
       )}
+      </div>
     </section>
   )
 }
