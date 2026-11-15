@@ -146,15 +146,19 @@ class AttentionRow(BaseModel):
 class IndicatorState(BaseModel):
     """One value against the person's own baseline (FORMATS.md section 3).
 
-    `median` and `spread` are null and `n` counts fewer than 3 entries while
-    the state is `no_data`; `attention` is the row that made the state
-    `needs_review`, and null otherwise.
+    The baseline is taken over the person's last 14 mission days that hold a
+    reading, one value per day (point 1 of that section). `n` counts the days
+    and `readings` counts the stored readings behind them. While the state
+    is `no_data` with fewer than 3 days, `median` and `spread` are null;
+    `attention` is the row that made the state `needs_review`, and null
+    otherwise.
     """
 
     state: StateName
     median: float | None
     spread: float | None
     n: int
+    readings: int
     attention: AttentionRow | None
 
 
