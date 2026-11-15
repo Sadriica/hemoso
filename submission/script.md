@@ -71,14 +71,14 @@ so a change is visible while it is still small.
 ### 0:40–1:20 · The story
 
 Day 41. Elena logs her resting heart rate: three days above her usual range. HeMoSo
-suggests a mild infection is possible, with the probability and what it is based
-on, and asks her to repeat the measurement and answer two questions. Her CMO on
+shows a possible fever as an evidence score, with the signals behind it,
+and asks her to repeat the measurement and answer two questions. Her CMO on
 board is notified. Day 42: fever of 38.5 °C and a sore throat, so the flight
 surgeon is told at the next link. Day 46: both back inside her usual range.
 
 ### 1:20–1:35 · What it does not do
 
-HeMoSo does not diagnose. It shows a probability and its basis, and it names who
+HeMoSo does not diagnose. It shows an evidence score and its basis, and it names who
 confirms: your CMO or the flight surgeon. The decision is theirs.
 
 ### 1:35–1:50 · Evidence and its limits
@@ -99,7 +99,7 @@ surgeon would sign off, and a longer test inside a real mission routine.
 | Criterion | Where it is in the script |
 | --- | --- |
 | Impact | 0:00: a crew that cannot wait for Earth |
-| Creativity | 0:40: the app compares one person with their own usual range, and suggests with a probability, not a label |
+| Creativity | 0:40: the app compares one person with their own usual range, and suggests with an evidence score, not a label |
 | Validity | 1:35: NASA sources named, thresholds linked or marked Assumption, the gap stated |
 | Relevance | 0:20 and 0:40: the astronaut's own assessment, on a real mission day |
 | Presentation | The demo path is fixed and under 40 seconds; the limit is said out loud |
@@ -108,8 +108,7 @@ surgeon would sign off, and a longer test inside a real mission routine.
 
 - Read it aloud with a timer. Target 1:55. If it passes 2:05, cut "and answer two
   questions" first, then the second sentence of 1:20–1:35.
-- Replace `{{PROBABILITY_AND_BASIS}}` with what Bio 2 published, and check the
-  name of the demo persona.
+- Check the name of the demo persona.
 - The line at 1:35 names the risk pages and the nutrition report; Phys's label in
   `docs/nasa_data.md` is broader (it adds the cardiovascular report and the other
   hazards). If the story comes back, that line follows the label.
