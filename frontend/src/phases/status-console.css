@@ -214,3 +214,58 @@
 .phase--status .conditions__confirms {
   max-width: none;
 }
+
+/* Round of Sun 06:55. */
+
+/* On a phone the status opens on the states: the scene of the phase is
+   decoration and it cost a fifth of the first screen. */
+@media (max-width: 599px) {
+  .phase--status .scene-band {
+    display: none;
+  }
+}
+
+/* Who acts is the one thing to do on a card that needs review: it reads as an
+   instruction, with the review edge beside it, not as a footnote. */
+.phase--status .indicator-card__who-acts {
+  justify-self: start;
+  padding: var(--space-1) var(--space-3);
+  border-left: 3px solid var(--status-review-text);
+  background: var(--status-review-bg);
+  color: var(--status-review-text);
+  font-family: var(--font-mono);
+  font-size: var(--text-small);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+/* The line from the selected indicator to its card passes other indicators
+   on its way: quieter, it reads as a lead and not as a bar across them. Its
+   dash pattern is left alone: the draw animation uses it. */
+.phase--status .status-path path {
+  opacity: 0.55;
+}
+
+/* The evidence board on a phone: tighter tiles, so five conditions are not
+   five screens. */
+@media (max-width: 599px) {
+  .phase--status .condition {
+    gap: var(--space-1);
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .phase--status .condition__signals {
+    gap: var(--space-1);
+  }
+
+  .phase--status .conditions.panel {
+    padding: var(--space-3);
+  }
+}
+
+/* A row the crew acts on is drawn amber (attentionText.ts), so its line is. */
+.phase--status .indicator-card--outside .indicator-card__who-acts {
+  border-left-color: var(--status-attention-text);
+  background: var(--status-attention-bg);
+  color: var(--status-attention-text);
+}
