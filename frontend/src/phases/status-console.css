@@ -138,3 +138,79 @@
 .phase--status .condition__sentence {
   font-family: var(--font-body);
 }
+
+/* Round of Sun 06:45. */
+
+/* The scene of the phase stays beside the headline: at its old size it ran
+   over the review notice and its button. */
+@media (min-width: 900px) {
+  .phase--status .scene-band {
+    width: calc(var(--space-7) * 3);
+    height: calc(var(--space-7) * 3);
+  }
+}
+
+/* The view switch sits on the row of the system strip, at its right end, so
+   the orbits start right under it and not after an empty row. */
+@media (min-width: 900px) {
+  .phase--status .status-panel .planetarium {
+    position: relative;
+  }
+
+  /* Lifted by its own height and the gap under the strip. */
+  .phase--status .status-panel .planetarium__toggle {
+    position: absolute;
+    top: calc((var(--tap-min) + var(--space-3) + var(--space-3)) * -1);
+    right: 0;
+  }
+
+  .phase--status .sys-strip {
+    min-height: var(--tap-min);
+    align-items: center;
+    padding-right: calc(var(--space-7) * 2 + var(--space-5));
+  }
+}
+
+/* On a phone the strip is one tight block: two chips to a row. */
+@media (max-width: 599px) {
+  .sys-strip {
+    gap: var(--space-1);
+  }
+
+  .sys-strip__item {
+    padding: 0 var(--space-2);
+    letter-spacing: 0.04em;
+  }
+}
+
+/* A soft light behind the body in the centre of the orbits, so the figure
+   separates from the stage in both themes without a tile around it. */
+.phase--status .planetarium__center--figure::before {
+  content: '';
+  position: absolute;
+  inset: -8% -90%;
+  z-index: -1;
+  background: radial-gradient(
+    ellipse at 50% 46%,
+    color-mix(in srgb, var(--accent-cyan) 18%, transparent),
+    color-mix(in srgb, var(--accent-violet) 8%, transparent) 45%,
+    transparent 68%
+  );
+  pointer-events: none;
+}
+
+/* The evidence board: tiles of one row share a height, a last tile on its own
+   takes the whole row, and the closing sentence has a full-width rule. */
+.phase--status .conditions__list {
+  align-items: stretch;
+}
+
+@media (min-width: 900px) {
+  .phase--status .conditions__list > .condition:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+}
+
+.phase--status .conditions__confirms {
+  max-width: none;
+}
