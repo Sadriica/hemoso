@@ -355,54 +355,53 @@ legend {
   color: var(--color-accent);
 }
 
-/* Sync chip: the sending state as one item of the top bar (REQ-28). Words
-   first, the badge pair of the state tokens second (DESIGN.md 2.2), so the
-   state is never colour alone. The text is one line and the chip never grows
-   past the bar: a narrow screen drops the word after the count instead. */
+/* Sync state: a small dot and the words, as plain text in the top bar
+   (REQ-28). The words carry the state; the dot only repeats it, so it is never
+   colour alone. A warning state takes the attention ink for its words, with no
+   fill and no box. The text is one line and never grows past the bar: a narrow
+   screen drops the word after the count instead. */
 .sync {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-1);
   min-width: 0;
 }
 
 .sync-chip {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1);
-  min-height: 32px;
-  padding: 0 var(--space-2);
-  border: 1px solid currentColor;
-  border-radius: var(--radius-small);
+  gap: var(--space-2);
+  margin: 0;
+  color: var(--color-text-muted);
   font-family: var(--font-mono);
   font-size: var(--text-label);
   line-height: var(--leading-label);
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
-  font-weight: 500;
+  letter-spacing: var(--tracking-display);
   white-space: nowrap;
 }
 
-.sync-chip--online {
-  color: var(--status-in-range-text);
-  background: var(--status-in-range-bg);
+.sync-chip--online .sync-chip__dot {
+  background: var(--status-in-range-text);
 }
 
-/* Offline, and a reading the server refused: the same attention pair, the
-   words say which one it is. */
+/* Offline, and a reading the server refused: the words say which one it is. */
 .sync-chip--attention {
   color: var(--status-attention-text);
-  background: var(--status-attention-bg);
 }
 
-.sync-chip--idle {
-  color: var(--color-text-muted);
-  background: transparent;
+.sync-chip--attention .sync-chip__dot {
+  background: var(--status-attention-text);
 }
 
-.sync-chip__icon {
+.sync-chip--idle .sync-chip__dot {
+  background: var(--color-text-muted);
+}
+
+.sync-chip__dot {
   flex: none;
-  display: inline-flex;
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-round);
 }
 
 .sync-chip__separator {
@@ -418,8 +417,7 @@ legend {
   color: var(--color-accent);
   font-family: var(--font-mono);
   font-size: var(--text-label);
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
+  letter-spacing: var(--tracking-display);
   text-decoration: underline;
   text-underline-offset: 3px;
   cursor: pointer;

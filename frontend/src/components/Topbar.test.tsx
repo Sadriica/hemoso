@@ -43,9 +43,28 @@ describe('Topbar clock', () => {
     expect(screen.queryByText(strings.mission.change)).toBeNull()
   })
 
+  it('names who is on duty in plain words', () => {
+    bar({ missionDay: 12, time: '09:05' })
+    expect(screen.getByText('On duty: Demo astronaut 1')).toBeInTheDocument()
+  })
+
+  it('keeps the synthetic data sentence inside the bar, as plain text', () => {
+    const { container } = bar({ missionDay: 12, time: '09:05' })
+    const notice = screen.getByText(strings.syntheticNotice)
+    expect(container.querySelector('.topbar__bar')).toContainElement(notice)
+    expect(container.querySelector('.topbar__who')).toBeNull()
+  })
+
+  it('has a motion switch that says its state and names itself', () => {
+    bar(null)
+    const toggle = screen.getByRole('button', { name: strings.topbar.reduceMotion })
+    expect(toggle).toHaveAttribute('aria-pressed', 'false')
+    expect(toggle).toHaveAttribute('title', strings.topbar.motionOn)
+  })
+
   it('hides the day and the clock without a person', () => {
     const { container } = bar(null)
     expect(container.querySelector('.topbar__stamp')).toBeNull()
-    expect(screen.queryByText(/Day \d/)).toBeNull()
+    expect(screen.queryByText(/Flight Day \d/)).toBeNull()
   })
 })
