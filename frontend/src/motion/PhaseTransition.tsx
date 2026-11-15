@@ -19,6 +19,12 @@ export default function PhaseTransition({
   const prev = useRef(phase)
   const anim = useRef<Animation | undefined>(undefined)
   useEffect(() => {
+    // Turning motion off (the switch, the system setting) stops whatever runs
+    // now, even in the middle of a phase that does not change.
+    if (still) {
+      anim.current?.cancel()
+      anim.current = undefined
+    }
     if (prev.current === phase) return
     prev.current = phase
     anim.current?.cancel()

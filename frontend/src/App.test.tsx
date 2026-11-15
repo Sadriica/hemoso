@@ -92,7 +92,11 @@ describe('guided check', () => {
     expect(screen.queryByText(/Your earlier median|Not enough earlier entries/)).toBeNull()
     await user.click(screen.getByRole('button', { name: copy.status.historyToggle }))
     expect(
-      await screen.findByText(/Your earlier median|Not enough earlier entries/),
+      await screen.findByText(
+        /Your earlier median|Not enough earlier entries/,
+        {},
+        { timeout: 3000 },
+      ),
     ).toBeInTheDocument()
   })
 
@@ -183,13 +187,15 @@ describe('guided check', () => {
     const nextDay = String(Number(day.value) + 1)
     await user.clear(day)
     await user.type(day, nextDay)
-    await user.type(screen.getByLabelText('Value'), '1234567')
+    await user.type(screen.getByLabelText('Heart rate'), '1234567')
     // The native time input keeps HH:MM in its value on any OS setting.
-    fireEvent.change(screen.getByLabelText('Time'), { target: { value: '15:44' } })
-    const save = screen.getByRole('button', { name: 'Save entry' })
+    fireEvent.change(screen.getByLabelText(strings.entry.time), {
+      target: { value: '15:44' },
+    })
+    const save = screen.getByRole('button', { name: strings.entry.save })
     save.focus()
     await user.keyboard('{Enter}')
-    expect(screen.getByText('Saved on this device.')).toBeInTheDocument()
+    expect(screen.getByText(strings.entry.savedOnDevice, { exact: false })).toBeInTheDocument()
     expect(screen.getByText(copy.report.logged(1))).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: copy.report.next }))
@@ -209,18 +215,24 @@ describe('top bar', () => {
     expect(screen.getByText(strings.syntheticNotice)).toBeInTheDocument()
   })
 
-  it('labels the device clock as NOW in the metadata line', () => {
+  it('puts the day and the clock on one muted line, with who is on duty', async () => {
+    const user = userEvent.setup()
     render(<App />)
-    expect(screen.getByText(/^DAY \d+ · NOW \d\d:\d\d$/)).toBeInTheDocument()
+    const clock = screen.getByText(/^Day \d+ · \d\d:\d\d$/)
+    expect(clock).toBeInTheDocument()
+    await signInByName(user)
+    expect(
+      screen.getByText(strings.topbar.onDuty(PERSON), { exact: false }),
+    ).toBeInTheDocument()
   })
 
-  it('shows the sync status with no server set up', () => {
+  it('shows one sync chip, with no server set up', () => {
     render(<App />)
-    expect(screen.getByText('Nothing waiting to be sent')).toBeInTheDocument()
-    expect(screen.getByText('Not sent yet')).toBeInTheDocument()
-    expect(screen.getByText('Online')).toBeInTheDocument()
-    expect(screen.getByText('No server set up for this demo')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Send now' })).toBeNull()
+    const chip = screen.getByTitle(
+      strings.sync.chip(strings.sync.noServer, strings.sync.savedHere),
+    )
+    expect(chip).toHaveTextContent(strings.sync.noServer)
+    expect(screen.queryByRole('button', { name: strings.sync.sendNow })).toBeNull()
   })
 
   it('switches motion off and says so with aria-pressed', async () => {

@@ -16,6 +16,7 @@ import IdentifyPhase from './phases/IdentifyPhase'
 import ReportPhase from './phases/ReportPhase'
 import StatusPhase from './phases/StatusPhase'
 import PhaseTransition from './motion/PhaseTransition'
+import { useReducedMotion } from './motion/motion'
 import { strings } from './strings'
 
 // The intro is a chunk of its own; it shows once per tab, on the first load.
@@ -28,13 +29,6 @@ function introSeen(): boolean {
   } catch {
     return false
   }
-}
-
-function prefersReducedMotion(): boolean {
-  return (
-    typeof window.matchMedia === 'function' &&
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  )
 }
 
 // The app is one guided check in three phases, always in this order: identify,
@@ -59,12 +53,16 @@ export default function App() {
   const [faceEnabled] = useState(
     () => new URLSearchParams(window.location.search).get('face') === '1',
   )
-  const [motionReduced, setMotionReduced] = useState(prefersReducedMotion)
+  // Motion is off when the top bar switch says so or when the system asks for
+  // less motion; the system setting is followed live (src/motion/motion.ts).
+  const [still, setStill] = useState(false)
+  const reduction = useReducedMotion()
+  const motionReduced = still || reduction
 
   // The intro opens on the first load of a tab, unless motion is off. Until
   // its chunk arrives, a solid page-colour layer of the same size covers the
   // screen, so the first phase never flashes under it.
-  const [introOpen, setIntroOpen] = useState(() => !motionReduced && !introSeen())
+  const [introOpen, setIntroOpen] = useState(() => !reduction && !introSeen())
   const [phase, setPhase] = useState<PhaseId>('identify')
   const [personId, setPersonId] = useState<string | null>(null)
   const indicatorIds = useMemo(
@@ -131,7 +129,7 @@ export default function App() {
         store={store}
         client={client}
         motionReduced={motionReduced}
-        onToggleMotion={() => setMotionReduced((still) => !still)}
+        onToggleMotion={() => setStill((value) => !value)}
       />
       <main id="main-content" className="stage" tabIndex={-1}>
         {storageWarnings.length > 0 && (
