@@ -1,0 +1,70 @@
+.instrument {
+  display: inline-block;
+  flex: none;
+  width: calc(var(--space-6) * 2);
+  height: calc(var(--space-6) * 2);
+  line-height: 0;
+}
+.instrument svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+@media (max-width: 599px) {
+  .instrument {
+    width: var(--space-7);
+    height: var(--space-7);
+  }
+}
+.ins-track {
+  stroke: var(--color-border-control);
+  fill: none;
+}
+.ins-fill {
+  transform-box: view-box;
+}
+.instrument--anim {
+  --instrument-beat: 1600ms;
+}
+.instrument--anim .ins-settle {
+  animation: ins-settle var(--motion-slow) var(--ease-standard) both;
+}
+.instrument--anim .ins-beat {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ins-beat var(--instrument-beat) var(--ease-out) infinite;
+}
+@keyframes ins-settle {
+  from {
+    transform: var(--ins-from);
+    opacity: var(--ins-from-opacity, 1);
+  }
+}
+@keyframes ins-beat {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  15% {
+    transform: scale(1.08);
+  }
+  30% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.04);
+  }
+}
+.app--still .instrument *,
+.app--still .instrument,
+.instrument--still * {
+  animation: none !important;
+  transition: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .instrument * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
