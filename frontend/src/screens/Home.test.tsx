@@ -114,7 +114,7 @@ describe('Home', () => {
       screen.getByRole('heading', { name: 'Example indicator' }),
     ).toBeInTheDocument()
     expect(screen.getByText('10')).toHaveTextContent('10 example_unit')
-    expect(screen.getByText(strings.timeLabel(10, '13:30'))).toBeInTheDocument()
+    expect(screen.getByText(strings.timeLabel(10, '13:30', strings.entry.contextLabels.rest))).toBeInTheDocument()
     expect(
       within(card()).getByText(strings.badge.inRange),
     ).toBeInTheDocument()
@@ -131,8 +131,40 @@ describe('Home', () => {
 
   it('shows the level name and its next step when a value crosses the threshold', () => {
     renderHome(homeWith([...baseline, entry(10, 101)]))
-    expect(within(card()).getByText('example_level')).toBeInTheDocument()
+    expect(within(card()).getByText('Needs review · example_level')).toBeInTheDocument()
     expect(screen.getByText('Example next step. Assumption.')).toBeInTheDocument()
+  })
+
+  it('names the limit that was crossed and its source on a needs-review card', () => {
+    renderHome(homeWith([...baseline, entry(10, 101)]))
+    expect(
+      within(card()).getByText(/Limit crossed: above 100 example_unit\./),
+    ).toHaveTextContent('Source: Assumption')
+  })
+
+  it('names the person and the context of the reading', () => {
+    renderHome(homeWith([...baseline, entry(10, 10)]))
+    expect(
+      screen.getByRole('heading', { name: 'Status for Demo astronaut 1' }),
+    ).toBeInTheDocument()
+    expect(
+      within(card()).getByText(/^DAY 10 · 13:30 · At rest$/),
+    ).toBeInTheDocument()
+  })
+
+  it('says needs review for a cited limit even with no baseline', () => {
+    const cited = {
+      ...rule,
+      sources: [{ title: 'Example title', url: 'https://example.org/limit' }],
+    }
+    renderHome({ ...homeWith([entry(10, 101)]), rules: [cited] })
+    expect(within(card()).getByText('Needs review · example_level')).toBeInTheDocument()
+    expect(
+      within(card()).getByText(/Not enough earlier readings at rest/),
+    ).toBeInTheDocument()
+    expect(
+      within(card()).getByRole('link', { name: 'Example title' }),
+    ).toHaveAttribute('href', 'https://example.org/limit')
   })
 
   it('shows the content text for in_range when the file has one', () => {
@@ -253,7 +285,7 @@ describe('Home', () => {
       demoEntries: [entry(1, 40), entry(2, 40), entry(3, 40), entry(10, 35)],
     }
     renderHome(stepped)
-    expect(within(card()).getByText('needs_review')).toBeInTheDocument()
+    expect(within(card()).getByText('Needs review · needs_review')).toBeInTheDocument()
     expect(screen.getByText('Contact the CMO.')).toBeInTheDocument()
     expect(screen.getByText('Tell the CMO.')).toBeInTheDocument()
   })
@@ -404,7 +436,7 @@ describe('Home', () => {
     const saved: Entry = { ...entry(11, 42), id: 'saved-entry' }
     render(<Home personId="demo_astronaut_1" data={data} entries={[saved]} />)
     expect(screen.getByText('42')).toHaveTextContent('42 example_unit')
-    expect(screen.getByText(strings.timeLabel(11, '13:30'))).toBeInTheDocument()
+    expect(screen.getByText(strings.timeLabel(11, '13:30', strings.entry.contextLabels.rest))).toBeInTheDocument()
   })
 
   it('shows a 1 to 5 scale reading as the value over 5', () => {
@@ -504,7 +536,7 @@ describe('Home', () => {
     renderHome(homeWith([...baseline, entry(10, 100)]))
 
     // The planetarium and the card both take it from the same answer.
-    expect(await screen.findAllByText('server_level')).not.toHaveLength(0)
+    expect(await screen.findAllByText('Needs review · server_level')).not.toHaveLength(0)
     expect(screen.getByText('Tell the flight surgeon.')).toBeInTheDocument()
     expect(urls).toHaveLength(1)
     expect(urls[0]).toBe(
@@ -520,7 +552,7 @@ describe('Home', () => {
     renderHome(homeWith([...baseline, entry(10, 101)]))
 
     expect(fetchFn).toHaveBeenCalled()
-    expect(await screen.findAllByText('example_level')).not.toHaveLength(0)
+    expect(await screen.findAllByText('Needs review · example_level')).not.toHaveLength(0)
   })
 
   it('asks the state route nothing without a base URL', async () => {
@@ -529,7 +561,7 @@ describe('Home', () => {
     renderHome(homeWith([...baseline, entry(10, 101)]))
 
     expect(fetchFn).not.toHaveBeenCalled()
-    expect(screen.getAllByText('example_level')).not.toHaveLength(0)
+    expect(screen.getAllByText('Needs review · example_level')).not.toHaveLength(0)
   })
 
   it('keeps the local rule when the state route answers another status', async () => {
@@ -540,7 +572,7 @@ describe('Home', () => {
     )
     renderHome(homeWith([...baseline, entry(10, 101)]))
 
-    expect(await screen.findAllByText('example_level')).not.toHaveLength(0)
+    expect(await screen.findAllByText('Needs review · example_level')).not.toHaveLength(0)
   })
 
   it('names the content still missing instead of the generic notice', () => {

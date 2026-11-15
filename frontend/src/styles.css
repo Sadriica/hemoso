@@ -691,6 +691,12 @@ legend {
   overflow-wrap: anywhere;
 }
 
+.trend__unit {
+  /* A unit is never transformed: SI symbols are case-sensitive. */
+  text-transform: none;
+  letter-spacing: normal;
+}
+
 .trend__track {
   position: relative;
 }
@@ -748,6 +754,14 @@ legend {
   font-size: var(--text-small);
   line-height: var(--leading-small);
   color: var(--color-text);
+}
+
+.indicator-card__limit {
+  font-family: var(--font-body);
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
 }
 
 .indicator-card__actions {

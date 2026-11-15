@@ -202,7 +202,7 @@ describe('guided check', () => {
     await user.click(screen.getByRole('button', { name: copy.report.next }))
     expect(screen.getAllByText('1234567').length).toBeGreaterThan(0)
     expect(
-      screen.getAllByText(strings.timeLabel(Number(nextDay), '15:44')).length,
+      screen.getAllByText(new RegExp(`^DAY ${nextDay} · 15:44`)).length,
     ).toBeGreaterThan(0)
   })
 })

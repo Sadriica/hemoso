@@ -42,7 +42,9 @@ describe('statusText', () => {
   })
 
   it('names the level of the rule that needs a review', () => {
-    expect(statusText(status('needs_review'))).toBe('example_level')
+    expect(statusText(status('needs_review'))).toBe(
+      strings.badge.needsReviewLevel('example_level'),
+    )
   })
 
   it('says needs review when the answer names no level', () => {

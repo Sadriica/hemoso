@@ -1,5 +1,6 @@
 import { strings } from '../strings'
 import { BAND, MIN_WINDOW } from '../domain/state'
+import type { MeasurementContext } from '../domain/types'
 
 // The compact trend row of a card (DESIGN.md 8): the latest value against the
 // person's own last readings, as a shape and as words. The band is the usual
@@ -25,17 +26,25 @@ export default function TrendRow({
   value,
   unit,
   baseline,
+  context,
 }: {
   value: number
   unit: string
   baseline: Baseline
+  // The context of the reading: only same-context readings are compared, so
+  // the sentence says which ones are missing.
+  context?: MeasurementContext
 }) {
   const { median, spread, n } = baseline
   if (median === null || spread === null || spread <= 0) {
     return (
       <div className="trend">
         <p className="trend__words">
-          {strings.trend.notEnough(n, MIN_WINDOW)}
+          {strings.trend.notEnough(
+            n,
+            MIN_WINDOW,
+            context ? strings.trend.contextPhrase[context] : undefined,
+          )}
         </p>
       </div>
     )
@@ -76,7 +85,10 @@ export default function TrendRow({
       <p className="trend__words">
         {strings.trend[side]}
         {' · '}
-        {strings.trend.usual(round(median), strings.cardUnit(unit))}
+        {strings.trend.usualLabel}{' '}
+        <span className="trend__unit">
+          {round(median)} {strings.cardUnit(unit)}
+        </span>
       </p>
     </div>
   )

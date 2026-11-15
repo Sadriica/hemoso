@@ -36,5 +36,6 @@ export function statusText(status: Status): string {
   if (status.state === 'no_data') return strings.badge.noData
   if (status.state === 'in_range') return strings.badge.inRange
   if (status.state === 'outside_range') return strings.badge.outsideRange
-  return status.level ?? strings.badge.needsReview
+  if (status.level === null) return strings.badge.needsReview
+  return strings.badge.needsReviewLevel(status.level)
 }

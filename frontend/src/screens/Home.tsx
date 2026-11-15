@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
+import { attentionFor } from '../domain/attention'
 import { latestEntry } from '../domain/entries'
 import type {
   AttentionRule,
@@ -191,9 +192,10 @@ export default function Home({
                     name: indicator.name,
                     stateText: statusText(status),
                     state: kind,
+                    // Empty without a reading: the state text already says it.
                     valueText: latest
                       ? `${latest.value} ${strings.cardUnit(indicator.unit)}`
-                      : strings.badge.noData,
+                      : '',
                     icon: <IndicatorIcon indicatorId={indicator.id} />,
                     stateIcon: <StatusIcon kind={kind} size={16} />,
                     systemColor: system
@@ -219,6 +221,7 @@ export default function Home({
               indicator={selected.indicator}
               latest={selected.latest}
               baseline={selected.baseline}
+              rules={selected.rules}
               status={selected.status}
               content={selected.content}
               motionReduced={motionReduced}
@@ -235,7 +238,10 @@ export default function Home({
                   state={statusBadgeKind(selected.status)}
                   label={
                     selectedSystem
-                      ? strings.board.bodyLabel(selected.indicator.name)
+                      ? strings.board.bodyLabel(
+                          strings.board.systemNames[selectedSystem],
+                          selected.indicator.name,
+                        )
                       : strings.board.bodyNone
                   }
                 />
@@ -325,6 +331,7 @@ function IndicatorRow({
   indicator,
   latest,
   baseline,
+  rules,
   status,
   content,
   motionReduced,
@@ -332,6 +339,7 @@ function IndicatorRow({
   indicator: Indicator
   latest: Entry | null
   baseline: Baseline | null
+  rules: AttentionRule[]
   status: Status
   content: IndicatorContent | undefined
   motionReduced: boolean
@@ -366,7 +374,11 @@ function IndicatorRow({
               motionReduced={motionReduced}
             />
             <span className="indicator-card__time">
-              {strings.timeLabel(latest.missionDay, latest.time)}
+              {strings.timeLabel(
+                latest.missionDay,
+                latest.time,
+                strings.entry.contextLabels[latest.context],
+              )}
             </span>
           </p>
           {system && (
@@ -387,11 +399,20 @@ function IndicatorRow({
           value={latest.value}
           unit={indicator.unit}
           baseline={baseline}
+          context={latest.context}
         />
       )}
       <p className="indicator-card__next-step">
         {nextStepFor(status, content)}
       </p>
+      {status.state === 'needs_review' && latest && (
+        <LimitCrossed
+          latest={latest}
+          unit={indicator.unit}
+          rules={rules}
+          fallback={status.sources}
+        />
+      )}
       {status.state === 'needs_review' && status.notify !== null && (
         <p className="indicator-card__who-acts">
           {strings.whoActs[status.notify]}
@@ -408,6 +429,57 @@ function IndicatorRow({
       </div>
     </li>
   )
+}
+
+// Which limit the reading crossed and where it comes from, taken from the
+// matching row of config/rules/attention.csv. The row also names the source, so
+// a card never asks the astronaut to trust a bare level name.
+function LimitCrossed({
+  latest,
+  unit,
+  rules,
+  fallback,
+}: {
+  latest: Entry
+  unit: string
+  rules: AttentionRule[]
+  fallback: Source[]
+}) {
+  const match = attentionFor(latest.value, rules)
+  if (match.kind !== 'attention') return null
+  const sources = match.rule.sources.length > 0 ? match.rule.sources : fallback
+  return (
+    <p className="indicator-card__limit">
+      {strings.board.limitCrossed(
+        match.rule.side,
+        match.rule.threshold,
+        strings.cardUnit(unit),
+      )}{' '}
+      {strings.board.limitSource}{' '}
+      {sources.map((source, index) => (
+        <span key={source === 'Assumption' ? 'assumption' : source.url}>
+          {index > 0 && ', '}
+          {source === 'Assumption' ? (
+            source
+          ) : (
+            <a href={source.url} target="_blank" rel="noreferrer">
+              {sourceName(source)}
+            </a>
+          )}
+        </span>
+      ))}
+    </p>
+  )
+}
+
+// The title of a source, or its host when the title is the link itself.
+function sourceName(source: { title: string; url: string }): string {
+  if (source.title !== source.url) return source.title
+  try {
+    return new URL(source.url).hostname
+  } catch {
+    return source.url
+  }
 }
 
 // The text the astronaut reads for one state: the team's sentence from
