@@ -1290,6 +1290,8 @@ input.reading__input::-webkit-inner-spin-button {
   inset: 0;
   z-index: 100;
   background: var(--color-bg);
+  /* Like the intro it stands in for: a click goes through it. */
+  pointer-events: none;
 }
 
 /* Round 3 shape grammar (DESIGN.md 6.1): one wide main panel per screen, with

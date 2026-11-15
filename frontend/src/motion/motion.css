@@ -16,6 +16,9 @@
   background: var(--color-bg);
   color: var(--color-accent);
   animation: intro-out var(--motion-intro) linear both;
+  /* A first click or tap is never lost: it ends the intro (Intro.tsx listens
+     on the window) and goes through to what is under the layer. */
+  pointer-events: none;
 
   /* Every length of the intro is a share of --motion-intro, so the whole
      length is one token. The shares were set at 3400 ms and stretch with it. */

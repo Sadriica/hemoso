@@ -268,6 +268,9 @@ export const strings = {
     // Whether the readings leave the device is the sentence after this one, so
     // this one never promises a send the demo cannot make.
     saved: 'Waiting to be sent.',
+    // The same readings once the server took them, or when it did not.
+    sent: 'Sent.',
+    notAccepted: 'The server did not accept it. Kept on this device.',
     savedOnDevice: 'Kept on this device.',
     noIndicators: 'No indicators are set up yet.',
     // A save with every row empty has nothing to store, and says so.
@@ -516,8 +519,10 @@ export const strings = {
     faceOfferHeading: 'Add face sign-in on this device',
     faceOfferNote:
       'Your face is turned into numbers kept only on this device. You read the details before the camera opens.',
-    faceOfferAction: 'Add face sign-in on this device',
+    faceOfferAction: 'Add face sign-in',
     faceOfferSkip: 'Not now',
+    // The same offer as one quiet line on the report, after the sign-in.
+    faceOfferLine: 'Next time, sign in with your face on this device.',
     pinHeading: 'Username and PIN',
     username: 'Username',
     pin: 'PIN',
@@ -535,7 +540,9 @@ export const strings = {
     crewRole: 'Synthetic crew member',
     // The id a typed name becomes, shown under the field while it is typed.
     willSignInAs: (personId: string): string => `You will sign in as ${personId}`,
-    signedInAs: (personId: string): string => `Signed in as ${personId}`,
+    // The same readable name as the top bar, never the raw id.
+    signedInAs: (personId: string): string =>
+      `Signed in as ${personName(personId)}`,
     signOut: 'Sign out',
     expired: 'Your session ended. Enter your PIN again.',
     askPin: (personId: string): string => `Enter the PIN for ${personId}.`,

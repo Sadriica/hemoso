@@ -1,4 +1,6 @@
 import { lazy, Suspense, useCallback, useState, type RefObject } from 'react'
+import FaceOffer from '../components/FaceOffer'
+import { isDemoPerson } from '../hooks/useSession'
 import { SERVER_ID_PREFIX } from '../data/historyClient'
 import PhaseHeading from '../components/PhaseHeading'
 import type { EntryStore } from '../data/entryStore'
@@ -86,6 +88,12 @@ export default function ReportPhase({
   return (
     <section className="phase phase--report" aria-labelledby="phase-heading">
       <PhaseHeading ref={headingRef} eyebrow={copy.eyebrow} lines={copy.headline} intro={copy.intro} />
+
+      {/* Signed in with a PIN: adding the face for next time is one quiet line
+          here, not a step before the check. The demo astronaut has no account. */}
+      {serverConfigured && !isDemoPerson(personId) && (
+        <FaceOffer personId={personId} />
+      )}
 
       <div className="scene-band scene-band--report" data-enter="scene" aria-hidden="true">
         <Suspense fallback={null}>
