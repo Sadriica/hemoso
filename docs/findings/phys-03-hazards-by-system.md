@@ -26,8 +26,22 @@ value at which the effect becomes a problem.
 | Immune (context, no indicator) | `radiation` + `gravity_fields` + `isolation_and_confinement` | "Radiation, microgravity, poor sleep and other spaceflight stressors can alter the immune system"; crews report cold sores, rashes, atypical allergies and infections | https://www.nasa.gov/reference/risk-of-altered-immune-system-responses/ |
 | Immune (context, no indicator) | `hostile_closed_environments` | Microbes behave differently in a closed habitat and pass more easily between crew members; stress hormones rise and immunity changes | https://www.nasa.gov/hrp/hazard-hostile-closed-environments/ |
 
-## Evidence, and why the immune risk page matters
+## The official risk page behind each system
 
+The risks index links 17 pages. These three were opened on Sat 14 and add a concrete
+detail that the hazard pages do not have.
+
+| System | Risk page | What it adds |
+| --- | --- | --- |
+| Sleep | https://www.nasa.gov/reference/risk-from-inadequate-sleep-and-irregular-schedules/ | Crew witness "16 sunrises and sunsets per day"; LEDs simulate Earth's light-dark cycle; light and caffeine use affect the biological clock; relaxation time is scheduled to prevent burnout |
+| Neuro-behavioural | https://www.nasa.gov/reference/risk-of-behavioral-conditions-and-psychiatric-disorders/ | Isolation and confinement raise the risk of anxiety and depression, which affect "sleep, morale, and decision making"; journaling, plants, windows and privacy are the named countermeasures |
+| Immune (context) | https://www.nasa.gov/reference/risk-of-altered-immune-system-responses/ | "Radiation, microgravity, poor sleep and other spaceflight stressors can alter the immune system"; crews report cold sores, rashes, atypical allergies and infections |
+
+The other risk pages are listed on https://www.nasa.gov/hrp/risks/ and were not
+opened. Their one-line summaries are on that index and can be cited from it, not from
+the risk page itself.
+
+## Evidence, and why the immune risk page matters
 The HRP risk pages connect a body system with the stressors behind it. The immune
 risk names them explicitly in its gap IM-106: "the effect of the stressors associated
 with spaceflight (stress, microgravity, radiation, altered nutrition, circadian
