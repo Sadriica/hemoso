@@ -86,25 +86,41 @@ html {
   transform: none;
 }
 
-/* Top bar: mark and name, mission metadata, the motion switch; the synthetic
-   data sentence and the sync facts under them. A hairline closes it. */
+/* Top bar: mark, name and the motion switch; one mono telemetry line from
+   real data; the synthetic data sentence and the sync facts. It sits on the
+   raised band, never on the stars (DESIGN.md 6, 8). */
 .topbar {
-  padding: var(--space-3) var(--space-6) var(--space-2);
-  border-bottom: 1px solid color-mix(in srgb, var(--color-border) 55%, transparent);
+  padding: var(--space-2) var(--space-6);
+  border-bottom: var(--border-subtle);
+  background: var(--color-bg-raised);
 }
 
 .topbar__row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--space-2) var(--space-4);
+  gap: var(--space-1) var(--space-4);
   max-width: var(--container-width);
   margin: 0 auto;
 }
 
+.topbar__row:first-child {
+  flex-wrap: nowrap;
+  justify-content: space-between;
+}
+
+.topbar__row--meta {
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
 .topbar__row--facts {
   justify-content: space-between;
-  margin-top: var(--space-2);
+  gap: var(--space-1) var(--space-4);
 }
 
 .identity {
@@ -115,40 +131,19 @@ html {
 }
 
 .identity__mark {
-  width: 34px;
-  height: 34px;
+  width: 28px;
+  height: 28px;
   fill: none;
   stroke: var(--color-accent);
   stroke-width: 1.5;
 }
 
 .identity__name {
-  display: flex;
-  flex-direction: column;
   font-family: var(--font-display);
   font-size: var(--text-h2);
   font-weight: 700;
-  letter-spacing: 0.08em;
-  line-height: 1;
-}
-
-.identity__name small {
-  margin-top: 4px;
-  color: var(--color-text-muted);
-  font-family: var(--font-mono);
-  font-size: var(--text-label);
-  font-weight: 500;
-  letter-spacing: 0.2em;
-}
-
-.topbar__meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2) var(--space-4);
-  color: var(--color-text-muted);
-  font-family: var(--font-mono);
-  font-size: var(--text-label);
-  letter-spacing: var(--tracking-label);
+  letter-spacing: var(--tracking-display);
+  line-height: var(--leading-h2);
   text-transform: uppercase;
 }
 
@@ -162,7 +157,7 @@ html {
 .topbar__duty i {
   width: 6px;
   height: 6px;
-  border-radius: 50%;
+  border-radius: var(--radius-round);
   background: var(--status-in-range-text);
 }
 
@@ -483,9 +478,9 @@ html {
   position: sticky;
   bottom: 0;
   z-index: 5;
-  padding: var(--space-3) var(--space-6) var(--space-4);
-  border-top: 1px solid color-mix(in srgb, var(--color-border) 55%, transparent);
-  background: linear-gradient(to top, color-mix(in srgb, var(--color-bg) 96%, transparent), color-mix(in srgb, var(--color-bg) 82%, transparent));
+  padding: var(--space-2) var(--space-6) var(--space-2);
+  border-top: var(--border-subtle);
+  background: var(--color-bg-raised);
 }
 
 .phase-rail__track {
@@ -525,12 +520,24 @@ html {
   font-weight: 500;
 }
 
-.phase-rail__step--current {
+.phase-rail__step--current,
+.phase-rail__step--current b {
+  color: var(--color-accent);
+}
+
+.phase-rail__step--done {
   color: var(--color-text);
 }
 
-.phase-rail__step--current b {
-  color: var(--color-accent);
+.phase-rail__next {
+  max-width: var(--container-width);
+  margin: var(--space-1) auto 0;
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
 }
 
 /* Light theme: the same layout on light surfaces, no stars or grain. */
@@ -543,15 +550,9 @@ html {
     background: none;
   }
 
-  .topbar,
-  .phase-rail,
   .phase__actions,
   .status__history {
     border-color: var(--color-border);
-  }
-
-  .phase-rail {
-    background: color-mix(in srgb, var(--color-bg) 96%, transparent);
   }
 
   .journey-button,
@@ -568,7 +569,7 @@ html {
 /* Phone: one column, smaller margins, full-width buttons. */
 @media (max-width: 599px) {
   .topbar {
-    padding: var(--space-3) var(--space-3) var(--space-2);
+    padding: var(--space-1) var(--space-3) var(--space-2);
   }
 
   .stage {

@@ -147,7 +147,7 @@ describe('top bar', () => {
 
   it('labels the device clock as NOW in the metadata line', () => {
     render(<App />)
-    expect(screen.getByText(/^HEMOSO \/ DAY \d+ · NOW \d\d:\d\d$/)).toBeInTheDocument()
+    expect(screen.getByText(/^DAY \d+ · NOW \d\d:\d\d$/)).toBeInTheDocument()
   })
 
   it('shows the sync status with no server set up', () => {

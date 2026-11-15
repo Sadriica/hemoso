@@ -40,6 +40,9 @@ export const strings = {
   // sentence of help and one way forward.
   phases: {
     railLabel: 'Health check progress',
+    // What the rail says comes after the current step, and on the last one.
+    next: (name: string): string => `Next: ${name}`,
+    last: 'Last step',
     step: (number: number, total: number): string => `Phase ${number} of ${total}`,
     identify: {
       number: '01',
@@ -252,7 +255,7 @@ export const strings = {
   // time of a reading. The synthetic data sentence of REQ-14 sits beside it.
   header: {
     metadata: (day: number, time: string): string =>
-      `HEMOSO / ${missionStamp(day, time)}`,
+      missionStamp(day, time),
   },
   // The unit that follows a value on a card: "58 bpm". The 1 to 5 scales hold
   // their range in the unit, so they read "4 / 5" and not "4 1 to 5".
