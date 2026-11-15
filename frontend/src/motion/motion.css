@@ -132,7 +132,7 @@
 /* The name types in: the box widens in six steps, the caret sits at the edge. */
 .intro__name {
   overflow: hidden;
-  width: 6ch;
+  width: 6.8ch;
   margin: 0;
   border-right: 2px solid currentColor;
   color: var(--color-text);
