@@ -135,6 +135,71 @@ describe('Home', () => {
     expect(screen.getByText('Example next step. Assumption.')).toBeInTheDocument()
   })
 
+  it('shows the content text for in_range when the file has one', () => {
+    renderHome({
+      ...homeWith([...baseline, entry(10, 10)]),
+      contents: {
+        example_indicator: {
+          ...content,
+          statusAndNextSteps: {
+            in_range: 'Example text for the usual range. Assumption.',
+          },
+        },
+      },
+    })
+    expect(
+      screen.getByText('Example text for the usual range. Assumption.'),
+    ).toBeInTheDocument()
+    expect(screen.queryByText(strings.nextStep.inRange)).toBeNull()
+  })
+
+  it('shows the content text for outside_range when the file has one', () => {
+    renderHome({
+      ...homeWith([...baseline, entry(10, 40)]),
+      rules: [],
+      contents: {
+        example_indicator: {
+          ...content,
+          statusAndNextSteps: {
+            outside_range: 'Example text below the usual range. Assumption.',
+          },
+        },
+      },
+    })
+    expect(
+      screen.getByText('Example text below the usual range. Assumption.'),
+    ).toBeInTheDocument()
+    expect(screen.queryByText(strings.nextStep.outsideRange)).toBeNull()
+  })
+
+  it('shows the content text for no_data when the file has one', () => {
+    renderHome({
+      ...data,
+      contents: {
+        example_indicator: {
+          ...content,
+          statusAndNextSteps: {
+            no_data: 'Example text with no reading yet. Assumption.',
+          },
+        },
+      },
+    })
+    expect(
+      screen.getByText('Example text with no reading yet. Assumption.'),
+    ).toBeInTheDocument()
+    expect(screen.queryByText(strings.nextStep.noData)).toBeNull()
+  })
+
+  it('keeps the app words when the content text for a state is empty', () => {
+    renderHome({
+      ...homeWith([...baseline, entry(10, 10)]),
+      contents: {
+        example_indicator: { ...content, statusAndNextSteps: { in_range: '  ' } },
+      },
+    })
+    expect(screen.getByText(strings.nextStep.inRange)).toBeInTheDocument()
+  })
+
   it('says who acts when a level matches, from the notify column', () => {
     renderHome(homeWith([...baseline, entry(10, 101)]))
     expect(screen.getByText('Tell the crew.')).toBeInTheDocument()
