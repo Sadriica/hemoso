@@ -118,9 +118,12 @@ values.
 ### How each value is compared (team decision, Sat 14 Nov 15:37)
 
 1. **Own baseline:** the median and spread of that person's entries for the
-   indicator over the last 14 readings (moving window; team decision Sat 18:45). The spread is
-   `max(1.4826 × median absolute deviation, min_spread)`; with fewer than 3
-   entries the state is "no data yet", and a value more than 3 spreads from the
+   indicator in the same context, over the last 14 mission days that hold a
+   reading (moving window; team decision Sun 05:54, replacing "the last 14
+   readings" of Sat 18:45). Each day counts once, as the mean of that day's
+   readings; the median and the spread are taken over those daily values. The
+   spread is `max(1.4826 × median absolute deviation, min_spread)`; with fewer
+   than 3 days the state is "no data yet", and a value more than 3 spreads from the
    median is "outside your usual range" (`docs/findings/phys-02-baseline-state-rule.md`).
    The app computes it from the stored history (REQ-27); no file holds it.
 2. **Clinical or assumed limits:** the rows of `rules/attention.csv`, each with
