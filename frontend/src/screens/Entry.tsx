@@ -605,7 +605,7 @@ function ReadingRowField({
       aria-label={
         differs
           ? `${strings.entry.rowContext(row.name)}: ${contextLabel} ${strings.entry.change}`
-          : strings.entry.rowContext(row.name)
+          : `${strings.entry.rowContext(row.name)}: ${contextLabel}`
       }
       onClick={onToggleMenu}
     >
@@ -615,7 +615,10 @@ function ReadingRowField({
           <span className="rep-ctx__change">{strings.entry.change}</span>
         </>
       ) : (
-        <span aria-hidden="true">▾</span>
+        <>
+          <span>{strings.entry.context}</span>
+          <span aria-hidden="true">▾</span>
+        </>
       )}
     </button>
   )
@@ -668,7 +671,11 @@ function ReadingRowField({
     </div>
   )
   const trend =
-    telemetry.history.length === 0 ? null : (
+    telemetry.history.length === 0 ? (
+      <p className="rep-row__history rep-row__history--empty">
+        {strings.entry.noHistory}
+      </p>
+    ) : (
       <div className="rep-row__trend">
         <Sparkline values={telemetry.history} pending={telemetry.pending} />
         <p className="rep-row__history">

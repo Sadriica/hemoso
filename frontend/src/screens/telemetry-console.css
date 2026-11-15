@@ -134,7 +134,7 @@
 
 .rep.rep--console .rep-row__state {
   margin: 0;
-  margin-left: auto;
+  margin-right: auto;
 }
 
 /* The window the live figure is drawn in: a faint grid behind it, so it reads
@@ -151,15 +151,16 @@
 }
 
 /* The readout: the number large in mono on a single rule, its unit beside it.
-   Still one text field with its label; only the box is gone. */
+   One text field with its label, set into the panel as a recessed box so it
+   reads as a place to type and not as a stray dash on a line. */
 .rep.rep--console .rep-rows .rep-row .rep-field {
   width: 100%;
-  min-height: var(--tap-min);
-  padding: 0 var(--space-1);
-  border: 0;
+  min-height: calc(var(--tap-min) + var(--space-1));
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border-control);
   border-bottom: 2px solid var(--color-border-control);
-  border-radius: 0;
-  background: transparent;
+  border-radius: var(--radius-small);
+  background: color-mix(in srgb, var(--color-bg) 55%, transparent);
 }
 
 .rep.rep--console .rep-rows .rep-row .rep-field:focus-within {
@@ -237,12 +238,24 @@
   }
 
   .rep.rep--console .rep-row__state {
-    margin-left: 0;
+    margin-right: 0;
     flex-basis: 100%;
   }
 
+  /* The sparkline over its caption: the caption gets the full width and
+     stops breaking in the middle of a range. */
   .rep.rep--console .rep-row__trend {
-    grid-template-columns: minmax(0, 96px) minmax(0, 1fr);
-    gap: var(--space-2);
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-1);
   }
+
+  .rep.rep--console .rep-row__history {
+    letter-spacing: 0;
+  }
+}
+
+/* A panel with no earlier reading: one muted line under the readout, so the
+   empty card says why it has no trend. */
+.rep.rep--console .rep-row__history--empty {
+  padding-inline: var(--space-1);
 }

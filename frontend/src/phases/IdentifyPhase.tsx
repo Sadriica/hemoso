@@ -649,7 +649,7 @@ export default function IdentifyPhase({
                     <div className="signin__actions">
                       <button
                         type="submit"
-                        className="journey-button"
+                        className="journey-button journey-button--solid"
                         disabled={busy}
                       >
                         <span>

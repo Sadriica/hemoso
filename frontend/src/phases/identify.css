@@ -233,8 +233,9 @@
 }
 
 .identify__tabs {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: 100%;
   gap: var(--space-2);
 }
 
@@ -264,6 +265,11 @@
 
 .identify__tab[aria-selected='true'] {
   border-width: 2px;
+  background: color-mix(in srgb, var(--color-accent) 14%, transparent);
+}
+
+.identify__more {
+  gap: var(--space-2);
 }
 
 .identify__more-body {
@@ -541,4 +547,39 @@
   .identify__face > button {
     width: 100%;
   }
+}
+
+/* A phone: the crew card and the way on take the full width, one under the
+   other, so neither is a small island in the panel. */
+@media (max-width: 599px) {
+  .identify__who .crew-picker,
+  .identify__who .signin__begin {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+
+  .identify__who .crew-picker__options {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* The face consent and camera inside the Identify panel: the same corner,
+   spacing and capsule buttons as the rest of the panel, and the full width of
+   the column. */
+.identify__face .face-panel {
+  max-width: none;
+  margin: var(--space-3) 0 0;
+  border-radius: var(--radius-panel);
+  background: color-mix(in srgb, var(--color-bg) 35%, var(--color-surface));
+}
+
+.identify__face .face-panel__actions .button {
+  min-height: var(--tap-min);
+  border-radius: var(--radius-capsule);
+  padding-inline: var(--space-4);
+}
+
+.identify__face .face-panel__status:empty {
+  min-height: 0;
 }

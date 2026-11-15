@@ -615,3 +615,34 @@
 .body3d--bare .body-silhouette__label {
   display: none;
 }
+
+/* One mark of the picker: the strength reads "5 / 10", and removing it is a
+   bordered button, not a bare word under the slider. */
+.pain-picker__mark {
+  background: color-mix(in srgb, var(--color-bg) 40%, var(--color-surface));
+}
+
+.pain-picker__value::after {
+  content: ' / 10';
+  color: var(--color-text-muted);
+  font-size: var(--text-small);
+}
+
+.pain-picker__mark .text-link {
+  align-self: flex-start;
+  min-height: var(--tap-min);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-small);
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.pain-picker__mark .text-link:hover {
+  border-color: var(--color-signal);
+  color: var(--color-signal);
+}
+
+.pain-picker__scale {
+  max-width: 60ch;
+}

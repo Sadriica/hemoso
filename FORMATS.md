@@ -51,6 +51,9 @@ new ones without updating this table and the owner named in it.
 | `glucose_mgdl` | Blood glucose | mg/dL | `both` | Tier A · system `metabolic`; measured on board with the i-STAT blood analyser from a fingerstick sample, so a value exists only when the crew takes one (Bio 2, `team/bio2/notes/indicators-review.md`; changed from tier C on Sat 19:40) |
 | `reaction_median_ms` | Reaction time median | ms | `higher` | Tier A · system `neuro_behavioural`; the median of one in-app reaction check (REQ-38, T-71). Proposed by Eng 1 on Sat 23:10; Phys confirmed it in T-72: the 3-minute PVT-B of the ISS Reaction Self Test, 2 to 5 s wait (phys-06) |
 | `reaction_lapses` | Reaction lapses | count | `higher` | Tier A · system `neuro_behavioural`; the count of late answers in one reaction check (REQ-38, T-71). Proposed by Eng 1 on Sat 23:10; Phys confirmed it in T-72: a trial of 355 ms or more is a lapse (phys-06, Dev et al. 2024) |
+| `appetite_1_5` | Appetite | 1 to 5 | `lower` | Tier B · system `metabolic`; self-rated once a day at the check-in, 1 = very low to 5 = very good (our scale, Assumption). Phys, Sun 06:50 (T-77) |
+| `fluid_intake_ml` | Fluid intake | mL | `lower` | Tier B · system `metabolic`; water drunk plus water used to rehydrate food, logged from the metered galley dispenser. Phys, Sun 06:50 (T-77) |
+| `body_mass_kg` | Body mass | kg | `lower` | Tier A · system `musculoskeletal`; measured with SLAMMD (mass from F = ma). Phys, Sun 06:50 (T-77) |
 | `<condition_id>` | to be filled by Bio 2 (REQ-06) | — (a condition has an evidence score from 0 to 1, not a unit) | — | One row per possible condition; example id `example_condition`. |
 | `<body_region_id>` | to be filled by the owner (open question) | — | — | One row per selectable body region; example id `example_body_region`. |
 
