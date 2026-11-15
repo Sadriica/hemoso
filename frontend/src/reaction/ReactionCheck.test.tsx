@@ -152,7 +152,7 @@ describe('ReactionCheck', () => {
     expect(screen.getByText(reactionStrings.trial(1))).toBeVisible()
   })
 
-  it('ends at the demo length and saves the median and the lapses', () => {
+  it('ends at the demo length, shows the result, and saves nothing', () => {
     const store = memoryStore()
     draw(store)
     now = 0
@@ -181,23 +181,12 @@ describe('ReactionCheck', () => {
 
     expect(screen.getByText(reactionStrings.result(300, 1))).toBeVisible()
     expect(screen.getByText(reactionStrings.falseStarts(0))).toBeVisible()
-    expect(screen.getByText(reactionStrings.saved(2, false))).toBeVisible()
-
-    // Two entries, both waiting for the outbox: nothing here needs a server.
-    const saved = store.list()
-    expect(saved.map((entry) => entry.indicatorId)).toEqual([
-      REACTION_MEDIAN_ID,
-      REACTION_LAPSES_ID,
-    ])
-    expect(saved.map((entry) => entry.value)).toEqual([300, 1])
-    expect(saved.map((entry) => entry.unit)).toEqual(['ms', 'lapses'])
-    for (const entry of saved) {
-      expect(entry.personId).toBe('demo_astronaut_1')
-      expect(entry.missionDay).toBe(1)
-      expect(entry.time).toBe('14:30')
-      expect(entry.context).toBe('rest')
-    }
-    expect(store.pending()).toHaveLength(2)
+    // A demo run is a demonstration of the screen, not a check the crew took:
+    // the result says so and the store stays as it was (T-76).
+    expect(screen.getByText(reactionStrings.demoNotSaved)).toBeVisible()
+    expect(screen.queryByText(reactionStrings.saved(2, false))).toBeNull()
+    expect(store.list()).toEqual([])
+    expect(store.pending()).toEqual([])
   })
 
   it('takes a tap on the test area, and shows the sound cue too', () => {
@@ -241,13 +230,42 @@ describe('ReactionCheck', () => {
     expect(screen.getByText(reactionStrings.demoLength)).toBeVisible()
   })
 
-  it('runs the real length without the demo parameter', () => {
+  it('runs the real length without the demo parameter, and saves the two entries', () => {
     const store = memoryStore()
     draw(store, { search: '' })
     expect(screen.queryByText(reactionStrings.demoLength)).toBeNull()
+    now = 0
     fireEvent.click(screen.getByRole('button', { name: reactionStrings.start }))
     expect(
       screen.getByRole('progressbar', { name: reactionStrings.timeLeft }),
     ).toHaveAttribute('aria-valuemax', String(REACTION_DURATION_MS))
+
+    // The shortest wait and an answer on time, until the 3 minutes run out.
+    for (let trial = 0; trial < 100; trial += 1) {
+      advance(REACTION_WAIT_MIN_MS)
+      advance(300)
+      fireEvent.keyDown(window, { key: ' ' })
+    }
+    expect(screen.queryByRole('group', { name: reactionStrings.areaLabel })).toBeNull()
+
+    expect(screen.getByText(reactionStrings.result(300, 0))).toBeVisible()
+    expect(screen.getByText(reactionStrings.saved(2, false))).toBeVisible()
+
+    // Two entries, both waiting for the outbox: nothing here needs a server.
+    const saved = store.list()
+    expect(saved.map((entry) => entry.indicatorId)).toEqual([
+      REACTION_MEDIAN_ID,
+      REACTION_LAPSES_ID,
+    ])
+    expect(saved.map((entry) => entry.value)).toEqual([300, 0])
+    expect(saved.map((entry) => entry.unit)).toEqual(['ms', 'lapses'])
+    for (const entry of saved) {
+      expect(entry.personId).toBe('demo_astronaut_1')
+      expect(entry.missionDay).toBe(1)
+      // The reading is stamped when the 3 minutes are up, 14:30 plus 3 minutes.
+      expect(entry.time).toBe('14:33')
+      expect(entry.context).toBe('rest')
+    }
+    expect(store.pending()).toHaveLength(2)
   })
 })

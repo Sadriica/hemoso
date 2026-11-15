@@ -11,7 +11,9 @@ export const REACTION_DURATION_MS = 180_000
 /**
  * The demo length, 30_000 ms. It exists for the demo path and for the e2e
  * test, which cannot spend three minutes per run; the app reaches it with
- * `?reaction=demo` and nothing else uses it.
+ * `?reaction=demo` and nothing else uses it. A run of this length shows the
+ * result and saves nothing: 30 seconds is a demonstration of the screen, not a
+ * check the crew took, so it must not reach the mission record (T-76).
  */
 export const REACTION_DEMO_DURATION_MS = 30_000
 
