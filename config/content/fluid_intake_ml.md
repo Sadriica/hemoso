@@ -43,6 +43,13 @@ Drink a glass of water now and log your total again tomorrow. Assumption.
 
 Your CMO or flight surgeon confirms.
 
+### watch
+
+Your fluid intake is below 2500 mL today, the line the crew uses.
+
+Drink a glass of water now and log your total again tomorrow. The crew checks
+your record on board.
+
 ## How to prevent problems
 
 Drink at regular times, not only when you are thirsty. Drink before exercise.

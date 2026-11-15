@@ -44,6 +44,12 @@ Assumption.
 
 Your CMO or flight surgeon confirms.
 
+### watch
+
+Your appetite is below 3 today, the line the crew uses.
+
+Eat something small at the next meal time. The crew checks your record on board.
+
 ## How to prevent problems
 
 Eat at regular times. Eat with the crew when you can. Tell your CMO if food
