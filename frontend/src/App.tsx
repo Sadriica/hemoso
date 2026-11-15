@@ -1,30 +1,20 @@
-import {
-  lazy,
-  Suspense,
-  useMemo,
-  useRef,
-  useState,
-  type KeyboardEvent,
-} from 'react'
+import { lazy, Suspense, useMemo, useRef, useState } from 'react'
+import { Box } from '@mui/material'
 import { loadContent } from './content/load'
 import { LocalEntryStore } from './data/entryStore'
 import { createSyncClient } from './data/sync'
+import { missionNow } from './domain/clock'
 import { useEntries } from './hooks/useEntries'
+import AppHeader, { PERSON_PICKER_ID } from './components/AppHeader'
 import Notice from './components/Notice'
-import SyncStatus from './components/SyncStatus'
-import SyntheticNotice from './components/SyntheticNotice'
+import ScreenTabs from './components/ScreenTabs'
+import { TABS, type TabId } from './components/tabs'
+import SkipLink from './components/SkipLink'
 import Entry from './screens/Entry'
 import History from './screens/History'
 import Home from './screens/Home'
 import { strings } from './strings'
-
-const TABS = [
-  { id: 'home', label: strings.tabs.home },
-  { id: 'entry', label: strings.tabs.entry },
-  { id: 'history', label: strings.tabs.history },
-] as const
-
-type TabId = (typeof TABS)[number]['id']
+import { LAYOUT } from './theme/tokens'
 
 // The face panel is a chunk of its own, loaded the first time it opens. A page
 // without ?face=1 never asks for it, so the public demo keeps the same bundle
@@ -58,7 +48,6 @@ export default function App() {
   const [personId, setPersonId] = useState('')
   const selectedPerson = personId || personIds[0] || ''
   const [activeTab, setActiveTab] = useState<TabId>(TABS[0].id)
-  const tabRefs = useRef<(HTMLButtonElement | null)[]>([])
   // Face sign-in is off unless the page is opened with ?face=1. REQ-14 forbids
   // real personal data in the app until Eng 1 records the exception, so the
   // button, the panel and the whole face module wait for that flag.
@@ -67,69 +56,41 @@ export default function App() {
   )
   const [faceOpen, setFaceOpen] = useState(false)
   const faceButtonRef = useRef<HTMLButtonElement>(null)
-  const pickerRef = useRef<HTMLSelectElement>(null)
-
-  function onTabKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
-    const index = TABS.findIndex((tab) => tab.id === activeTab)
-    let next = index
-    if (event.key === 'ArrowRight') next = (index + 1) % TABS.length
-    else if (event.key === 'ArrowLeft') next = (index - 1 + TABS.length) % TABS.length
-    else if (event.key === 'Home') next = 0
-    else if (event.key === 'End') next = TABS.length - 1
-    else return
-
-    event.preventDefault()
-    const target = TABS[next]
-    setActiveTab(target.id)
-    tabRefs.current[next]?.focus()
-  }
+  // The metadata line of the header: the latest mission day in the store and
+  // the clock time now.
+  const clock = missionNow(entries)
 
   return (
     <>
-      <a className="skip-link" href="#main-content">
-        {strings.skipToMain}
-      </a>
-      <header className="app-header">
-        <div className="app-header__inner">
-          <div className="app-header__bar">
-            <h1 className="app-header__brand">{strings.appName}</h1>
-            <div className="app-header__account">
-              <div className="person-picker">
-                <label htmlFor="person-picker">
-                  {strings.personPickerLabel}
-                </label>
-                <select
-                  ref={pickerRef}
-                  id="person-picker"
-                  value={selectedPerson}
-                  onChange={(event) => setPersonId(event.target.value)}
-                >
-                  {personIds.map((id) => (
-                    <option key={id} value={id}>
-                      {id}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              {faceEnabled && (
-                <button
-                  ref={faceButtonRef}
-                  className="button button--secondary app-header__face"
-                  type="button"
-                  aria-expanded={faceOpen}
-                  aria-controls={faceOpen ? 'face-panel' : undefined}
-                  onClick={() => setFaceOpen((open) => !open)}
-                >
-                  {strings.face.buttonLabel}
-                </button>
-              )}
-            </div>
-          </div>
-          <SyntheticNotice />
-          <SyncStatus store={store} client={client} />
-        </div>
-      </header>
-      <main id="main-content" className="app-main" tabIndex={-1}>
+      <SkipLink />
+      <AppHeader
+        personIds={personIds}
+        personId={selectedPerson}
+        onPersonChange={setPersonId}
+        clock={clock}
+        store={store}
+        client={client}
+        faceEnabled={faceEnabled}
+        faceOpen={faceOpen}
+        onToggleFace={() => setFaceOpen((open) => !open)}
+        faceButtonRef={faceButtonRef}
+      />
+      <Box
+        component="main"
+        id="main-content"
+        tabIndex={-1}
+        sx={{
+          maxWidth: LAYOUT.containerWidth,
+          mx: 'auto',
+          px: {
+            xs: `${LAYOUT.gutter.phone}px`,
+            sm: `${LAYOUT.gutter.tablet}px`,
+            md: `${LAYOUT.gutter.desktop}px`,
+          },
+          pt: { xs: 3, md: 5 },
+          pb: 6,
+        }}
+      >
         {faceEnabled && faceOpen && (
           <Suspense
             fallback={
@@ -142,7 +103,9 @@ export default function App() {
               personId={selectedPerson}
               personIds={personIds}
               onPersonSelected={setPersonId}
-              onFocusPicker={() => pickerRef.current?.focus()}
+              onFocusPicker={() =>
+                document.getElementById(PERSON_PICKER_ID)?.focus()
+              }
               onClose={() => {
                 setFaceOpen(false)
                 // Back to the control that opened the panel, as a dialog does.
@@ -154,25 +117,7 @@ export default function App() {
         {storageWarnings.length > 0 && (
           <Notice tone="warning">{storageWarnings.join(' ')}</Notice>
         )}
-        <div role="tablist" aria-label={strings.tabs.label} className="tabs">
-          {TABS.map((tab, index) => (
-            <button
-              key={tab.id}
-              id={`tab-${tab.id}`}
-              ref={(element) => {
-                tabRefs.current[index] = element
-              }}
-              role="tab"
-              aria-selected={activeTab === tab.id}
-              aria-controls={`panel-${tab.id}`}
-              tabIndex={activeTab === tab.id ? 0 : -1}
-              onClick={() => setActiveTab(tab.id)}
-              onKeyDown={onTabKeyDown}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+        <ScreenTabs activeTab={activeTab} onTabChange={setActiveTab} />
         {/* The panel holds the focusable controls, so it is not a tab stop of
             the tabs pattern. */}
         <div
@@ -200,7 +145,7 @@ export default function App() {
             <History store={store} personId={selectedPerson} data={data} />
           )}
         </div>
-      </main>
+      </Box>
     </>
   )
 }
