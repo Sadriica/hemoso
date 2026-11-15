@@ -28,6 +28,9 @@ from app.models import Entry
 
 REPO_CONFIG = Path(__file__).resolve().parents[2] / "config"
 
+# A source with a link: only these rows count as a crossed limit (phys-02).
+CITED = "https://example.org/limit"
+
 INDICATORS_CSV = (
     "id,name,unit,direction,measured_on_board,hazards,min_spread,tier,system,source\n"
     "hr_bpm,Heart rate,bpm,both,example measurement,,4,A,cardiovascular,Assumption\n"
@@ -41,12 +44,12 @@ INDICATORS_CSV = (
 
 ATTENTION_CSV = (
     "indicator_id,side,threshold,attention_level,notify,source\n"
-    "hr_bpm,above,100,consult,cmo,Assumption\n"
-    "hr_bpm,below,50,consult,cmo,Assumption\n"
-    "bp_sys_mmhg,above,140,consult,cmo,Assumption\n"
-    "bp_sys_mmhg,above,180,urgent,flight_surgeon,Assumption\n"
-    "bp_dia_mmhg,above,90,consult,cmo,Assumption\n"
-    "bp_dia_mmhg,above,120,urgent,flight_surgeon,Assumption\n"
+    f"hr_bpm,above,100,consult,cmo,{CITED}\n"
+    f"hr_bpm,below,50,consult,cmo,{CITED}\n"
+    f"bp_sys_mmhg,above,140,consult,cmo,{CITED}\n"
+    f"bp_sys_mmhg,above,180,urgent,flight_surgeon,{CITED}\n"
+    f"bp_dia_mmhg,above,90,consult,cmo,{CITED}\n"
+    f"bp_dia_mmhg,above,120,urgent,flight_surgeon,{CITED}\n"
 )
 
 CONDITIONS_CSV = (
@@ -107,7 +110,11 @@ def entry(day: int, value: float, context: str = "rest") -> Entry:
 
 
 def attention_row(
-    indicator_id: str, side: str, threshold: float, notify: str = "cmo"
+    indicator_id: str,
+    side: str,
+    threshold: float,
+    notify: str = "cmo",
+    source: str = CITED,
 ) -> dict:
     return {
         "indicator_id": indicator_id,
@@ -115,7 +122,7 @@ def attention_row(
         "threshold": float(threshold),
         "attention_level": f"example_{side}",
         "notify": notify,
-        "source": "Assumption",
+        "source": source,
     }
 
 
@@ -252,6 +259,40 @@ def test_a_value_on_the_threshold_does_not_cross_the_row():
     assert signal_point(latest, "above") == 0.5
 
 
+def test_a_cited_limit_counts_without_a_baseline():
+    latest = LatestValue(112.0, "rest", None, None, HR_ROWS)
+
+    assert signal_point(latest, "above") == 1.0
+    assert signal_point(latest, "below") is None
+
+
+def test_no_baseline_and_no_limit_crossed_is_not_usable():
+    latest = LatestValue(80.0, "rest", None, None, HR_ROWS)
+
+    assert signal_point(latest, "above") is None
+
+
+def test_latest_value_drops_assumption_rows():
+    rows = (
+        attention_row("hr_bpm", "above", 100, source="Assumption"),
+        attention_row("hr_bpm", "below", 50),
+    )
+
+    latest = latest_value([entry(1, 70.0)], 4.0, rows)
+
+    assert latest is not None
+    assert latest.attention == (rows[1],)
+
+
+def test_an_assumption_limit_adds_only_the_baseline_point():
+    rows = (attention_row("hr_bpm", "above", 100, source="Assumption"),)
+    entries = [entry(day, 70.0) for day in range(1, 15)] + [entry(15, 112.0)]
+
+    latest = latest_value(entries, 4.0, rows)
+
+    assert signal_point(latest, "above") == 0.5
+
+
 @pytest.mark.parametrize(
     ("score", "label"),
     [
@@ -320,7 +361,8 @@ def test_latest_value_is_not_part_of_its_own_window():
     assert latest is not None
     assert latest.value == 400.0
     assert latest.median is None
-    assert latest.attention == ()
+    # The cited rows stay: a crossed limit does not need a baseline (bio2-02).
+    assert latest.attention == HR_ROWS
 
 
 def test_latest_value_without_a_noise_floor_has_no_baseline():
@@ -367,7 +409,7 @@ def test_conditions_route_scores_the_stored_history(client, tmp_path):
 def test_conditions_route_compares_each_signal_in_its_own_context(client, tmp_path):
     write_config(tmp_path)
     post_history(client, "hr_bpm", [70.0] * 14, "07:00")
-    post_history(client, "hr_bpm", [140.0], "18:00", context="after_exercise", first_day=15)
+    post_history(client, "hr_bpm", [95.0], "18:00", context="after_exercise", first_day=15)
     post_history(client, "bp_sys_mmhg", [118.0] * 15, "07:10")
     post_history(client, "bp_dia_mmhg", [74.0] * 15, "07:10")
 
@@ -375,12 +417,12 @@ def test_conditions_route_compares_each_signal_in_its_own_context(client, tmp_pa
 
     condition = response.json()[0]
     # The newest heart rate is after exercise, and one such reading has no
-    # baseline: it is shown and left out of the score.
+    # baseline and crosses no limit: it is shown and left out of the score.
     assert condition["signals"][0] == {
         "indicator_id": "hr_bpm",
         "side": "above",
         "contribution": None,
-        "value": 140.0,
+        "value": 95.0,
     }
     assert condition["score"] == 0.0
     assert condition["label"] == "low"
