@@ -23,6 +23,8 @@ export const bodyWords = {
   resetView: 'Reset view',
   selected: (names: string): string => `Selected: ${names}`,
   loading: 'Loading the body.',
+  // The figure could not be drawn at all; the note below still saves.
+  failed: 'The body could not be shown here. Write where it hurts in the note.',
   noWebgl: 'The 3D body is not open here, so the body parts are listed.',
 }
 

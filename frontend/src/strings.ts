@@ -138,6 +138,8 @@ export const strings = {
     noReadings:
       'No readings yet. Log your first readings in the report, then come back here.',
     loading: 'Loading the overview.',
+    // The overview figure failed to draw; the cards and the history still work.
+    overviewFailed: 'The overview could not be drawn. Reload the page to try again.',
   },
   // The first-load intro (skippable with any key or tap).
   intro: { skip: 'Skip intro' },
@@ -341,6 +343,12 @@ export const strings = {
   },
   problems: {
     label: 'Content problems (for the team)',
+  },
+  // A phase that failed to draw (the last line of defence, src/App.tsx). The
+  // readings are in the browser store, so nothing the person saved is lost.
+  screenFailed: {
+    message: 'This screen could not be shown. Your saved readings are still on this device.',
+    reload: 'Reload',
   },
   // The chip about sending the outbox (REQ-28). One state at a time: the
   // connection, then what it means for the readings, joined by a middle dot.

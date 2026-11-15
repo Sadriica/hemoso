@@ -9,6 +9,7 @@ import { setMissionStart, useMissionStart } from './data/missionStart'
 import { useEntries } from './hooks/useEntries'
 import { useHistorySync } from './hooks/useHistorySync'
 import { isDemoPerson, useSession } from './hooks/useSession'
+import ErrorBoundary from './components/ErrorBoundary'
 import Notice from './components/Notice'
 import PhaseRail from './components/PhaseRail'
 import type { PhaseId } from './phases/phaseIds'
@@ -146,6 +147,27 @@ export default function App() {
         {storageWarnings.length > 0 && (
           <Notice tone="warning">{storageWarnings.join(' ')}</Notice>
         )}
+        {/* One boundary per phase: a part that fails to draw shows a sentence
+            and a way back, never an empty page. A new phase starts clean. */}
+        <ErrorBoundary
+          key={phase}
+          fallback={
+            <Notice
+              tone="warning"
+              action={
+                <button
+                  type="button"
+                  className="button button--secondary"
+                  onClick={() => window.location.reload()}
+                >
+                  {strings.screenFailed.reload}
+                </button>
+              }
+            >
+              {strings.screenFailed.message}
+            </Notice>
+          }
+        >
         <PhaseTransition phase={phase} still={motionReduced}>
         {phase === 'identify' && (
           <IdentifyPhase
@@ -188,6 +210,7 @@ export default function App() {
           />
         )}
         </PhaseTransition>
+        </ErrorBoundary>
       </main>
       <PhaseRail current={phase} />
     </div>
