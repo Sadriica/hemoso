@@ -46,7 +46,7 @@ export const injuryWords = {
   remove: (region: string): string => `Remove ${region}`,
   noteLabel: 'Note (optional)',
   noteHint: 'A few words of your own.',
-  save: 'Save',
+  save: 'Save this report',
   savedOnDevice: 'Saved on this device',
   notSaved: 'This device did not keep it. It stays on screen only.',
   empty: 'Choose at least one place on the body.',

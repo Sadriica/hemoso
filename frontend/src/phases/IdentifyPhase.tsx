@@ -394,9 +394,10 @@ export default function IdentifyPhase({
                           type="radio"
                           name="crew"
                           value={id}
-                          // The name a screen reader hears is the person id, the same
-                          // name the rest of the app uses.
-                          aria-label={id}
+                          // The name a screen reader hears is the person's name in
+                          // plain words, the one the top bar and the status use,
+                          // not the id with its underscores.
+                          aria-label={personName(id)}
                           checked={session.personId === id}
                           onChange={() => pickName(id)}
                         />
