@@ -41,10 +41,10 @@ disclaimer nobody hears.
 
 | Time | Beat | What is on screen |
 | --- | --- | --- |
-| 0:00–0:18 | The problem, with a NASA source | The app, idle, day 41 |
-| 0:18–0:28 | Who uses it, and when | The app, day 41 status |
+| 0:00–0:18 | The problem, with a NASA source | The app, idle |
+| 0:18–0:28 | Who uses it, and when | The app, status |
 | 0:28–0:42 | What the ISS measures today | `config/data/indicators.csv`, the instrument column |
-| 0:42–1:17 | One astronaut, three days, through the demo | The demo path: day 41, day 42, day 46 |
+| 0:42–1:17 | One astronaut, two readings, one decision (the same scene as the video) | Report with 38.5 °C and the pulse, then the fever evidence board |
 | 1:17–1:30 | What it does not do | The status card, the CMO line |
 | 1:30–1:50 | Why you can trust what it says | `config/rules/attention.csv`, the temperature row with its link |
 | 1:50–2:00 | Maturity and next step | The team |
@@ -63,17 +63,17 @@ with that person's own usual range, so a change shows while it is small.
 
 ### 0:28–0:42 · What the ISS measures today
 
-We track what already flies. Glucose from the i-STAT analyser. Core temperature
+We build on instruments NASA documents on the station. Glucose from the i-STAT analyser. Core temperature
 from the T-Mini headband. Sleep from the Actiwatch. Body mass from SLAMMD.
 Reaction time from a check adapted from the ISS Reaction Self Test.
 
 ### 0:42–1:17 · The story
 
-Day 41. Elena logs her resting heart rate: three days above her usual range.
-HeMoSo suggests a mild infection is possible, with the probability and what it is
-based on, and asks her to repeat the measurement. Her CMO on board is notified.
-Day 42: fever of 38.5 °C and a sore throat, so the flight surgeon is told at the
-next link. Day 46: both back inside her usual range.
+Elena logs two readings: a core temperature of 38.5 °C and a fast resting pulse.
+HeMoSo compares both with her own usual range. The temperature also crosses a
+limit with a NASA source, so it needs review. The evidence board shows fever as
+possible, 0.75 of 1, with its two signals and that source. The next step is plain:
+tell the CMO on board today.
 
 ### 1:17–1:30 · What it does not do
 
