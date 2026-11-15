@@ -1,32 +1,14 @@
-/* The reaction check (REQ-38) sits inside the Report's disclosure and wears the
-   grammar of its sibling, the symptom list: a hairline frame on the raised
-   surface, the card radius, the mono eyebrow of the readings panel, the Entry
-   form's segmented control and the shared `.button`s. Every value is a token
-   of DESIGN.md except the colours of the lamp, which are the stimulus itself. */
+/* The reaction check (REQ-38) wears the panel grammar of the Report form:
+   `.panel` and `.panel--cut` give the surface, border, radius and cut corner;
+   the eyebrow, the capsules and the buttons are the shared ones. Every value is
+   a token of DESIGN.md: no colour, size or duration of its own. */
 
 .reaction {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: var(--space-3);
-  padding: var(--space-4);
-  border: var(--border-subtle);
-  border-radius: var(--radius-card);
-  background: var(--color-bg-raised);
-}
-
-.reaction__title {
-  display: grid;
-  gap: var(--space-1);
-}
-
-/* The same eyebrow as the readings panel of the Report, flush left. */
-.reaction__eyebrow {
-  margin: 0;
-  color: var(--accent-cyan);
-  font-family: var(--font-mono);
-  font-size: var(--text-label);
-  line-height: var(--leading-label);
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+  /* The report phase puts it under the form, so it keeps its own distance. */
+  margin-block: var(--space-4);
 }
 
 .reaction__heading {
@@ -88,94 +70,69 @@
   transform-origin: left center;
 }
 
-/* Light and Sound: the segmented control of the Entry form (a rounded track,
-   the chosen segment filled and carrying a check). The radio stays in the page
-   for the keyboard and screen readers. */
+/* Light and Sound are capsules, like the context choice of the Report form. The
+   radio stays in the page for the keyboard and screen readers and is drawn by
+   its label. */
 .reaction__choice {
-  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
   margin: 0;
   padding: 0;
   border: 0;
 }
 
 .reaction__choice legend {
-  display: block;
-  margin-bottom: var(--space-1);
-  padding: 0;
+  padding: 0 0 var(--space-2);
   color: var(--color-text-muted);
   font-family: var(--font-mono);
   font-size: var(--text-label);
+  line-height: var(--leading-label);
   letter-spacing: var(--tracking-label);
   text-transform: uppercase;
 }
 
-.reaction__track {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-1);
-  max-width: 320px;
-  padding: var(--space-1);
-  border: 1px solid color-mix(in srgb, var(--color-accent) 55%, var(--color-border-control));
-  border-radius: var(--radius-round);
-  background: var(--color-surface);
-}
-
-.reaction__option {
+.reaction__choice label {
   position: relative;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-1);
-  min-height: 48px;
-  padding: var(--space-1) var(--space-2);
-  border-radius: var(--radius-round);
+  min-width: 112px;
+  min-height: var(--tap-min);
+  padding: 0 var(--space-4);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-capsule);
+  background: var(--color-bg);
   color: var(--color-text);
-  font-size: var(--text-small);
-  line-height: var(--leading-small);
-  text-align: center;
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
   cursor: pointer;
 }
 
-.reaction__option input {
+.reaction__choice input {
   position: absolute;
-  width: 1px;
-  height: 1px;
+  inset: 0;
+  margin: 0;
   opacity: 0;
+  cursor: pointer;
 }
 
-.reaction__mark {
-  display: none;
-  font-weight: 700;
+.reaction__choice label:has(input:checked) {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  background: var(--color-surface);
 }
 
-.reaction__option:has(input:checked) {
-  background: var(--color-interactive);
-  color: var(--color-on-interactive);
-  font-weight: 600;
-}
-
-.reaction__option:has(input:checked) .reaction__mark {
-  display: inline;
-}
-
-.reaction__option:not(:has(input:checked)):hover {
-  background: color-mix(in srgb, var(--color-accent) 16%, transparent);
-}
-
-.reaction__option:has(input:focus-visible) {
+.reaction__choice label:has(input:focus-visible) {
   outline: 3px solid var(--color-accent);
   outline-offset: 2px;
 }
 
 /* The test area: the whole surface is the answer target, so a tap anywhere
-   counts, with or without gloves. It is a dark stage in both themes, so a lamp
-   reads the same on a light page. It never changes with the stimulus: the
-   cursor is the same before, during and after, and in the sound mode nothing at
-   all is drawn when the tone starts. */
+   counts, with or without gloves. It is large and calm: one shape, centred. */
 .reaction__area {
-  --stage-bg: #0c131d;
-  --stage-text: #f2f1e9;
-  --stage-muted: #c3c9d3;
   position: relative;
   display: grid;
   place-items: center;
@@ -185,8 +142,7 @@
   padding: var(--space-4);
   border: 1px solid var(--color-border-control);
   border-radius: var(--radius-card);
-  background: var(--stage-bg);
-  color: var(--stage-text);
+  background: var(--color-bg-raised);
   cursor: pointer;
   user-select: none;
   touch-action: manipulation;
@@ -197,8 +153,8 @@
   outline-offset: 2px;
 }
 
-.reaction__area .reaction__hint {
-  color: var(--stage-muted);
+.reaction__area--waiting {
+  cursor: default;
 }
 
 .reaction__stimulus {
@@ -208,47 +164,57 @@
   width: 100%;
 }
 
-/* The light: one round lamp that turns on at once, with no fade, so the moment
-   it shows is the moment it is timed. The colours are the stimulus itself, so
-   they are the same in both themes. The green target is also the only lamp
-   with a bright ring, so it does not depend on hue (colour-vision safe). */
-.reaction__lamp {
-  --lamp: #ffffff;
+/* The light: one large shape, each with its own colour AND its own outline. Only
+   the green circle is a target after the first white one. The colours are the
+   state and system tokens, which hold 3:1 against the panel in both themes. */
+.reaction__shape {
   display: block;
   width: 168px;
   height: 168px;
+  animation: reaction-in var(--motion-fast) var(--ease-out, ease-out);
+}
+
+.reaction__shape svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.reaction__shape--plain svg {
+  fill: var(--color-text);
+}
+
+.reaction__shape--white svg {
+  fill: var(--color-text);
+}
+
+.reaction__shape--green svg {
+  fill: var(--status-in-range-text);
+}
+
+.reaction__shape--square svg {
+  fill: var(--status-attention-text);
+}
+
+.reaction__shape--triangle svg {
+  fill: var(--status-review-text);
+}
+
+.reaction__shape--diamond svg {
+  fill: var(--system-sleep);
+}
+
+/* The tone: a large hollow ring, a different shape from every light. */
+.reaction__ring {
+  width: 120px;
+  height: 120px;
+  border: 8px solid var(--color-accent);
   border-radius: 50%;
-  background: radial-gradient(circle at 50% 42%, #ffffff 0 12%, var(--lamp) 55%);
-  background-color: var(--lamp);
-  box-shadow: 0 0 36px 6px color-mix(in srgb, var(--lamp) 55%, transparent);
-}
-
-.reaction__lamp--white {
-  --lamp: #f2f1e9;
-}
-
-.reaction__lamp--green {
-  --lamp: #2fd27a;
-  box-shadow:
-    0 0 0 6px var(--stage-bg, #0c131d),
-    0 0 0 10px #ffffff,
-    0 0 36px 14px color-mix(in srgb, var(--lamp) 55%, transparent);
-}
-
-.reaction__lamp--orange {
-  --lamp: #ff7a1a;
-}
-
-.reaction__lamp--yellow {
-  --lamp: #ffd60a;
-}
-
-.reaction__lamp--blue {
-  --lamp: #4a8dff;
+  animation: reaction-in var(--motion-fast) var(--ease-out, ease-out);
 }
 
 .reaction__cue {
-  color: var(--stage-text);
+  color: var(--color-text);
   font-family: var(--font-mono);
   font-size: var(--text-label);
   line-height: var(--leading-label);
@@ -314,13 +280,36 @@
   gap: var(--space-3);
 }
 
-@media (max-width: 599px) {
-  .reaction {
-    padding: var(--space-3);
-  }
+/* The stimulus appears without animation when motion is off (system setting or
+   the top bar switch); the test works exactly the same. */
+.app--still .reaction__shape,
+.app--still .reaction__ring,
+.reaction__area--still .reaction__shape,
+.reaction__area--still .reaction__ring {
+  animation: none;
+}
 
-  .reaction__lamp {
+@media (prefers-reduced-motion: reduce) {
+  .reaction__shape,
+  .reaction__ring {
+    animation: none;
+  }
+}
+
+@media (max-width: 599px) {
+  .reaction__shape {
     width: 132px;
     height: 132px;
+  }
+}
+
+@keyframes reaction-in {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: none;
   }
 }
