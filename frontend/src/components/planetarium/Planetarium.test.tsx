@@ -196,4 +196,45 @@ describe('Planetarium', () => {
       expect(css).toMatch(/\.planetarium__tag-state \{ color: var\(--ring\)/)
     })
   })
+
+  describe('a figure in the centre', () => {
+    const wide = () =>
+      vi.stubGlobal('matchMedia', (query: string) => ({
+        matches: true, media: query, addEventListener: () => {}, removeEventListener: () => {},
+      }))
+
+    it('shows the figure in place of the mark, hidden, with its words read', () => {
+      wide()
+      const { container } = render(
+        <Planetarium
+          items={items}
+          labels={labels}
+          selectedId="hr"
+          onSelect={() => {}}
+          initialView="orbits"
+          center={<svg data-testid="figure" />}
+          centerText="Cardiovascular system · Heart rate"
+        />,
+      )
+      const figure = container.querySelector('.planetarium__figure')
+      expect(figure).toHaveAttribute('aria-hidden', 'true')
+      expect(figure?.querySelector('[data-testid="figure"]')).not.toBeNull()
+      expect(container.querySelector('.planetarium__center-text')).toHaveTextContent(
+        'Crew. Cardiovascular system · Heart rate',
+      )
+      // The indicators are still buttons with their names and states.
+      expect(screen.getAllByRole('button', { name: /Heart rate/ }).length).toBeGreaterThan(0)
+      vi.unstubAllGlobals()
+    })
+
+    it('keeps the mark when no figure is given', () => {
+      wide()
+      const { container } = render(
+        <Planetarium items={items} labels={labels} selectedId="hr" onSelect={() => {}} initialView="orbits" />,
+      )
+      expect(container.querySelector('.planetarium__figure')).toBeNull()
+      expect(container.querySelector('.planetarium__center')).toHaveTextContent('Crew')
+      vi.unstubAllGlobals()
+    })
+  })
 })

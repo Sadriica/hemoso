@@ -17,6 +17,11 @@
   --planet-gap: 3px;
   /* Space between an element and its focus ring (DESIGN.md 8). */
   --planet-focus-offset: 2px;
+  /* The body in the centre of the orbits, as shares of the stage: narrow and
+     tall, so the nearest indicators, 8 % of the stage away, stay clear of it
+     at every width. */
+  --planet-figure-width: 10%;
+  --planet-figure-height: 50%;
 }
 .planetarium { display: grid; gap: var(--space-3); min-width: 0; }
 .planetarium__toggle {
@@ -97,3 +102,15 @@
 .planetarium__tag-state { color: var(--ring); align-items: center; }
 .planetarium__tag-value { color: var(--color-text-muted); margin-inline-start: var(--space-1); }
 .planetarium__row-state svg, .planetarium__tag-state svg { flex: none; }
+
+/* The body as the centre of the orbits: no tile, no frame, only the figure. */
+.planetarium__center--figure {
+  display: block; width: var(--planet-figure-width); height: var(--planet-figure-height);
+  padding: 0; background: none; border-radius: 0; pointer-events: none;
+}
+.planetarium__figure { width: 100%; height: 100%; overflow: hidden; }
+/* Its words are read, not shown: the figure says the same to the eye. */
+.planetarium__center-text {
+  position: absolute; width: var(--planet-line); height: var(--planet-line); overflow: hidden;
+  clip-path: inset(50%); white-space: nowrap;
+}
