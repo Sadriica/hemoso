@@ -7,14 +7,14 @@
 
 ## Claim
 
-The reaction test in the app reproduces the 3-minute PVT-B used on the ISS: stimuli
-appear at random intervals of 2 to 5 s, and a response slower than 355 ms counts as a
-lapse. The 500 ms figure belongs to the 5-minute and 10-minute PVT, which are different
-instruments.
+The reaction test in the app is a 90-second adaptation of the 3-minute PVT-B used
+on the ISS: stimuli appear at random intervals of 2 to 5 s, and a response of
+355 ms or more counts as a lapse. The 500 ms figure belongs to the 5-minute and
+10-minute PVT, which are different instruments.
 
 ## The two instruments, side by side
 
-| | 3-minute PVT-B (what the app uses) | 5-minute NASA-PVT / PVT-192 |
+| | 3-minute PVT-B (the source of the app's test) | 5-minute NASA-PVT / PVT-192 |
 | --- | --- | --- |
 | Duration | 3 minutes | 5 minutes, and 10 minutes for the classic PVT |
 | Inter-stimulus interval | 2 to 5 s in flight; 1 to 4 s in validation | 2 to 10 s, random |
@@ -35,9 +35,30 @@ instruments.
 
 The NASA presentation that gives 500 ms is a validation of a touchscreen PVT against the
 PVT-192, using 5-minute tests. Its 500 ms is the classic PVT lapse. Our indicator names
-a 3-minute test, and the laboratory that runs that test publishes 355 ms for it. Mixing
-the duration of one instrument with the threshold of another would make the indicator
-lie about what it measures.
+the stimulus protocol of the 3-minute test, and the laboratory that runs that test
+publishes 355 ms for it. Mixing the duration of one instrument with the threshold of
+another would make the indicator lie about what it measures.
+
+## What the app runs
+
+The app runs the test for 90 s, not 180 s, with the same 2 to 5 s wait between
+stimuli and the same 355 ms lapse threshold. The shorter length is a team choice
+(Wambi, Sun 15 Nov 01:50) to fit the crew's day and the demo. No published study
+validates a 90 s run, so the length is an Assumption, and no source can be attached
+to a result that depends on it.
+
+Half the time means about half the trials: at most 90 stimuli at a 2 s wait, fewer
+with longer waits and with each answer. The median therefore moves more from one
+slow answer, and the lapse count is a coarser number. Both stay comparable only with
+the person's own earlier runs. The 355 ms stays because it is the published lapse
+definition for this stimulus protocol (Dev et al. 2024) and the only one published
+for it.
+
+What follows for the files: `config/data/indicators.csv` describes a 90-second test.
+`min_spread` (20 ms and 1 lapse) still applies. The `above 500` row for
+`reaction_median_ms` in `config/rules/attention.csv` is the 5-minute figure
+described above; it stays `Assumption`, and Bio 2 either drops it or replaces it
+with a value the 90-second run supports.
 
 ## How the baseline rule applies
 
@@ -60,8 +81,8 @@ intervals while the flight implementation uses 2 to 5 s.
 
 ## What it changes in the solution
 
-- `config/data/indicators.csv`: `reaction_median_ms` and `reaction_lapses` describe the
-  3-minute PVT-B, with 2 to 5 s and 355 ms.
+- `config/data/indicators.csv`: `reaction_median_ms` and `reaction_lapses` describe a
+  90-second test adapted from the 3-minute PVT-B, with 2 to 5 s and 355 ms.
 - `config/content/reaction_*.md` (Bio 1): the instructions must match, or the crew takes
   a different test from the one the threshold was built for.
 - `config/rules/attention.csv` (Bio 2): any row for these indicators inherits the

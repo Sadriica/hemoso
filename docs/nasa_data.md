@@ -23,6 +23,9 @@ solution uses, what we took and where it is used. Filled on Sat 14 Nov for cp3.
 | HRP Nutrition Evidence Report (2020) | https://humanresearchroadmap.nasa.gov/Evidence/other/Nutrition%20ER_human_adaptation_2020_final.pdf | Few studies on carbohydrate metabolism in microgravity and conflicting results, so no in-flight glucose range can be claimed from it | `docs/findings/phys-03-hazards-by-system.md`, `config/content/glucose_mgdl.md` | Phys |
 | In-Situ Laboratory Analysis Capability for Exploration Spaceflight (NTRS 20230006919) | https://ntrs.nasa.gov/citations/20230006919 | Blood analysis exists in flight as a point-of-care capability with fingerstick cartridges, not as continuous monitoring | `config/data/indicators.csv` (`glucose_mgdl`) | Phys |
 | Bio-Monitor: Keeping an eye on astronauts' vital signs (CSA) | https://www.asc-csa.gc.ca/eng/sciences/bio-monitor.asp | Pulse and heart electrical activity, blood pressure, breathing rate and volume, skin temperature, oxygen saturation and activity, measured by a smart shirt worn in sleep and exercise | `config/data/indicators.csv` | Phys |
+| NASA-STD-3001 technical brief, food and nutrition (OCHMO-TB-013 Rev D) | https://www.nasa.gov/wp-content/uploads/2023/12/ochmo-tb-013-food-and-nutrition.pdf | In-mission nutrient intake as a requirement; weight loss and bone and muscle loss from inadequate intake; the factors that lower appetite in flight (odours, atmospheric contaminants, space adaptation sickness, taste change); ISS nutrient data from the Food Frequency Questionnaire | `config/data/indicators.csv` (`appetite_1_5`) | Phys |
+| NASA-STD-3001 technical brief, water for human consumption (OCHMO-TB-027 Rev C) | https://www.nasa.gov/wp-content/uploads/2023/12/ochmo-tb-027-water.pdf | 2.5 L of potable water per crew member per day as the requirement; measured intake of about 2.0 to 2.3 L/day on ISS; the performance cost of a 2.5 % water loss; what counts as intake | `config/data/indicators.csv` (`fluid_intake_ml`), `config/data/demo_ranges.csv` | Phys |
+| Body mass changes during long-duration spaceflight (Zwart et al., 2014) | https://pubmed.ncbi.nlm.nih.gov/25197887/ | The SLAMMD and BMMD as the in-flight mass measurements; a mean loss of 2.8 % by SLAMMD over 25 crew members; why body mass is monitored | `config/data/indicators.csv` (`body_mass_kg`), `config/data/demo_ranges.csv` | Phys |
 
 ## What each resource cannot support
 
@@ -35,6 +38,21 @@ solution uses, what we took and where it is used. Filled on Sat 14 Nov for cp3.
 - **Nutrition report:** documents that the glucose evidence is thin and contradictory. It cannot be used to claim a normal in-flight range.
 - **NTRS 20230006919:** shows that in-flight blood analysis exists. It is not a dataset and gives no glucose range.
 - **Bio-Monitor:** describes the device. It measures **skin** temperature, not core, and publishes no precision.
+- **Food and nutrition brief (OCHMO-TB-013):** gives no appetite scale and no normal intake band per person; its intake figures are program means. Our 1 to 5 appetite scale is our own design, so the scale is an Assumption.
+- **Water brief (OCHMO-TB-027):** states the 2.5 L/day requirement and the measured program means. It is a nutrition requirement, not a clinical attention threshold for one person.
+- **Zwart et al. 2014:** reports group means and the difference between two devices. It gives no in-flight cut-off for one crew member.
+
+## Synthetic demo data
+
+`config/data/demo_data.csv`, `demo_ranges.csv` and `symptom_log.csv` hold
+synthetic values, not NASA data. `symptom_log.csv` has 8 reports for
+`demo_astronaut_1` over the 30 demo days: 5 at severity 1 and 3 at severity 2,
+none at severity 3, and none a red flag. Only day 12 holds two symptoms of one
+condition (thirst and frequent urination), and that day's glucose, 105 mg/dL, sits
+inside the person's usual range, so the score stops at Possible and the demo never
+shows a false emergency. Day 3 has a single symptom and no glucose baseline yet
+(two earlier readings), so it stays "no data". The log was generated on Sun 15 Nov
+for Phys to review. The values are invented, not measured.
 
 ## The other challenge resources
 

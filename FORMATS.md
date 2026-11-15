@@ -26,7 +26,11 @@ Bio 1 `config/content/`, Bio 2 `config/rules/`, Phys `config/data/`
 | `data/demo_data.csv` | Synthetic measurements for the demo, in the same shape the app stores real history. Serves REQ-29 and shows the history shape of REQ-27. | Phys | Phys (REQ-29) |
 | `data/demo_ranges.csv` | The synthetic value range, its source and the generation method for each indicator in the demo. Serves REQ-29. | Phys | Phys (REQ-29) |
 | `rules/attention.csv` | When a result needs attention from the crew, the CMO or the flight surgeon: the threshold and attention level per indicator. Serves REQ-05 and "its thresholds are set to astronaut ranges". | Bio 2 | Bio 2 (REQ-10) |
-| `rules/conditions.csv` | What the astronaut may have, as a probability, what it is based on, and its source. Serves REQ-06 and "the app suggests what the astronaut may have, as probabilities and never as a certainty". | Bio 2 | Bio 2 (REQ-10) |
+| `rules/conditions.csv` | What the astronaut may have, as an evidence score, what it is based on, and its source; the optional `symptoms` column names the symptoms that support it. Serves REQ-06 and "the app suggests what the astronaut may have, as probabilities and never as a certainty". | Bio 2 | Bio 2 (REQ-10) |
+| `data/symptoms.csv` | The symptom definitions the app shows and the condition score reads: id, plain name, red flag, shared and source. Serves the symptom layer (T-78). | Phys | Bio 2 (REQ-10) |
+| `data/symptom_log.csv` | One row per symptom the astronaut reports: person, mission day, time, symptom and severity. Serves the symptom layer (T-78). | Phys | Bio 2 (REQ-10) |
+| `data/premission_profile.csv` | One row per pre-mission measure: the person's trait scores and the state baseline used before the in-flight baseline exists. Serves T-81. | Phys | Bio 2 (REQ-10) |
+| `data/labs.csv` | One row per blood or urine result: phase, collection day, analyte, value, unit, method, result day and status. Serves T-81. | Phys | Bio 2 (REQ-10) |
 | `content/<indicator_id>.md` | The plain-language text the astronaut reads for one indicator: why it matters, the measurement steps, and the status and next-step text per attention level. Serves REQ-04, REQ-08 and REQ-26. | Bio 1 | Bio 2 (REQ-10) |
 | `content/body_regions.csv` | The body regions the 3D body lets the astronaut select. Serves "A 3D body lets the astronaut select where it hurts". | To be decided (open question) | To be decided |
 
@@ -53,10 +57,10 @@ new ones without updating this table and the owner named in it.
 | `<condition_id>` | to be filled by Bio 2 (REQ-06) | — (a condition has an evidence score from 0 to 1, not a unit) | — | One row per possible condition; example id `example_condition`. |
 | `<body_region_id>` | to be filled by the owner (open question) | — | — | One row per selectable body region; example id `example_body_region`. |
 
-The demo indicators are the six the challenge statement names (team decision,
-Sat 14 Nov 15:37; blood pressure is two ids). Phys fills unit, direction and the
-rest in `data/indicators.csv`; the table above is the summary every other file
-reads against.
+The demo indicators are the six the challenge statement names plus the two
+reaction signals (REQ-38; blood pressure is two ids). Phys fills unit, direction
+and the rest in `data/indicators.csv`; the table above is the summary every other
+file reads against.
 
 Tiers: `A` measured by an instrument that flies, `B` self-reported, `C` explained
 only (no in-flight measurement; never an input).
@@ -130,10 +134,16 @@ values.
 3. **Possible conditions:** `rules/conditions.csv`, shown as an evidence score
    from 0 to 1 with a three-step label and the signals behind it, never a
    percentage and never a certainty; the CMO or flight surgeon confirms
-   (`docs/findings/bio2-02-evidence-score.md`). A signal adds 1 when its value
-   crossed a row of `rules/attention.csv` on the signal's side, 0.5 when it is
-   outside the person's baseline on that side, 0 otherwise; the score is the mean
-   over the condition's signals, and fewer than 2 usable signals is "no data yet".
+   (`docs/findings/bio2-02-evidence-score.md`). An indicator signal adds 1 when
+   its value crossed a row of `rules/attention.csv` on the signal's side, 0.5
+   when it is outside the person's baseline on that side, 0 otherwise. A symptom
+   adds 0.5 when it is present in `data/symptom_log.csv` on the day and listed
+   for the condition in the optional `symptoms` column; a symptom listed by more
+   than one condition adds 0.25. A red flag makes the condition urgent outside
+   the score. The score is the weighted mean over the usable signals, and fewer
+   than 2 usable signals is "no data yet" unless an indicator crossed a clinical
+   boundary, which counts on its own. A symptom-only score caps at 0.5
+   ("Possible"), never "Review".
 4. **Blood pressure:** one reading shows the worse of the systolic and the
    diastolic state (`docs/findings/bio2-01-pressure-state-rule.md`).
 
@@ -243,7 +253,11 @@ certainty (REQ-06). The app always adds "your CMO or flight surgeon confirms"
 person's records with the rule in "How each value is compared", so no score is
 stored here.
 
-Columns in order: `condition_id`, `name`, `based_on`, `source`.
+Columns in order: `condition_id`, `name`, `based_on`, `symptoms`, `source`.
+The header has five columns. The `symptoms` column is optional in the rows: a
+row with four cells is valid and means the condition has no symptom signals; a
+row with five names the symptoms separated by spaces. Until T-79 lands, the file
+keeps four columns; the header gains `symptoms` in the same change.
 
 - `condition_id`: the id from section 2.
 - `name`: plain name, sentence case.
@@ -252,20 +266,87 @@ Columns in order: `condition_id`, `name`, `based_on`, `source`.
   that counts for this condition. The side keeps two conditions on one
   indicator apart (hyperglycaemia `glucose_mgdl:above`, hypoglycaemia
   `glucose_mgdl:below`).
+- `symptoms`: symptom ids from `data/symptoms.csv`, separated by spaces. A
+  symptom counts only when it is present in `data/symptom_log.csv` on the same
+  mission day; no entry is "no data", not a zero. A symptom listed for more than
+  one condition is `shared` in `data/symptoms.csv` and weighs less (section
+  "How each value is compared").
 - `source`: a link or `Assumption`.
 
-Example:
+Example of a row with four cells (no symptoms):
 
 ```csv
-condition_id,name,based_on,source
-example_condition,Example condition,example_indicator:above,Assumption
+condition_id,name,based_on,symptoms,source
+example_condition,Example condition,example_indicator:above,,Assumption
+```
+
+Example of a row with five cells:
+
+```csv
+condition_id,name,based_on,symptoms,source
+example_condition,Example condition,example_indicator:above,example_symptom,Assumption
 ```
 
 Valid when: `condition_id` in section 2; every signal in `based_on` is
 `indicator_id:above` or `indicator_id:below`, its id exists in
-`data/indicators.csv` and no id appears twice in one row; `source` is a link or
-`Assumption`. A signal without a side is a warning, and an error under
-`--strict`, until Bio 2 adds the sides.
+`data/indicators.csv` and no id appears twice in one row; every id in `symptoms`
+exists in `data/symptoms.csv` and no id appears twice; the row has four or five
+cells; `source` is a link or `Assumption`. A signal without a side is a warning,
+and an error under `--strict`, until Bio 2 adds the sides.
+
+### `config/data/symptoms.csv`
+
+Purpose: the symptom definitions the app shows and the condition score reads
+(T-78). One row per symptom.
+
+Columns in order: `symptom_id`, `name`, `red_flag`, `shared`, `source`.
+
+- `symptom_id`: lowercase `snake_case`, starts with a letter; it is not an
+  indicator id.
+- `name`: plain name, sentence case.
+- `red_flag`: `yes` or `no`. `yes` means the app escalates to the CMO or flight
+  surgeon without waiting for the score.
+- `shared`: `yes` or `no`. `yes` when the symptom is listed by more than one
+  condition (for example fatigue in hyper- and hypoglycaemia); it weighs less.
+- `source`: a link or `Assumption`, for the symptom list.
+
+Example:
+
+```csv
+symptom_id,name,red_flag,shared,source
+confusion,Confusion,yes,yes,https://diabetes.org/living-with-diabetes/hypoglycemia-low-blood-glucose/symptoms-treatment
+```
+
+Valid when: one row per `symptom_id`, no duplicate; `symptom_id` is lowercase
+`snake_case`; `red_flag` and `shared` are `yes` or `no`; `source` is a link or
+`Assumption`.
+
+### `config/data/symptom_log.csv`
+
+Purpose: the symptoms the astronaut reports, one row per symptom and moment.
+The log holds what was reported, not a diagnosis.
+
+Columns in order: `person_id`, `mission_day`, `time`, `symptom_id`, `severity`.
+
+- `person_id`: a lowercase `snake_case` id; the demo uses `demo_astronaut_1`.
+- `mission_day`: an integer; "day N" per `STANDARDS.md` §4.
+- `time`: the 24-hour clock time `HH:MM`.
+- `symptom_id`: an id from `data/symptoms.csv`.
+- `severity`: `1` (mild), `2` (moderate) or `3` (severe).
+
+The log has no `source` column: the observation is the astronaut's report; the
+definition and its source live in `data/symptoms.csv`. An empty day is "no data",
+not "no symptoms"; the app asks before it treats a symptom as absent.
+
+Example:
+
+```csv
+person_id,mission_day,time,symptom_id,severity
+demo_astronaut_1,12,14:10,confusion,3
+```
+
+Valid when: `symptom_id` exists in `data/symptoms.csv`; `mission_day` is a
+positive integer; `time` is 24-hour `HH:MM`; `severity` is 1, 2 or 3.
 
 ### `config/content/<indicator_id>.md`
 
@@ -380,6 +461,71 @@ Valid when: one row per `id`, no duplicate `id`; `id` in section 2; `source` is
 a link or `Assumption`. Whether the regions are flat or nested, and how a
 region maps to a possible condition, are open questions.
 
+### `config/data/premission_profile.csv`
+
+Purpose: the one-time profile (T-81). The trait rows are context the astronaut
+reads; the `state_baseline` rows are the comparator used only while the
+in-flight baseline has fewer than three readings. No trait is an alert and no
+trait is subtracted from a daily value.
+
+Columns in order: `person_id`, `kind`, `measure`, `value`, `unit`, `source`.
+
+- `person_id`: a lowercase `snake_case` id.
+- `kind`: `state_baseline` or `trait`.
+- `measure`: the measure name, lowercase `snake_case` (for example
+  `mood_median`, `sleep_median`, `reaction_median`, `conscientiousness`).
+- `value`: a number.
+- `unit`: the unit or scale; for a trait score, the scale the instrument uses.
+- `source`: a link or `Assumption`.
+
+Example:
+
+```csv
+person_id,kind,measure,value,unit,source
+demo_astronaut_1,state_baseline,mood_median,3.8,1 to 5,Assumption
+demo_astronaut_1,trait,conscientiousness,78,0 to 100,https://ipip.ori.org/
+```
+
+Valid when: `kind` is `state_baseline` or `trait`; `value` is a number; `unit`
+is not empty; `source` is a link or `Assumption`; no two rows share `person_id`,
+`kind` and `measure`.
+
+### `config/data/labs.csv`
+
+Purpose: the blood and urine results the astronaut and the CMO read as context
+(T-81). The file is behind a disclosure and is never a daily indicator or a
+trend with a threshold. Most results arrive after the sample, so the collection
+day and the result day are different.
+
+Columns in order: `person_id`, `phase`, `mission_day`, `analyte`, `value`,
+`unit`, `method`, `result_day`, `status`, `source`.
+
+- `person_id`: a lowercase `snake_case` id.
+- `phase`: `pre`, `in` or `post`.
+- `mission_day`: a positive integer for `in`; empty for `pre` and `post`.
+- `analyte`: lowercase `snake_case` (for example `cortisol`, `insulin`).
+- `value`: a number; empty while the result is pending.
+- `unit`: the unit the laboratory reports.
+- `method`: the assay or platform; a value without its method is not comparable
+  with another laboratory's value.
+- `result_day`: the mission day the result reached the app; empty while pending.
+- `status`: `scheduled`, `collected`, `pending` or `resulted`.
+- `source`: a link or `Assumption`. A reference range is assay-specific; it
+  stays with the method or is left out, never copied from another laboratory.
+
+Example:
+
+```csv
+person_id,phase,mission_day,analyte,value,unit,method,result_day,status,source
+demo_astronaut_1,in,30,cortisol,15.2,µg/dL,immunoassay,52,resulted,Assumption
+demo_astronaut_1,in,30,leptin,,ng/mL,ELISA,,pending,Assumption
+```
+
+Valid when: `phase` is `pre`, `in` or `post`; `mission_day` is a positive integer
+for `in` and empty otherwise; `status` is one of the four values; `value` and
+`result_day` are present when `status` is `resulted`; `method` is not empty;
+`source` is a link or `Assumption`.
+
 ## 4. How content is checked
 
 The team runs `python scripts/check_content.py` before every merge. A merge is
@@ -400,7 +546,12 @@ blocked when it reports any of these failures:
   a non-numeric `value`, `threshold`, `min` or `max`, a `side` that is not
   `below` or `above`, a `notify` that is not `crew`, `cmo` or `flight_surgeon`,
   a `direction` that is not `higher`, `lower` or `both`, a `time` that is not
-  24-hour `HH:MM`, or a `mission_day` that is not a positive integer.
+  24-hour `HH:MM`, or a `mission_day` that is not a positive integer. A
+  `conditions.csv` row with four cells is valid (no symptoms); a row with five
+  is valid only when every id in `symptoms` exists in `data/symptoms.csv`. A
+  `symptom_log.csv` `severity` that is not 1, 2 or 3, a `labs.csv` `phase` that
+  is not `pre`, `in` or `post`, or a `status` outside the four values is
+  malformed too.
 - **Attention steps out of order**: on one indicator and side, a more extreme
   threshold notifies someone less severe, or two rows share the same threshold.
 
@@ -417,6 +568,8 @@ then fills their own files in `config/`.
   symptom is): its range and what each end means.
 - Then `data/indicators.csv`, `data/demo_ranges.csv` and `data/demo_data.csv`
   (REQ-29).
+- `data/symptoms.csv` and `data/symptom_log.csv` (T-78); `data/premission_profile.csv`
+  and `data/labs.csv` (T-81).
 
 **Bio 2** (`config/rules/`)
 - The attention levels (REQ-05): how many and their names; Bio 1 uses the same
@@ -424,16 +577,18 @@ then fills their own files in `config/`.
 - Who acts at each step (`notify`: `crew`, `cmo` or `flight_surgeon`) and the
   thresholds of each step, escalating as section 3 says.
 - The possible conditions (REQ-06): `id`, name and the indicators each rests on,
-  with a source.
+  with a source; the optional `symptoms` column once `data/symptoms.csv` exists.
 - Then `rules/attention.csv` and `rules/conditions.csv`, once Phys has the
   indicator ids.
 
 **Bio 1** (`config/content/`) starts each `content/<indicator_id>.md` once an
 indicator id exists, from the findings of Phys (question 3) and Bio 2
-(question 5).
+(question 5). The glucose file also carries the symptom text that replaces the
+score when the symptom format is not ready.
 
-**The whole team** answers the open questions below; without them, body regions,
-symptoms, the camera and the probability method have no format yet.
+**The whole team** answers the open questions below; without them, body regions
+and the camera have no format yet. Symptoms are answered: a separate list
+(T-78), with the format in section 3.
 
 ## Open questions for the team
 
@@ -449,8 +604,9 @@ above are real; none is answered here.
 - Which body regions does the 3D body use, and who owns that list? The
   paragraph mentions muscles, ligaments and bones in passing but names no
   regions.
-- Are symptoms a separate list, or are they indicators like the rest? The
-  paragraph says the astronaut records "health data and symptoms".
+- Symptoms are a separate list (T-78): `data/symptoms.csv` and
+  `data/symptom_log.csv`, with the format in section 3. The open part is which
+  symptoms each condition lists and their weights.
 - Which open-source projects (face recognition, anatomy, health and gym apps)
   are used, under which licences?
 - How does the app "learn from each person's own records" — what does it adjust,
