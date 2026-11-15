@@ -35,25 +35,52 @@ export const strings = {
   },
   personPickerLabel: 'Person',
   personHeading: (personId: string): string => `Status for ${personId}`,
-  tabs: {
-    label: 'Screens',
-    home: 'Home',
-    entry: 'Entry',
-    history: 'History',
-    // The visible label of each tab, numbered like a document (style guide 5,
-    // 7.2). On a narrow screen the word goes under its number, so three labels
-    // fit at 320 px.
-    section: {
-      home: { number: '01', name: 'STATUS' },
-      entry: { number: '02', name: 'ENTRY' },
-      history: { number: '03', name: 'HISTORY' },
+  // The guided check: three phases in a fixed order, never a free menu. Each
+  // phase has a numbered eyebrow, a short headline set as stacked lines, one
+  // sentence of help and one way forward.
+  phases: {
+    railLabel: 'Health check progress',
+    step: (number: number, total: number): string => `Phase ${number} of ${total}`,
+    identify: {
+      number: '01',
+      name: 'Identify',
+      eyebrow: '01 / IDENTIFY',
+      headline: ['WHO IS', 'ON DUTY', 'TODAY?'],
+      intro: 'Sign in with your face, or pick your name. Your readings stay with you.',
+      crewLabel: 'Crew member',
+      or: 'or',
+      missing: 'Pick your name, or sign in with your face, to begin.',
+      next: 'Begin the report',
     },
-    // What assistive technology announces for a tab. The screen name comes
-    // first, the numbered label the eye reads follows it: WCAG 2.5.3 asks the
-    // visible text to be part of the name, so a person who speaks "01 / STATUS"
-    // reaches the same tab as a person who hears "Home".
-    accessibleName: (screen: string, section: { number: string; name: string }): string =>
-      `${screen}, ${section.number} / ${section.name}`,
+    report: {
+      number: '02',
+      name: 'Report',
+      eyebrow: '02 / REPORT',
+      headline: ['LOG', "TODAY'S", 'READINGS.'],
+      intro: 'One reading at a time. Skip what you did not measure.',
+      logged: (count: number): string =>
+        count === 0
+          ? 'No reading logged in this check yet.'
+          : `${count} ${count === 1 ? 'reading' : 'readings'} logged in this check.`,
+      back: 'Back',
+      next: 'See my status',
+    },
+    status: {
+      number: '03',
+      name: 'Status',
+      eyebrow: '03 / STATUS',
+      headline: ['YOUR', 'STATUS', 'TODAY.'],
+      intro: 'Each reading against your own usual values. Decisions stay with your CMO and flight surgeon.',
+      historyHeading: 'History',
+      back: 'Back to the report',
+      restart: 'Start a new check',
+    },
+  },
+  // The bar along the top of every phase (style guide 5, 7.1).
+  topbar: {
+    tagline: 'CREW HEALTH',
+    onDuty: (personId: string): string => `ON DUTY / ${personId}`,
+    reduceMotion: 'Reduce motion',
   },
   entry: {
     heading: 'Entry',
@@ -207,23 +234,25 @@ export const strings = {
       noFace: 'No face found. Look at the camera and try again.',
       // The model did not load, or the browser gave up on it: not the person's
       // fault, and the picker still works.
-      failed: 'The face check could not run on this device. Pick your name in the header.',
+      failed: 'The face check could not run on this device. Pick your name below.',
       notRecognised: 'Face not recognised. Pick your name instead.',
     },
     camera: {
       denied:
-        'The browser blocked the camera. Allow it for this site, or pick your name in the header.',
-      missing: 'No camera was found. Pick your name in the header.',
-      busy: 'The camera is in use by another app. Close it and try again, or pick your name in the header.',
+        'The browser blocked the camera. Allow it for this site, or pick your name below.',
+      missing: 'No camera was found. Pick your name below.',
+      busy: 'The camera is in use by another app. Close it and try again, or pick your name below.',
     },
   },
-  timeLabel: (day: number, time: string): string => `Day ${day} ${time}`,
-  // The metadata line of the header band (style guide 5, 7.1): mission time as
-  // the technical label the eye reads ("DAY 30 · 07:00"). The synthetic data
-  // note of REQ-14 stays in it, so it is on screen on every tab.
+  // The mission time of a reading on a card: the technical label style, with
+  // the middle dot between the day and the clock time (guide 7.3).
+  timeLabel: (day: number, time: string): string => `DAY ${day} · ${time}`,
+  // The metadata line of the top bar (style guide 5): the mission day of the
+  // latest reading and the device clock, labelled NOW so it is not read as the
+  // time of a reading. The synthetic data sentence of REQ-14 sits beside it.
   header: {
     metadata: (day: number, time: string): string =>
-      `HEMOSO / CREW HEALTH · ${missionStamp(day, time)} · SYNTHETIC DATA`,
+      `HEMOSO / ${missionStamp(day, time)}`,
   },
   // The unit that follows a value on a card: "58 bpm". The 1 to 5 scales hold
   // their range in the unit, so they read "4 / 5" and not "4 1 to 5".
@@ -237,5 +266,5 @@ function entryCount(count: number): string {
 
 // The mission time of the header band, in the technical label style.
 function missionStamp(day: number, time: string): string {
-  return `DAY ${day} · ${time}`
+  return `DAY ${day} · NOW ${time}`
 }
