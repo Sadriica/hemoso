@@ -1,4 +1,4 @@
-import { useEffect, useId, useLayoutEffect, useReducer, useRef, useState } from 'react'
+import { useEffect, useId, useReducer, useRef, useState } from 'react'
 import { missionClockFor } from '../domain/clock'
 import { contextForTime } from '../domain/context'
 import type { Entry as EntryRecord, Indicator } from '../domain/types'
@@ -63,7 +63,7 @@ export interface ReactionCheckProps {
 // tone appears after a random wait and the person answers with a tap on the
 // test area or the space bar; the median reaction time and the lapses are saved
 // as two entries of the existing store, so the outbox sends them like any other
-// reading. The run is 50 seconds, a shortened form of the 3-minute PVT-B of
+// reading. The run is 90 seconds, a shortened form of the 3-minute PVT-B of
 // F-phys-06 (team decision, Sun 01:50). Stopping it or leaving the screen keeps
 // what was answered, from REACTION_MIN_SAVE_TRIALS valid trials on. A run of the
 // demo length shows the result and saves nothing. The step is hidden while Phys
@@ -119,10 +119,9 @@ function persistRun(state: ReactionState, latest: Latest): number {
   return written + 1
 }
 
-// One light stimulus: a round lamp that turns on in the middle of the stage.
-// With colour targets it has a colour and its name; without them it is always
-// the same white lamp and only its size changes. The label is the name.
-function Lamp({
+// One light stimulus: a colour and a shape together, so the target is never
+// known by colour alone. The shape is decoration; the label is the name.
+function LightShape({
   kind,
   colour,
   size,
@@ -131,17 +130,27 @@ function Lamp({
   colour: boolean
   size: number
 }) {
+  const shape = kind === 'white' || kind === 'green' ? 'circle' : kind
   return (
     <span
-      className={`reaction__lamp reaction__lamp--${kind}`}
+      className={`reaction__shape reaction__shape--${colour ? kind : 'plain'}`}
       role="img"
-      aria-label={colour ? reactionStrings.kind[kind] : reactionStrings.lamp}
+      aria-label={
+        colour ? reactionStrings.kind[kind] : reactionStrings.kindPlain[kind]
+      }
+      data-shape={shape}
       // Size changes by scale only, which is a transform and never reflows.
       style={size === 1 ? undefined : { transform: `scale(${size})` }}
-    />
+    >
+      <svg viewBox="0 0 100 100" aria-hidden="true" focusable="false">
+        {shape === 'circle' && <circle cx="50" cy="50" r="46" />}
+        {shape === 'square' && <rect x="8" y="8" width="84" height="84" rx="6" />}
+        {shape === 'triangle' && <polygon points="50,6 95,92 5,92" />}
+        {shape === 'diamond' && <polygon points="50,4 96,50 50,96 4,50" />}
+      </svg>
+    </span>
   )
 }
-
 export default function ReactionCheck({
   store,
   personId,
@@ -216,13 +225,9 @@ export default function ReactionCheck({
       state.kind !== null && !isTarget(state.kind, colourTargets)
         ? REACTION_NONTARGET_MS
         : REACTION_TRIAL_WINDOW_MS
-    const closesAt = state.stimulusAt + windowMs
-    const left = Math.max(0, closesAt - clock())
-    // A timer can fire a fraction of a millisecond before the clock reaches
-    // the deadline; the window is over when its timer fires, so the deadline
-    // is the earliest time the reducer is told, or the trial would stay open.
+    const left = Math.max(0, state.stimulusAt + windowMs - clock())
     const timer = window.setTimeout(
-      () => dispatch({ type: 'timeout', at: Math.max(clock(), closesAt) }),
+      () => dispatch({ type: 'timeout', at: clock() }),
       left,
     )
     return () => window.clearTimeout(timer)
@@ -232,11 +237,9 @@ export default function ReactionCheck({
   // while it waits for a stimulus.
   useEffect(() => {
     if (!running || state.endsAt === null) return
-    const endsAt = state.endsAt
-    const left = Math.max(0, endsAt - clock())
-    // Same as the response window: never earlier than the deadline.
+    const left = Math.max(0, state.endsAt - clock())
     const timer = window.setTimeout(
-      () => dispatch({ type: 'tick', at: Math.max(clock(), endsAt) }),
+      () => dispatch({ type: 'tick', at: clock() }),
       left,
     )
     return () => window.clearTimeout(timer)
@@ -249,22 +252,11 @@ export default function ReactionCheck({
     return () => window.clearInterval(timer)
   }, [running, clock])
 
-  // 4b. The light is timed from the frame that draws it, not from the moment
-  // the timer fired: a layout effect runs after the lamp is in the page and
-  // before the browser paints, and the next frame callback is that paint.
-  useLayoutEffect(() => {
-    if (state.phase !== 'stimulus' || state.modality !== 'light') return
-    const frame = window.requestAnimationFrame(() =>
-      dispatch({ type: 'painted', at: clock() }),
-    )
-    return () => window.cancelAnimationFrame(frame)
-  }, [state.phase, state.shown, state.modality, clock])
-
   // 5. The tone, once per stimulus. A light-only run never loads audio.
   useEffect(() => {
     if (state.phase !== 'stimulus' || state.tone === null) return
     tone.current?.play(state.tone)
-  }, [state.phase, state.shown, state.tone])
+  }, [state.phase, state.stimulusAt, state.tone])
 
   // 6. The keyboard path: the space bar answers wherever the focus is, and
   // Escape stops the check (REQ-15).
@@ -365,15 +357,16 @@ export default function ReactionCheck({
 
   return (
     <section
-      className="reaction"
+      className="reaction panel panel--cut"
       aria-labelledby={headingId}
     >
-      <div className="reaction__title">
-        <p className="reaction__eyebrow">{copy.eyebrow}</p>
-        <h2 id={headingId} className="reaction__heading">
-          {copy.heading}
-        </h2>
-      </div>
+      <p className="eyebrow">
+        <span className="hairline" aria-hidden="true" />
+        {copy.eyebrow}
+      </p>
+      <h2 id={headingId} className="reaction__heading">
+        {copy.heading}
+      </h2>
 
       {state.phase === 'idle' && (
         <>
@@ -391,23 +384,26 @@ export default function ReactionCheck({
           </p>
           <fieldset className="reaction__choice">
             <legend>{copy.modalityLegend}</legend>
-            <div className="reaction__track">
-              {(['light', 'sound'] as const).map((choice) => (
-                <label key={choice} className="reaction__option">
-                  <input
-                    type="radio"
-                    name={`${headingId}-modality`}
-                    value={choice}
-                    checked={modality === choice}
-                    onChange={() => setModality(choice)}
-                  />
-                  <span className="reaction__mark" aria-hidden="true">
-                    ✓
-                  </span>
-                  <span>{choice === 'light' ? copy.light : copy.sound}</span>
-                </label>
-              ))}
-            </div>
+            <label>
+              <input
+                type="radio"
+                name={`${headingId}-modality`}
+                value="light"
+                checked={modality === 'light'}
+                onChange={() => setModality('light')}
+              />
+              <span>{copy.light}</span>
+            </label>
+            <label>
+              <input
+                type="radio"
+                name={`${headingId}-modality`}
+                value="sound"
+                checked={modality === 'sound'}
+                onChange={() => setModality('sound')}
+              />
+              <span>{copy.sound}</span>
+            </label>
           </fieldset>
           <div className="reaction__actions">
             <button
@@ -466,33 +462,29 @@ export default function ReactionCheck({
             tabIndex={0}
             onClick={() => dispatch({ type: 'answer', at: clock() })}
           >
-            {state.modality === 'light' &&
-            state.phase === 'stimulus' &&
-            state.kind !== null ? (
+            {state.phase === 'stimulus' && state.kind !== null ? (
               <span className="reaction__stimulus">
-                <Lamp kind={state.kind} colour={colourTargets} size={state.size} />
-                {/* With colour targets the colour is also written, so it is
-                    never the only cue. */}
-                {colourTargets && (
-                  <span className="reaction__cue" aria-hidden="true">
-                    {copy.kind[state.kind]}
-                  </span>
+                {state.modality === 'light' ? (
+                  <LightShape kind={state.kind} colour={colourTargets} size={state.size} />
+                ) : (
+                  <span className="reaction__ring" aria-hidden="true" />
                 )}
+                {/* The visible name of the stimulus; the sound mode shows
+                    "Tone", so a person who cannot hear it still sees it. */}
+                <span className="reaction__cue" aria-hidden="true">
+                  {colourTargets || state.modality === 'sound'
+                    ? copy.kind[state.kind]
+                    : copy.kindPlain[state.kind]}
+                </span>
               </span>
             ) : null}
-            {state.modality === 'sound' ? (
-              // Nothing on the stage changes when the tone starts, and this
-              // line is not a live region: the tone is the only cue.
-              <p className="reaction__hint">{copy.listen}</p>
-            ) : (
-              <p className="reaction__hint" role="status">
-                {state.phase !== 'stimulus'
-                  ? copy.wait
-                  : target
-                    ? copy.now
-                    : copy.notThis}
-              </p>
-            )}
+            <p className="reaction__hint" role="status">
+              {state.phase !== 'stimulus'
+                ? copy.wait
+                : target
+                  ? copy.now
+                  : copy.notThis}
+            </p>
             {state.tooEarly && (
               <p className="reaction__early" role="status">
                 {copy.tooEarly}
@@ -545,9 +537,6 @@ export default function ReactionCheck({
                   </div>
                 )}
               </dl>
-              {summary.medianMs === null && (
-                <p className="reaction__meta">{copy.noAnswers}</p>
-              )}
               <p className="reaction__meta">
                 {copy.falseStarts(summary.falseStarts)}
               </p>
