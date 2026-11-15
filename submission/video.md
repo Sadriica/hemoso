@@ -91,6 +91,8 @@ shot for the slides.
 | S6 | 16–18.5 | Evidence board (`s7-fever-evidence.png`) | Fever, evidence 0.75 of 1, the two signals, the ntrs.nasa.gov source |
 | S7 | 18.5–20 | Same board | "Ask your CMO or flight surgeon to check this" |
 | S8 | 20–23 | Status, list view again | The 12 channels together: the whole picture, not one number |
+| S9 | 23–26 | Vision card (`submission/slides/cards/s9-vision.png`) | Moon, Mars, base: three words, no illustration |
+| S10 | 26–30 | Five faces, one frame, with `s10-end-overlay.png` on top | The team, the name, the URL and the rule |
 
 Checked on production, Sun 09:10, in this order: identify ("Who is on duty
 today?", demo astronaut), report (12 fields, plus `SYMPTOMS, OPTIONAL` and
@@ -105,8 +107,6 @@ Two consequences for the recording:
   after the staged reading, so S6 and S7 need the local build.
 - Someone already saved a reading on the public demo: it shows Flight Day 30 with
   a review. The local build is the only place where the state is known.
-| S9 | 23–26 | Vision card (`submission/slides/cards/s9-vision.png`) | Moon, Mars, base: three words, no illustration |
-| S10 | 26–30 | Five faces, one frame, with `s10-end-overlay.png` on top | The team, the name, the URL and the rule |
 
 The picture follows the voice clause by clause: logging, comparing, the evidence,
 who acts. When the voice names an action, the screen shows it, not the screen
