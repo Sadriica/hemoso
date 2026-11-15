@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import type { KeyboardEvent, ReactNode } from 'react'
+import type { CSSProperties, KeyboardEvent, ReactNode } from 'react'
 import './planetarium.css'
 
 /** Visual state of one indicator. */
@@ -56,6 +56,8 @@ export interface PlanetariumProps {
    */
   center?: ReactNode
   centerText?: string
+  /** A row under the orbit stage, shown only while the orbits show. */
+  footer?: ReactNode
 }
 
 const STATE_CLASS: Record<PlanetState, string> = {
@@ -75,20 +77,21 @@ const mq = (q: string) =>
  * on each side, so every tag has its own band and sits on the outer side. The
  * distance from the centre steps through three values, so the orbits are
  * visibly different rings while every tag still fits between its body and the
- * stage edge. r is the orbit radius in the same percent units (the stage is
+ * stage edge (its width is capped to that room in planetarium.css, from `dx`).
+ * The first ring is far enough out to leave the centre figure a wide box. r is the orbit radius in the same percent units (the stage is
  * wider than tall, so the rings draw as concentric ellipses).
  */
 function place(i: number, n: number) {
   const left = i % 2 === 1
   const k = Math.floor(i / 2)
   const m = Math.ceil((n - (left ? 1 : 0)) / 2)
-  const dy = m < 2 ? 0 : -36 + (k * 72) / (m - 1)
-  const dx = 8 + (k % 3) * 2.5
-  return { r: Math.hypot(dx, dy), x: 50 + (left ? -dx : dx), y: 50 + dy, left }
+  const dy = m < 2 ? 0 : -39 + (k * 78) / (m - 1)
+  const dx = 15 + (k % 3) * 2.5
+  return { r: Math.hypot(dx, dy), x: 50 + (left ? -dx : dx), y: 50 + dy, left, dx }
 }
 
 /** Status view: a plain list by default, concentric orbits on wide screens. */
-export function Planetarium({ items, labels, selectedId, onSelect, reducedMotion, initialView = 'list', center, centerText }: PlanetariumProps) {
+export function Planetarium({ items, labels, selectedId, onSelect, reducedMotion, initialView = 'list', center, centerText, footer }: PlanetariumProps) {
   const [view, setView] = useState<'list' | 'orbits'>(initialView)
   const [wide, setWide] = useState(() => mq(WIDE)?.matches ?? false)
   const [stillAncestor, setStillAncestor] = useState(false)
@@ -196,6 +199,7 @@ export function Planetarium({ items, labels, selectedId, onSelect, reducedMotion
       </button>
 
       {orbits ? (
+        <>
         <div className="planetarium__stage" ref={stage} role="group" aria-label={labels.orbitsHeading}>
           <svg className="planetarium__lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
             {items.map((_, i) => (
@@ -228,7 +232,7 @@ export function Planetarium({ items, labels, selectedId, onSelect, reducedMotion
               <div
                 key={it.id}
                 className={`planetarium__body planetarium__body--${STATE_CLASS[it.state]}${p.left ? ' planetarium__body--left' : ''}`}
-                style={{ left: `${p.x}%`, top: `${p.y}%` }}
+                style={{ left: `${p.x}%`, top: `${p.y}%`, '--dx': p.dx } as CSSProperties}
               >
                 <button
                   type="button"
@@ -255,6 +259,8 @@ export function Planetarium({ items, labels, selectedId, onSelect, reducedMotion
             )
           })}
         </div>
+        {footer !== undefined && <div className="planetarium__footer">{footer}</div>}
+        </>
       ) : (
         <ul className="planetarium__list" aria-label={labels.orbitsHeading}>
           {items.map((it) => (

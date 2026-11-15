@@ -32,6 +32,17 @@ describe('pain picker', () => {
     ).toHaveAttribute('aria-pressed', 'false')
   })
 
+  it('marks a place tapped outside the picker, and a second tap on it removes it', async () => {
+    const { rerender } = renderPicker({ pick: { regionId: 'left_knee', count: 1 } })
+    expect(
+      await screen.findByRole('slider', { name: injuryWords.intensityFor('Left knee') }),
+    ).toHaveValue('5')
+    rerender(
+      <PainPicker personId={PERSON} missionDay={41} time="09:15" pick={{ regionId: 'left_knee', count: 2 }} />,
+    )
+    expect(screen.queryByRole('slider')).toBeNull()
+  })
+
   it('adds a place chosen from the accessible list, with its strength and kind', async () => {
     renderPicker()
     await userEvent.click(await screen.findByRole('button', { name: 'Left knee' }, { timeout: 5000 }))

@@ -32,6 +32,7 @@ import {
   type BadgeKind,
 } from '../components/attentionText'
 import { BodySilhouette, BODY_ZONES } from '../components/body'
+import { injuryWords } from '../components/body3d/words'
 import type { BodySystem } from '../components/body/zones'
 import Disclosure from '../components/Disclosure'
 import ErrorBoundary from '../components/ErrorBoundary'
@@ -85,6 +86,7 @@ export default function Home({
   motionReduced = false,
   selectedId: controlledId,
   onSelect,
+  onReportPain,
 }: {
   personId: string
   data: LoadedContent
@@ -97,6 +99,10 @@ export default function Home({
   // follow the card). Left out, this screen keeps its own choice.
   selectedId?: string | null
   onSelect?: (id: string) => void
+  // The pain report: from a tap on the body in the orbits (with the place) or
+  // from the button under them (without). Left out, the orbits show the body
+  // as a picture, as on a phone.
+  onReportPain?: (regionId?: string) => void
 }) {
   const personEntries = entries.filter((entry) => entry.personId === personId)
   const waitingFor = waitingForFrom(data)
@@ -295,9 +301,25 @@ export default function Home({
                           system={selectedSystem}
                           state={selected ? statusBadgeKind(selected.status) : null}
                           reducedMotion={motionReduced}
+                          interactive={onReportPain !== undefined}
+                          onSelect={onReportPain}
                         />
                       </Suspense>
                     </ErrorBoundary>
+                  ) : undefined
+                }
+                footer={
+                  wide && onReportPain !== undefined ? (
+                    <>
+                      <p className="board__pain-hint">{injuryWords.orbitHint}</p>
+                      <button
+                        type="button"
+                        className="button button--secondary"
+                        onClick={() => onReportPain()}
+                      >
+                        {injuryWords.open}
+                      </button>
+                    </>
                   ) : undefined
                 }
                 centerText={

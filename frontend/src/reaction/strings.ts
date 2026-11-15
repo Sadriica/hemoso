@@ -12,12 +12,12 @@ export const reactionStrings = {
   heading: 'Reaction check',
   // Colour targets off (the default): every light is a target.
   introLight:
-    'A light shows after a random wait. Answer every light as fast as you can. Its shape and size change.',
+    'A round light turns on after a random wait. Answer every light as fast as you can. Its size changes.',
   // Colour targets on: only the green circle is a target.
   introLightColour:
-    'A light shows after a random wait. The first one is white: answer it. After that, answer only the green circle. Do not answer the other shapes.',
+    'A light shows after a random wait. The first one is white: answer it. After that, answer only the green light. It has a bright ring. Do not answer orange, yellow or blue lights.',
   introSound: 'A tone plays after a random wait. Answer each tone as fast as you can.',
-  lengthNote: 'It takes about 90 seconds.',
+  lengthNote: 'It takes about 50 seconds.',
   modalityLegend: 'How the stimulus comes',
   light: 'Light',
   sound: 'Sound',
@@ -25,46 +25,44 @@ export const reactionStrings = {
   skip: 'Skip the reaction check',
   // The rule stays on screen during a light run.
   ruleLight: 'Answer every light.',
-  ruleLightColour: 'Answer the white light, then only the green circle.',
-  // What each light is, in words: colour and shape, so colour is never the only
-  // cue. The first is also the name a screen reader announces.
+  ruleLightColour: 'Answer the white light, then only the green light.',
+  // What each light is, in words: the colour is always named, so it is never
+  // the only cue. The same words are the name a screen reader announces.
   kind: {
-    white: 'White circle',
-    green: 'Green circle',
-    square: 'Yellow square',
-    triangle: 'Red triangle',
-    diamond: 'Blue diamond',
-    tone: 'Tone',
+    white: 'White light',
+    green: 'Green light',
+    orange: 'Orange light',
+    yellow: 'Yellow light',
+    blue: 'Blue light',
   } as Record<string, string>,
-  // The lights without colour targets: a shape each, so colour is not the cue.
-  kindPlain: {
-    white: 'Circle',
-    square: 'Square',
-    triangle: 'Triangle',
-    diamond: 'Diamond',
-  } as Record<string, string>,
+  // The one lamp of the run without colour targets.
+  lamp: 'Light',
   wait: 'Wait',
+  // Sound mode: the stage never changes, so this line stays the whole run.
+  listen: 'Listen, then answer.',
   now: 'Now',
   notThis: 'Not this one',
-  wrong: 'That was not the green circle',
+  wrong: 'That was not the green light',
   tooEarly: 'Too early',
   trial: (number: number): string => `Trial ${number}`,
   timeLeft: 'Time left',
   hasLeft: (seconds: number): string => `${seconds} s left`,
   stop: 'Stop the check',
   areaLabel:
-    'Reaction test. Tap here or press the space bar when you see the target. Escape stops the check.',
-  noTone: 'This browser cannot play the tone. Watch the ring instead.',
-  demoLength: 'Demo run: 30 seconds instead of 90.',
+    'Reaction test. Tap here or press the space bar when you see the light or hear the tone. Escape stops the check.',
+  noTone: 'This browser cannot play the tone. Use the light check instead.',
+  demoLength: 'Demo run: 30 seconds instead of 50.',
   // The three figures of the result.
   medianLabel: 'Median',
   lapsesLabel: 'Lapses',
   errorsLabel: 'Errors',
+  // Nobody answered in time (every trial timed out): a sentence, not "none".
+  noAnswers: 'No answer was recorded.',
   medianValue: (medianMs: number | null): string =>
-    medianMs === null ? 'none' : `${medianMs} ms`,
+    medianMs === null ? 'No answers' : `${medianMs} ms`,
   // The same two figures on one line, for the closed line of the report.
   result: (medianMs: number | null, lapses: number): string =>
-    `Median ${medianMs === null ? 'none' : `${medianMs} ms`} · Lapses ${lapses}`,
+    `Median ${medianMs === null ? 'no answers' : `${medianMs} ms`} · Lapses ${lapses}`,
   falseStarts: (count: number): string =>
     count === 0 ? 'No early answers.' : `Too early: ${count}.`,
   saved: (count: number, serverConfigured: boolean): string => {
