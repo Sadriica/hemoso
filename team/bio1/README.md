@@ -8,7 +8,7 @@
 ## Current status
 _Update before every checkpoint and at every shift change._
 
-[bio1] ready · done: F-bio1-01, F-bio1-02, F-bio1-03 (fluid deferred), 7 content files, REQ-08 pass · next: Bio 2 plain-language review, then the pitch · blocked: indicators.csv (Phys), attention.csv (Bio 2)
+[bio1] ready · done: F-bio1-01, F-bio1-02, F-bio1-03 (fluid deferred), 7 content files, REQ-08 pass, REQ-11 line · next: 30 s video script, then the 2 minute story · blocked: indicators.csv (Phys), attention.csv (Bio 2)
 
 - **Time:** Sat 19:20
 - **Done:** F-bio1-01 with the question 2 source for the proposed indicators (`team/bio1/notes/question-2-evidence.md`); F-bio1-02 on space fever; F-bio1-03 proposing fluid intake (deferred by the team); the REQ-26 text shape (`team/bio1/notes/status-texts.md`); the seven content files in `config/content/` for the six indicators of the statement, with `check_content.py` at 0 errors
