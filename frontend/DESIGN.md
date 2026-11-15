@@ -307,3 +307,17 @@ no new behaviour".
 
 Locked files, changed only by the lead: this file, `src/theme/tokens.ts`,
 `src/styles.css` (the `:root` blocks), `src/phases.css` (shared rules).
+
+## 14. Known exceptions (QA, Sat 14 Nov)
+
+Accepted deviations, so a later change does not "fix" them by accident:
+- Structural sizes (icon boxes, stage and column widths, 54 and 56 px control
+  heights) are not tokens. Controls are taller than `--tap-min` on purpose.
+- Eyebrow, button and rail labels use wider tracking (0.16em to 0.24em) than
+  the `label` step. Colour-mix percentages in overlays are not tokens.
+- Large display type and the eyebrow sit on the Starfield; their contrast is
+  checked against the plain page colour. Small text sits on a solid surface.
+- The heartbeat figure plays three beats and stops; it is not an ambient loop.
+- With no attention rule filled in `config/rules`, every state is "no data"
+  and the demo shows no state colour; this is a content gap, not a style bug.
+- Fonts are fallbacks until the files are approved (section 4.1).

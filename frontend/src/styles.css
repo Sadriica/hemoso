@@ -815,10 +815,16 @@ legend {
 /* Phone: four columns, one card per row, smaller display steps (4.1). */
 @media (max-width: 599px) {
   :root {
-    --text-display: 26px;
+    --text-hero: 44px;
+    --leading-hero: 42px;
+    --text-display: 32px;
+    --leading-display: 34px;
     --text-h1: 24px;
+    --leading-h1: 32px;
     --text-h2: 20px;
+    --leading-h2: 28px;
     --text-value: 30px;
+    --leading-value: 36px;
   }
 
   .indicator-list {
