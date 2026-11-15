@@ -48,8 +48,8 @@ No one is notified for now.
 
 ### consult
 
-Your diastolic blood pressure is far outside your usual range. A bottom number
-of 90 mmHg or more is also above the line your CMO uses.
+Your diastolic blood pressure is outside your usual range, or past the line your
+CMO uses: a bottom number of 90 mmHg or more.
 
 Sit down and tell your CMO today. Drink fluids and measure again in 1 hour.
 Assumption.
@@ -58,8 +58,8 @@ Your CMO checks you in person.
 
 ### urgent
 
-Your diastolic blood pressure is well above your usual range. A bottom number
-of 120 mmHg or more is the emergency line your CMO uses.
+Your diastolic blood pressure is past the emergency line your CMO uses: a bottom
+number of 120 mmHg or more.
 
 Sit down now and call your CMO. Do not exercise. Assumption.
 

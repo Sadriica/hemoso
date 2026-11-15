@@ -27,8 +27,8 @@ an astronaut records health indicators and understands the result.
 - Records a measurement per indicator (heart rate, both blood pressures, core
   temperature, blood glucose, sleep hours, mood, reaction time and lapses).
 - Compares each reading with the person's own earlier readings, not with a
-  population range: the median and spread of the person's recent readings, a
-  moving window of up to 14 mission days.
+  population range: compared with the person's own recent readings, in a moving
+  window.
 - Compares it again with published clinical limits, each one with its source.
 - Returns one of four states in plain words: no data yet, in your usual range,
   outside your usual range, or needs review, and names who acts: the crew, the
@@ -72,8 +72,7 @@ Two rules make the result reproducible and explainable:
    a review on the first day of a mission.
 2. **The baseline answers a different question.** Inside or outside the
    person's usual range comes from the median of their readings over the moving
-   window of 14 mission days and three spreads, so one bad reading does not move
-   the reference.
+   window and three spreads, so one bad reading does not move the reference.
 
 ## NASA data and resources used
 

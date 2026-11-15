@@ -51,8 +51,8 @@ No one is notified for now.
 
 ### consult
 
-Your blood glucose is far outside your usual range. A reading of 126 mg/dL or
-more, or 70 mg/dL or less, is also outside the range your CMO uses.
+Your blood glucose is outside your usual range, or past the line your CMO uses:
+126 mg/dL or more, or 70 mg/dL or less.
 
 Tell your CMO today. Drink fluids and measure again in 2 hours. Assumption.
 
