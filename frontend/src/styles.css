@@ -42,9 +42,9 @@
    Every colour, size, space and duration on a screen comes from a token here:
    a value that is not in this block is a bug.
 
-   Font files are not bundled yet (a licence row in docs/DECISIONS.md is the
-   gate), so the stacks below name the planned families first and fall back to
-   system fonts. No font is ever loaded from a CDN. */
+   The three families are self-hosted from public/fonts (the @font-face rules
+   above); the stacks below fall back to system fonts while a file loads. No
+   font is ever loaded from a CDN. */
 
 :root {
   color-scheme: dark;
