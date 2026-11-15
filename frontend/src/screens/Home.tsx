@@ -273,7 +273,19 @@ function statusFor(
   local: LocalState | null,
   answer: IndicatorState | undefined,
 ): Status {
-  if (answer !== undefined) return statusFromApi(answer)
+  // The server still decides the baseline before the limits. A limit with a
+  // link that is crossed needs review even with no baseline yet (phys-02), so
+  // the local answer wins over the server's "no data" in that one case.
+  if (
+    answer !== undefined &&
+    !(
+      answer.state === 'no_data' &&
+      local !== null &&
+      local.state === 'needs_review'
+    )
+  ) {
+    return statusFromApi(answer)
+  }
   if (latest === null || local === null) return NO_DATA_STATUS
   return statusFromLocal(local)
 }
