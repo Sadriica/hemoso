@@ -49,7 +49,7 @@ COMPLETE = {
         "## Why it matters\nExample reason. Assumption.\n\n"
         "## How spaceflight affects it\nExample hazard effect. Assumption.\n\n"
         "## Measurement steps\n1. Example step one.\n2. Example step two.\n\n"
-        "## Status and next steps\n### example_level\n"
+        "## Status and next steps\n### in_range\nIn your usual range. Assumption.\n### outside_range\nOutside your usual range. Assumption.\n### example_level\n"
         "Example status text and example next step. Assumption.\n\n"
         "## How to prevent problems\nExample guidance. Assumption.\n\n"
         "## Sources\n- Example title: https://example.org\n"
