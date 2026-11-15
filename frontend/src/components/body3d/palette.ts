@@ -17,7 +17,8 @@ export function themeColors(): ColorTokens {
 
 const STATUS_TOKENS: Record<StatusKind, keyof ColorTokens> = {
   in_range: 'status-in-range-text',
-  outside: 'status-outside-text',
+  // Outside reads as the amber attention pair since the Sat 23:00 palette change.
+  outside: 'status-attention-text',
   review: 'status-review-text',
   no_data: 'status-no-data-text',
   warning: 'status-attention-text',
