@@ -42,6 +42,53 @@ an astronaut records health indicators and understands the result.
   returns, with a notice while the app is offline.
 - Uses synthetic data only, labelled in the interface.
 
+### Why you can trust what it says
+
+1. **Every threshold shows its source.** Each row of
+   [`config/rules/attention.csv`](https://github.com/Sadriica/hemoso/blob/main/config/rules/attention.csv) holds a link
+   or the word Assumption, and the app shows it in the Details panel of each
+   card. The links
+   are collected in [`docs/sources.md`](https://github.com/Sadriica/hemoso/blob/main/docs/sources.md).
+2. **Your own baseline, one rule in two places.** The API
+   ([`backend/app/state.py`](https://github.com/Sadriica/hemoso/blob/main/backend/app/state.py)) and the app
+   ([`frontend/src/domain/state.ts`](https://github.com/Sadriica/hemoso/blob/main/frontend/src/domain/state.ts)) apply
+   the rule written in
+   [`phys-02`](https://github.com/Sadriica/hemoso/blob/main/docs/findings/phys-02-baseline-state-rule.md), and the app is
+   tested against that finding's vectors in
+   [`window.json`](https://github.com/Sadriica/hemoso/blob/main/scripts/fixtures/format_rules/window.json).
+3. **A sourced limit is checked before the baseline.** A core temperature of
+   39.5 °C on the first day already needs review (the 38.0 °C row cites
+   JSC 22538; see [`FORMATS.md`](https://github.com/Sadriica/hemoso/blob/main/FORMATS.md) section 3). A limit marked
+   Assumption never raises an alarm on its own
+   ([`phys-02`](https://github.com/Sadriica/hemoso/blob/main/docs/findings/phys-02-baseline-state-rule.md)).
+
+What is not validated: `min_spread`, the smallest spread the baseline uses, is
+an engineering default, and the 90-second reaction check is adapted from the
+3-minute PVT-B with no study of the shorter run
+([`phys-06`](https://github.com/Sadriica/hemoso/blob/main/docs/findings/phys-06-reaction-time-pvtb.md)). The findings mark
+both as Assumption, and so does every threshold with no source.
+
+### Built for a real mission
+
+- **Measured with what flies today.** The instruments named in
+  [`config/data/indicators.csv`](https://github.com/Sadriica/hemoso/blob/main/config/data/indicators.csv), each with a
+  source link: Bio-Monitor smart shirt, T-Mini core temperature headband,
+  Actiwatch, i-STAT blood analyser, the ISS Reaction Self Test (our check is a
+  90-second adaptation), the metered galley dispenser and SLAMMD. Mood and appetite are daily questions.
+- **Works without contact with Earth.** Readings are saved on the device and
+  an outbox sends them when the link returns
+  ([`docs/API.md`](https://github.com/Sadriica/hemoso/blob/main/docs/API.md), REQ-13 in
+  [`docs/requirements.md`](https://github.com/Sadriica/hemoso/blob/main/docs/requirements.md)).
+- **Crew, then crew medical officer, then flight surgeon.** The `notify`
+  column of [`attention.csv`](https://github.com/Sadriica/hemoso/blob/main/config/rules/attention.csv) names who acts,
+  possible conditions are an evidence score
+  ([`bio2-02`](https://github.com/Sadriica/hemoso/blob/main/docs/findings/bio2-02-evidence-score.md)), and the tool is
+  never a diagnosis or a replacement for either doctor (REQ-11).
+- **NASA crew terms.** Flight Day, GMT and Post-sleep, with plain words beside
+  them ([`STANDARDS.md`](https://github.com/Sadriica/hemoso/blob/main/STANDARDS.md) glossary).
+
+The same daily check works wherever the doctor is far away: Antarctic stations, offshore rigs, rural clinics.
+
 ## What is not in the demo yet
 
 Each of these is designed and written in the repository, and none of them is
@@ -110,8 +157,8 @@ Every library is listed with its licence and the reason it is there in
 generated with AI, so none carries a watermark, and no NASA logo, flag or
 mission identifier appears in the interface.
 
-**TODO:** add the live app URL, the repository URL, the demo video or slides
-link, and the team page URL.
+**TODO:** add the demo video or slides link (the app, repository and team
+URLs are under Links).
 
 ## AI (SI) use
 
