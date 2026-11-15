@@ -563,3 +563,23 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* The face consent and camera inside the Identify panel: the same corner,
+   spacing and capsule buttons as the rest of the panel, and the full width of
+   the column. */
+.identify__face .face-panel {
+  max-width: none;
+  margin: var(--space-3) 0 0;
+  border-radius: var(--radius-panel);
+  background: color-mix(in srgb, var(--color-bg) 35%, var(--color-surface));
+}
+
+.identify__face .face-panel__actions .button {
+  min-height: var(--tap-min);
+  border-radius: var(--radius-capsule);
+  padding-inline: var(--space-4);
+}
+
+.identify__face .face-panel__status:empty {
+  min-height: 0;
+}
