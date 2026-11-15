@@ -1,7 +1,18 @@
 import { describe, expect, it } from 'vitest'
 import {
+  REACTION_DURATION_MS,
   REACTION_LAPSE_CUTOFF_MS,
+  REACTION_MIN_GAP_MS,
   REACTION_MIN_VALID_MS,
+  REACTION_NONTARGET_MS,
+  REACTION_NONTARGET_SHARE,
+  REACTION_COLOUR_TARGETS,
+  REACTION_SIZES,
+  REACTION_TONE_GAINS,
+  REACTION_TONE_HZ_MAX,
+  REACTION_TONE_HZ_MIN,
+  REACTION_TONE_MS_MAX,
+  REACTION_TONE_MS_MIN,
   REACTION_TRIAL_WINDOW_MS,
   REACTION_WAIT_MAX_MS,
   REACTION_WAIT_MIN_MS,
@@ -9,7 +20,13 @@ import {
 import {
   elapsedMs,
   initialReactionState,
+  isTarget,
   median,
+  NON_TARGET_KINDS,
+  pickLightKind,
+  PLAIN_KINDS,
+  randomSize,
+  randomTone,
   randomWait,
   reactionReducer,
   remainingMs,
@@ -23,8 +40,12 @@ import {
 const LENGTH = 30_000
 
 // A run of a known length, started at `at`.
-function start(modality: 'light' | 'sound' = 'light', at = 0): ReactionState {
-  const idle = initialReactionState(modality, LENGTH)
+function start(
+  modality: 'light' | 'sound' = 'light',
+  at = 0,
+  colourTargets = true,
+): ReactionState {
+  const idle = initialReactionState(modality, LENGTH, colourTargets)
   return reactionReducer(idle, {
     type: 'start',
     modality,
@@ -179,6 +200,7 @@ describe('reactionReducer', () => {
       medianMs: 300,
       lapses: 0,
       falseStarts: 0,
+      errors: 0,
       trials: 1,
     })
   })
@@ -242,6 +264,7 @@ describe('summarize', () => {
       medianMs: 275,
       lapses: 1,
       falseStarts: 1,
+      errors: 0,
       trials: 3,
     })
   })
@@ -254,6 +277,7 @@ describe('summarize', () => {
       medianMs: null,
       lapses: 2,
       falseStarts: 0,
+      errors: 0,
       trials: 2,
     })
   })
@@ -287,5 +311,131 @@ describe('remainingMs and elapsedMs', () => {
     const idle = initialReactionState()
     expect(remainingMs(idle, 500)).toBe(0)
     expect(elapsedMs(idle, 500)).toBe(0)
+  })
+})
+
+describe('the 90-second run', () => {
+  it('is 90 seconds, a shortened PVT-B', () => {
+    expect(REACTION_DURATION_MS).toBe(90_000)
+  })
+})
+
+describe('the minimum gap between two stimuli', () => {
+  it('is at least 334 ms, so nothing flashes more than 3 times a second', () => {
+    expect(REACTION_MIN_GAP_MS).toBeGreaterThanOrEqual(334)
+    expect(REACTION_WAIT_MIN_MS).toBeGreaterThanOrEqual(REACTION_MIN_GAP_MS)
+  })
+
+  it('is never gone under by the scheduler, whatever the draw', () => {
+    for (let step = 0; step <= 100; step += 1) {
+      expect(randomWait(() => step / 100)).toBeGreaterThanOrEqual(REACTION_MIN_GAP_MS)
+    }
+    // Even a draw below the range cannot bring the wait under the gap.
+    expect(randomWait(() => -5)).toBeGreaterThanOrEqual(REACTION_MIN_GAP_MS)
+  })
+})
+
+describe('colour targets off', () => {
+  it('is the default until Phys confirms the method', () => {
+    expect(REACTION_COLOUR_TARGETS).toBe(false)
+  })
+
+  it('makes every light a target, with a shape that changes', () => {
+    for (const kind of PLAIN_KINDS) expect(isTarget(kind, false)).toBe(true)
+    const kinds = new Set([0, 0.3, 0.6, 0.99].map((draw) => pickLightKind(0, () => draw, false)))
+    expect(kinds.size).toBeGreaterThan(1)
+    for (const kind of kinds) expect(PLAIN_KINDS).toContain(kind)
+    // Never a white-first rule, never a non-target, whatever the draw.
+    expect(pickLightKind(3, () => 0.95, false)).not.toBe('green')
+  })
+
+  it('counts an answer to any light as a reaction, never an error', () => {
+    let state = start('light', 0, false)
+    state = reactionReducer(state, { type: 'stimulus', at: 2000, kind: 'square', size: 0.65 })
+    expect(state.size).toBe(0.65)
+    state = reactionReducer(state, { type: 'answer', at: 2250 })
+    expect(state.reactions).toEqual([250])
+    expect(state.errors).toBe(0)
+  })
+
+  it('picks sizes from the set', () => {
+    for (let step = 0; step <= 100; step += 1) {
+      expect(REACTION_SIZES).toContain(randomSize(() => step / 100))
+    }
+    expect(new Set([0, 0.5, 0.99].map((draw) => randomSize(() => draw))).size).toBe(3)
+  })
+
+  it('keeps the 355 ms lapse cut-off', () => {
+    expect(REACTION_LAPSE_CUTOFF_MS).toBe(355)
+  })
+})
+
+describe('light stimuli with colour targets', () => {
+  it('shows a white target first, then green or a non-target by the share', () => {
+    expect(pickLightKind(0, () => 0.99, true)).toBe('white')
+    expect(pickLightKind(1, () => 0, true)).toBe('green')
+    expect(pickLightKind(5, () => 1 - REACTION_NONTARGET_SHARE - 0.01, true)).toBe('green')
+    const seen = new Set([0.7, 0.8, 0.9, 0.999].map((draw) => pickLightKind(2, () => draw, true)))
+    for (const kind of seen) expect(NON_TARGET_KINDS).toContain(kind)
+  })
+
+  it('has targets only for white, green and the tone', () => {
+    expect(isTarget('white', true)).toBe(true)
+    expect(isTarget('green', true)).toBe(true)
+    expect(isTarget('tone', true)).toBe(true)
+    for (const kind of NON_TARGET_KINDS) expect(isTarget(kind, true)).toBe(false)
+  })
+
+  it('counts an answer to a non-target as an error, not as a reaction or a lapse', () => {
+    let state = start()
+    state = reactionReducer(state, { type: 'stimulus', at: 2000, kind: 'square' })
+    state = reactionReducer(state, { type: 'answer', at: 2300 })
+    expect(state.errors).toBe(1)
+    expect(state.reactions).toEqual([])
+    expect(state.lapses).toBe(0)
+    expect(state.done).toBe(0)
+    expect(state.phase).toBe('waiting')
+    expect(summarize(state)).toMatchObject({ errors: 1, trials: 0, medianMs: null })
+  })
+
+  it('clears an unanswered non-target with no lapse, only after its time', () => {
+    let state = start()
+    state = reactionReducer(state, { type: 'stimulus', at: 2000, kind: 'triangle' })
+    const early = reactionReducer(state, { type: 'timeout', at: 2000 + REACTION_NONTARGET_MS - 1 })
+    expect(early.phase).toBe('stimulus')
+    const cleared = reactionReducer(state, { type: 'timeout', at: 2000 + REACTION_NONTARGET_MS })
+    expect(cleared.phase).toBe('waiting')
+    expect(cleared.lapses).toBe(0)
+    expect(cleared.errors).toBe(0)
+    expect(cleared.done).toBe(0)
+  })
+
+  it('times green and white as before: 355 ms is a lapse, under 100 ms a false start', () => {
+    for (const kind of ['white', 'green'] as const) {
+      let state = start()
+      state = reactionReducer(state, { type: 'stimulus', at: 2000, kind })
+      expect(reactionReducer(state, { type: 'answer', at: 2000 + REACTION_LAPSE_CUTOFF_MS }).lapses).toBe(1)
+      expect(reactionReducer(state, { type: 'answer', at: 2000 + REACTION_MIN_VALID_MS - 1 }).falseStarts).toBe(1)
+      expect(reactionReducer(state, { type: 'answer', at: 2250 }).reactions).toEqual([250])
+    }
+  })
+})
+
+describe('tones', () => {
+  it('stay inside the ranges for any draw', () => {
+    for (let step = 0; step <= 100; step += 1) {
+      const tone = randomTone(() => step / 100)
+      expect(tone.hz).toBeGreaterThanOrEqual(REACTION_TONE_HZ_MIN)
+      expect(tone.hz).toBeLessThanOrEqual(REACTION_TONE_HZ_MAX)
+      expect(tone.ms).toBeGreaterThanOrEqual(REACTION_TONE_MS_MIN)
+      expect(tone.ms).toBeLessThanOrEqual(REACTION_TONE_MS_MAX)
+      expect(REACTION_TONE_GAINS).toContain(tone.gain)
+    }
+  })
+
+  it('are never louder than the single tone of before (0.25), and use the ranges asked for', () => {
+    expect(Math.max(...REACTION_TONE_GAINS)).toBeLessThanOrEqual(0.25)
+    expect([REACTION_TONE_HZ_MIN, REACTION_TONE_HZ_MAX]).toEqual([600, 1400])
+    expect([REACTION_TONE_MS_MIN, REACTION_TONE_MS_MAX]).toEqual([80, 200])
   })
 })

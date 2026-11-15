@@ -8,7 +8,7 @@ import { readIndicatorRows } from './config'
 // The reaction check (REQ-38, T-71) on the real build, by keyboard only: the
 // step sits in the report phase, it is started and answered with keys, and the
 // result reads in words. The run uses `?reaction=demo`, the 30-second length,
-// because the real one is three minutes and cannot be taken here; a run of that
+// because the real one is 90 seconds and the e2e should not spend them; a run of that
 // length saves nothing, so the outbox stays empty and the status screen keeps
 // the readings the demo data gives it (T-76).
 const rows = readIndicatorRows()
@@ -75,10 +75,13 @@ test('reaction check by keyboard, at the demo length', async ({ page }) => {
   })
 
   await test.step('Answer every stimulus with the space bar', async () => {
-    const stimulus = page.locator('[data-reaction-state="stimulus"]')
+    // Only a target is answered: a non-green light is left to clear by itself.
+    const stimulus = page.locator(
+      '[data-reaction-state="stimulus"][data-reaction-target="true"]',
+    )
     const result = page.locator('[data-reaction-result="median"]')
     let sawLight = false
-    for (let answered = 0; answered < 12; answered += 1) {
+    for (let answered = 0; answered < 30; answered += 1) {
       const shown = await stimulus
         .waitFor({ state: 'visible', timeout: 20_000 })
         .then(() => true)
@@ -86,13 +89,19 @@ test('reaction check by keyboard, at the demo length', async ({ page }) => {
       // The demo length ran out while waiting: nothing more to answer.
       if (!shown) break
       if (!sawLight) {
-        await expect(page.getByText(reactionStrings.cue.light)).toBeVisible()
+        // The light is a shape with a name; colour targets are off by default,
+        // so every light is a target.
+        await expect(page.getByRole('img').first()).toBeVisible()
         sawLight = true
       }
       // A key pressed the instant the light appears is under the 100 ms a body
       // needs, which is a false start; a person takes about this long.
       await page.waitForTimeout(180)
       await page.keyboard.press('Space')
+      // The next wait is at least 2 s, so the answered target leaves the page
+      // first; waiting for that keeps a second press from landing on the same
+      // stimulus after it has already been answered.
+      await stimulus.waitFor({ state: 'hidden', timeout: 5_000 }).catch(() => {})
       if (await result.isVisible()) break
     }
     expect(sawLight, 'the visible cue of the stimulus').toBe(true)
@@ -101,8 +110,10 @@ test('reaction check by keyboard, at the demo length', async ({ page }) => {
   await test.step('The result in words, and nothing in the outbox', async () => {
     const result = page.locator('[data-reaction-result="median"]')
     await expect(result).toBeVisible({ timeout: 20_000 })
-    await expect(result).toContainText('Median reaction:')
-    await expect(result).toContainText(/Lapses: \d+/)
+    await expect(result).toContainText(reactionStrings.medianLabel)
+    await expect(result).toContainText(new RegExp(`${reactionStrings.lapsesLabel}\\s*\\d+`))
+    // Without colour targets there are no errors to show.
+    await expect(result).not.toContainText(reactionStrings.errorsLabel)
     // A demo run is a demonstration of the screen, not a check the crew took:
     // it says so, and no entry reaches the outbox (REQ-28, T-76).
     await expect(page.getByText(reactionStrings.demoNotSaved)).toBeVisible()
@@ -115,7 +126,7 @@ test('reaction check by keyboard, at the demo length', async ({ page }) => {
   })
 
 
-  await test.step('A run in sound mode shows its cue, and Escape throws it away', async () => {
+  await test.step('A run in sound mode shows its cue, and Escape under 3 trials saves nothing', async () => {
     await page.getByRole('button', { name: reactionStrings.again }).focus()
     await page.keyboard.press('Enter')
     await page.getByRole('radio', { name: reactionStrings.sound }).focus()
@@ -129,9 +140,10 @@ test('reaction check by keyboard, at the demo length', async ({ page }) => {
     await expect(
       page.locator('[data-reaction-state="stimulus"]'),
     ).toBeVisible({ timeout: 20_000 })
-    await expect(page.getByText(reactionStrings.cue.sound)).toBeVisible()
+    await expect(page.getByText(reactionStrings.kind.tone)).toBeVisible()
     await page.keyboard.press('Escape')
-    await expect(page.getByText(reactionStrings.stopped)).toBeVisible()
+    // Fewer than 3 valid trials, and a demo run besides: nothing is saved.
+    await expect(page.getByText(reactionStrings.tooFew)).toBeVisible()
     // Neither run stored anything: the outbox is as empty as it was.
     await expect(
       page.getByTitle(
