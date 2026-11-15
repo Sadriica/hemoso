@@ -424,6 +424,7 @@ function IndicatorRow({
             indicator={indicator}
             content={content}
             sources={sources}
+            rules={rules}
           />
         </Disclosure>
       </div>

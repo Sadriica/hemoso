@@ -302,7 +302,8 @@ describe('Home', () => {
     toggle.focus()
     await user.keyboard('{Enter}')
     expect(screen.getByRole('link', { name: 'Example title' })).toBeInTheDocument()
-    expect(screen.getByText('Assumption')).toBeInTheDocument()
+    // The attention row and the source list each carry the word.
+    expect(screen.getAllByText('Assumption').length).toBeGreaterThan(0)
   })
 
   it('opens Details by keyboard and shows the content sections', async () => {
@@ -390,7 +391,7 @@ describe('Home', () => {
       'Hazards: Isolation and confinement',
     )
     expect(screen.queryByText(/isolation_and_confinement/)).toBeNull()
-    expect(screen.getByText('Assumption')).toBeInTheDocument()
+    expect(screen.getAllByText('Assumption').length).toBeGreaterThan(0)
     expect(
       screen.queryByRole('heading', { level: 4, name: 'Why it matters' }),
     ).toBeNull()
