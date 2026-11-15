@@ -41,11 +41,19 @@ const TEXT_PAIRS: ColorPair[] = [
   // the panel surface, which is the card surface.
   { name: 'face panel text', front: 'color-text', back: 'color-surface' },
   { name: 'face panel delete action', front: 'color-signal', back: 'color-surface' },
+  // The console accents carry small mono text in two places: the channel
+  // number of a panel and the eyebrow of a console block.
+  { name: 'channel number on a panel', front: 'accent-cyan', back: 'color-bg-raised' },
+  { name: 'console eyebrow on a card', front: 'accent-cyan', back: 'color-surface' },
+  { name: 'console eyebrow on the page', front: 'accent-cyan', back: 'color-bg' },
 ]
 
 // Non-text contrast (WCAG 1.4.11): the focus outline and the edge of a control
 // need 3:1 against what they sit on.
 const UI_PAIRS: ColorPair[] = [
+  // The violet accent draws lines only (an orbit arc, a glow edge).
+  { name: 'violet accent line on the page', front: 'accent-violet', back: 'color-bg' },
+  { name: 'cyan accent line on the page', front: 'accent-cyan', back: 'color-bg' },
   { name: 'focus outline on the page', front: 'color-accent', back: 'color-bg' },
   { name: 'focus outline on a card', front: 'color-accent', back: 'color-surface' },
   { name: 'focus outline on the header band', front: 'color-accent', back: 'color-bg-raised' },
