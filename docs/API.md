@@ -351,7 +351,11 @@ questions in `team/eng1/`:
   six readings weighs the same as a day with one.
 - A row's `source` counts as a link when every word in it starts with
   `https://` or `http://`; a cell that mixes a link and `Assumption` does not.
-- A value exactly on an attention threshold does not trigger that row.
+- A value exactly on an attention threshold triggers that row: the cited
+  sources say "or higher" ("140/90 mmHg or higher", "180/120 or higher",
+  "38.0 °C or greater"), and a `below` row reads "or lower" (Bio 2, Q4,
+  Sun 15 Nov). So 140/90 is `needs_review` and 180/120 reaches the
+  `flight_surgeon` row.
 - Two matching rows with the same `notify` are not defined by FORMATS.md; the
   more extreme threshold wins, as the shared vectors in
   `scripts/fixtures/format_rules/attention.json` record.
