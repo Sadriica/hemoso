@@ -38,7 +38,7 @@ VALID = {
     ),
     "config/rules/conditions.csv": (
         "condition_id,name,based_on,source\n"
-        "example_condition,Example condition,example_indicator,Assumption\n"
+        "example_condition,Example condition,example_indicator:above,Assumption\n"
     ),
     "config/content/body_regions.csv": (
         "id,name,source\n"
@@ -109,7 +109,7 @@ class ContentCheckTest(unittest.TestCase):
         files = dict(VALID)
         files["config/rules/conditions.csv"] = (
             "condition_id,name,based_on,source\n"
-            "example_condition,Example condition,example_indicator,\n"
+            "example_condition,Example condition,example_indicator:above,\n"
         )
         self.assert_error(files, "empty required cell")
 
@@ -133,11 +133,36 @@ class ContentCheckTest(unittest.TestCase):
         )
         self.assert_error(files, "unknown indicator_id 'missing_indicator'")
 
+    def test_based_on_side_required_under_strict(self):
+        files = dict(VALID)
+        files["config/rules/conditions.csv"] = (
+            "condition_id,name,based_on,source\n"
+            "example_condition,Example condition,example_indicator,Assumption\n"
+        )
+        self.assertFalse(any("has no side" in line for line in self.errors(files)))
+        self.assert_error(files, "has no side", strict=True)
+
+    def test_based_on_bad_side(self):
+        files = dict(VALID)
+        files["config/rules/conditions.csv"] = (
+            "condition_id,name,based_on,source\n"
+            "example_condition,Example condition,example_indicator:up,Assumption\n"
+        )
+        self.assert_error(files, "side must be above or below")
+
+    def test_based_on_same_indicator_twice(self):
+        files = dict(VALID)
+        files["config/rules/conditions.csv"] = (
+            "condition_id,name,based_on,source\n"
+            "example_condition,Example condition,example_indicator:above example_indicator:below,Assumption\n"
+        )
+        self.assert_error(files, "names 'example_indicator' twice")
+
     def test_unknown_based_on_id(self):
         files = dict(VALID)
         files["config/rules/conditions.csv"] = (
             "condition_id,name,based_on,source\n"
-            "example_condition,Example condition,missing_indicator,Assumption\n"
+            "example_condition,Example condition,missing_indicator:above,Assumption\n"
         )
         self.assert_error(files, "based_on id 'missing_indicator'")
 

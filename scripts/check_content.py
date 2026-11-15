@@ -25,6 +25,10 @@ import sys
 from collections import Counter
 from pathlib import Path
 
+# The source and attention rules live in one place, so the checker and the
+# frontend cannot drift apart (see scripts/fixtures/format_rules/).
+from format_rules import LINK_RE, NOTIFY_ORDER, parse_sources
+
 HAZARDS = {
     "radiation",
     "isolation_and_confinement",
@@ -33,7 +37,6 @@ HAZARDS = {
     "hostile_closed_environments",
 }
 ID_RE = re.compile(r"^[a-z][a-z0-9_]*$")
-LINK_RE = re.compile(r"^https?://\S+$")
 TIME_RE = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
 
 # The fixed ``##`` headings of a content file, in order (FORMATS.md section 3).
@@ -80,9 +83,6 @@ DEMO_RANGES_HEADER = ["indicator_id", "min", "max", "source", "generation_note"]
 DEMO_DATA_HEADER = ["person_id", "indicator_id", "value", "unit", "mission_day", "time", "context"]
 ATTENTION_HEADER = ["indicator_id", "side", "threshold", "attention_level", "notify", "source"]
 
-# Who acts on an attention row (REQ-05), from least to most severe. When several
-# rows of one indicator match a value, the row with the most severe notify wins.
-NOTIFY_ORDER = ["crew", "cmo", "flight_surgeon"]
 CONDITIONS_HEADER = ["condition_id", "name", "based_on", "source"]
 
 
@@ -115,10 +115,7 @@ def decimal_comma_hint(value: str) -> str:
 
 def valid_source(value: str) -> bool:
     """A source cell is the word ``Assumption`` or one or more http(s) links."""
-    if value == "Assumption":
-        return True
-    tokens = value.split()
-    return bool(tokens) and all(LINK_RE.match(t) for t in tokens)
+    return parse_sources(value) is not None
 
 
 def read_table(root: Path, rel: str, header: list[str], rep: Reporter):
@@ -327,7 +324,10 @@ def check_attention_order(rep: Reporter, bounds: dict) -> None:
                           f"notify the same or more")
 
 
-def check_conditions(rep: Reporter, root: Path, state: dict) -> None:
+SIGNAL_SIDES = ("above", "below")
+
+
+def check_conditions(rep: Reporter, root: Path, state: dict, strict: bool = False) -> None:
     header = CONDITIONS_HEADER
     rows = read_table(root, "config/rules/conditions.csv", header, rep)
     if rows is None:
@@ -345,9 +345,21 @@ def check_conditions(rep: Reporter, root: Path, state: dict) -> None:
                 rep.error(f"{rel}:{line_no} duplicate condition_id '{cid}'")
             seen.add(cid)
         indicators = state.get("indicators")
+        sides_seen: dict[str, str] = {}
         for based in cells["based_on"].split():
-            if indicators is not None and based not in indicators:
-                rep.error(f"{rel}:{line_no} based_on id '{based}' is not an indicator")
+            iid, sep, side = based.partition(":")
+            if not sep:
+                # Without a side two conditions on one indicator (hyper- and
+                # hypoglycaemia) both score on any change (FORMATS.md, F-bio2-02).
+                report_problem(rep, strict, f"{rel}:{line_no} based_on '{based}' has no side, "
+                               "write it as indicator_id:above or indicator_id:below")
+            elif side not in SIGNAL_SIDES:
+                rep.error(f"{rel}:{line_no} based_on '{based}' side must be above or below, got '{side}'")
+            if indicators is not None and iid not in indicators:
+                rep.error(f"{rel}:{line_no} based_on id '{iid}' is not an indicator")
+            if iid in sides_seen:
+                rep.error(f"{rel}:{line_no} based_on names '{iid}' twice")
+            sides_seen[iid] = side
         source = cells["source"].strip()
         if source and not valid_source(source):
             rep.error(f"{rel}:{line_no} source must be an http(s) link or 'Assumption'")
@@ -618,7 +630,7 @@ def check(root: Path, strict: bool) -> list[str]:
     check_indicators(rep, root, state)
     check_demo_ranges(rep, root, state)
     check_attention(rep, root, state)
-    check_conditions(rep, root, state)
+    check_conditions(rep, root, state, strict)
     check_body_regions(rep, root)
     check_demo_data(rep, root, state)
     check_content_files(rep, root, state, strict)

@@ -37,7 +37,7 @@ VALID = {
     ),
     "config/rules/conditions.csv": (
         "condition_id,name,based_on,source\n"
-        "example_condition,Example condition,example_indicator,Assumption\n"
+        "example_condition,Example condition,example_indicator:above,Assumption\n"
     ),
     "config/content/body_regions.csv": (
         "id,name,source\n"

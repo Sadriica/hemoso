@@ -10,6 +10,7 @@ import type {
 } from '../domain/types'
 import AttentionBadge from '../components/AttentionBadge'
 import Disclosure from '../components/Disclosure'
+import IndicatorDetails from '../components/IndicatorDetails'
 import Notice from '../components/Notice'
 import type { LoadedContent } from '../content/load'
 import { strings } from '../strings'
@@ -117,24 +118,12 @@ function IndicatorRow({
         </p>
       )}
       <div className="indicator-card__actions">
-        <Disclosure label={strings.sources.label}>
-          {sources.length === 0 ? (
-            <p className="sources__empty">{strings.sources.empty}</p>
-          ) : (
-            <ul className="sources__list">
-              {sources.map((source) => (
-                <li key={source === 'Assumption' ? 'Assumption' : source.url}>
-                  {source === 'Assumption' ? (
-                    <span>{strings.sources.assumption}</span>
-                  ) : (
-                    <a href={source.url} rel="noreferrer">
-                      {source.title}
-                    </a>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
+        <Disclosure label={strings.details.label}>
+          <IndicatorDetails
+            indicator={indicator}
+            content={content}
+            sources={sources}
+          />
         </Disclosure>
       </div>
     </li>
