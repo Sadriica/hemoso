@@ -112,7 +112,9 @@ describe('TrendChart', () => {
   it('shows a reading in the readout on a tap, outside the plot', async () => {
     const user = userEvent.setup()
     const { container } = renderChart()
-    expect(screen.getByText('Select a reading to see it here.')).toBeInTheDocument()
+    // Nothing selected: the newest reading, named as such.
+    expect(screen.getByText('Newest reading')).toBeInTheDocument()
+    expect(screen.getByText(/105 bpm · FD 4 · GMT 09:30/)).toBeInTheDocument()
     const target = container.querySelector('[data-entry="x:3:08:00"]')
     expect(target).not.toBeNull()
     await user.click(target as Element)
@@ -141,7 +143,7 @@ describe('TrendChart', () => {
     await user.keyboard('{ArrowRight}')
     expect(screen.getByText(/105 bpm · FD 4/)).toBeInTheDocument()
     await user.keyboard('{Escape}')
-    expect(screen.getByText('Select a reading to see it here.')).toBeInTheDocument()
+    expect(screen.getByText('Newest reading')).toBeInTheDocument()
   })
 
   it('reads the state in words, with the level of a crossed row', async () => {
