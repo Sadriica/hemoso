@@ -41,6 +41,23 @@ The other risk pages are listed on https://www.nasa.gov/hrp/risks/ and were not
 opened. Their one-line summaries are on that index and can be cited from it, not from
 the risk page itself.
 
+## What prevents it (question 5 of the statement)
+
+The hazard pages say what changes. These pages say what NASA does about it.
+
+| System | Countermeasure | The number behind it | Source |
+| --- | --- | --- | --- |
+| Cardiovascular and musculoskeletal | Resistance and aerobic exercise, plus periodic fitness self-evaluations | **1.5 h per day, 6 to 7 days a week**; average losses are still **10 % to 12 %** of pre-mission fitness, and **12 % to 38 %** of crew lose more than 20 % | https://www.nasa.gov/reference/risk-of-reduced-cardiorespiratory-and-musculoskeletal-fitness/ |
+| Cardiovascular and musculoskeletal | Even with exercise, some crew do not meet weightlessness fitness standards, and many would not meet standards for walking on a surface; many have not recovered by the end of the 30-day reconditioning | Individual variability "cannot be fully explained by countermeasure adherence" | https://humanresearchroadmap.nasa.gov/Risks/risk.aspx?i=180 |
+| Sleep | LEDs simulate the Earth light-dark cycle; relaxation time is scheduled; light and caffeine use are studied as clock inputs | Crew see **16 sunrises and sunsets per day** | https://www.nasa.gov/reference/risk-from-inadequate-sleep-and-irregular-schedules/ |
+| Neuro-behavioural | Journaling, plants, windows, privacy, and contact with family and clinicians | Windows reduce monotony and the sense of confinement | https://www.nasa.gov/reference/risk-of-behavioral-conditions-and-psychiatric-disorders/ |
+| Immune | Blood, saliva and urine monitoring; samples returned to Earth for analysis | Symptoms reported on orbit: cold sores, rashes, atypical allergies, infections | https://www.nasa.gov/reference/risk-of-altered-immune-system-responses/ |
+| Bone | Resistive exercise; the programme limit is 95 % of pre-mission density for hip and spine | Loss of **1 % to 1.5 % per month** without countermeasures | https://www.nasa.gov/wp-content/uploads/2023/12/ochmo-tb-030-bone-loss.pdf |
+
+The point for the app: exercise is prescribed and measured, and it still does not fully
+work. An app that says "exercise more" without showing the prescribed dose is telling
+the crew less than NASA already tells them.
+
 ## Evidence, and why the immune risk page matters
 The HRP risk pages connect a body system with the stressors behind it. The immune
 risk names them explicitly in its gap IM-106: "the effect of the stressors associated
