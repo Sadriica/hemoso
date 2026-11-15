@@ -103,7 +103,11 @@ test('reaction check by keyboard, at the demo length', async ({ page }) => {
     await expect(result).toContainText('Median reaction:')
     await expect(result).toContainText(/Lapses: \d+/)
     // No server in the demo: the two entries wait on this device (REQ-28).
-    await expect(page.getByText(strings.sync.waiting(2))).toBeVisible()
+    await expect(
+      page.getByTitle(
+        strings.sync.chip(strings.sync.noServer, strings.sync.waiting(2)),
+      ),
+    ).toBeVisible()
     await expectNoBlockingA11yIssues(page, 'Report with the reaction result')
   })
 
@@ -127,7 +131,11 @@ test('reaction check by keyboard, at the demo length', async ({ page }) => {
     await expect(page.getByText(reactionStrings.stopped)).toBeVisible()
     // Nothing else was stored: the first run's two entries are still the only
     // ones waiting for the outbox.
-    await expect(page.getByText(strings.sync.waiting(2))).toBeVisible()
+    await expect(
+      page.getByTitle(
+        strings.sync.chip(strings.sync.noServer, strings.sync.waiting(2)),
+      ),
+    ).toBeVisible()
   })
 
   await test.step('Status: both indicators with their icon and their history', async () => {
