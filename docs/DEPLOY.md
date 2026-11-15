@@ -7,16 +7,16 @@ slides at most). How the solution is published is recorded in
 
 ## 1. Public project and demo
 - The repository is public from Saturday 9:00 (it is the "final project" link).
-- The frontend is published on Vercel from `frontend/` (Eng 2 owns it). Vercel
+- The frontend is published on Vercel from `frontend/` (Eng 1 owns it). Vercel
   connects to the repository, builds `frontend/` and serves it under the team's
   domain (the architecture is in `docs/DECISIONS.md`). The build reads `config/`
   from the repository root (`frontend/src/content/load.ts` globs
   `../../../config/**`), so the Vercel project setting "Include files outside
   the root directory in the Build Step" must stay on. The frontend reads
   `VITE_API_BASE_URL` (the backend URL) from the Vercel environment variables.
-- The backend runs on its own host; Railway is the candidate, not yet decided
-  (`docs/DECISIONS.md`). The host builds `backend/Dockerfile` from the
-  repository root with
+- The backend runs on Railway at https://hemoso-production.up.railway.app
+  (`docs/DECISIONS.md`). Railway builds
+  `backend/Dockerfile` from the repository root with
   `DOCKER_BUILDKIT=1 docker build -f backend/Dockerfile -t hemoso-backend .`.
   BuildKit reads `backend/Dockerfile.dockerignore`, which the legacy builder
   ignores and would otherwise copy the host `.venv` and secrets into the image.
@@ -24,7 +24,7 @@ slides at most). How the solution is published is recorded in
   `PORT`. Set `STORAGE=supabase` there: the container file system is not kept.
   It needs the variables below. `backend/railway.json` holds the build and
   deploy settings the host needs; section 3 lists them.
-- Supabase stores the data. Create the `entries` table once per project by
+- Supabase stores the data. Create the tables once per project by
   running `backend/supabase/schema.sql` in the Supabase SQL editor
   (Dashboard → SQL editor).
 - Environment variables, from `backend/.env.example`:

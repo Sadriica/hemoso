@@ -26,8 +26,8 @@ Team ReTardis · NASA Space Apps Challenge 2026 · Medellín
   when a result needs attention. It does not replace either of them.
 - **What changes for the crew.** Each reading is shown against the person's
   own usual range and against limits that cite a source, with the next step in
-  plain words and who acts. It works offline and sends the data when the link
-  returns.
+  plain words and who acts. Once it is open, it keeps working with no
+  connection and sends the data when the link returns.
 
 ## What it does
 
@@ -130,7 +130,7 @@ replace them.
 **What it does today** (live at https://www.hemoso.space)
 
 - **Identify:** sign in with a username and a PIN, or open the synthetic demo
-  astronaut. Face sign-in is optional, on the device only (`?face=1`).
+  astronaut. Face sign-in is optional and stays on the device.
 - **Report:** one row per indicator (12 indicators, `config/data/indicators.csv`)
   with its context (post-sleep, pre-sleep, rest…), an optional symptom list, a
   3D body to mark pain or an injury, and an optional 90-second reaction check
@@ -139,8 +139,9 @@ replace them.
   range, outside your usual range, needs review), the possible conditions with
   their evidence and signals, "Call your CMO now" before any score when a red-flag
   symptom is reported, and the history of each indicator as a trend.
-- **Offline first:** everything is saved in the browser and an outbox sends it to
-  the API when there is a connection (REQ-13).
+- **Offline first:** everything is saved in the browser and an outbox sends it
+  to the API when there is a connection, without duplicates (REQ-13). Reloading
+  the page with no network is not part of this build.
 
 **How a value is judged** (`FORMATS.md` section 3)
 
@@ -188,7 +189,7 @@ The API answers on http://127.0.0.1:8000; `GET /health` returns
 | Variable | Locally | In production (Railway) |
 | --- | --- | --- |
 | `STORAGE` | empty: SQLite file | `supabase` |
-| `SQLITE_PATH` | empty: `backend/hemoso.db` | not used |
+| `SQLITE_PATH` | empty: `backend/entries.db` | not used |
 | `CONFIG_DIR` | empty: the repository's `config/` | empty |
 | `SUPABASE_URL`, `SUPABASE_KEY` | empty | the project URL and the **service role** key, pasted in Railway only |
 | `ALLOWED_ORIGINS` | empty: allows http://localhost:5173 | `https://www.hemoso.space,https://hemoso.space,https://hemoso-eta.vercel.app` |
@@ -336,7 +337,8 @@ Requirements: `docs/requirements.md`. Decisions: `docs/DECISIONS.md`.
 
 - App: https://www.hemoso.space (synthetic data only; open in a private window, no login)
 - API: https://hemoso-production.up.railway.app (`/health`, interactive docs at `/docs`)
-- Face sign-in, off by default: https://www.hemoso.space/?face=1
+- Face sign-in: on the Identify screen and optional; it needs one PIN sign-in on
+  that device first, and the face data stays on the device (`docs/PRIVACY.md`).
 
 ---
 
