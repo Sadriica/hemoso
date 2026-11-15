@@ -21,6 +21,27 @@ export function hazardName(id: string): string | null {
   return HAZARD_NAMES[id] ?? null
 }
 
+// A person id read as a name: "demo_astronaut_1" is "Demo astronaut 1". Nothing
+// is invented; the id is the only name the data has (T-70).
+export function personName(personId: string): string {
+  const words = personId.split('_').filter((word) => word !== '')
+  if (words.length === 0) return personId
+  const name = words.join(' ')
+  return name.charAt(0).toUpperCase() + name.slice(1)
+}
+
+// The initials of the circle before the name: "DA" for "demo_astronaut_1". A
+// trailing number is dropped, so the circle never holds a digit.
+export function personInitials(personId: string): string {
+  const letters = personId
+    .split('_')
+    .filter((word) => /^[a-z]/i.test(word))
+    .slice(0, 2)
+    .map((word) => word.charAt(0).toUpperCase())
+    .join('')
+  return letters === '' ? personId.slice(0, 2).toUpperCase() : letters
+}
+
 export const strings = {
   appName: 'HeMoSo',
   skipToMain: 'Skip to main content',
@@ -49,9 +70,9 @@ export const strings = {
       name: 'Identify',
       eyebrow: '01 / IDENTIFY',
       headline: ['WHO IS', 'ON DUTY', 'TODAY?'],
-      intro: 'Sign in with your face, or pick your name. Your readings stay with you.',
+      intro:
+        'Sign in with your face, your username and PIN, or open the demo. Your readings stay with you.',
       crewLabel: 'Crew member',
-      or: 'or',
       missing: 'Pick your name, or sign in with your face, to begin.',
       next: 'Begin the report',
     },
@@ -243,6 +264,45 @@ export const strings = {
     notSaved: 'Entries are not saved on this device.',
     reset: 'Saved entries could not be read and were replaced by the demo data.',
   },
+  // Signing in (REQ-37, T-70): a face kept on this device, a username and a
+  // PIN, a new account, or the open demo of REQ-32. Short sentences, no health
+  // wording. The PIN is never written down here or anywhere in the browser.
+  signIn: {
+    faceHeading: 'Sign in with your face',
+    faceNote: 'A face saved on this device opens your session.',
+    pinHeading: 'Username and PIN',
+    username: 'Username',
+    pin: 'PIN',
+    pinHint: '4 to 8 digits.',
+    action: 'Sign in',
+    createToggle: 'Create an account',
+    createHeading: 'Create an account',
+    createAction: 'Create my account',
+    createBack: 'Back to signing in',
+    confirmPin: 'PIN again',
+    demoHeading: 'Demo',
+    demoNote: 'The demo astronaut has no account. Every value in it is synthetic.',
+    demoAction: 'Open the demo',
+    // The role line of a crew card. The demo crew is synthetic data (REQ-14),
+    // so that is the role it carries.
+    crewRole: 'Synthetic crew member',
+    signedInAs: (personId: string): string => `Signed in as ${personId}`,
+    signOut: 'Sign out',
+    expired: 'Your session ended. Enter your PIN again.',
+    askPin: (personId: string): string => `Enter the PIN for ${personId}.`,
+    errors: {
+      username:
+        'Use lowercase letters, digits and underscores, starting with a letter.',
+      pin: 'Enter a PIN of 4 to 8 digits.',
+      pinMismatch: 'The two PINs are different.',
+      wrong: 'Wrong username or PIN.',
+      blocked: 'Too many tries. Wait 10 minutes, then try again.',
+      exists: 'That username is taken. Sign in with it instead.',
+      invalid:
+        'The server did not accept these details. Check the username and the PIN.',
+      retry: 'No answer from the server. Try again.',
+    },
+  },
   // The panel behind the header button (REQ-36, T-58, T-59). It only exists on
   // a page opened with ?face=1. The consent text is read before the camera
   // opens; a camera that will not start is a sentence, never a colour or an
@@ -255,9 +315,12 @@ export const strings = {
     continueLabel: 'Continue',
     cancelLabel: 'Cancel',
     closeLabel: 'Close',
-    person: 'Person to register',
+    registeredFor: (personId: string): string =>
+      `Your face is saved for ${personId} on this device.`,
+    chooseFirst:
+      'Choose your name in the demo section first. Your face is saved for that person.',
     register: 'Register face',
-    signIn: 'Sign in',
+    signIn: 'Use my face',
     // The label of the camera picture. The panel is the only place in the app
     // that shows a camera at all.
     videoLabel: 'Camera preview. No picture is kept.',

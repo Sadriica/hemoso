@@ -1,6 +1,7 @@
 import type { MissionClock } from '../domain/clock'
 import type { Entry } from '../domain/types'
 import type { Outbox } from './entryStore'
+import { bearerToken, expireSession } from './session'
 
 // Sending the outbox to the backend (REQ-27, REQ-28). The contract is
 // docs/API.md: one POST per entry, oldest first, and the status code says what
@@ -12,6 +13,7 @@ export type SendOutcome =
   | 'sent' // 200 or 201: the server has the row
   | 'conflict' // 409: another value is stored for the same day and time
   | 'rejected' // 422: the server refused the row itself
+  | 'unauthorized' // 401: the token of that person is gone or expired
   | 'retry' // no connection, 5xx, or a status the contract does not name
 
 export interface SyncClient {
@@ -57,11 +59,16 @@ export class HttpSync implements SyncClient {
   }
 
   async send(entry: Entry): Promise<SendOutcome> {
+    // A person with an account sends their own token; a person without one
+    // (the synthetic demo astronaut) sends none, and their routes stay open.
+    const token = bearerToken(entry.personId)
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+    if (token !== null) headers.Authorization = `Bearer ${token}`
     let response: Response
     try {
       response = await this.fetchFn(`${this.baseUrl}/entries`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(toApiEntry(entry)),
       })
     } catch {
@@ -70,6 +77,14 @@ export class HttpSync implements SyncClient {
     if (response.status === 200 || response.status === 201) return 'sent'
     if (response.status === 409) return 'conflict'
     if (response.status === 422) return 'rejected'
+    if (response.status === 401) {
+      // The session on this device is no longer accepted. It leaves, and the
+      // screen asks for the PIN again; the entry waits in the outbox until
+      // then. A person who sent no token has no session to drop: their routes
+      // stay open, so a 401 is a server problem and the entry is retried.
+      if (token !== null) expireSession(entry.personId)
+      return 'unauthorized'
+    }
     // A server error, or a status docs/API.md does not name. The entry stays in
     // the outbox: losing a reading matters more than sending it twice, and the
     // API keeps one row per person, indicator, day and time.
@@ -118,8 +133,9 @@ export interface SendRound {
 }
 
 // One round over the outbox: oldest first, one entry at a time. A conflict or
-// a rejected row leaves the outbox; a network problem or a server error stops
-// the round and keeps the rest for the next one. Never throws.
+// a rejected row leaves the outbox; a network problem, a server error or a
+// token the server stopped accepting stops the round and keeps the rest for
+// the next one, after the person signs in again. Never throws.
 export async function sendPending(
   outbox: Outbox,
   client: SyncClient,
