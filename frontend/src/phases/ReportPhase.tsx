@@ -1,4 +1,5 @@
 import { lazy, Suspense, useCallback, useState, type RefObject } from 'react'
+import { SERVER_ID_PREFIX } from '../data/historyClient'
 import PhaseHeading from '../components/PhaseHeading'
 import type { EntryStore } from '../data/entryStore'
 import type {
@@ -51,8 +52,13 @@ export default function ReportPhase({
 }: ReportPhaseProps) {
   const copy = strings.phases.report
   // Entries present when the phase opened; the rest were logged in this check.
-  const [startCount] = useState(entries.length)
-  const logged = Math.max(entries.length - startCount, 0)
+  // A reading the server sends back while the phase is open (the history of
+  // the person, read once after sign-in) was not logged here, so it is left
+  // out: it carries a server id.
+  const [openIds] = useState(() => new Set(entries.map((entry) => entry.id)))
+  const logged = entries.filter(
+    (entry) => !openIds.has(entry.id) && !entry.id.startsWith(SERVER_ID_PREFIX),
+  ).length
   // How many rows are done in this check, for the ring of the scene.
   const [progress, setProgress] = useState({ done: 0, total: 0 })
   const onProgress = useCallback(
@@ -62,8 +68,9 @@ export default function ReportPhase({
   // The optional reaction check stays one closed line. When it has run in this
   // check, the line says the result; the demo run saves nothing, so it never
   // does.
-  const [startIds] = useState(() => new Set(entries.map((entry) => entry.id)))
-  const fresh = entries.filter((entry) => !startIds.has(entry.id))
+  const fresh = entries.filter(
+    (entry) => !openIds.has(entry.id) && !entry.id.startsWith(SERVER_ID_PREFIX),
+  )
   const median = fresh.find((entry) => entry.indicatorId === REACTION_MEDIAN_ID)
   const lapses = fresh.find((entry) => entry.indicatorId === REACTION_LAPSES_ID)
   // Without both rows in the indicator file the check has nowhere to save, and
