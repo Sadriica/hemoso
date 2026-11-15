@@ -16,11 +16,19 @@ const STARS = [
   { x: 18, y: 86, size: 1.2, delay: 1100 },
   { x: 47, y: 58, size: 0.9, delay: 1500 },
   { x: 74, y: 88, size: 1.3, delay: 500 },
+  { x: 5, y: 44, size: 1, delay: 600 },
+  { x: 22, y: 8, size: 1.4, delay: 1300 },
+  { x: 35, y: 92, size: 1, delay: 800 },
+  { x: 53, y: 80, size: 1.1, delay: 1700 },
+  { x: 63, y: 40, size: 0.9, delay: 1000 },
+  { x: 78, y: 6, size: 1.2, delay: 1400 },
+  { x: 94, y: 52, size: 1.3, delay: 100 },
+  { x: 96, y: 14, size: 1, delay: 1600 },
 ]
 
 /**
  * First-load intro, on every full page load: the sky drifts, the mark draws itself and the
- * name types in, in about three and a half seconds. `onDone` runs once, when it
+ * name types in, in about five seconds. `onDone` runs once, when it
  * ends or on any key, pointer or touch, so a person never waits for it. `still`
  * is the top bar switch. `clockText` is the mission day and time (shown only if
  * given); `skipLabel` is the text of the skip button (rendered only if given).
@@ -62,7 +70,7 @@ export default function Intro({
     }
     const id = setTimeout(
       finish,
-      tokenMs(layer.current, '--motion-intro', 3400),
+      tokenMs(layer.current, '--motion-intro', 5200),
     )
     // Any key or tap skips it, and the key still does its usual work.
     const ev = ['keydown', 'pointerdown', 'touchstart'] as const
@@ -91,11 +99,18 @@ export default function Intro({
               top: `${star.y}%`,
               width: `${star.size * 2}px`,
               height: `${star.size * 2}px`,
-              // A share of the intro, in thirty-fourths of --motion-intro (tenths of a second at 3400 ms).
+              // A share of the intro, in thirty-fourths of --motion-intro (tenths of a second at 3400 ms, stretched by the token).
               animationDelay: `calc(var(--motion-intro) * ${star.delay / 100} / 34)`,
             }}
           />
         ))}
+        <div className="intro__glow" />
+        <div className="intro__scan" />
+        <svg className="intro__orbits" viewBox="0 0 400 400" focusable="false">
+          <ellipse className="intro__orbit intro__orbit--cyan" cx="200" cy="200" rx="170" ry="62" pathLength="1" />
+          <ellipse className="intro__orbit intro__orbit--violet" cx="200" cy="200" rx="120" ry="150" pathLength="1" />
+          <circle className="intro__moon" cx="370" cy="200" r="4" />
+        </svg>
         <svg className="intro__mark" viewBox="0 0 42 42" focusable="false">
           <circle cx="21" cy="21" r="15" pathLength="1" />
           <path d="M6 30 C 14 20, 28 14, 37 10" pathLength="1" />
