@@ -2,6 +2,10 @@
 
 Written by Eng 1 at every merge into `main`. Newest entry first.
 
+## submission-update · Sunday 14:50 (tag `submission-update`, merges #211)
+- eng1: a clearly labelled link to the source code on GitHub in the top bar
+  and a footer line on every phase (#211).
+
 ## submission · Sunday 14:15 (tag `submission`, merges #207, #208, #209)
 - eng1: the review polish (#207): Assumption rows never raise a review in the
   app, as in the API; baseline texts count days; the Report grid on desktop;
