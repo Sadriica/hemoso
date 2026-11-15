@@ -393,16 +393,67 @@ Labels:
 | null | `no_data` | "Not enough data yet", with the signals still missing |
 | any score, or null | `urgent` | "Call your CMO now", before any score |
 
+#### Red flag: `label` `urgent` (contract for the frontend)
+
+New with T-79. When the person reported a symptom on the newest mission day
+that `config/data/symptoms.csv` marks `red_flag` `yes`, and the condition lists
+it in its `symptoms` column, the condition comes back with `label` `urgent` and
+`red_flag` `true`, whatever its score (FORMATS.md section 3, point 3: "a red flag
+makes the condition urgent outside the score"). `score` and `signals` stay in
+the body, computed as usual, so the screen can still show what the condition
+rests on; the label wins over the score.
+
+What the frontend does with it (Bio 2, `team/bio2/notes/symptom-test-vectors.md`,
+"What the UI says"):
+
+- Show "Call your CMO now" first, before any score or bar.
+- Never write "you have" before the condition name; the CMO or the flight
+  surgeon confirms.
+- `red_flag` is present only when it is `true`; a condition without a red flag
+  has no `red_flag` key, so read it as `condition.red_flag === true`.
+
+Example: glucose 98 mg/dL inside the baseline, and confusion (a red flag)
+reported on day 12:
+
+```json
+{
+  "condition_id": "hypoglycaemia",
+  "name": "Hypoglycaemia",
+  "score": 0.2,
+  "label": "urgent",
+  "signals": [
+    {"indicator_id": "glucose_mgdl", "side": "below", "contribution": 0.0, "value": 98.0},
+    {"kind": "symptom", "symptom_id": "shakiness", "weight": 0.5, "contribution": null},
+    {"kind": "symptom", "symptom_id": "sweating", "weight": 0.5, "contribution": null},
+    {"kind": "symptom", "symptom_id": "hunger", "weight": 0.5, "contribution": null},
+    {"kind": "symptom", "symptom_id": "confusion", "weight": 0.25, "contribution": 0.25},
+    {"kind": "symptom", "symptom_id": "fast_heartbeat", "weight": 0.5, "contribution": null}
+  ],
+  "source": "https://diabetes.org/living-with-diabetes/hypoglycemia-low-blood-glucose",
+  "red_flag": true
+}
+```
+
+The symptoms the person did not report are listed with `contribution` null and
+stay out of the mean, so the score is 0.25 / 1.25 = 0.2, which alone would read
+`low`; the red flag makes it `urgent`. This body was produced by the route with
+Bio 2's rows (`team/bio2/notes/glucose-symptoms.md`) in a test config.
+
 #### Symptoms in the score
 
 The optional fifth column of `config/rules/conditions.csv`, `symptoms`, names
-the symptom ids that support the row. The format is FORMATS.md section 3
-(`config/data/symptoms.csv`, `config/data/symptom_log.csv`) and the rule with
-its vectors is `team/bio2/notes/symptom-test-vectors.md` (T-78). A row with
-four cells has no symptoms: no symptom signals, the reports are not even read
-from the store, and the body is the one the route returned before the column
-existed, with the same score: the single crossed boundary rule below applies
-only to rows that list symptoms.
+the symptom ids that support the row. The file is read by column name, and rows
+of four and five cells are both accepted: in a four-cell row the fourth cell is
+`source` and the row lists no symptom, so old rows stay valid under the
+five-column header. A file whose header still has four columns keeps working,
+and a five-cell row in it reads the fourth cell as `symptoms`. The format is
+FORMATS.md section 3 (`config/data/symptoms.csv`, `config/data/symptom_log.csv`)
+and the rule with its vectors is `team/bio2/notes/symptom-test-vectors.md`
+(T-78). A row with four cells has no symptom signals, and when no row lists a
+symptom the route does not ask the store for reports at all. It scores as it did
+before the symptom layer: the single crossed boundary rule below is part of a
+row that lists symptoms, so a four-cell row needs two usable signals like
+before T-78.
 
 - A symptom the row lists and the person reported is one more usable signal:
   weight `0.5` when `symptoms.csv` marks it `shared` `no`, `0.25` when it marks
@@ -434,12 +485,11 @@ only to rows that list symptoms.
   `symptoms.csv` no row says which symptoms are red flags, so no flag is set.
 
 Where the symptom layer stands with `config/` and the checker: the backend
-reads the five-column `conditions.csv` and both symptom files today, and a
-four-column file keeps working. `scripts/check_content.py` still fixes
-`conditions.csv` at four columns and does not read `symptoms.csv` or
-`symptom_log.csv`, so a five-column row fails the merge check and an unknown or
-repeated symptom id is not reported anywhere yet. That check is T-78's other
-half, with Eng 1; until it lands, a real `config/` cannot carry symptoms.
+reads a five-column `conditions.csv`, a file that still has four columns, and
+both symptom files today. The T-78 checker (Eng 1) accepts four or five
+columns and checks every symptom id against `symptoms.csv`; the five-column
+header of `config/rules/conditions.csv` lands with this change, not before it,
+so a `config/` file with four columns stays valid until Bio 2 adds the cell.
 
 The constants are in `backend/app/conditions.py`: `INDICATOR_WEIGHT` (1),
 `ATTENTION_POINT` (1), `BASELINE_POINT` (0.5), `SYMPTOM_SPECIFIC_WEIGHT`
@@ -493,12 +543,12 @@ Each signal object:
 | `contribution` | number or null | the signal's term in the weighted mean, its weight times its evidence: `1`, `0.5`, `0.25` or `0`; null while it is not usable |
 | `value` | number or null | the newest reading, or null when there is none |
 
-A four-column `conditions.csv` returns exactly the body this route returned
-before the symptom layer: no `kind`, no `symptom_id`, no `weight`, no
-`red_flag`, and the same score. The rule that lets a single crossed cited
-boundary score on its own (T-78 rule 3) applies only to a row with symptoms, so
-a four-cell row with one usable signal still answers `no_data` (vector
-"four-cell row after the change: same score as before").
+A four-column `conditions.csv` returns the body this route returned before the
+symptom layer: no `kind`, no `symptom_id`, no `weight`, no `red_flag`, and the
+same score. The rule that lets a single crossed cited boundary score on its own
+(T-78 rule 3) applies only to a row that lists symptoms, so a four-cell row with
+one usable signal answers `no_data`, as the vector "four-cell row after the
+change: same score as before" records.
 
 `docs/openapi.json` marks the signal fields optional because one model covers
 both kinds; the body is the one in the table above. A client that reads
@@ -514,12 +564,12 @@ curl "$VITE_API_BASE_URL/people/demo_astronaut_1/conditions"
 
 With the fifth column and the reports of the day, a condition lists the
 symptoms behind the score too. Glucose 60 crossed the cited row below 70 and
-the person reported shaky, sweating and confusion; confusion is `shared` in
+the person reported shakiness, sweating and confusion; confusion is `shared` in
 `symptoms.csv` and a red flag, so it weighs 0.25 and the label is `urgent`:
 
 ```bash
 curl "$VITE_API_BASE_URL/people/demo_astronaut_1/conditions"
-# 200 [..., {"condition_id":"hypoglycaemia","name":"Hypoglycaemia","score":1.0,"label":"urgent","signals":[{"indicator_id":"glucose_mgdl","side":"below","contribution":1.0,"value":60.0},{"kind":"symptom","symptom_id":"shaky","weight":0.5,"contribution":0.5},{"kind":"symptom","symptom_id":"sweating","weight":0.5,"contribution":0.5},{"kind":"symptom","symptom_id":"confusion","weight":0.25,"contribution":0.25}],"source":"https://diabetes.org/living-with-diabetes/hypoglycemia-low-blood-glucose","red_flag":true}]
+# 200 [..., {"condition_id":"hypoglycaemia","name":"Hypoglycaemia","score":1.0,"label":"urgent","signals":[{"indicator_id":"glucose_mgdl","side":"below","contribution":1.0,"value":60.0},{"kind":"symptom","symptom_id":"shakiness","weight":0.5,"contribution":0.5},{"kind":"symptom","symptom_id":"sweating","weight":0.5,"contribution":0.5},{"kind":"symptom","symptom_id":"confusion","weight":0.25,"contribution":0.25}],"source":"https://diabetes.org/living-with-diabetes/hypoglycemia-low-blood-glucose","red_flag":true}]
 ```
 
 ```js
@@ -695,8 +745,8 @@ Responses:
 ```bash
 curl -X POST "$VITE_API_BASE_URL/people/demo_astronaut_1/symptoms" \
   -H "Content-Type: application/json" \
-  -d '{"symptom_id":"shaky","severity":2,"mission_day":12,"time":"14:10"}'
-# 201 {"symptom_id":"shaky","severity":2,"mission_day":12,"time":"14:10","person_id":"demo_astronaut_1"}
+  -d '{"symptom_id":"shakiness","severity":2,"mission_day":12,"time":"14:10"}'
+# 201 {"symptom_id":"shakiness","severity":2,"mission_day":12,"time":"14:10","person_id":"demo_astronaut_1"}
 # re-sending the same body returns 200 with the same stored report
 ```
 
@@ -710,7 +760,7 @@ const response = await fetch(
       Authorization: `Bearer ${session.token}`, // only when that person has an account
     },
     body: JSON.stringify({
-      symptom_id: "shaky",
+      symptom_id: "shakiness",
       severity: 2,
       mission_day: 12,
       time: "14:10",
@@ -749,12 +799,12 @@ when that person has an account; `502` when the upstream store (Supabase) is
 unreachable or returns an error.
 
 ```bash
-curl "$VITE_API_BASE_URL/people/demo_astronaut_1/symptoms?symptom_id=shaky"
-# 200 [{"symptom_id":"shaky","severity":2,"mission_day":12,"time":"14:10","person_id":"demo_astronaut_1"}]
+curl "$VITE_API_BASE_URL/people/demo_astronaut_1/symptoms?symptom_id=shakiness"
+# 200 [{"symptom_id":"shakiness","severity":2,"mission_day":12,"time":"14:10","person_id":"demo_astronaut_1"}]
 ```
 
 ```js
-const params = new URLSearchParams({ symptom_id: "shaky" });
+const params = new URLSearchParams({ symptom_id: "shakiness" });
 const response = await fetch(
   `${VITE_API_BASE_URL}/people/demo_astronaut_1/symptoms?${params}`
 );
