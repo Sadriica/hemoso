@@ -4,9 +4,9 @@ The rule is "How each value is compared (team decision, Sat 14 Nov 15:37)":
 median and spread of the person's last 14 entries for the indicator, in the
 same context; `spread = max(1.4826 x median absolute deviation, min_spread)`;
 fewer than 3 entries gives `no_data`, a value more than 3 spreads from the
-median gives `outside_range`, and a matching row of `rules/attention.csv` gives
-`needs_review`. The derivation and the nine test vectors are in
-`docs/findings/phys-02-baseline-state-rule.md`.
+median gives `outside_range`, and a matching row of `rules/attention.csv` whose
+source is a link gives `needs_review`. The derivation and the test vectors are
+in `docs/findings/phys-02-baseline-state-rule.md`.
 
 The arithmetic is pure: no file, network or clock access. The route reads the
 rows with `app.indicators` and the history with the store, so the same
@@ -26,9 +26,14 @@ Where the decision leaves room, this module resolves it as follows:
   also receives the mission day and time of that value, keeps only the stored
   entries strictly earlier (`window`'s `before`); without them it keeps every
   stored entry, as it did before T-68.
-- `no_data` comes first, before `attention.csv` is looked at, as `phys-02`
-  orders the checks: with fewer than 3 entries there is no baseline, so the
-  response carries no attention row either.
+- The attention row comes first, before the baseline, as `phys-02` orders the
+  checks (safety decision, Sat 14 Nov): a value past a cited limit is
+  `needs_review` even with no baseline, so a core temperature of 39.5 °C on the
+  first day is not "no data yet". Only rows whose `source` is a link count
+  (`cited_rows`); a row marked `Assumption` never raises `needs_review`, with or
+  without a baseline, because an invented limit must not raise an alarm on its
+  own. The finding says "the only place a `needs_review` can come from, and only
+  when the row carries a link".
 - A value exactly on an attention threshold does not trigger that row; the
   shared vectors and the frontend compare strictly.
 - Two matching rows with the same `notify` are not defined by FORMATS.md; the
@@ -103,14 +108,16 @@ def state_for(
 ) -> str:
     """One of `no_data`, `in_range`, `outside_range` or `needs_review`.
 
-    `attention` is the row `attention_for` returned, or None when no row
-    matches. Without a baseline the state stops at `no_data`; with one, a
-    matching attention row wins over the band and the value is `needs_review`.
+    `attention` is the row `attention_for` returned from `cited_rows`, or None
+    when no row matches. The checks follow phys-02's order: a cited attention
+    row gives `needs_review` with or without a baseline; then, without a
+    baseline, `no_data`; then the band. A row without a link is ignored here
+    too, so a caller that forgets `cited_rows` still cannot raise the alarm.
     """
+    if attention is not None and is_cited(attention):
+        return "needs_review"
     if median is None:
         return "no_data"
-    if attention is not None:
-        return "needs_review"
     if abs(value - median) <= BAND * spread:
         return "in_range"
     return "outside_range"
@@ -127,6 +134,23 @@ def worse_state(first: str, second: str) -> str:
     cited clinical boundary.
     """
     return max(first, second, key=STATE_ORDER.index)
+
+
+def is_cited(row: dict) -> bool:
+    """Whether a row's `source` is one or more links, with no `Assumption`.
+
+    STANDARDS.md section 6: in tables a source is a link alone, several
+    separated by a space, or the word `Assumption`.
+    """
+    links = str(row.get("source", "")).split()
+    return bool(links) and all(
+        link.startswith(("https://", "http://")) for link in links
+    )
+
+
+def cited_rows(rows: Iterable[dict]) -> list[dict]:
+    """The rows that may raise `needs_review`: those whose source is a link."""
+    return [row for row in rows if is_cited(row)]
 
 
 def attention_for(rows: Sequence[dict], value: float) -> dict | None:
