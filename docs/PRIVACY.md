@@ -13,6 +13,39 @@ mission day and a time. The exact columns and their format are in
 [../FORMATS.md](../FORMATS.md), which also names the synthetic demo data files.
 No measurement belongs to a real person.
 
+## Data kept on the device
+
+The frontend saves the astronaut's entries in the browser, one local storage
+key, `hemoso:v2` (`frontend/src/data/storedState.ts`). It holds:
+
+- the entries: person id, indicator id, value, unit, mission day, time and the
+  app's id for the row (`frontend/src/domain/types.ts`);
+- the ids waiting to be sent, the ids the server refused, and the mission time
+  of the last send.
+
+On the first run the key is written with the demo rows from
+`config/data/demo_data.csv` and an empty waiting list
+(`frontend/src/data/entryStore.ts`). Every later save rewrites the same key.
+
+A sent entry stays on the device: a request the server accepts only takes its id
+out of the waiting list, so the History tab keeps its readings. An entry the
+server refuses with 409 or 422 leaves the waiting list for good and stays in the
+entries.
+
+Every value there is synthetic in the demo, as everywhere else (REQ-14). The app
+sets no cookie, uses no session storage and opens no database: this key is the
+only thing it keeps (`frontend/src/data/`).
+
+When the browser blocks storage, the app works from memory for that tab and the
+screen says the entries are not saved on this device. When a stored payload
+cannot be read, the app replaces it with the demo rows and says so.
+
+To remove what a device holds, clear the site data for the app's address,
+local storage included; the next visit starts again from the demo rows. Clearing
+it also matters on a shared browser: the person picker lists the people whose
+entries are stored there (`frontend/src/App.tsx`), so the entries of an earlier
+session stay visible until the site data is cleared.
+
 ## Where keys live
 
 The app must store data in Supabase and run on Vercel and a backend host

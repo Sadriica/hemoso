@@ -7,8 +7,8 @@ it with `uv run python scripts/export_openapi.py` from `backend/`). The field
 meanings come from `../FORMATS.md`. All data is synthetic (REQ-14); nothing here
 holds real personal data.
 
-The frontend reads the base URL from an `API_URL` placeholder, never a hard-coded
-host. The examples below use `$API_URL` (shell) and `API_URL` (JavaScript).
+The frontend reads the base URL from a `VITE_API_BASE_URL` placeholder, never a hard-coded
+host. The examples below use `$VITE_API_BASE_URL` (shell) and `VITE_API_BASE_URL` (JavaScript).
 
 ## Routes
 
@@ -19,29 +19,34 @@ Health check. No request body.
 Responses: `200`.
 
 ```bash
-curl "$API_URL/health"
+curl "$VITE_API_BASE_URL/health"
 # {"status":"ok"}
 ```
 
 ```js
-const response = await fetch(`${API_URL}/health`);
+const response = await fetch(`${VITE_API_BASE_URL}/health`);
 const body = await response.json(); // { status: "ok" }
 ```
 
 ### POST /entries
 
-Stores one measurement (REQ-27) and returns the stored entry.
+Stores one measurement (REQ-27) and returns the stored entry. The same entry can
+be re-sent (the frontend re-sends what waits in its outbox, REQ-13) without
+creating a duplicate: one entry is kept per `person_id`, `indicator_id`,
+`mission_day` and `time`.
 
-Request body: one `Entry`. Every field is required.
+Request body: one `Entry`. Every field is required except `context`, which
+defaults to `rest` when omitted.
 
 | Field | Type | Rule |
 | --- | --- | --- |
-| `person_id` | string | lowercase `snake_case`: letters, digits and underscores, starts with a letter, no spaces |
-| `indicator_id` | string | same rule as `person_id` |
-| `value` | number | a finite number |
-| `unit` | string | the indicator's unit from `config/data/indicators.csv` (see below) |
-| `mission_day` | integer | greater than 0, "day N" |
+| `person_id` | string | at most 64 characters, lowercase `snake_case`: letters, digits and underscores, starts with a letter, no spaces |
+| `indicator_id` | string | at most 64 characters, same rule as `person_id` |
+| `value` | number | a finite number; booleans and strings are rejected |
+| `unit` | string | at most 64 characters, the indicator's unit from `config/data/indicators.csv` (see below) |
+| `mission_day` | integer | greater than 0, at most 100000, "day N"; booleans and strings are rejected |
 | `time` | string | `HH:MM`, 24-hour clock |
+| `context` | string | `rest`, `after_exercise`, `on_waking` or `before_sleep`; any other value is rejected |
 
 The id rule is `../FORMATS.md` section 2. The example ids here are placeholders
 (`demo_astronaut_1`, `example_indicator`).
@@ -51,17 +56,25 @@ an unknown `indicator_id` returns `unknown indicator`, and a `unit` that differs
 from the file's unit returns `unit mismatch`. Until Phys writes that file, the
 check is skipped and any id and unit are accepted.
 
-Responses: `201` (the stored entry), `422` (validation).
+Responses:
+
+| Code | Meaning |
+| --- | --- |
+| `201` | A new entry was stored; the stored entry is returned. |
+| `200` | An entry with the same `person_id`, `indicator_id`, `mission_day` and `time` already exists with the same `value`, `unit` and `context`; that stored entry is returned and nothing is added. |
+| `409` | An entry with the same key already exists with a different `value`, `unit` or `context`; `detail` is a short plain message. |
+| `422` | Validation (field rule, or indicator check). |
 
 ```bash
-curl -X POST "$API_URL/entries" \
+curl -X POST "$VITE_API_BASE_URL/entries" \
   -H "Content-Type: application/json" \
-  -d '{"person_id":"demo_astronaut_1","indicator_id":"example_indicator","value":1.5,"unit":"example_unit","mission_day":1,"time":"13:30"}'
-# 201 {"person_id":"demo_astronaut_1","indicator_id":"example_indicator","value":1.5,"unit":"example_unit","mission_day":1,"time":"13:30"}
+  -d '{"person_id":"demo_astronaut_1","indicator_id":"example_indicator","value":1.5,"unit":"example_unit","mission_day":1,"time":"13:30","context":"rest"}'
+# 201 {"person_id":"demo_astronaut_1","indicator_id":"example_indicator","value":1.5,"unit":"example_unit","mission_day":1,"time":"13:30","context":"rest"}
+# re-sending the same body returns 200 with the same stored entry
 ```
 
 ```js
-const response = await fetch(`${API_URL}/entries`, {
+const response = await fetch(`${VITE_API_BASE_URL}/entries`, {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({
@@ -71,9 +84,10 @@ const response = await fetch(`${API_URL}/entries`, {
     unit: "example_unit",
     mission_day: 1,
     time: "13:30",
+    context: "rest",
   }),
 });
-const entry = await response.json(); // status 201; the entry echoes the request
+const entry = await response.json(); // status 201 (new) or 200 (already stored); the entry echoes the request
 ```
 
 ### GET /people/{person_id}/indicators/{indicator_id}/history
@@ -85,19 +99,101 @@ Path parameters: `person_id` and `indicator_id`, strings (same lowercase
 `snake_case` rule).
 
 Responses: `200` (a JSON array of `Entry`), an empty array when there are no
-entries.
+entries; `422` when a path id breaks the `snake_case` rule; `502` when the
+upstream store (Supabase) is unreachable or returns an error.
 
 ```bash
-curl "$API_URL/people/demo_astronaut_1/indicators/example_indicator/history"
-# 200 [{"person_id":"demo_astronaut_1","indicator_id":"example_indicator","value":1.5,"unit":"example_unit","mission_day":1,"time":"13:30"}]
+curl "$VITE_API_BASE_URL/people/demo_astronaut_1/indicators/example_indicator/history"
+# 200 [{"person_id":"demo_astronaut_1","indicator_id":"example_indicator","value":1.5,"unit":"example_unit","mission_day":1,"time":"13:30","context":"rest"}]
 ```
 
 ```js
 const response = await fetch(
-  `${API_URL}/people/demo_astronaut_1/indicators/example_indicator/history`
+  `${VITE_API_BASE_URL}/people/demo_astronaut_1/indicators/example_indicator/history`
 );
 const history = await response.json(); // array, oldest entry first
 ```
+
+### GET /people/{person_id}/indicators/{indicator_id}/state
+
+Returns one value against that person's own baseline (REQ-12, REQ-27). The
+baseline is computed from the stored history, never from a file: nothing here
+is a fixed range.
+
+Path parameters: `person_id` and `indicator_id`, strings (same lowercase
+`snake_case` rule).
+
+Query parameters:
+
+| Name | Type | Rule |
+| --- | --- | --- |
+| `value` | number | required; a finite number (the value the astronaut enters) |
+| `context` | string | `rest` (default), `after_exercise`, `on_waking` or `before_sleep`; a reading is only compared with readings in the same context |
+
+The rule is FORMATS.md section 3, "How each value is compared", and
+`docs/findings/phys-02-baseline-state-rule.md`:
+
+- The window is the last 14 stored entries for the person and indicator in the
+  same context, oldest first; the `value` being tested is not one of them.
+- `median` is the median of the window; `spread` is
+  `max(1.4826 × median absolute deviation, min_spread)`, with `min_spread` from
+  that indicator's row in `config/data/indicators.csv`.
+- Fewer than 3 entries gives `no_data`; then `median`, `spread` and `attention`
+  are null and `n` counts the entries available.
+- A matching row of `config/rules/attention.csv` gives `needs_review` and the
+  row, with the most severe `notify` (`crew` < `cmo` < `flight_surgeon`) when
+  several rows match. `attention` is null otherwise.
+- With no attention row, a value at most 3 spreads from the median is
+  `in_range`, anything further is `outside_range`.
+
+Four points the decision does not settle, resolved here and reported as open
+questions in `team/eng1/`:
+
+- The window counts entries, not days: entries carry a mission day and a time,
+  not a date, so "the last 14 days" cannot be measured from the store.
+- `no_data` is checked before `attention.csv`, as `phys-02` orders the checks,
+  so a value crossing an attention threshold is still `no_data` until the
+  window holds 3 entries.
+- A value exactly on an attention threshold does not trigger that row.
+- Two matching rows with the same `notify` are not defined by FORMATS.md; the
+  more extreme threshold wins, as the shared vectors in
+  `scripts/fixtures/format_rules/attention.json` record.
+
+Responses: `200` (an `IndicatorState`); `404` when `indicator_id` has no row in
+`config/data/indicators.csv` (also while that file does not exist, because then
+no indicator is known and the noise floor cannot be read); `422` when a path id
+breaks the `snake_case` rule, `value` is missing or not a finite number, or
+`context` is not one of the four; `502` when the upstream store (Supabase) is
+unreachable or returns an error.
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `state` | string | `no_data`, `in_range`, `outside_range` or `needs_review` |
+| `median` | number or null | the window's median, in the indicator's unit |
+| `spread` | number or null | the window's spread, in the indicator's unit |
+| `n` | integer | how many entries the window holds |
+| `attention` | object or null | the attention row that matched: `attention_level`, `notify`, `source` |
+
+```bash
+curl "$VITE_API_BASE_URL/people/demo_astronaut_1/indicators/hr_bpm/state?value=72&context=rest"
+# 200 {"state":"in_range","median":70.0,"spread":4.0,"n":14,"attention":null}
+```
+
+```js
+const params = new URLSearchParams({ value: "72", context: "rest" });
+const response = await fetch(
+  `${VITE_API_BASE_URL}/people/demo_astronaut_1/indicators/hr_bpm/state?${params}`
+);
+const status = await response.json();
+// { state: "in_range", median: 70.0, spread: 4.0, n: 14, attention: null }
+if (status.attention !== null) {
+  // status.state === "needs_review": show status.attention.attention_level,
+  // who is notified, and the source; the CMO or flight surgeon confirms.
+}
+```
+
+The values above are placeholders in a synthetic history (REQ-14); no real crew
+data and no clinical limit is stored in this endpoint.
 
 ## Errors
 
@@ -109,6 +205,10 @@ message.
 | Cause | `msg` |
 | --- | --- |
 | `mission_day` is 0 or negative | `Input should be greater than 0` |
+| `mission_day` is above 100000 | `Input should be less than or equal to 100000` |
+| `person_id`, `indicator_id` or `unit` is longer than 64 characters | `String should have at most 64 characters` |
+| `value` is a boolean or a string | `Input should be a valid number` |
+| `mission_day` is a boolean or a string | `Input should be a valid integer` |
 | `time` is not `HH:MM` 24-hour | `Value error, time must be HH:MM (24-hour)` |
 | `person_id` or `indicator_id` breaks the id rule | `Value error, must be lowercase snake_case` |
 | a field is missing | `Field required` |
@@ -120,6 +220,16 @@ Indicator check: `detail` is a plain string.
 | `indicator_id` not in `config/data/indicators.csv` | `unknown indicator` |
 | `unit` differs from the file's unit | `unit mismatch` |
 
+`POST /entries` returns `409` when an entry with the same `person_id`,
+`indicator_id`, `mission_day` and `time` already exists with a different
+`value`, `unit` or `context`. The `detail` is the plain string `an entry for
+this person, indicator, day and time already exists with a different value`.
+
+`GET /people/{person_id}/indicators/{indicator_id}/history` returns `422` with a
+plain-string `detail` when `person_id` or `indicator_id` breaks the `snake_case`
+rule, and `502` with `detail` `upstream storage error` when the Supabase store
+is unreachable or returns an error.
+
 ## CORS
 
 The backend reads `ALLOWED_ORIGINS`, a comma-separated list of origins. When it
@@ -127,6 +237,43 @@ is unset or empty, the default is `http://localhost:5173` (the Vite dev server).
 Allowed methods are `GET` and `POST`; allowed headers are all (`*`). A preflight
 `OPTIONS` request returns `200` with `access-control-allow-origin` set to the
 allowed origin.
+
+## Rate limit
+
+The API has no login (`PRIVACY.md`), so every client address is capped at 120
+requests per 60 seconds (`backend/app/ratelimit.py`). The window slides: a
+request is accepted while that address made fewer than 120 requests in the last
+60 seconds.
+
+- `RATE_LIMIT_PER_MINUTE` sets the cap; unset or empty means 120 and `0` turns
+  the limit off. A value that is not a whole number, or is negative, is read as
+  120.
+- The address is the last value of `X-Forwarded-For` when the header is
+  present, else the socket address. The deployed API sits behind Railway's
+  proxy, so the socket address of every request is the proxy. The proxy appends
+  the address it saw to the end of that header; earlier values come from the
+  client and can be forged, so they are not used.
+- `GET /health`, `GET /docs` (and `/docs/oauth2-redirect`) and
+  `GET /openapi.json` are exempt: they are never counted and never refused, so
+  the health check and the schema stay reachable.
+- Over the cap the answer is `429`, with `Retry-After` holding the seconds
+  until the oldest request in the window leaves it, and this body:
+
+```json
+{"detail": "too many requests, try again in a minute"}
+```
+
+```js
+const response = await fetch(`${VITE_API_BASE_URL}/health`);
+if (response.status === 429) {
+  const wait = Number(response.headers.get("Retry-After")); // seconds
+  // wait before sending again; the entry stays in the outbox meanwhile (REQ-13)
+}
+```
+
+Every route counts, `POST /entries` included. The counter lives in the memory of
+the backend process: with more than one instance each counts its own requests,
+and a restart clears every window.
 
 ## Not in the API yet
 

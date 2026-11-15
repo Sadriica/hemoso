@@ -1,19 +1,62 @@
 {
   "components": {
     "schemas": {
-      "Entry": {
-        "description": "One row of config/data/demo_data.csv: person, indicator, value, unit, day, time.",
+      "AttentionRow": {
+        "description": "The attention.csv row a value crosses (REQ-05).\n\n`attention_level` is the state name Bio 2 writes, which is also the\nsub-heading in `config/content/<indicator_id>.md`; `notify` is who acts;\n`source` is the link or `Assumption` of the row.",
         "properties": {
+          "attention_level": {
+            "title": "Attention Level",
+            "type": "string"
+          },
+          "notify": {
+            "enum": [
+              "crew",
+              "cmo",
+              "flight_surgeon"
+            ],
+            "title": "Notify",
+            "type": "string"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "attention_level",
+          "notify",
+          "source"
+        ],
+        "title": "AttentionRow",
+        "type": "object"
+      },
+      "Entry": {
+        "description": "One row of config/data/demo_data.csv: person, indicator, value, unit, day, time, context.",
+        "properties": {
+          "context": {
+            "default": "rest",
+            "enum": [
+              "rest",
+              "after_exercise",
+              "on_waking",
+              "before_sleep"
+            ],
+            "title": "Context",
+            "type": "string"
+          },
           "indicator_id": {
+            "maxLength": 64,
             "title": "Indicator Id",
             "type": "string"
           },
           "mission_day": {
             "exclusiveMinimum": 0.0,
+            "maximum": 100000.0,
             "title": "Mission Day",
             "type": "integer"
           },
           "person_id": {
+            "maxLength": 64,
             "title": "Person Id",
             "type": "string"
           },
@@ -22,6 +65,7 @@
             "type": "string"
           },
           "unit": {
+            "maxLength": 64,
             "title": "Unit",
             "type": "string"
           },
@@ -52,6 +96,66 @@
           }
         },
         "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "IndicatorState": {
+        "description": "One value against the person's own baseline (FORMATS.md section 3).\n\n`median` and `spread` are null and `n` counts fewer than 3 entries while\nthe state is `no_data`; `attention` is the row that made the state\n`needs_review`, and null otherwise.",
+        "properties": {
+          "attention": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AttentionRow"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "median": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Median"
+          },
+          "n": {
+            "title": "N",
+            "type": "integer"
+          },
+          "spread": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spread"
+          },
+          "state": {
+            "enum": [
+              "no_data",
+              "in_range",
+              "outside_range",
+              "needs_review"
+            ],
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "state",
+          "median",
+          "spread",
+          "n",
+          "attention"
+        ],
+        "title": "IndicatorState",
         "type": "object"
       },
       "ValidationError": {
@@ -116,6 +220,9 @@
           "required": true
         },
         "responses": {
+          "200": {
+            "description": "An entry with this key and value already existed."
+          },
           "201": {
             "content": {
               "application/json": {
@@ -125,6 +232,9 @@
               }
             },
             "description": "Successful Response"
+          },
+          "409": {
+            "description": "An entry with this key already exists with a different value or unit."
           },
           "422": {
             "content": {
@@ -212,6 +322,77 @@
           }
         },
         "summary": "Get History"
+      }
+    },
+    "/people/{person_id}/indicators/{indicator_id}/state": {
+      "get": {
+        "description": "One value against the person's own baseline (FORMATS.md section 3).",
+        "operationId": "get_state_people__person_id__indicators__indicator_id__state_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "person_id",
+            "required": true,
+            "schema": {
+              "title": "Person Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "indicator_id",
+            "required": true,
+            "schema": {
+              "title": "Indicator Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "value",
+            "required": true,
+            "schema": {
+              "title": "Value",
+              "type": "number"
+            }
+          },
+          {
+            "in": "query",
+            "name": "context",
+            "required": false,
+            "schema": {
+              "default": "rest",
+              "title": "Context",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IndicatorState"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "404": {
+            "description": "The indicator is not in config/data/indicators.csv."
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get State"
       }
     }
   }

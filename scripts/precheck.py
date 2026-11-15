@@ -18,6 +18,7 @@ Exits with code 1 when something must be fixed before pushing.
 from __future__ import annotations
 
 import fnmatch
+import os
 import re
 import subprocess
 import sys
@@ -31,17 +32,18 @@ OWNED = {
     "bio2": ["config/rules/*", "submission/submission.md", "submission/README.md", "team/bio2/*",
              "docs/findings/bio2-*.md"],
     "phys": ["config/data/*", "docs/sources.md", "docs/nasa_data.md", "team/phys/*", "docs/findings/phys-*.md"],
-    "eng1": ["docs/CHALLENGE.md", "docs/requirements.md", "docs/board/requirements.csv", "backend/*", "scripts/*", "FORMATS.md", "README.md", "CHANGELOG.md", "config/README.md", "SI-USE.md",
+    "eng1": ["docs/CHALLENGE.md", "docs/requirements.md", "docs/board/requirements.csv", "frontend/*", "scripts/*", "FORMATS.md", "README.md", "CHANGELOG.md", "config/README.md", "SI-USE.md",
              ".github/*", "team/eng1/*", "docs/BOARD.md", "docs/SETUP.md", "docs/STACK.md", "docs/DEPLOY.md",
-             "docs/PRIVACY.md", "docs/DECISIONS.md", "docs/README.md", "docs/CONTRACTS.md", "docs/API.md", "docs/openapi.json", "docs/deploy/*",
-             "docs/board/seed-tasks.csv", "docs/board/issue-templates/*",
+             "docs/PRIVACY.md", "docs/DECISIONS.md", "docs/README.md", "docs/CONTRACTS.md", "docs/deploy/*",
+             "docs/board/seed-tasks.csv", "docs/board/issue-templates/*", "docs/findings/TEMPLATE.md",
              # Shared team files: only the integrator edits them.
              "AGENTS.md", "CLAUDE.md", "STANDARDS.md", "SKILLS.md", "opencode.json", ".opencode/*",
-             ".githooks/*", ".gitignore", "LICENSE"],
-    "eng2": ["frontend/*", "team/eng2/*"],
+             ".claude/*", ".githooks/*", ".gitignore", "LICENSE"],
+    # Sat 19:40: Wambi took the frontend and Juli the backend.
+    "eng2": ["backend/*", "docs/API.md", "docs/openapi.json", "team/eng2/*"],
 }
 FORBIDDEN = re.compile(
-    r"co-authored-by|generated (with|by)|assisted-by|asistido-por|claude(?!\.md)|chatgpt|openai|copilot|"
+    r"co-authored-by|generated (with|by)|assisted-by|asistido-por|(?<!\.)claude(?!\.md)|chatgpt|openai|copilot|"
     r"gemini|anthropic|deepseek|\bgpt\b|\bllm\b|(?-i:\bAI\b)|artificial intelligence|🤖|signed-off-by",
     re.I)  # "AI" only in capitals, so words such as "said" or "detail" never match
 
@@ -50,18 +52,39 @@ FORBIDDEN = re.compile(
 MAX_SECRET_FILE_BYTES = 1_000_000  # skip files larger than 1 MB
 _PRIVATE_KEY_RE = re.compile(r"-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----")
 _GITHUB_TOKEN_RE = re.compile(r"(?:ghp_|gho_|github_pat_)[A-Za-z0-9_]{8,}")
+_SB_SECRET_RE = re.compile(r"\bsb_secret_[A-Za-z0-9_-]{10,}")
 _JWT_RE = re.compile(r"\beyJ[A-Za-z0-9_.-]{98,}")  # longer than 100 characters
 _SUPABASE_KEY_RE = re.compile(
-    r"^\s*(?:SUPABASE_KEY|SUPABASE_SERVICE_ROLE_KEY)\s*=\s*(.*)$")
+    r"^\s*(?:export\s+)?(?:SUPABASE_KEY|SUPABASE_SERVICE_ROLE_KEY)\s*=\s*(.*)$")
 
 
 def run(*cmd: str) -> str:
-    p = subprocess.run(cmd, capture_output=True, text=True)
+    p = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
     return p.stdout.rstrip() if p.returncode == 0 else ""
 
 
 def owns(person: str, path: str) -> bool:
     return any(fnmatch.fnmatch(path, pat) for pat in OWNED.get(person, []))
+
+
+def scan_text(text: str) -> str | None:
+    """The first secret rule the text breaks, or None if it is clean."""
+    if _PRIVATE_KEY_RE.search(text):
+        return "private key header"
+    if _GITHUB_TOKEN_RE.search(text):
+        return "GitHub token"
+    if _SB_SECRET_RE.search(text):
+        return "Supabase secret key (sb_secret_)"
+    for line in text.splitlines():
+        m = _SUPABASE_KEY_RE.match(line)
+        if m:
+            value = m.group(1).strip()
+            if value.strip('"\'') == "":
+                continue
+            return "Supabase key set to a non-empty value"
+    if _JWT_RE.search(text):
+        return "JWT-shaped secret (Supabase key)"
+    return None
 
 
 def secret_rule(path: str) -> str | None:
@@ -81,21 +104,35 @@ def secret_rule(path: str) -> str | None:
         return None  # deleted or unreadable; nothing will be pushed from it
     if b"\x00" in data[:8192]:
         return None  # binary
-    text = data.decode("utf-8", errors="replace")
-    if _PRIVATE_KEY_RE.search(text):
-        return "private key header"
-    if _GITHUB_TOKEN_RE.search(text):
-        return "GitHub token"
-    for line in text.splitlines():
-        m = _SUPABASE_KEY_RE.match(line)
-        if m and m.group(1).strip() not in ("", '""', "''"):
-            return "Supabase key set to a non-empty value"
-    if _JWT_RE.search(text):
-        return "JWT-shaped secret (Supabase key)"
-    return None
+    return scan_text(data.decode("utf-8", errors="replace"))
+
+
+def committed_secrets(log_args: list[str]) -> list[tuple[str, str]]:
+    """(file, rule) pairs for secrets in the added lines of the person's own commits.
+
+    Binary diffs have no ``+++ b/`` header or added ``+`` lines, so they are
+    skipped naturally. Reports the file and the rule, never the value.
+    """
+    diff = run("git", "log", "-p", "--no-merges", "--format=", *log_args)
+    if not diff:
+        return []
+    found: list[tuple[str, str]] = []
+    current = ""
+    for line in diff.splitlines():
+        if line.startswith("+++ b/"):
+            current = line[len("+++ b/"):]
+        elif line.startswith("+") and not line.startswith("+++") and current:
+            rule = scan_text(line[1:])
+            if rule:
+                found.append((current, rule))
+    return found
 
 
 def main() -> int:
+    top = run("git", "rev-parse", "--show-toplevel")
+    if top:
+        os.chdir(top)
+
     problems, notes = [], []
     branch = run("git", "branch", "--show-current")
     m = re.match(r"^(?:fix/)?(bio[12]|phys|eng[12])(?:-.*)?$", branch)
@@ -108,23 +145,43 @@ def main() -> int:
 
     changed = set(run("git", "status", "--porcelain").splitlines())
     files = {line[3:].split(" -> ")[-1].strip('"') for line in changed if line.strip()}
+    working_files = set(files)  # staged and unstaged changes only
     upstream = run("git", "rev-parse", "--abbrev-ref", "@{u}")
     base = upstream or run("git", "merge-base", "HEAD", "origin/main") or run("git", "merge-base", "HEAD", "main") or ""
+    origin_main = run("git", "rev-parse", "--verify", "origin/main") or ""
+    # The person's own commits: <base>..HEAD minus everything reachable from
+    # origin/main. Merge commits are never the person's own work either.
+    own_range = [f"{base}..HEAD"] if base else ["-5"]
+    if origin_main:
+        own_range.append("^origin/main")
+    # Commits that came in by merging another person's branch (for example
+    # origin/eng1 before it reaches main) are theirs, not yours.
+    for other in ("bio1", "bio2", "phys", "eng1", "eng2"):
+        if other != person and run("git", "rev-parse", "--verify", "--quiet", f"origin/{other}"):
+            own_range.append(f"^origin/{other}")
     if base:
-        files |= set(run("git", "diff", "--name-only", f"{base}..HEAD").splitlines())
+        if origin_main:
+            files |= {f for f in run("git", "log", "--no-merges", "--format=", "--name-only", *own_range).splitlines() if f}
+        else:
+            files |= set(run("git", "diff", "--name-only", f"{base}..HEAD").splitlines())
     foreign = sorted(f for f in files if f and not owns(person, f))
     if foreign:
         problems.append("files outside your paths:\n        " + "\n        ".join(foreign)
                         + "\n      Undo them (git restore <file>) or ask their owner.")
     print(f"Files changed or not pushed: {len(files)}")
 
-    for f in sorted(files):
+    for f in sorted(working_files):
         rule = secret_rule(f)
         if rule:
             problems.append(f"secret in '{f}': {rule}")
+    for f, rule in committed_secrets(own_range):
+        problems.append(f"secret in '{f}': {rule}")
 
-    log_range = f"{base}..HEAD" if base else "-5"
-    messages = run("git", "log", "--format=%H%x00%B%x01", log_range).split("\x01")
+    log_args = ["--format=%H%x00%B%x01"]
+    if origin_main:
+        log_args.append("--no-merges")
+    log_args += own_range
+    messages = run("git", "log", *log_args).split("\x01")
     for raw in messages:
         if "\x00" not in raw:
             continue
@@ -134,13 +191,14 @@ def main() -> int:
             problems.append(f"commit {sha[:7]} mentions a co-author, signature or AI: '{first}'")
         if len(first) > 72:
             problems.append(f"commit {sha[:7]} first line has {len(first)} characters (72 max)")
-        if not re.search(r"#\d+", body) and not first.startswith("merge"):
+        if not re.search(r"#\d+", body) and not first.lower().startswith("merge"):
             notes.append(f"commit {sha[:7]} does not mention its card (#N): '{first}'")
 
     # The content check is written on Saturday with FORMATS.md (scripts/check_content.py).
     checker = Path("scripts/check_content.py")
     if any(f.startswith("config/") for f in files) and checker.exists():
-        p = subprocess.run([sys.executable, str(checker)], capture_output=True, text=True)
+        p = subprocess.run([sys.executable, str(checker)], capture_output=True, text=True,
+                           encoding="utf-8", errors="replace")
         if p.returncode != 0:
             problems.append("check_content fails:\n" + p.stdout.strip())
         else:

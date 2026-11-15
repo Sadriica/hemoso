@@ -1,0 +1,62 @@
+{
+  "rule": "parse_sources",
+  "source": "FORMATS.md section 3, opening paragraph: \"Sources follow `STANDARDS.md` §6: in tables a link alone, or the word `Assumption`. Every row that holds a medical statement, a threshold or a probability has a `source` column holding a link or the word `Assumption`.\" STANDARDS.md section 6: \"In tables: the link alone, several separated by a space.\"",
+  "notes": "`expected` is the list of links in the cell, the list [\"Assumption\"], or the string \"invalid\". The Python function returns None for \"invalid\" and the frontend returns null. Leading and trailing whitespace is ignored, and so is the number of spaces between links; the word counts only when it is the whole cell.",
+  "cases": [
+    {
+      "name": "one link",
+      "input": {"cell": "https://example.org"},
+      "expected": ["https://example.org"]
+    },
+    {
+      "name": "two links separated by one space",
+      "input": {"cell": "https://example.org https://example.net"},
+      "expected": ["https://example.org", "https://example.net"]
+    },
+    {
+      "name": "three links",
+      "input": {"cell": "https://example.org https://example.net https://example.com"},
+      "expected": ["https://example.org", "https://example.net", "https://example.com"]
+    },
+    {
+      "name": "extra spaces around and between links",
+      "input": {"cell": "  https://example.org     https://example.net  "},
+      "expected": ["https://example.org", "https://example.net"]
+    },
+    {
+      "name": "Assumption",
+      "input": {"cell": "Assumption"},
+      "expected": ["Assumption"]
+    },
+    {
+      "name": "Assumption with surrounding spaces",
+      "input": {"cell": " Assumption "},
+      "expected": ["Assumption"]
+    },
+    {
+      "name": "lowercase assumption is not the word",
+      "input": {"cell": "assumption"},
+      "expected": "invalid"
+    },
+    {
+      "name": "a word that is not a link",
+      "input": {"cell": "example"},
+      "expected": "invalid"
+    },
+    {
+      "name": "empty cell",
+      "input": {"cell": ""},
+      "expected": "invalid"
+    },
+    {
+      "name": "link and Assumption in one cell",
+      "input": {"cell": "https://example.org Assumption"},
+      "expected": "invalid"
+    },
+    {
+      "name": "Assumption twice is not the word alone",
+      "input": {"cell": "Assumption Assumption"},
+      "expected": "invalid"
+    }
+  ]
+}

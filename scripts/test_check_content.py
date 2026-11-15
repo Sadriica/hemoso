@@ -20,13 +20,13 @@ import check_content  # noqa: E402
 # The FORMATS.md examples, assembled into a valid config/ folder.
 VALID = {
     "config/data/indicators.csv": (
-        "id,name,unit,direction,measured_on_board,hazards,source\n"
+        "id,name,unit,direction,measured_on_board,hazards,min_spread,tier,system,source\n"
         "example_indicator,Example indicator,example_unit,higher,"
-        "example measurement method,isolation_and_confinement,Assumption\n"
+        "example measurement method,isolation_and_confinement,1,A,neuro_behavioural,Assumption\n"
     ),
     "config/data/demo_data.csv": (
-        "person_id,indicator_id,value,unit,mission_day,time\n"
-        "demo_astronaut_1,example_indicator,1,example_unit,1,13:30\n"
+        "person_id,indicator_id,value,unit,mission_day,time,context\n"
+        "demo_astronaut_1,example_indicator,1,example_unit,1,13:30,rest\n"
     ),
     "config/data/demo_ranges.csv": (
         "indicator_id,min,max,source,generation_note\n"
@@ -38,7 +38,7 @@ VALID = {
     ),
     "config/rules/conditions.csv": (
         "condition_id,name,based_on,source\n"
-        "example_condition,Example condition,example_indicator,Assumption\n"
+        "example_condition,Example condition,example_indicator:above,Assumption\n"
     ),
     "config/content/body_regions.csv": (
         "id,name,source\n"
@@ -109,18 +109,18 @@ class ContentCheckTest(unittest.TestCase):
         files = dict(VALID)
         files["config/rules/conditions.csv"] = (
             "condition_id,name,based_on,source\n"
-            "example_condition,Example condition,example_indicator,\n"
+            "example_condition,Example condition,example_indicator:above,\n"
         )
         self.assert_error(files, "empty required cell")
 
     def test_duplicate_id(self):
         files = dict(VALID)
         files["config/data/indicators.csv"] = (
-            "id,name,unit,direction,measured_on_board,hazards,source\n"
+            "id,name,unit,direction,measured_on_board,hazards,min_spread,tier,system,source\n"
             "example_indicator,Example indicator,example_unit,higher,"
-            "example measurement method,isolation_and_confinement,Assumption\n"
+            "example measurement method,isolation_and_confinement,1,A,neuro_behavioural,Assumption\n"
             "example_indicator,Duplicate,example_unit,higher,"
-            "example measurement method,isolation_and_confinement,Assumption\n"
+            "example measurement method,isolation_and_confinement,1,A,neuro_behavioural,Assumption\n"
         )
         self.assert_error(files, "duplicate id")
 
@@ -133,28 +133,53 @@ class ContentCheckTest(unittest.TestCase):
         )
         self.assert_error(files, "unknown indicator_id 'missing_indicator'")
 
+    def test_based_on_side_required_under_strict(self):
+        files = dict(VALID)
+        files["config/rules/conditions.csv"] = (
+            "condition_id,name,based_on,source\n"
+            "example_condition,Example condition,example_indicator,Assumption\n"
+        )
+        self.assertFalse(any("has no side" in line for line in self.errors(files)))
+        self.assert_error(files, "has no side", strict=True)
+
+    def test_based_on_bad_side(self):
+        files = dict(VALID)
+        files["config/rules/conditions.csv"] = (
+            "condition_id,name,based_on,source\n"
+            "example_condition,Example condition,example_indicator:up,Assumption\n"
+        )
+        self.assert_error(files, "side must be above or below")
+
+    def test_based_on_same_indicator_twice(self):
+        files = dict(VALID)
+        files["config/rules/conditions.csv"] = (
+            "condition_id,name,based_on,source\n"
+            "example_condition,Example condition,example_indicator:above example_indicator:below,Assumption\n"
+        )
+        self.assert_error(files, "names 'example_indicator' twice")
+
     def test_unknown_based_on_id(self):
         files = dict(VALID)
         files["config/rules/conditions.csv"] = (
             "condition_id,name,based_on,source\n"
-            "example_condition,Example condition,missing_indicator,Assumption\n"
+            "example_condition,Example condition,missing_indicator:above,Assumption\n"
         )
         self.assert_error(files, "based_on id 'missing_indicator'")
 
     def test_invalid_source(self):
         files = dict(VALID)
         files["config/data/indicators.csv"] = (
-            "id,name,unit,direction,measured_on_board,hazards,source\n"
+            "id,name,unit,direction,measured_on_board,hazards,min_spread,tier,system,source\n"
             "example_indicator,Example indicator,example_unit,higher,"
-            "example measurement method,isolation_and_confinement,not a source\n"
+            "example measurement method,isolation_and_confinement,1,A,neuro_behavioural,not a source\n"
         )
         self.assert_error(files, "source must be an http(s) link or 'Assumption'")
 
     def test_non_numeric_value(self):
         files = dict(VALID)
         files["config/data/demo_data.csv"] = (
-            "person_id,indicator_id,value,unit,mission_day,time\n"
-            "demo_astronaut_1,example_indicator,abc,example_unit,1,13:30\n"
+            "person_id,indicator_id,value,unit,mission_day,time,context\n"
+            "demo_astronaut_1,example_indicator,abc,example_unit,1,13:30,rest\n"
         )
         self.assert_error(files, "value must be a number")
 
@@ -169,19 +194,49 @@ class ContentCheckTest(unittest.TestCase):
     def test_non_finite_value_is_error(self):
         files = dict(VALID)
         files["config/data/demo_data.csv"] = (
-            "person_id,indicator_id,value,unit,mission_day,time\n"
-            "demo_astronaut_1,example_indicator,nan,example_unit,1,13:30\n"
+            "person_id,indicator_id,value,unit,mission_day,time,context\n"
+            "demo_astronaut_1,example_indicator,nan,example_unit,1,13:30,rest\n"
         )
         self.assert_error(files, "value must be a number")
 
     def test_bad_direction(self):
         files = dict(VALID)
         files["config/data/indicators.csv"] = (
-            "id,name,unit,direction,measured_on_board,hazards,source\n"
+            "id,name,unit,direction,measured_on_board,hazards,min_spread,tier,system,source\n"
             "example_indicator,Example indicator,example_unit,sideways,"
-            "example measurement method,isolation_and_confinement,Assumption\n"
+            "example measurement method,isolation_and_confinement,1,A,neuro_behavioural,Assumption\n"
         )
         self.assert_error(files, "direction must be higher, lower or both")
+
+    def test_bad_min_spread(self):
+        for value, message in (("0", "min_spread must be greater than 0"),
+                               ("-1", "min_spread must be greater than 0"),
+                               ("wide", "min_spread must be a number")):
+            files = dict(VALID)
+            files["config/data/indicators.csv"] = (
+                "id,name,unit,direction,measured_on_board,hazards,min_spread,tier,system,source\n"
+                "example_indicator,Example indicator,example_unit,higher,"
+                f"example measurement method,isolation_and_confinement,{value},A,neuro_behavioural,Assumption\n"
+            )
+            self.assert_error(files, message)
+
+    def test_bad_tier(self):
+        files = dict(VALID)
+        files["config/data/indicators.csv"] = (
+            "id,name,unit,direction,measured_on_board,hazards,min_spread,tier,system,source\n"
+            "example_indicator,Example indicator,example_unit,higher,"
+            "example measurement method,isolation_and_confinement,1,D,neuro_behavioural,Assumption\n"
+        )
+        self.assert_error(files, "tier must be A, B or C")
+
+    def test_unknown_system(self):
+        files = dict(VALID)
+        files["config/data/indicators.csv"] = (
+            "id,name,unit,direction,measured_on_board,hazards,min_spread,tier,system,source\n"
+            "example_indicator,Example indicator,example_unit,higher,"
+            "example measurement method,isolation_and_confinement,1,A,kidneys,Assumption\n"
+        )
+        self.assert_error(files, "unknown system 'kidneys'")
 
     def test_bad_side(self):
         files = dict(VALID)
@@ -241,16 +296,24 @@ class ContentCheckTest(unittest.TestCase):
     def test_bad_time(self):
         files = dict(VALID)
         files["config/data/demo_data.csv"] = (
-            "person_id,indicator_id,value,unit,mission_day,time\n"
-            "demo_astronaut_1,example_indicator,1,example_unit,1,25:00\n"
+            "person_id,indicator_id,value,unit,mission_day,time,context\n"
+            "demo_astronaut_1,example_indicator,1,example_unit,1,25:00,rest\n"
         )
         self.assert_error(files, "time must be 24-hour HH:MM")
+
+    def test_bad_context(self):
+        files = dict(VALID)
+        files["config/data/demo_data.csv"] = (
+            "person_id,indicator_id,value,unit,mission_day,time,context\n"
+            "demo_astronaut_1,example_indicator,1,example_unit,1,13:30,running\n"
+        )
+        self.assert_error(files, "context must be rest, after_exercise, on_waking or before_sleep")
 
     def test_bad_mission_day(self):
         files = dict(VALID)
         files["config/data/demo_data.csv"] = (
-            "person_id,indicator_id,value,unit,mission_day,time\n"
-            "demo_astronaut_1,example_indicator,1,example_unit,0,13:30\n"
+            "person_id,indicator_id,value,unit,mission_day,time,context\n"
+            "demo_astronaut_1,example_indicator,1,example_unit,0,13:30,rest\n"
         )
         self.assert_error(files, "mission_day must be a positive integer")
 
@@ -265,25 +328,25 @@ class ContentCheckTest(unittest.TestCase):
     def test_value_outside_range(self):
         files = dict(VALID)
         files["config/data/demo_data.csv"] = (
-            "person_id,indicator_id,value,unit,mission_day,time\n"
-            "demo_astronaut_1,example_indicator,200,example_unit,1,13:30\n"
+            "person_id,indicator_id,value,unit,mission_day,time,context\n"
+            "demo_astronaut_1,example_indicator,200,example_unit,1,13:30,rest\n"
         )
         self.assert_error(files, "outside the demo range")
 
     def test_unknown_hazard(self):
         files = dict(VALID)
         files["config/data/indicators.csv"] = (
-            "id,name,unit,direction,measured_on_board,hazards,source\n"
+            "id,name,unit,direction,measured_on_board,hazards,min_spread,tier,system,source\n"
             "example_indicator,Example indicator,example_unit,higher,"
-            "example measurement method,radiation nonsense,Assumption\n"
+            "example measurement method,radiation nonsense,1,A,neuro_behavioural,Assumption\n"
         )
         self.assert_error(files, "unknown hazard 'nonsense'")
 
     def test_unit_mismatch(self):
         files = dict(VALID)
         files["config/data/demo_data.csv"] = (
-            "person_id,indicator_id,value,unit,mission_day,time\n"
-            "demo_astronaut_1,example_indicator,1,wrong_unit,1,13:30\n"
+            "person_id,indicator_id,value,unit,mission_day,time,context\n"
+            "demo_astronaut_1,example_indicator,1,wrong_unit,1,13:30,rest\n"
         )
         self.assert_error(files, "does not match indicator")
 
@@ -342,8 +405,8 @@ class ContentCheckTest(unittest.TestCase):
     def test_decimal_comma(self):
         files = dict(VALID)
         files["config/data/demo_data.csv"] = (
-            "person_id,indicator_id,value,unit,mission_day,time\n"
-            'demo_astronaut_1,example_indicator,"60,5",example_unit,1,13:30\n'
+            "person_id,indicator_id,value,unit,mission_day,time,context\n"
+            'demo_astronaut_1,example_indicator,"60,5",example_unit,1,13:30,rest\n'
         )
         self.assert_error(files, "use a decimal point")
 

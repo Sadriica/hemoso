@@ -1,0 +1,1016 @@
+/* HeMoSo app shell. Implements frontend/sdd/style-guide.md version 1.0
+   (Sat 14 Nov 2026).
+
+   Dark is the default theme; the light theme comes from the operating system.
+   Every colour, size and space on a screen comes from a token here.
+
+   The guide's three families (Inter, Public Sans, DM Mono) are not downloaded
+   yet: no font is loaded from a CDN and the packages wait for Eng 1's approval
+   (3.1), so the fallback stacks of the guide apply. */
+
+:root {
+  color-scheme: dark;
+
+  /* Colour (2.1) */
+  --color-bg: #080b12;
+  --color-bg-raised: #101827;
+  --color-surface: #182333;
+  --color-border: #536273;
+  /* Edge of a control (input, select, secondary button): 3:1 or more against
+     the page and the card, which the decorative --color-border does not meet. */
+  --color-border-control: #6b7a8c;
+  --color-text: #ffffff;
+  --color-text-muted: #a7b0be;
+  --color-accent: #a9d6ff;
+  --color-interactive: #2563eb;
+  --color-on-interactive: #ffffff;
+  /* Reserved for the most urgent attention level and destructive actions
+     (2.3). No screen uses it yet. */
+  --color-signal: #ff5a42;
+  /* Technical grid on the page background (5), dark theme only. */
+  --color-grid: rgb(255 255 255 / 4%);
+
+  /* Status colours (2.2) */
+  --status-in-range-text: #4ade80;
+  --status-in-range-bg: #0f2a1c;
+  --status-attention-text: #facc15;
+  --status-attention-bg: #2e2606;
+  --status-no-data-text: #a7b0be;
+  --status-no-data-bg: #1c2635;
+
+  /* Type families (3.1) */
+  --font-display: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --font-body: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+
+  /* Type scale (3.2) */
+  --text-display: 32px;
+  --leading-display: 40px;
+  --text-h1: 28px;
+  --leading-h1: 36px;
+  --text-h2: 22px;
+  --leading-h2: 30px;
+  --text-value: 36px;
+  --leading-value: 40px;
+  --text-body-l: 18px;
+  --leading-body-l: 28px;
+  --text-body: 16px;
+  --leading-body: 24px;
+  --text-small: 14px;
+  --leading-small: 20px;
+  --text-label: 12px;
+  --leading-label: 16px;
+  --tracking-label: 0.06em;
+
+  /* Spacing (4.2) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 16px;
+  --space-4: 24px;
+  --space-5: 32px;
+  --space-6: 48px;
+  --space-7: 64px;
+
+  /* Shape (4.3) */
+  --radius-small: 2px;
+  --radius-card: 4px;
+  --border-subtle: 1px solid var(--color-border);
+  --shadow-soft: none;
+  --container-width: 1200px;
+  --tap-min: 44px;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color-scheme: light;
+
+    --color-bg: #f4f6f9;
+    --color-bg-raised: #ffffff;
+    --color-surface: #ffffff;
+    --color-border: #c5cdd8;
+    --color-border-control: #78859a;
+    --color-text: #0b1220;
+    --color-text-muted: #4a5568;
+    --color-accent: #0b3d91;
+    --color-interactive: #1d4ed8;
+    --color-on-interactive: #ffffff;
+    --color-signal: #c42d17;
+    --color-grid: transparent;
+
+    --status-in-range-text: #14532d;
+    --status-in-range-bg: #dcfce7;
+    --status-attention-text: #713f12;
+    --status-attention-bg: #fef3c7;
+    --status-no-data-text: #374151;
+    --status-no-data-bg: #e5e7eb;
+
+    --shadow-soft: 0 1px 2px rgb(8 11 18 / 12%);
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background-color: var(--color-bg);
+  /* Technical grid, page only (5). Transparent in the light theme. */
+  background-image:
+    linear-gradient(to right, var(--color-grid) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--color-grid) 1px, transparent 1px);
+  background-size: 40px 40px;
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4,
+p,
+ul,
+ol {
+  margin: 0;
+}
+
+a {
+  color: var(--color-accent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  overflow-wrap: anywhere;
+}
+
+a:hover {
+  color: var(--color-text);
+}
+
+/* Focus: 3 px accent outline, 2 px offset (7.5). Never removed. */
+:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+/* Labels and inputs are shared by every screen (7.6), so the field itself
+   carries the technical label style and the 44 px target. */
+label {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+input:not([type='radio']):not([type='checkbox']),
+select {
+  min-height: var(--tap-min);
+  padding: 0 var(--space-2);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+}
+
+input[type='radio'],
+input[type='checkbox'] {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--color-accent);
+}
+
+/* A field group and its legend: the legend reads as a label, but a legend can
+   name a unit, so it is never transformed (STANDARDS.md section 3). */
+fieldset {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+legend {
+  padding: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  color: var(--color-text-muted);
+}
+
+/* Primary and secondary buttons (7.5). The Entry form and the sync status use
+   the .button classes. */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--tap-min);
+  padding: 0 var(--space-4);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-small);
+  background: transparent;
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  font-weight: 600;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: filter 150ms ease-out, border-color 150ms ease-out;
+}
+
+.button:hover {
+  filter: brightness(1.12);
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.button--primary {
+  border-color: var(--color-interactive);
+  background: var(--color-interactive);
+  color: var(--color-on-interactive);
+}
+
+.button--secondary:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+/* Sync status (section 10, row "Sync status"): the outbox facts as one
+   metadata row in the header. Each fact is its own item, so on a narrow screen
+   the row wraps onto more lines instead of pushing the page sideways (REQ-32);
+   the text is never set to nowrap for that reason. */
+.sync-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+  min-width: 0;
+}
+
+.sync-status__item {
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  overflow-wrap: anywhere;
+}
+
+/* Connection state as a small badge (7.4): icon and word, in the status
+   colours, so the state is never colour alone. */
+.sync-status__state {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid currentColor;
+  border-radius: var(--radius-small);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.sync-status__state--online {
+  color: var(--status-in-range-text);
+  background: var(--status-in-range-bg);
+}
+
+.sync-status__state--offline {
+  color: var(--status-attention-text);
+  background: var(--status-attention-bg);
+}
+
+.sync-status__icon {
+  flex: none;
+  display: inline-flex;
+}
+
+/* Screen title (3.2). */
+.home__heading,
+.entry__heading {
+  margin-bottom: var(--space-3);
+  font-family: var(--font-display);
+  font-size: var(--text-h1);
+  line-height: var(--leading-h1);
+  font-weight: 700;
+}
+
+/* Entry form (7.6, 10): one column, max 560 px. */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  max-width: 560px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+/* The reading and its fixed unit sit on one line. */
+.field__control {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.field__input,
+.field__select {
+  width: 100%;
+}
+
+.field__control .field__input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.field__unit {
+  font-family: var(--font-mono);
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+  /* A unit is never transformed: SI symbols are case-sensitive. */
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--color-text-muted);
+}
+
+/* A 1 to 5 scale is answered with one choice per value (7.6). */
+.field__choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.field__choice {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--tap-min);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-small);
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: var(--text-body);
+  letter-spacing: normal;
+  text-transform: none;
+  cursor: pointer;
+}
+
+/* The chosen number is marked by the radio itself and by a second border, not
+   by colour alone. */
+.field__choice:has(input:checked) {
+  border-color: var(--color-accent);
+  box-shadow: inset 0 0 0 1px var(--color-accent);
+}
+
+.field__error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+  color: var(--status-attention-text);
+}
+
+.field__error-icon {
+  flex: none;
+  margin-top: 3px;
+}
+
+.form__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}
+
+/* Live region for "Saved. Waiting to be sent." */
+.form__status {
+  min-height: var(--leading-body);
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+}
+
+/* Notices (7.7): 2 px left rule in the notice colour, icon, text. */
+.notice {
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-start;
+  margin-bottom: var(--space-3);
+  padding: var(--space-3);
+  border: var(--border-subtle);
+  border-left: 2px solid var(--color-accent);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.notice--info .notice__icon {
+  color: var(--color-accent);
+}
+
+.notice--warning {
+  border-left-color: var(--status-attention-text);
+}
+
+.notice--warning .notice__icon {
+  color: var(--status-attention-text);
+}
+
+.notice__icon {
+  flex: none;
+  display: inline-flex;
+  padding-top: 2px;
+}
+
+.notice__body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Indicator cards (7.3): one card per indicator, three per row on desktop. */
+.indicator-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+  list-style: none;
+  padding: 0;
+}
+
+.indicator-card {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: var(--border-subtle);
+  /* A 2 px left edge repeats the status: reinforcement, never the only signal. */
+  border-left: 2px solid var(--status-no-data-text);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.indicator-card--in_range {
+  border-left-color: var(--status-in-range-text);
+}
+
+.indicator-card--attention {
+  border-left-color: var(--status-attention-text);
+}
+
+/* Title and badge: the badge always takes its own row under the name, so every
+   card in the grid puts the reading on the same line whatever the length of
+   the name. */
+.indicator-card__top {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.indicator-card__name {
+  min-width: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-h2);
+  line-height: var(--leading-h2);
+  font-weight: 600;
+}
+
+.indicator-card__reading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding-bottom: var(--space-2);
+  border-bottom: var(--border-subtle);
+}
+
+.indicator-card__value {
+  font-family: var(--font-mono);
+  font-size: var(--text-value);
+  line-height: var(--leading-value);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.indicator-card__unit {
+  font-family: var(--font-mono);
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+  /* A unit is never transformed: SI symbols are case-sensitive. */
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--color-text-muted);
+}
+
+.indicator-card__time {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+/* The next step: the main sentence of the card, body font, sentence case. */
+.indicator-card__next-step {
+  font-family: var(--font-body);
+  font-size: var(--text-body-l);
+  line-height: var(--leading-body-l);
+}
+
+/* Who acts ("Tell the CMO."): a plain sentence under the next step, body font
+   at small size, main text colour so it keeps 4.5:1 in both themes. */
+.indicator-card__who-acts {
+  font-family: var(--font-body);
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+  color: var(--color-text);
+}
+
+.indicator-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* Badge (7.4): uppercase monospace, 1 px border in the status text colour. */
+.attention-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid currentColor;
+  border-radius: var(--radius-small);
+  white-space: nowrap;
+}
+
+.attention-badge__icon {
+  flex: none;
+}
+
+.attention-badge__text {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.attention-badge--in_range {
+  color: var(--status-in-range-text);
+  background: var(--status-in-range-bg);
+}
+
+.attention-badge--attention {
+  color: var(--status-attention-text);
+  background: var(--status-attention-bg);
+}
+
+.attention-badge--no_data {
+  color: var(--status-no-data-text);
+  background: var(--status-no-data-bg);
+}
+
+/* Secondary button for the disclosures (7.5). */
+.disclosure__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--tap-min);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-small);
+  background: transparent;
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 150ms ease-out, border-color 150ms ease-out;
+}
+
+.disclosure__toggle:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+.disclosure__chevron {
+  display: inline-flex;
+  transition: transform 150ms ease-out;
+}
+
+.disclosure__toggle[aria-expanded='true'] .disclosure__chevron {
+  transform: rotate(90deg);
+}
+
+.disclosure__panel {
+  margin-top: var(--space-2);
+  padding: var(--space-1) 0 var(--space-1) var(--space-3);
+  border-left: 2px solid var(--color-border);
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+}
+
+.sources__list,
+.problems__list {
+  padding-left: var(--space-4);
+}
+
+.sources__list li,
+.problems__list li {
+  margin-block: var(--space-1);
+}
+
+.sources__empty {
+  color: var(--color-text-muted);
+}
+
+/* Details panel (7.7, REQ-01): the rows of indicators.csv first, then the
+   sections of the content file. The panel sits inside a card, so its text
+   keeps the card surface behind it and the contrast pairs in theme.test.ts
+   already cover it: body text and muted text on --color-surface. */
+.indicator-details {
+  display: grid;
+  gap: var(--space-3);
+}
+
+/* The prefix of a fact ("Measured on board"), in the technical label style and
+   on the same line as its value. */
+.indicator-details__label {
+  display: inline;
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+/* A section name is read as a sentence, so it is never uppercased: display
+   family, one size up from the body text of the panel. */
+.indicator-details__heading {
+  margin: 0 0 var(--space-1);
+  font-family: var(--font-display);
+  font-size: var(--text-body-l);
+  line-height: var(--leading-body-l);
+  font-weight: 600;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+/* Measurement steps: a numbered list, spaced like the source lists. */
+.indicator-details__steps {
+  padding-left: var(--space-4);
+}
+
+.indicator-details__steps li {
+  margin-block: var(--space-1);
+}
+
+/* No content file yet: quiet information, not a warning. */
+.indicator-details__missing {
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+  color: var(--color-text-muted);
+}
+
+/* Tablet: eight columns, two cards per row (4.1). */
+@media (max-width: 1023px) {
+  .indicator-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Phone: four columns, one card per row, smaller display steps (4.1). */
+@media (max-width: 599px) {
+  :root {
+    --text-display: 26px;
+    --text-h1: 24px;
+    --text-h2: 20px;
+    --text-value: 30px;
+  }
+
+  .indicator-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .disclosure__toggle,
+  .disclosure__chevron {
+    transition: none;
+  }
+}
+
+/* History (REQ-12): the sentence is the short version of the numbers and the
+   table is the full one, so the table stays a real <table> with a header row.
+   On a phone it scrolls inside its own box instead of pushing the page
+   sideways (REQ-32). */
+.history__heading {
+  margin-bottom: var(--space-3);
+  font-family: var(--font-display);
+  font-size: var(--text-h1);
+  line-height: var(--leading-h1);
+  font-weight: 700;
+}
+
+.history__indicator {
+  max-width: 360px;
+  margin-bottom: var(--space-4);
+}
+
+.history__summary {
+  max-width: 70ch;
+  margin-bottom: var(--space-3);
+  font-size: var(--text-body-l);
+  line-height: var(--leading-body-l);
+}
+
+.history__table-wrap {
+  overflow-x: auto;
+  border: var(--border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.history__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.history__caption {
+  padding: var(--space-2) var(--space-3);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  text-align: left;
+  color: var(--color-text-muted);
+}
+
+.history__table th,
+.history__table td {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: var(--border-subtle);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.history__table th {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.history__table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.history__value {
+  font-variant-numeric: tabular-nums;
+}
+
+.history__unit {
+  color: var(--color-text-muted);
+}
+
+/* Phone: tighter cells and a status that wraps, so the four columns fit at
+   320 px without scrolling the table sideways (REQ-32). The number and its
+   unit stay on one line. */
+@media (max-width: 599px) {
+  .history__table th,
+  .history__table td {
+    padding: var(--space-1) var(--space-2);
+  }
+
+  .history__table tbody td:last-child {
+    white-space: normal;
+  }
+}
+
+/* Chart (7.8): inline SVG, 1 px lines. The readings are the accent colour, the
+   person's earlier median a dashed muted line, each attention threshold a
+   dotted line with its level name in the technical label style. The table next
+   to it is the full text alternative, so the chart never carries a number on
+   its own.
+
+   The figure fits its box instead of scrolling: a scroll container would need
+   a keyboard stop and would hide the newest readings on a phone (REQ-15,
+   REQ-32). The component draws one SVG unit per CSS pixel and keeps the axis
+   text at --text-label at every width, thinning the day labels when the box is
+   narrow. */
+.history__chart {
+  max-width: 720px;
+  margin-bottom: var(--space-3);
+  padding: var(--space-2);
+  border: var(--border-subtle);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.history__chart svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.chart {
+  font-family: var(--font-mono);
+}
+
+.chart__grid {
+  stroke: var(--color-border);
+  stroke-width: 1;
+}
+
+.chart__axis {
+  stroke: var(--color-border-control);
+  stroke-width: 1;
+}
+
+.chart__tick {
+  fill: var(--color-text-muted);
+  font-size: var(--text-label);
+  font-variant-numeric: tabular-nums;
+}
+
+.chart__axis-name,
+.chart__threshold-label {
+  font-size: var(--text-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+.chart__axis-name {
+  fill: var(--color-text-muted);
+}
+
+/* A threshold is the point from which a reading needs attention, so it carries
+   the attention colour as well as the dotted line and its level name: still
+   never colour alone. */
+.chart__threshold-label {
+  fill: var(--status-attention-text);
+}
+
+.chart__unit {
+  fill: var(--color-text-muted);
+  font-size: var(--text-label);
+  /* A unit is never transformed: SI symbols are case-sensitive. */
+  text-transform: none;
+}
+
+.chart__line {
+  fill: none;
+  stroke: var(--color-accent);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+.chart__point {
+  fill: var(--color-accent);
+}
+
+/* The dash patterns of the median and the thresholds are presentation
+   attributes on the lines, so a unit test can read them without a browser. */
+.chart__median {
+  stroke: var(--color-text-muted);
+  stroke-width: 1;
+}
+
+.chart__threshold {
+  stroke: var(--status-attention-text);
+  stroke-width: 1;
+}
+
+.face-panel {
+  display: grid;
+  gap: var(--space-3);
+  max-width: 640px;
+  margin-bottom: var(--space-4);
+  padding: var(--space-4);
+  border: var(--border-subtle);
+  border-left: 2px solid var(--color-accent);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.face-panel__heading {
+  font-family: var(--font-display);
+  font-size: var(--text-h2);
+  line-height: var(--leading-h2);
+  font-weight: 600;
+}
+
+/* Sentences stay body font and sentence case (3.3); 70 characters is the
+   reading width of the history summary too. */
+.face-panel__text {
+  max-width: 70ch;
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+}
+
+.face-panel__note {
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+  color: var(--color-text-muted);
+}
+
+.face-panel__person {
+  max-width: 320px;
+}
+
+.face-panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.face-panel__delete {
+  display: grid;
+  gap: var(--space-2);
+  padding-top: var(--space-3);
+  border-top: var(--border-subtle);
+}
+
+/* The preview: a wide box the model can read, hidden until the camera is on.
+   --color-bg behind the picture, so a camera that is still starting is a dark
+   frame and not a white flash. */
+.face-panel__camera {
+  display: grid;
+  gap: var(--space-1);
+  justify-items: start;
+}
+
+.face-panel__camera[hidden] {
+  display: none;
+}
+
+.face-panel__video {
+  width: 100%;
+  max-width: 320px;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-card);
+  background: var(--color-bg);
+}
+
+.face-panel__camera-label {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+/* One line kept for the message, so the panel does not jump when a sentence
+   appears. */
+.face-panel__status {
+  min-height: var(--leading-body);
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+}
+
+/* The style guide's danger button (7.5): red border and text, transparent. The
+   only destructive action in the app is deleting a face. */
+.button--danger {
+  border-color: var(--color-signal);
+  color: var(--color-signal);
+}
+
+.button--danger:hover {
+  border-color: var(--color-signal);
+  color: var(--color-signal);
+  filter: brightness(1.15);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button--danger {
+    transition: none;
+  }
+}

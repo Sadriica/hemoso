@@ -4,7 +4,8 @@ Stores each astronaut's entries (REQ-27) and returns history. FastAPI; SQLite by
 default or Supabase, chosen by `STORAGE`.
 
 Install: `uv sync --frozen` (Python 3.13).
-Run: `uv run uvicorn app.main:app`.
+Run: `uv run --env-file .env uvicorn app.main:app` (`--env-file` loads
+`backend/.env`; uvicorn does not read it on its own).
 Test: `uv run ruff check . && uv run pytest`.
 
 ## Supabase
@@ -30,3 +31,4 @@ Names in `backend/.env.example`, values only in host settings and a local
 | `SUPABASE_URL` | The Supabase project URL |
 | `SUPABASE_KEY` | The Supabase service role key |
 | `ALLOWED_ORIGINS` | Comma-separated origins the API accepts; it must list the Vercel URL |
+| `RATE_LIMIT_PER_MINUTE` | Requests per minute per client address; empty means 120, `0` turns it off (`docs/API.md`) |

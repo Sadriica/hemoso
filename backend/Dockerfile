@@ -1,7 +1,9 @@
 # syntax=docker/dockerfile:1
 
-# Build from the repository root:
-#   docker build -f backend/Dockerfile -t hemoso-backend .
+# Build from the repository root with BuildKit so backend/Dockerfile.dockerignore
+# is honored; the legacy builder ignores it and can copy the host .venv and
+# secrets into the image.
+#   DOCKER_BUILDKIT=1 docker build -f backend/Dockerfile -t hemoso-backend .
 # Run locally:
 #   docker run -e PORT=8080 -e STORAGE=memory -p 8080:8080 hemoso-backend
 # On the host, set STORAGE=supabase (plus SUPABASE_URL and SUPABASE_KEY): the

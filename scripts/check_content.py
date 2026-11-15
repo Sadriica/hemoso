@@ -1,7 +1,7 @@
 """Checks the config files against FORMATS.md. Run from the repository root:
 
   python scripts/check_content.py           # a missing file is a warning
-  python scripts/check_content.py --strict  # every required file must exist
+  python scripts/check_content.py --strict  # required files must exist and hold data
 
 It validates every file that exists under config/ against the formats and rules
 in FORMATS.md: exact header and column order, empty required cells, duplicate
@@ -25,6 +25,10 @@ import sys
 from collections import Counter
 from pathlib import Path
 
+# The source and attention rules live in one place, so the checker and the
+# frontend cannot drift apart (see scripts/fixtures/format_rules/).
+from format_rules import LINK_RE, NOTIFY_ORDER, parse_sources
+
 HAZARDS = {
     "radiation",
     "isolation_and_confinement",
@@ -33,7 +37,6 @@ HAZARDS = {
     "hostile_closed_environments",
 }
 ID_RE = re.compile(r"^[a-z][a-z0-9_]*$")
-LINK_RE = re.compile(r"^https?://\S+$")
 TIME_RE = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
 
 # The fixed ``##`` headings of a content file, in order (FORMATS.md section 3).
@@ -59,14 +62,27 @@ REQUIRED_FILES = [
 
 # The exact CSV header (column order) of each table. scripts/new_config.py
 # imports these to write empty files, so the two can never drift.
-INDICATORS_HEADER = ["id", "name", "unit", "direction", "measured_on_board", "hazards", "source"]
+INDICATORS_HEADER = ["id", "name", "unit", "direction", "measured_on_board", "hazards",
+                     "min_spread", "tier", "system", "source"]
+
+# Tiers (FORMATS.md): A measured by an instrument that flies, B self-reported,
+# C explained only (no in-flight measurement; never an input).
+TIERS = {"A", "B", "C"}
+# Body systems the 3D body opens (FORMATS.md section 2).
+SYSTEMS = {
+    "cardiovascular",
+    "respiratory",
+    "thermoregulation",
+    "sleep",
+    "neuro_behavioural",
+    "metabolic",
+    "musculoskeletal",
+    "radiation",
+}
 DEMO_RANGES_HEADER = ["indicator_id", "min", "max", "source", "generation_note"]
-DEMO_DATA_HEADER = ["person_id", "indicator_id", "value", "unit", "mission_day", "time"]
+DEMO_DATA_HEADER = ["person_id", "indicator_id", "value", "unit", "mission_day", "time", "context"]
 ATTENTION_HEADER = ["indicator_id", "side", "threshold", "attention_level", "notify", "source"]
 
-# Who acts on an attention row (REQ-05), from least to most severe. When several
-# rows of one indicator match a value, the row with the most severe notify wins.
-NOTIFY_ORDER = ["crew", "cmo", "flight_surgeon"]
 CONDITIONS_HEADER = ["condition_id", "name", "based_on", "source"]
 
 
@@ -84,6 +100,8 @@ class Reporter:
 
 
 def is_number(value: str) -> bool:
+    if "_" in value:
+        return False
     try:
         return math.isfinite(float(value))
     except ValueError:
@@ -97,10 +115,7 @@ def decimal_comma_hint(value: str) -> str:
 
 def valid_source(value: str) -> bool:
     """A source cell is the word ``Assumption`` or one or more http(s) links."""
-    if value == "Assumption":
-        return True
-    tokens = value.split()
-    return bool(tokens) and all(LINK_RE.match(t) for t in tokens)
+    return parse_sources(value) is not None
 
 
 def read_table(root: Path, rel: str, header: list[str], rep: Reporter):
@@ -183,12 +198,26 @@ def check_indicators(rep: Reporter, root: Path, state: dict) -> None:
         for h in hazards.split():
             if h not in HAZARDS:
                 rep.error(f"{rel}:{line_no} unknown hazard '{h}', must be one of the five names")
+        spread = cells["min_spread"].strip()
+        if spread:
+            try:
+                if float(spread) <= 0:
+                    rep.error(f"{rel}:{line_no} min_spread must be greater than 0")
+            except ValueError:
+                rep.error(f"{rel}:{line_no} min_spread must be a number, got '{spread}'")
+        tier = cells["tier"].strip()
+        if tier and tier not in TIERS:
+            rep.error(f"{rel}:{line_no} tier must be A, B or C, got '{tier}'")
+        system = cells["system"].strip()
+        if system and system not in SYSTEMS:
+            rep.error(f"{rel}:{line_no} unknown system '{system}', must be one of FORMATS.md section 2")
         source = cells["source"].strip()
         if source and not valid_source(source):
             rep.error(f"{rel}:{line_no} source must be an http(s) link or 'Assumption'")
 
     validate_rows(rep, "config/data/indicators.csv", rows, header, required, row)
     state["indicators"] = units
+    state["indicator_row_count"] = len(rows)
 
 
 def check_demo_ranges(rep: Reporter, root: Path, state: dict) -> None:
@@ -225,6 +254,7 @@ def check_demo_ranges(rep: Reporter, root: Path, state: dict) -> None:
 
     validate_rows(rep, "config/data/demo_ranges.csv", rows, header, required, row)
     state["demo_ranges"] = ranges
+    state["demo_ranges_ids"] = seen
 
 
 def check_attention(rep: Reporter, root: Path, state: dict) -> None:
@@ -234,10 +264,13 @@ def check_attention(rep: Reporter, root: Path, state: dict) -> None:
         return
     required = set(header)
     levels: dict[str, set[str]] = {}
+    seen: set[str] = set()
 
     def row(cells, line_no):
         rel = "config/rules/attention.csv"
         iid = cells["indicator_id"].strip()
+        if iid:
+            seen.add(iid)
         indicators = state.get("indicators")
         if iid and indicators is not None and iid not in indicators:
             rep.error(f"{rel}:{line_no} unknown indicator_id '{iid}'")
@@ -264,6 +297,7 @@ def check_attention(rep: Reporter, root: Path, state: dict) -> None:
     validate_rows(rep, "config/rules/attention.csv", rows, header, required, row)
     check_attention_order(rep, bounds)
     state["attention"] = levels
+    state["attention_ids"] = seen
 
 
 def check_attention_order(rep: Reporter, bounds: dict) -> None:
@@ -290,7 +324,10 @@ def check_attention_order(rep: Reporter, bounds: dict) -> None:
                           f"notify the same or more")
 
 
-def check_conditions(rep: Reporter, root: Path, state: dict) -> None:
+SIGNAL_SIDES = ("above", "below")
+
+
+def check_conditions(rep: Reporter, root: Path, state: dict, strict: bool = False) -> None:
     header = CONDITIONS_HEADER
     rows = read_table(root, "config/rules/conditions.csv", header, rep)
     if rows is None:
@@ -308,9 +345,21 @@ def check_conditions(rep: Reporter, root: Path, state: dict) -> None:
                 rep.error(f"{rel}:{line_no} duplicate condition_id '{cid}'")
             seen.add(cid)
         indicators = state.get("indicators")
+        sides_seen: dict[str, str] = {}
         for based in cells["based_on"].split():
-            if indicators is not None and based not in indicators:
-                rep.error(f"{rel}:{line_no} based_on id '{based}' is not an indicator")
+            iid, sep, side = based.partition(":")
+            if not sep:
+                # Without a side two conditions on one indicator (hyper- and
+                # hypoglycaemia) both score on any change (FORMATS.md, F-bio2-02).
+                report_problem(rep, strict, f"{rel}:{line_no} based_on '{based}' has no side, "
+                               "write it as indicator_id:above or indicator_id:below")
+            elif side not in SIGNAL_SIDES:
+                rep.error(f"{rel}:{line_no} based_on '{based}' side must be above or below, got '{side}'")
+            if indicators is not None and iid not in indicators:
+                rep.error(f"{rel}:{line_no} based_on id '{iid}' is not an indicator")
+            if iid in sides_seen:
+                rep.error(f"{rel}:{line_no} based_on names '{iid}' twice")
+            sides_seen[iid] = side
         source = cells["source"].strip()
         if source and not valid_source(source):
             rep.error(f"{rel}:{line_no} source must be an http(s) link or 'Assumption'")
@@ -367,11 +416,14 @@ def check_demo_data(rep: Reporter, root: Path, state: dict) -> None:
         if value and not is_number(value):
             rep.error(f"{rel}:{line_no} value must be a number, got '{value}'{decimal_comma_hint(value)}")
         day = cells["mission_day"].strip()
-        if day and (not day.isdigit() or int(day) <= 0):
+        if day and (not day.isdecimal() or int(day) <= 0):
             rep.error(f"{rel}:{line_no} mission_day must be a positive integer, got '{day}'")
         clock = cells["time"].strip()
         if clock and not TIME_RE.match(clock):
             rep.error(f"{rel}:{line_no} time must be 24-hour HH:MM, got '{clock}'")
+        ctx = cells["context"].strip()
+        if ctx and ctx not in ("rest", "after_exercise", "on_waking", "before_sleep"):
+            rep.error(f"{rel}:{line_no} context must be rest, after_exercise, on_waking or before_sleep, got '{ctx}'")
         if value and is_number(value) and iid and ranges is not None:
             if iid not in ranges:
                 rep.error(f"{rel}:{line_no} no range in demo_ranges.csv for indicator '{iid}'")
@@ -382,6 +434,7 @@ def check_demo_data(rep: Reporter, root: Path, state: dict) -> None:
                               f"{lo} to {hi} for '{iid}'")
 
     validate_rows(rep, "config/data/demo_data.csv", rows, header, required, row)
+    state["demo_data_row_count"] = len(rows)
 
 
 def parse_markdown(text: str) -> list[dict]:
@@ -523,6 +576,44 @@ def check_content_files(rep: Reporter, root: Path, state: dict, strict: bool) ->
                 rep.warn(f"{rel}: missing content file for indicator '{iid}'")
 
 
+def report_problem(rep: Reporter, strict: bool, msg: str) -> None:
+    """A problem that blocks the final submission under --strict, warns otherwise."""
+    if strict:
+        rep.error(msg)
+    else:
+        rep.warn(msg)
+
+
+def check_nonempty_tables(rep: Reporter, state: dict, strict: bool) -> None:
+    """A required table with only its header (no data rows) blocks --strict.
+
+    ``None`` means the file is missing (already reported by ``check``); ``0``
+    means the file exists but holds no data rows yet.
+    """
+    if state.get("indicator_row_count") == 0:
+        report_problem(rep, strict, "config/data/indicators.csv: no indicator rows (header only)")
+    if state.get("demo_data_row_count") == 0:
+        report_problem(rep, strict, "config/data/demo_data.csv: no demo data rows (header only)")
+
+
+def check_indicator_coverage(rep: Reporter, state: dict, strict: bool) -> None:
+    """Each indicator needs a demo range row and an attention row.
+
+    ``None`` means the table is missing (already reported); otherwise a set of
+    the indicator ids present in that table.
+    """
+    indicators = state.get("indicators")
+    if not indicators:
+        return
+    demo_ranges_ids = state.get("demo_ranges_ids")
+    attention_ids = state.get("attention_ids")
+    for iid in sorted(indicators):
+        if demo_ranges_ids is not None and iid not in demo_ranges_ids:
+            report_problem(rep, strict, f"config/data/demo_ranges.csv: no row for indicator '{iid}'")
+        if attention_ids is not None and iid not in attention_ids:
+            report_problem(rep, strict, f"config/rules/attention.csv: no row for indicator '{iid}'")
+
+
 def check(root: Path, strict: bool) -> list[str]:
     rep = Reporter()
     state: dict = {}
@@ -539,10 +630,12 @@ def check(root: Path, strict: bool) -> list[str]:
     check_indicators(rep, root, state)
     check_demo_ranges(rep, root, state)
     check_attention(rep, root, state)
-    check_conditions(rep, root, state)
+    check_conditions(rep, root, state, strict)
     check_body_regions(rep, root)
     check_demo_data(rep, root, state)
     check_content_files(rep, root, state, strict)
+    check_nonempty_tables(rep, state, strict)
+    check_indicator_coverage(rep, state, strict)
 
     return rep.lines
 
@@ -556,7 +649,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--strict",
         action="store_true",
-        help="treat a missing required file as an error (content/body_regions.csv excluded)",
+        help="treat missing required files, header-only tables, and a missing "
+             "demo range or attention row as errors (content/body_regions.csv excluded)",
     )
     args = parser.parse_args(argv)
 

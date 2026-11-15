@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from app import indicators, main, storage
 
 
@@ -46,3 +48,20 @@ def test_allowed_origins_comma_separated(monkeypatch):
     monkeypatch.setenv("ALLOWED_ORIGINS", "https://a.example, https://b.example")
 
     assert main.allowed_origins() == ["https://a.example", "https://b.example"]
+
+
+def test_supabase_missing_url_or_key_fails_fast(monkeypatch):
+    monkeypatch.setenv("STORAGE", "supabase")
+    monkeypatch.delenv("SUPABASE_URL", raising=False)
+    monkeypatch.delenv("SUPABASE_KEY", raising=False)
+
+    with pytest.raises(RuntimeError, match="SUPABASE_URL and SUPABASE_KEY"):
+        storage.ensure_supabase_config()
+
+
+def test_supabase_config_ok_when_set(monkeypatch):
+    monkeypatch.setenv("STORAGE", "supabase")
+    monkeypatch.setenv("SUPABASE_URL", "https://example.supabase.co")
+    monkeypatch.setenv("SUPABASE_KEY", "sb_secret_x")
+
+    storage.ensure_supabase_config()

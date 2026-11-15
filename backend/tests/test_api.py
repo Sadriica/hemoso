@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
+import httpx
 import pytest
+
+from app import storage
+from app.main import app
 
 ENTRY = {
     "person_id": "demo_astronaut_1",
@@ -11,6 +15,7 @@ ENTRY = {
     "unit": "example_unit",
     "mission_day": 1,
     "time": "13:30",
+    "context": "rest",
 }
 
 INDICATORS_CSV = (
@@ -36,6 +41,50 @@ def test_store_and_read_back(client):
     )
     assert history.status_code == 200
     assert history.json() == [ENTRY]
+
+
+def test_resend_same_entry_returns_200_and_one_row(client):
+    first = client.post("/entries", json=ENTRY)
+    assert first.status_code == 201
+
+    second = client.post("/entries", json=ENTRY)
+    assert second.status_code == 200
+    assert second.json() == ENTRY
+
+    history = client.get(
+        "/people/demo_astronaut_1/indicators/example_indicator/history"
+    )
+    assert len(history.json()) == 1
+
+
+def test_resend_different_value_returns_409(client):
+    client.post("/entries", json=ENTRY)
+
+    conflict = client.post("/entries", json={**ENTRY, "value": 2.0})
+    assert conflict.status_code == 409
+    assert conflict.json()["detail"] == (
+        "an entry for this person, indicator, day and time already exists"
+        " with a different value"
+    )
+
+
+def test_resend_different_unit_returns_409(client):
+    client.post("/entries", json=ENTRY)
+
+    conflict = client.post("/entries", json={**ENTRY, "unit": "other_unit"})
+    assert conflict.status_code == 409
+
+
+def test_resend_different_context_returns_409(client):
+    client.post("/entries", json=ENTRY)
+
+    conflict = client.post("/entries", json={**ENTRY, "context": "after_exercise"})
+    assert conflict.status_code == 409
+
+
+def test_invalid_context_rejected(client):
+    response = client.post("/entries", json={**ENTRY, "context": "running"})
+    assert response.status_code == 422
 
 
 def test_ordering(client):
@@ -106,3 +155,84 @@ def test_cors_preflight(client):
     assert response.headers["access-control-allow-origin"] == "http://localhost:5173"
     assert "POST" in response.headers["access-control-allow-methods"]
     assert "content-type" in response.headers["access-control-allow-headers"].lower()
+
+
+@pytest.mark.parametrize(
+    "field, bad",
+    [
+        ("person_id", "a" * 65),
+        ("indicator_id", "a" * 65),
+        ("unit", "a" * 65),
+    ],
+)
+def test_string_fields_max_length(client, field, bad):
+    response = client.post("/entries", json={**ENTRY, field: bad})
+    assert response.status_code == 422
+
+
+def test_mission_day_upper_bound(client):
+    response = client.post("/entries", json={**ENTRY, "mission_day": 100001})
+    assert response.status_code == 422
+
+
+def test_mission_day_at_bound(client):
+    response = client.post("/entries", json={**ENTRY, "mission_day": 100000})
+    assert response.status_code == 201
+
+
+@pytest.mark.parametrize(
+    "field, bad",
+    [
+        ("value", True),
+        ("value", "1_000"),
+        ("mission_day", True),
+        ("mission_day", "3"),
+    ],
+)
+def test_strict_value_and_mission_day(client, field, bad):
+    response = client.post("/entries", json={**ENTRY, field: bad})
+    assert response.status_code == 422
+
+
+@pytest.mark.parametrize(
+    "person_id, indicator_id",
+    [
+        ("Bad-id", "example_indicator"),
+        ("demo_astronaut_1", "9bad"),
+    ],
+)
+def test_history_invalid_path_id(client, person_id, indicator_id):
+    response = client.get(f"/people/{person_id}/indicators/{indicator_id}/history")
+    assert response.status_code == 422
+
+
+def test_history_upstream_error_becomes_502(client):
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(500)
+
+    failing = storage.SupabaseStorage(
+        "https://example.supabase.co",
+        "sb_secret_x",
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+    app.dependency_overrides[storage.get_storage] = lambda: failing
+    response = client.get(
+        "/people/demo_astronaut_1/indicators/example_indicator/history"
+    )
+    assert response.status_code == 502
+    assert response.json()["detail"] == "upstream storage error"
+
+
+def test_create_entry_upstream_error_becomes_502(client):
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(500)
+
+    failing = storage.SupabaseStorage(
+        "https://example.supabase.co",
+        "sb_secret_x",
+        client=httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+    app.dependency_overrides[storage.get_storage] = lambda: failing
+    response = client.post("/entries", json=ENTRY)
+    assert response.status_code == 502
+    assert response.json()["detail"] == "upstream storage error"
