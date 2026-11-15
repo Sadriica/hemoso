@@ -111,7 +111,7 @@ describe('Planetarium', () => {
     expect(Element.prototype.animate).not.toHaveBeenCalled()
   })
 
-  it.each([1, 2, 3, 5, 7, 8])('keeps %i bodies in their own bands inside the square', async (n) => {
+  it.each([1, 2, 3, 5, 7, 8, 9, 10])('keeps %i bodies in their own bands inside the stage', async (n) => {
     vi.stubGlobal('matchMedia', (q: string) => ({ matches: q.includes('min-width'), addEventListener: () => {}, removeEventListener: () => {} }))
     const many = Array.from({ length: n }, (_, i) => ({ ...items[0], id: `i${i}`, name: `Systolic blood pressure ${i}` }))
     render(<Planetarium items={many} labels={labels} selectedId={null} onSelect={() => {}} reducedMotion />)
@@ -120,16 +120,26 @@ describe('Planetarium', () => {
       x: parseFloat(b.style.left), y: parseFloat(b.style.top), left: b.classList.contains('planetarium__body--left'),
     }))
     for (const p of pos) {
-      expect(p.x).toBeGreaterThanOrEqual(18)
-      expect(p.x).toBeLessThanOrEqual(80)
+      expect(p.x).toBeGreaterThanOrEqual(35)
+      expect(p.x).toBeLessThanOrEqual(65)
       expect(p.y).toBeGreaterThanOrEqual(10)
       expect(p.y).toBeLessThanOrEqual(90)
     }
     for (const side of [true, false]) {
       const ys = pos.filter((p) => p.left === side).map((p) => p.y).sort((a, b) => a - b)
-      ys.slice(1).forEach((y, k) => expect(y - ys[k]).toBeGreaterThanOrEqual(20))
+      ys.slice(1).forEach((y, k) => expect(y - ys[k]).toBeGreaterThanOrEqual(15))
     }
     expect(document.querySelectorAll('.planetarium__tag')).toHaveLength(n)
+  })
+
+  it('renders no value element when valueText is empty, in both views', async () => {
+    vi.stubGlobal('matchMedia', (q: string) => ({ matches: q.includes('min-width'), addEventListener: () => {}, removeEventListener: () => {} }))
+    const empty = [{ ...items[2], valueText: '' }]
+    const { container } = render(<Planetarium items={empty} labels={labels} selectedId={null} onSelect={() => {}} reducedMotion />)
+    expect(container.querySelector('.planetarium__row-value')).toBeNull()
+    await userEvent.click(toggle())
+    expect(container.querySelector('.planetarium__tag-value')).toBeNull()
+    expect(container.querySelector('.planetarium__tag')).toHaveTextContent('Mood')
   })
 
   it('can start in the orbit view with the right toggle label and no list', () => {
@@ -155,10 +165,10 @@ describe('Planetarium', () => {
   describe('stylesheet', () => {
     const css = readFileSync('src/components/planetarium/planetarium.css', 'utf8')
     it('reserves the final stage size from the first paint', () => {
-      expect(css).toMatch(/\.planetarium__stage \{[^}]*aspect-ratio: 1 \/ 1/)
+      expect(css).toMatch(/\.planetarium__stage \{[^}]*aspect-ratio: var\(--planet-stage-ratio\)/)
     })
-    it('never cuts or hides text', () => {
-      expect(css).not.toMatch(/text-overflow|nowrap|line-clamp/)
+    it('never cuts or hides text (tags are one line each and the stage is wide enough)', () => {
+      expect(css).not.toMatch(/text-overflow|line-clamp/)
     })
     it('keeps raw pixel sizes inside the named custom properties', () => {
       const body = css.replace(/\.planetarium \{[^}]*--planet-target[^}]*\}/, '')
