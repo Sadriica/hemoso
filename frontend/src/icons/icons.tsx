@@ -13,6 +13,13 @@ const SHAPES: Record<string, () => ReactNode> = {
   sleep_h: () => paths('M19 14.5A8 8 0 1 1 9.5 5a6.5 6.5 0 0 0 9.5 9.5z', 'M17 3v3M15.5 4.5h3', 'M21 9v2M20 10h2'),
   mood_1_5: () => [<circle key="c" cx="12" cy="12" r="9" />, ...paths('M9 9.5v1M15 9.5v1', 'M8.5 14.5q3.5 3 7 0')],
   glucose_mgdl: () => paths('M12 3C8 8.5 6 11.5 6 15a6 6 0 0 0 12 0c0-3.5-2-6.5-6-12z'),
+  // The reaction check (T-71): a stopwatch for the median time, three ticks
+  // with one short for the lapses.
+  reaction_median_ms: () => [
+    <circle key="c" cx="12" cy="13.5" r="7.5" />,
+    ...paths('M12 13.5V9', 'M9.5 2.5h5', 'M18.5 6.5l1.5 1.5'),
+  ],
+  reaction_lapses: () => paths('M6 5v14', 'M12 5v14', 'M18 5v6'),
 };
 SHAPES.bp_sys_mmhg = SHAPES.bp;
 SHAPES.bp_dia_mmhg = SHAPES.bp;
