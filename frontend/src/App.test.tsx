@@ -84,8 +84,11 @@ describe('guided check', () => {
     expect(currentStep()).toHaveTextContent(copy.status.name)
     // The status of the indicators and the history are on the last phase.
     expect(screen.getByText(strings.personHeading(PERSON))).toBeInTheDocument()
+    // The history waits behind a closed disclosure.
+    expect(screen.queryByText(/Your earlier median|Not enough earlier entries/)).toBeNull()
+    await user.click(screen.getByRole('button', { name: copy.status.historyToggle }))
     expect(
-      screen.getByText(/Your earlier median|Not enough earlier entries/),
+      await screen.findByText(/Your earlier median|Not enough earlier entries/),
     ).toBeInTheDocument()
   })
 
@@ -147,7 +150,7 @@ describe('top bar', () => {
 
   it('labels the device clock as NOW in the metadata line', () => {
     render(<App />)
-    expect(screen.getByText(/^HEMOSO \/ DAY \d+ · NOW \d\d:\d\d$/)).toBeInTheDocument()
+    expect(screen.getByText(/^DAY \d+ · NOW \d\d:\d\d$/)).toBeInTheDocument()
   })
 
   it('shows the sync status with no server set up', () => {

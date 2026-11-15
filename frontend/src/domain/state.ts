@@ -8,12 +8,15 @@ import type { AttentionRule, Entry, Notify, Source } from './types'
 // the backend (docs/API.md, GET .../state) and here, so the screens still say
 // something true when the server does not answer.
 
+// The three baseline states: the ones the rule below decides, and the `###
+// headings` of a content file that are not attention levels (FORMATS.md
+// section 3, config/content/<indicator_id>.md). A file always carries in_range
+// and outside_range; no_data is the one it may leave out.
+export const BASELINE_STATES = ['in_range', 'outside_range', 'no_data'] as const
+export type BaselineStateName = (typeof BASELINE_STATES)[number]
+
 // The four states the astronaut reads (docs/API.md).
-export type IndicatorStateName =
-  | 'no_data'
-  | 'in_range'
-  | 'outside_range'
-  | 'needs_review'
+export type IndicatorStateName = BaselineStateName | 'needs_review'
 
 // The window counts readings, not days: an entry carries a mission day and a
 // time, not a date (docs/API.md).

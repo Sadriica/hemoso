@@ -1,0 +1,84 @@
+/* Motion layer (DESIGN.md section 7). Only transform, opacity and stroke offsets. */
+.intro__layer {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-4);
+  background: var(--color-bg);
+  color: var(--color-accent);
+  animation: intro-out var(--motion-cinematic) linear both;
+}
+
+.intro__mark {
+  width: 96px;
+  height: 96px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+}
+
+.intro__mark * {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: intro-draw var(--motion-slow) var(--ease-standard) forwards;
+}
+
+.intro__mark path { animation-delay: var(--motion-fast); }
+.intro__mark circle:last-child { animation-delay: var(--motion-base); }
+
+.intro__clock {
+  margin: 0;
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--leading-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  opacity: 0;
+  animation: intro-fade var(--motion-base) var(--ease-out) var(--motion-slow) forwards;
+}
+
+.intro__skip {
+  position: fixed;
+  right: var(--space-4);
+  bottom: var(--space-4);
+  z-index: 101;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 var(--space-3);
+  background: transparent;
+  color: var(--color-text);
+  border: 1px solid var(--color-border-control);
+  border-radius: var(--radius-card);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.intro__skip:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+@keyframes intro-draw { to { stroke-dashoffset: 0; } }
+@keyframes intro-fade { to { opacity: 1; } }
+@keyframes intro-out {
+  0%, 75% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .intro__layer, .intro__layer *, .intro__skip { animation: none; transition: none; }
+}
+
+.app--still .intro__layer, .app--still .intro__layer *, .app--still .intro__skip {
+  animation: none;
+  transition: none;
+}
