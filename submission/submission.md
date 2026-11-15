@@ -125,8 +125,7 @@ Every library is listed with its licence and the reason it is there in
 generated with AI, so none carries a watermark, and no NASA logo, flag or
 mission identifier appears in the interface.
 
-**TODO:** add the demo video link. The app, repository and team links are in
-the Links section below.
+All four links are in the Links section below.
 
 ## AI (SI) use
 
@@ -173,7 +172,7 @@ repository, the app and the demo are in English.
 
 - Repository: https://github.com/Sadriica/hemoso
 - Live app: https://www.hemoso.space/
-- Demo (video 30 s): **TODO**
+- Demo (video 30 s): https://youtu.be/MsjzAZ2Txwc · length 0:29, checked Sun 15 Nov 12:10
 - Team: https://www.spaceappschallenge.org/2026/find-a-team/tardis2/
 
 ## Team
