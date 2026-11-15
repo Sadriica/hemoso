@@ -124,11 +124,15 @@ describe('reactionReducer', () => {
     expect(state.tooEarly).toBe(false)
   })
 
-  it('counts an answer after the cut-off as a lapse', () => {
-    const state = trial(start(), 2000, REACTION_LAPSE_CUTOFF_MS + 1)
-    expect(state.lapses).toBe(1)
-    expect(state.reactions).toEqual([])
-    expect(state.done).toBe(1)
+  it('counts an answer of the cut-off or more as a lapse', () => {
+    const atCut = trial(start(), 2000, REACTION_LAPSE_CUTOFF_MS)
+    expect(atCut.lapses).toBe(1)
+    expect(atCut.reactions).toEqual([])
+    expect(atCut.done).toBe(1)
+
+    const under = trial(start(), 2000, REACTION_LAPSE_CUTOFF_MS - 1)
+    expect(under.lapses).toBe(0)
+    expect(under.reactions).toEqual([REACTION_LAPSE_CUTOFF_MS - 1])
   })
 
   it('keeps waiting for an answer until the end of the window', () => {
@@ -179,17 +183,24 @@ describe('reactionReducer', () => {
     })
   })
 
-  it('ends at the deadline even with a stimulus showing', () => {
+  it('lets a trial in progress finish before it ends', () => {
     const stimulus = reactionReducer(start(), { type: 'stimulus', at: LENGTH - 500 })
-    const state = reactionReducer(stimulus, { type: 'tick', at: LENGTH })
+    // The length runs out while the stimulus shows: it is not cut off.
+    const stillOn = reactionReducer(stimulus, { type: 'tick', at: LENGTH })
+    expect(stillOn.phase).toBe('stimulus')
+    expect(stillOn.stimulusAt).toBe(LENGTH - 500)
+
+    const state = reactionReducer(stillOn, { type: 'answer', at: LENGTH + 100 })
     expect(state.phase).toBe('finished')
-    expect(state.done).toBe(0)
+    expect(state.done).toBe(1)
+    expect(state.reactions).toEqual([])
+    expect(state.lapses).toBe(1)
   })
 
   it('ends when the answer lands after the length, keeping that trial', () => {
-    const state = trial(start(), LENGTH - 300, 400)
+    const state = trial(start(), LENGTH - 300, 300)
     expect(state.phase).toBe('finished')
-    expect(state.reactions).toEqual([400])
+    expect(state.reactions).toEqual([300])
   })
 
   it('stops mid-run and keeps what was measured', () => {
@@ -224,11 +235,11 @@ describe('summarize', () => {
   it('reports the median of the valid trials, the lapses and the early answers', () => {
     let state = start()
     state = trial(state, 2000, 250)
-    state = trial(state, 6000, 400)
-    state = trial(state, 10000, REACTION_LAPSE_CUTOFF_MS + 400)
+    state = trial(state, 6000, 300)
+    state = trial(state, 10000, REACTION_LAPSE_CUTOFF_MS)
     state = reactionReducer(state, { type: 'answer', at: 12000 })
     expect(summarize(state)).toEqual({
-      medianMs: 325,
+      medianMs: 275,
       lapses: 1,
       falseStarts: 1,
       trials: 3,
@@ -252,12 +263,12 @@ describe('randomWait', () => {
   it('stays inside the range, whatever the random number is', () => {
     expect(randomWait(() => 0)).toBe(REACTION_WAIT_MIN_MS)
     expect(randomWait(() => 1)).toBe(REACTION_WAIT_MAX_MS)
-    expect(randomWait(() => 0.5)).toBe(6000)
+    expect(randomWait(() => 0.5)).toBe(3500)
   })
 
   it('follows the random source it is given', () => {
-    expect(randomWait(() => 0.25)).toBe(4000)
-    expect(randomWait(() => 0.75)).toBe(8000)
+    expect(randomWait(() => 0.25)).toBe(2750)
+    expect(randomWait(() => 0.75)).toBe(4250)
   })
 })
 

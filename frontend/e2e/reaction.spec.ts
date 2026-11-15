@@ -88,6 +88,9 @@ test('reaction check by keyboard, at the demo length', async ({ page }) => {
         await expect(page.getByText(reactionStrings.cue.light)).toBeVisible()
         sawLight = true
       }
+      // A key pressed the instant the light appears is under the 100 ms a body
+      // needs, which is a false start; a person takes about this long.
+      await page.waitForTimeout(180)
       await page.keyboard.press('Space')
       if (await result.isVisible()) break
     }
@@ -103,6 +106,7 @@ test('reaction check by keyboard, at the demo length', async ({ page }) => {
     await expect(page.getByText(strings.sync.waiting(2))).toBeVisible()
     await expectNoBlockingA11yIssues(page, 'Report with the reaction result')
   })
+
 
   await test.step('A run in sound mode shows its cue, and Escape throws it away', async () => {
     await page.getByRole('button', { name: reactionStrings.again }).focus()
@@ -126,8 +130,55 @@ test('reaction check by keyboard, at the demo length', async ({ page }) => {
     await expect(page.getByText(strings.sync.waiting(2))).toBeVisible()
   })
 
+  await test.step('Status: both indicators with their icon and their history', async () => {
+    await page.getByRole('button', { name: copy.report.next }).focus()
+    await page.keyboard.press('Enter')
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(
+      copy.status.headline[0],
+    )
+
+    // Each one is a card of the status phase, picked from the overview, drawn
+    // with its own glyph and carrying the reading the file's data gives it.
+    for (const id of [REACTION_MEDIAN_ID, REACTION_LAPSES_ID]) {
+      const name = rows.names[rows.ids.indexOf(id)] ?? ''
+      await selectIndicator(page, name)
+      const card = page.getByRole('listitem').filter({
+        has: page.getByRole('heading', { level: 3, name, exact: true }),
+      })
+      await expect(card.locator('.indicator-card__icon svg')).toHaveAttribute(
+        'data-icon',
+        id,
+      )
+      await expect(card.locator('.indicator-card__reading')).toBeVisible()
+    }
+
+    // The history of the median, behind its closed disclosure (REQ-12).
+    const medianName = rows.names[rows.ids.indexOf(REACTION_MEDIAN_ID)] ?? ''
+    await selectIndicator(page, medianName)
+    const toggle = page.getByRole('button', { name: copy.status.historyToggle })
+    await toggle.focus()
+    await page.keyboard.press('Enter')
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true')
+    await expect(
+      page.getByRole('table', {
+        name: strings.history.tableCaption(medianName),
+      }),
+    ).toBeVisible()
+  })
+
   expect(problems, 'console errors and failed requests').toEqual([])
 })
+
+// Chooses an indicator in the overview by its name, with the keyboard only.
+async function selectIndicator(page: Page, name: string): Promise<void> {
+  const control = page
+    .getByRole('button', { name: new RegExp(`^${name}\\b`) })
+    .first()
+  await expect(control).toBeVisible()
+  await control.focus()
+  await page.keyboard.press('Enter')
+  await expect(control).toHaveAttribute('aria-pressed', 'true')
+}
 
 function collectProblems(page: Page): string[] {
   const problems: string[] = []

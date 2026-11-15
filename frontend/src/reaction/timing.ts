@@ -119,7 +119,9 @@ export function reactionReducer(
       return closed(state, event.at, state.lapses + 1)
     case 'tick':
       // The clock of the length of the run: the component arms one timer for it.
-      if (state.phase !== 'waiting' && state.phase !== 'stimulus') return state
+      // A stimulus already showing is not cut off: the trial in progress closes
+      // as a reaction or as a lapse, and that close ends the run.
+      if (state.phase !== 'waiting') return state
       if (state.endsAt === null || event.at < state.endsAt) return state
       return { ...state, phase: 'finished', stimulusAt: null, tooEarly: false }
     case 'stop':
@@ -145,7 +147,7 @@ function answered(state: ReactionState, at: number): ReactionState {
   const latency = Math.max(0, at - state.stimulusAt)
   // Too fast to be a reaction: the press was already on its way.
   if (latency < REACTION_MIN_VALID_MS) return falseStart(state)
-  if (latency > REACTION_LAPSE_CUTOFF_MS) return closed(state, at, state.lapses + 1)
+  if (latency >= REACTION_LAPSE_CUTOFF_MS) return closed(state, at, state.lapses + 1)
   return closed(state, at, state.lapses, [...state.reactions, latency])
 }
 

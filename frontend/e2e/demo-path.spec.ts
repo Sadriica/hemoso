@@ -17,7 +17,9 @@ const { ids, names, units, measuredOnBoard, hazards, scaleIndex } =
 
 // The reaction check measures its two indicators itself (reaction/ids.ts), so
 // the Entry screen has no row for them: the count below leaves them out.
-const typedNames = names.filter((_, index) => !isReactionIndicator(ids[index] ?? ''))
+const typedNames = names.filter(
+  (_, index) => !isReactionIndicator(ids[index] ?? ''),
+)
 
 const FIRST_VALUE = '72'
 const SCALE_VALUE = 3

@@ -169,8 +169,15 @@ describe('ReactionCheck', () => {
     fireEvent.keyDown(window, { key: ' ' })
     expect(screen.getByText(reactionStrings.trial(3))).toBeVisible()
 
-    // The rest of the demo length runs out.
-    advance(REACTION_DEMO_DURATION_MS - now)
+    // The rest of the demo length: each stimulus after the shortest wait, each
+    // answer 300 ms later. The last one lands after the deadline and closes the
+    // run, so a trial in progress is not cut off.
+    for (let trial = 0; trial < 11; trial += 1) {
+      advance(REACTION_WAIT_MIN_MS)
+      advance(300)
+      fireEvent.keyDown(window, { key: ' ' })
+    }
+    expect(screen.queryByRole('group', { name: reactionStrings.areaLabel })).toBeNull()
 
     expect(screen.getByText(reactionStrings.result(300, 1))).toBeVisible()
     expect(screen.getByText(reactionStrings.falseStarts(0))).toBeVisible()
