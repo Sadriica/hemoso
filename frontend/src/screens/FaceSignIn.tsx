@@ -30,10 +30,9 @@ type Stage = 'consent' | 'ready' | 'registering' | 'signingIn'
 type Message = { text: string; alert: boolean }
 
 export interface FaceSignInProps {
-  // The person picked in the header: the one whose face is deleted.
+  // The person on duty on this device: the face registered here is theirs, and
+  // their face is the one deleted. Empty until a name is signed in (T-70).
   personId: string
-  // The person ids of the app, so registration takes an existing one.
-  personIds: string[]
   onPersonSelected(personId: string): void
   onClose(): void
   // Puts focus back on the person picker, the fallback the screen names.
@@ -44,7 +43,6 @@ export interface FaceSignInProps {
 
 export default function FaceSignIn({
   personId,
-  personIds,
   onPersonSelected,
   onClose,
   onFocusPicker,
@@ -54,17 +52,16 @@ export default function FaceSignIn({
   const [message, setMessage] = useState<Message | null>(null)
   const [cameraOn, setCameraOn] = useState(false)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
-  const [targetId, setTargetId] = useState(personId || personIds[0] || '')
   const [savedIds, setSavedIds] = useState<string[]>(() =>
     loadFaces().map((record) => record.personId),
   )
 
   const headingId = useId()
   const videoLabelId = useId()
-  const targetFieldId = useId()
   const continueRef = useRef<HTMLButtonElement>(null)
   const registerRef = useRef<HTMLButtonElement>(null)
-  const focusRegister = useRef(false)
+  const signInRef = useRef<HTMLButtonElement>(null)
+  const focusFirstAction = useRef(false)
   const videoRef = useRef<HTMLVideoElement>(null)
   const sessionRef = useRef<CameraSession | null>(null)
 
@@ -98,11 +95,14 @@ export default function FaceSignIn({
   // looks like the page behind it. Only the consent moves the focus: a camera
   // problem has to leave it on the person picker, which is the way out.
   useEffect(() => {
-    if (stage === 'ready' && focusRegister.current) {
-      focusRegister.current = false
-      registerRef.current?.focus()
+    if (stage === 'ready' && focusFirstAction.current) {
+      focusFirstAction.current = false
+      // Registration needs a person on duty; until there is one, the first
+      // action is the face that already matches.
+      if (personId === '') signInRef.current?.focus()
+      else registerRef.current?.focus()
     }
-  }, [stage])
+  }, [stage, personId])
 
   function stopCamera() {
     sessionRef.current?.stop()
@@ -154,7 +154,7 @@ export default function FaceSignIn({
   }
 
   async function register() {
-    if (busy) return
+    if (busy || personId === '') return
     setConfirmingDelete(false)
     setMessage(null)
     setStage('registering')
@@ -166,10 +166,10 @@ export default function FaceSignIn({
         setMessage({ text: strings.face.status.noFace, alert: true })
         return
       }
-      const records = saveFace({ personId: targetId, descriptor })
+      const records = saveFace({ personId, descriptor })
       setSavedIds(records.map((record) => record.personId))
       setMessage({
-        text: strings.face.status.registered(targetId),
+        text: strings.face.status.registered(personId),
         alert: false,
       })
     } catch (error) {
@@ -213,15 +213,17 @@ export default function FaceSignIn({
   }
 
   function acceptConsent() {
-    focusRegister.current = true
+    focusFirstAction.current = true
     setStage('ready')
   }
 
   return (
+    // A region, not a dialog: the panel sits in the flow of phase 1, the page
+    // behind it stays usable, and nothing traps the focus (T-70).
     <section
       id="face-panel"
       className="face-panel"
-      role="dialog"
+      role="region"
       aria-labelledby={headingId}
     >
       <h2 id={headingId} className="face-panel__heading">
@@ -251,33 +253,24 @@ export default function FaceSignIn({
         </>
       ) : (
         <>
-          <div className="field face-panel__person">
-            <label htmlFor={targetFieldId}>{strings.face.person}</label>
-            <select
-              id={targetFieldId}
-              value={targetId}
-              disabled={busy}
-              onChange={(event) => setTargetId(event.target.value)}
-            >
-              {personIds.map((id) => (
-                <option key={id} value={id}>
-                  {id}
-                </option>
-              ))}
-            </select>
-          </div>
+          <p className="face-panel__text">
+            {personId === ''
+              ? strings.face.chooseFirst
+              : strings.face.registeredFor(personId)}
+          </p>
 
           <div className="face-panel__actions">
             <button
               ref={registerRef}
               className="button button--primary"
               type="button"
-              disabled={busy}
+              disabled={busy || personId === ''}
               onClick={register}
             >
               {strings.face.register}
             </button>
             <button
+              ref={signInRef}
               className="button button--secondary"
               type="button"
               disabled={busy}

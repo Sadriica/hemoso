@@ -28,6 +28,97 @@ const response = await fetch(`${VITE_API_BASE_URL}/health`);
 const body = await response.json(); // { status: "ok" }
 ```
 
+### POST /accounts
+
+Creates one account (REQ-37). An account is what makes a person's data private:
+once the person has one, every route that names that person needs a token (see
+"Sessions and the Authorization header" below).
+
+Request body:
+
+| Field | Type | Rule |
+| --- | --- | --- |
+| `person_id` | string | at most 64 characters, lowercase `snake_case`, the same rule as everywhere else |
+| `pin` | string | 4 to 8 digits, nothing else |
+
+What the backend stores, and nothing more: `person_id`, a random 16-byte salt
+(hex) and the `hashlib.scrypt` digest of the PIN with that salt (`n` = 2**14,
+`r` = 8, `p` = 1), hex. The PIN itself is never stored, never logged and never
+returned. Two accounts with the same PIN get different hashes, because each has
+its own salt.
+
+Responses: `201` with `{"person_id": "..."}`; `409` when the name is taken
+(`detail` `this username is taken` for `smoke_test_1`, for any `person_id` of
+`config/data/demo_data.csv` and for anyone who already has stored entries,
+because their demo history must stay open without a PIN, REQ-32) or when that
+person already has an account (`detail` `this person already has an account`);
+`422` when the body breaks a rule; `502` when the upstream store (Supabase) is
+unreachable or returns an error.
+
+```bash
+curl -X POST "$VITE_API_BASE_URL/accounts" \
+  -H "Content-Type: application/json" \
+  -d '{"person_id":"demo_crew_2","pin":"2468"}'
+# 201 {"person_id":"demo_crew_2"}
+```
+
+```js
+const response = await fetch(`${VITE_API_BASE_URL}/accounts`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ person_id: "demo_crew_2", pin: "2468" }),
+});
+if (response.status === 409) {
+  // the name is taken, or this person already has an account: sign in instead
+}
+```
+
+### POST /sessions
+
+Signs in with the same body as `POST /accounts`: `person_id` and `pin`. The
+answer holds a token the frontend sends as `Authorization: Bearer <token>` on
+every request that names that person.
+
+The token is `base64url(payload) + "." + base64url(signature)`. The payload is
+the JSON object `{"sub": person_id, "exp": unix_seconds}`; the signature is
+`HMAC-SHA256` of the base64url payload with `SESSION_SECRET`, both base64url
+without padding. It is valid for 30 days; `expires_at` is that moment in ISO
+8601 UTC. When `SESSION_SECRET` is unset the API signs with a random key made at
+start, so every token stops working at a restart.
+
+Responses:
+
+| Code | Meaning |
+| --- | --- |
+| `200` | `{"token": "...", "person_id": "...", "expires_at": "YYYY-MM-DDTHH:MM:SSZ"}` |
+| `401` | Unknown person or wrong PIN; `detail` is `wrong username or PIN` in both cases, and an unknown person costs the same work as a wrong PIN |
+| `429` | Five wrong PINs for that person inside ten minutes; `detail` is `too many wrong PINs, try again later` |
+| `422` | The body breaks a rule (`person_id` not `snake_case`, `pin` not 4 to 8 digits) |
+| `502` | The upstream store (Supabase) is unreachable or returns an error |
+
+The wrong-PIN count lives in the memory of the backend process: a restart
+clears it, and with more than one instance each counts its own attempts. It is
+per person, so one locked astronaut does not lock another.
+
+```bash
+curl -X POST "$VITE_API_BASE_URL/sessions" \
+  -H "Content-Type: application/json" \
+  -d '{"person_id":"demo_astronaut_1","pin":"2468"}'
+# 200 {"token":"eyJ... . ...","person_id":"demo_astronaut_1","expires_at":"2026-12-14T21:55:00Z"}
+```
+
+```js
+const response = await fetch(`${VITE_API_BASE_URL}/sessions`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ person_id: "demo_astronaut_1", pin: "2468" }),
+});
+if (response.status === 429) {
+  // too many wrong PINs: wait ten minutes before trying again
+}
+const session = await response.json(); // keep session.token and session.expires_at
+```
+
 ### POST /entries
 
 Stores one measurement (REQ-27) and returns the stored entry. The same entry can
@@ -129,12 +220,17 @@ Query parameters:
 | --- | --- | --- |
 | `value` | number | required; a finite number (the value the astronaut enters) |
 | `context` | string | `rest` (default), `after_exercise`, `on_waking` or `before_sleep`; a reading is only compared with readings in the same context |
+| `mission_day` | integer | optional; the mission day of the value being tested, greater than 0; given with `time` or not at all |
+| `time` | string | optional; the `HH:MM` clock time of the value being tested; given with `mission_day` or not at all |
 
 The rule is FORMATS.md section 3, "How each value is compared", and
 `docs/findings/phys-02-baseline-state-rule.md`:
 
 - The window is the last 14 stored entries for the person and indicator in the
-  same context, oldest first; the `value` being tested is not one of them.
+  same context, oldest first. With `mission_day` and `time`, only the entries
+  strictly earlier than that day and time are kept, so a reading the app has
+  already stored is not compared with its own copy; without them every stored
+  entry counts, as before.
 - `median` is the median of the window; `spread` is
   `max(1.4826 × median absolute deviation, min_spread)`, with `min_spread` from
   that indicator's row in `config/data/indicators.csv`.
@@ -162,9 +258,10 @@ questions in `team/eng1/`:
 Responses: `200` (an `IndicatorState`); `404` when `indicator_id` has no row in
 `config/data/indicators.csv` (also while that file does not exist, because then
 no indicator is known and the noise floor cannot be read); `422` when a path id
-breaks the `snake_case` rule, `value` is missing or not a finite number, or
-`context` is not one of the four; `502` when the upstream store (Supabase) is
-unreachable or returns an error.
+breaks the `snake_case` rule, `value` is missing or not a finite number,
+`context` is not one of the four, only one of `mission_day` and `time` is
+given, or `mission_day` is not a positive integer or `time` is not `HH:MM`;
+`502` when the upstream store (Supabase) is unreachable or returns an error.
 
 | Field | Type | Meaning |
 | --- | --- | --- |
@@ -194,6 +291,208 @@ if (status.attention !== null) {
 
 The values above are placeholders in a synthetic history (REQ-14); no real crew
 data and no clinical limit is stored in this endpoint.
+
+### GET /people/{person_id}/blood_pressure/state
+
+One blood pressure reading shows the worse of its systolic and diastolic state
+(FORMATS.md section 3 and `docs/findings/bio2-01-pressure-state-rule.md`). Each
+side is computed like the state route, against its own history: `systolic`
+against `bp_sys_mmhg`, `diastolic` against `bp_dia_mmhg`.
+
+Path parameter: `person_id`, a string (same lowercase `snake_case` rule).
+
+Query parameters:
+
+| Name | Type | Rule |
+| --- | --- | --- |
+| `systolic` | number | required; a finite number, in the unit of `bp_sys_mmhg` (mmHg) |
+| `diastolic` | number | required; a finite number, in the unit of `bp_dia_mmhg` (mmHg) |
+| `context` | string | `rest` (default), `after_exercise`, `on_waking` or `before_sleep` |
+| `mission_day` | integer | optional; the mission day of the reading, greater than 0; given with `time` or not at all |
+| `time` | string | optional; the `HH:MM` clock time of the reading; given with `mission_day` or not at all |
+
+The worse state is the one furthest along `no_data` < `in_range` <
+`outside_range` < `needs_review`. A reading of 120/95 is therefore
+`needs_review`, because the diastolic side crossed the attention row of
+`config/rules/attention.csv` while the systolic side stayed in range; 118/75 with
+a usual baseline is `in_range`. When both sides need review, each side's
+`attention` object carries its own level and who is notified.
+
+`mission_day` and `time` work as they do on the state route: with both, each
+window holds only the entries strictly earlier than that day and time, so the
+reading being tested is not compared with a stored copy of itself.
+
+Responses: `200` (a `BloodPressureState`); `404` when `bp_sys_mmhg` or
+`bp_dia_mmhg` has no row in `config/data/indicators.csv` (also while that file
+does not exist); `422` under the same rules as the state route, with `systolic`
+or `diastolic` in place of `value`; `502` when the upstream store (Supabase) is
+unreachable or returns an error.
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `state` | string | the worse of the two states |
+| `systolic` | object | the same body the state route returns, for `bp_sys_mmhg` |
+| `diastolic` | object | the same body the state route returns, for `bp_dia_mmhg` |
+
+```bash
+curl "$VITE_API_BASE_URL/people/demo_astronaut_1/blood_pressure/state?systolic=120&diastolic=95&context=rest"
+# 200 {"state":"needs_review","systolic":{"state":"in_range","median":115.0,"spread":5.0,"n":14,"attention":null},"diastolic":{"state":"needs_review","median":75.0,"spread":4.0,"n":14,"attention":{"attention_level":"consult","notify":"cmo","source":"https://www.who.int/news-room/fact-sheets/detail/hypertension"}}}
+```
+
+```js
+const params = new URLSearchParams({ systolic: "120", diastolic: "95", context: "rest" });
+const response = await fetch(
+  `${VITE_API_BASE_URL}/people/demo_astronaut_1/blood_pressure/state?${params}`
+);
+const pressure = await response.json();
+// show both numbers and pressure.state; the source of the attention row sits
+// next to it, and the CMO or flight surgeon confirms.
+```
+
+The numbers above are placeholders in a synthetic history (REQ-14); the states
+come from the store, never from a fixed range in the code.
+### GET /people/{person_id}/conditions
+
+Returns the evidence score of every possible condition in
+`config/rules/conditions.csv` (REQ-06), one entry per row, in file order. The
+score is evidence from what the person recorded, not a probability: it says how
+much of what is known points at that condition, and the CMO or the flight
+surgeon confirms (`docs/findings/bio2-02-evidence-score.md`). Nothing in the
+response says the person has the condition.
+
+Path parameter: `person_id` (same lowercase `snake_case` rule).
+
+The rule is FORMATS.md section 3, "How each value is compared", point 3:
+
+| Question | Answer |
+| --- | --- |
+| Which reading is scored? | The newest stored entry of the signal. Its `context` decides what it is compared with. |
+| What is its baseline? | `state.py`'s: the last 14 readings before the newest one in that same context, median and spread with the indicator's `min_spread`. |
+| What does one signal add? | `1` when the value crossed a row of `config/rules/attention.csv` whose `side` is the signal's side. `0.5` when it is outside the baseline on that side. `0` otherwise, including a value on the wrong side of the condition, whatever its distance from the baseline: a glucose of 180 mg/dL adds nothing to `hypoglycaemia`. |
+| When is a signal not usable? | With no reading, no baseline (fewer than 3 readings in that context, or no row in `config/data/indicators.csv`), or no side in `based_on`. It is listed, with `contribution` and `value` null, and left out of the mean. |
+| How is the score computed? | The mean of the usable signals, from 0 to 1, shown with three decimals. Fewer than 2 usable signals gives `score` null and `label` `no_data`, never a low score. |
+
+Labels:
+
+| Score | `label` | What the astronaut reads |
+| --- | --- | --- |
+| 0 to 0.3 | `low` | "Not likely with what you have recorded" |
+| 0.3 to 0.6 | `possible` | "Possible. These signals point to it: ..." |
+| 0.6 to 1 | `review` | "Ask your CMO or flight surgeon to check this" |
+| null | `no_data` | "Not enough data yet", with the signals still missing |
+
+Four points the finding does not settle, resolved here:
+
+- The bands are written in the finding with both ends (`0 to 0.3`, `0.3 to
+  0.6`, `0.6 to 1`). They are read closed at the lower end, so exactly 0.3 is
+  `possible` and exactly 0.6 is `review`.
+- The context is the newest reading's own: heart rate after exercise is
+  compared with readings after exercise, and a context with fewer than 3
+  readings leaves the signal without a baseline.
+- A signal without a baseline is not usable even when its value crossed an
+  attention row, as the finding leaves such a signal out of the score.
+- The finding's fourth vector gives a diastolic of 120 the baseline point for
+  `orthostatic_intolerance`, whose diastolic signal is `below`, and reads 0.667
+  `review`. With the side it adds 0, and the condition scores 0.5 `possible`.
+  Open with Bio 2; the rule in words, FORMATS.md and this route agree on the
+  side.
+
+Responses: `200` (a JSON array, empty when `config/rules/conditions.csv` does
+not exist); `422` when `person_id` breaks the `snake_case` rule; `502` when the
+upstream store (Supabase) is unreachable or returns an error. There is no `404`:
+the route does not look up an indicator.
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `condition_id` | string | the id from `config/rules/conditions.csv` |
+| `name` | string | the plain name from that row |
+| `score` | number or null | the mean of the usable signals, 0 to 1, three decimals |
+| `label` | string | `no_data`, `low`, `possible` or `review` |
+| `signals` | array | one object per signal in `based_on`, in file order |
+| `source` | string | the row's link or `Assumption` |
+
+Each signal object:
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `indicator_id` | string | the signal's indicator |
+| `side` | string or null | `above` or `below`, the side that counts for this condition; null when `based_on` has no side |
+| `contribution` | number or null | `1`, `0.5` or `0`, the point the signal added; null while it is not usable |
+| `value` | number or null | the newest reading, or null when there is none |
+
+```bash
+curl "$VITE_API_BASE_URL/people/demo_astronaut_1/conditions"
+# 200 [{"condition_id":"orthostatic_intolerance","name":"Orthostatic intolerance","score":0.5,"label":"possible","signals":[{"indicator_id":"hr_bpm","side":"above","contribution":1.0,"value":112.0},{"indicator_id":"bp_sys_mmhg","side":"below","contribution":0.5,"value":95.0},{"indicator_id":"bp_dia_mmhg","side":"below","contribution":0.0,"value":74.0}],"source":"http://humanresearchroadmap.nasa.gov/Evidence/reports/ORTHO.pdf"}]
+```
+
+```js
+const response = await fetch(
+  `${VITE_API_BASE_URL}/people/demo_astronaut_1/conditions`
+);
+const conditions = await response.json(); // one entry per condition, in file order
+for (const condition of conditions) {
+  if (condition.score === null) {
+    // condition.label is "no_data": show the name and which signals are still
+    // missing (contribution === null), never a low score
+    continue;
+  }
+  // show condition.name, condition.label and condition.score as a bar,
+  // never as a percentage; the CMO or the flight surgeon confirms
+}
+```
+
+The values above are placeholders in a synthetic history (REQ-14).
+
+## Sessions and the Authorization header
+
+Every route that names a person checks who is asking before it answers:
+
+| Route | Whose person |
+| --- | --- |
+| `POST /entries` | `person_id` in the body |
+| `GET /people/{person_id}/indicators/{indicator_id}/history` | the path |
+| `GET /people/{person_id}/indicators/{indicator_id}/state` | the path |
+| `GET /people/{person_id}/blood_pressure/state` | the path |
+| `GET /people/{person_id}/conditions` | the path |
+
+The rule depends on whether that person has an account:
+
+- A person **with** an account needs `Authorization: Bearer <token>`, a token
+  from `POST /sessions` for that same person.
+  - No header, or a value that is not `Bearer <token>`: `401`, `detail`
+    `missing or invalid token`.
+  - A token that was tampered with, signed with another key or past its
+    `expires_at`: `401`, same `detail`.
+  - A valid token for another person: `403`, `detail` `this token belongs to
+    another person`.
+- A person **without** an account stays open, as every route was before
+  accounts existed: the synthetic demo astronaut and the smoke-test person keep
+  working without a token (REQ-32). Nothing else about their requests changes.
+
+`GET /health`, `POST /accounts` and `POST /sessions` never need a token.
+
+The check runs before the route's own work: a refused request reads no history
+and stores no entry.
+
+```bash
+TOKEN="eyJ..."
+curl "$VITE_API_BASE_URL/people/demo_astronaut_1/indicators/hr_bpm/history" \
+  -H "Authorization: Bearer $TOKEN"
+# 200 [...]  without the header: 401 {"detail":"missing or invalid token"}
+```
+
+```js
+const response = await fetch(
+  `${VITE_API_BASE_URL}/people/demo_astronaut_1/indicators/hr_bpm/history`,
+  { headers: { Authorization: `Bearer ${session.token}` } }
+);
+if (response.status === 401) {
+  // no token, a tampered one or an expired one: sign in again with the PIN
+}
+if (response.status === 403) {
+  // the token belongs to another person: ask for that person's PIN
+}
+```
 
 ## Errors
 
@@ -230,20 +529,45 @@ plain-string `detail` when `person_id` or `indicator_id` breaks the `snake_case`
 rule, and `502` with `detail` `upstream storage error` when the Supabase store
 is unreachable or returns an error.
 
+`GET /people/{person_id}/conditions` returns `422` with the plain-string
+`detail` `person_id must be lowercase snake_case`, and the same `502` with the
+same `detail` as the routes above.
+
+`POST /accounts` and `POST /sessions` return `422` with the field array when the
+body breaks a rule:
+
+| Cause | `msg` |
+| --- | --- |
+| `person_id` breaks the id rule | `Value error, must be lowercase snake_case` |
+| `pin` is not 4 to 8 digits | `Value error, pin must be 4 to 8 digits` |
+| `person_id` or `pin` is missing | `Field required` |
+
+`POST /accounts` returns `409` with `detail` `this username is taken` when the
+name belongs to the demo data, the smoke test or a person with stored entries,
+and with `detail` `this person already has an account` when the account exists.
+`POST /sessions` returns `401` with `detail` `wrong username or PIN`
+and `429` with `detail` `too many wrong PINs, try again later`.
+
+The five routes that name a person return `401` with `detail` `missing or
+invalid token` and `403` with `detail` `this token belongs to another person`;
+both come from the rule above, before the route does its own work.
+
 ## CORS
 
 The backend reads `ALLOWED_ORIGINS`, a comma-separated list of origins. When it
 is unset or empty, the default is `http://localhost:5173` (the Vite dev server).
-Allowed methods are `GET` and `POST`; allowed headers are all (`*`). A preflight
+Allowed methods are `GET` and `POST`; allowed headers are `Content-Type` and
+`Authorization`, so the frontend can send the bearer token. A preflight
 `OPTIONS` request returns `200` with `access-control-allow-origin` set to the
 allowed origin.
 
 ## Rate limit
 
-The API has no login (`PRIVACY.md`), so every client address is capped at 120
-requests per 60 seconds (`backend/app/ratelimit.py`). The window slides: a
-request is accepted while that address made fewer than 120 requests in the last
-60 seconds.
+Every client address is capped at 120 requests per 60 seconds
+(`backend/app/ratelimit.py`), sign-in included; the per-person PIN lockout in
+`POST /sessions` is a second, separate guard. The window slides: a request is
+accepted while that address made fewer than 120 requests in the last 60
+seconds.
 
 - `RATE_LIMIT_PER_MINUTE` sets the cap; unset or empty means 120 and `0` turns
   the limit off. A value that is not a whole number, or is negative, is read as
@@ -279,7 +603,8 @@ and a restart clears every window.
 
 - No endpoint lists people.
 - No endpoint lists indicators.
-- No auth, login or tokens.
+- No change of PIN, no sign-out and no refresh of a token: a token works until
+  `expires_at`.
 - No update or delete of entries.
 
 These are facts about the current code, not proposals.
