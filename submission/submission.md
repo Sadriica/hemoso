@@ -141,7 +141,7 @@ repository, the app and the demo are in English.
 ## Links
 
 - Repository: https://github.com/Sadriica/hemoso
-- Live app: **TODO**
+- Live app: https://www.hemoso.space/
 - Demo (video 30 s or 7 slides): **TODO**
 - Team: https://www.spaceappschallenge.org/2026/find-a-team/tardis2/
 
