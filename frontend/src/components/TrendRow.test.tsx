@@ -96,3 +96,17 @@ describe('TrendRow', () => {
     expect(svg).toHaveAttribute('preserveAspectRatio', 'none')
   })
 })
+
+describe('TrendRow while the baseline is being built', () => {
+  it('draws one mark per reading it needs, filled as they arrive, hidden from assistive technology', () => {
+    const { container } = render(
+      <TrendRow value={70} unit="bpm" baseline={{ median: null, spread: null, n: 1 }} />,
+    )
+    const pips = container.querySelector('.trend__pips')
+    expect(pips).toHaveAttribute('aria-hidden', 'true')
+    expect(container.querySelectorAll('.trend__pip')).toHaveLength(3)
+    expect(container.querySelectorAll('.trend__pip--on')).toHaveLength(1)
+    // The words still say it.
+    expect(screen.getByText(strings.trend.notEnough(1, 3))).toBeInTheDocument()
+  })
+})
