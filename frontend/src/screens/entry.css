@@ -648,9 +648,9 @@
   justify-content: center;
   /* The button keeps its 44 px target but adds no height to the row. */
   margin-block: calc(var(--space-3) * -1);
-  font-size: var(--text-body);
+  gap: var(--space-1);
   min-width: var(--tap-min);
-  padding: 0;
+  padding: 0 var(--space-2);
   border-color: transparent;
   background: transparent;
   color: var(--color-text-muted);
