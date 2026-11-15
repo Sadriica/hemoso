@@ -65,7 +65,7 @@ describe('TrendRow', () => {
     )
     expect(
       screen.getByText(
-        'Not enough earlier readings before sleep to compare yet (0 of 3).',
+        'Not enough earlier days with a reading before sleep to compare yet (0 of 3).',
       ),
     ).toBeInTheDocument()
   })

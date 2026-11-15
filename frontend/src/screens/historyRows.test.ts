@@ -8,7 +8,7 @@ const rule: AttentionRule = {
   threshold: 100,
   attentionLevel: 'consult',
   notify: 'crew',
-  sources: ['Assumption'],
+  sources: [{ title: 'Example', url: 'https://example.org' }],
 }
 
 function entry(
@@ -51,6 +51,13 @@ describe('rowStatus', () => {
     const status = rowStatus(history[4], history, [rule], 1)
     expect(status.state).toBe('needs_review')
     expect(status.level).toBe('consult')
+  })
+
+  it('leaves a crossed Assumption row to the band, with no level', () => {
+    const assumed: AttentionRule = { ...rule, sources: ['Assumption'] }
+    const status = rowStatus(history[4], history, [assumed], 1)
+    expect(status.state).toBe('outside_range')
+    expect(status.level).toBeNull()
   })
 
   it('is outside the usual range far from the baseline without a threshold', () => {

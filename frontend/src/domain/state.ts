@@ -164,24 +164,31 @@ export function localState(
           minSpread,
         )
 
-  const attention = attentionFor(latest.value, rules)
-  const crossed = attention.kind === 'attention' ? attention.rule : null
+  // Only a row whose source is a link may raise `needs_review`, with or without
+  // a baseline: a row marked Assumption is an invented limit and must not raise
+  // an alarm on its own (docs/findings/phys-02-baseline-state-rule.md, "The
+  // rule"; backend/app/state.py filters the same way in `cited_rows`). The
+  // Details panel still lists every row through `attentionFor`.
+  const cited = rules.filter((rule) =>
+    rule.sources.some((source) => source !== 'Assumption'),
+  )
+  const attention = attentionFor(latest.value, cited)
+  const rule = attention.kind === 'attention' ? attention.rule : null
 
-  // Safety first (phys-02, "The rule"): without a baseline, a crossed row whose
-  // source is a link still needs review, and a row that is only an Assumption
-  // says nothing, so the card does not name its level.
-  if (middle === null && crossed !== null) {
-    const cited = crossed.sources.some((source) => source !== 'Assumption')
+  // Safety first (phys-02, "The rule"): a crossed row with a link needs review
+  // even without a baseline, so a value past its limit on the first day is not
+  // "no data yet". Without a row and without a baseline there is nothing to
+  // compare, so the card says so.
+  if (middle === null) {
     return {
-      state: cited ? 'needs_review' : 'no_data',
+      state: rule === null ? 'no_data' : 'needs_review',
       median: null,
       spread: null,
       n: daily.length,
-      rule: cited ? crossed : null,
+      rule,
     }
   }
 
-  const rule = crossed
   return {
     state: baselineState(
       latest.value,
