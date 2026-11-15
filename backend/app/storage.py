@@ -40,6 +40,8 @@ class Storage(Protocol):
 
     def create_account(self, account: Account) -> bool: ...
 
+    def has_person(self, person_id: str) -> bool: ...
+
 
 def _ordered(entries: list[Entry]) -> list[Entry]:
     return sorted(entries, key=lambda entry: (entry.mission_day, entry.time))
@@ -77,6 +79,9 @@ class MemoryStorage:
             return False
         self._accounts[account.person_id] = account
         return True
+
+    def has_person(self, person_id: str) -> bool:
+        return any(entry.person_id == person_id for entry in self._entries)
 
 
 class SqliteStorage:
@@ -204,6 +209,14 @@ class SqliteStorage:
                 return False
         return True
 
+    def has_person(self, person_id: str) -> bool:
+        with self._lock:
+            rows = self._conn.execute(
+                "SELECT 1 FROM entries WHERE person_id = ? LIMIT 1",
+                (person_id,),
+            ).fetchall()
+        return bool(rows)
+
 
 class SupabaseStorage:
     """Talks to Supabase's REST API with httpx; no client library."""
@@ -305,6 +318,19 @@ class SupabaseStorage:
             return False
         response.raise_for_status()
         return True
+
+    def has_person(self, person_id: str) -> bool:
+        response = self._client.get(
+            f"{self.url}/rest/v1/entries",
+            params={
+                "person_id": f"eq.{person_id}",
+                "select": "person_id",
+                "limit": "1",
+            },
+            headers=self._headers(),
+        )
+        response.raise_for_status()
+        return bool(response.json())
 
 
 _storage: Storage | None = None

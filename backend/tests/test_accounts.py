@@ -35,6 +35,12 @@ INDICATORS_CSV = (
     "4,A,cardiovascular,Assumption\n"
 )
 
+DEMO_CSV = (
+    "person_id,indicator_id,value,unit,mission_day,time,context\n"
+    "demo_astronaut_1,example_indicator,72,example_unit,1,08:00,rest\n"
+)
+
+
 PERSON_ROUTES = [
     ("post", "/entries", {"json": ENTRY}, 201),
     (
@@ -127,6 +133,45 @@ def test_duplicate_account_is_409(client):
 
     assert response.status_code == 409
     assert response.json()["detail"] == "this person already has an account"
+
+
+def test_demo_person_cannot_take_an_account(client, tmp_path):
+    path = tmp_path / "data" / "demo_data.csv"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(DEMO_CSV, encoding="utf-8")
+
+    response = create(client, "demo_astronaut_1")
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "this username is taken"
+
+
+def test_smoke_test_person_cannot_take_an_account(client):
+    response = create(client, "smoke_test_1")
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "this username is taken"
+
+
+def test_person_with_stored_entries_cannot_take_an_account(client):
+    stored = client.post("/entries", json=ENTRY)
+    assert stored.status_code == 201
+
+    response = create(client)
+
+    assert response.status_code == 409
+    assert response.json()["detail"] == "this username is taken"
+    # The history stays open: no PIN can appear in front of it (REQ-32).
+    history = client.get(f"/people/{PERSON}/indicators/example_indicator/history")
+    assert history.status_code == 200
+    assert len(history.json()) == 1
+
+
+def test_a_new_name_still_gets_an_account(client):
+    response = create(client, "crew_7")
+
+    assert response.status_code == 201
+    assert response.json() == {"person_id": "crew_7"}
 
 
 @pytest.mark.parametrize(

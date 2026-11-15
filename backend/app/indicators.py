@@ -71,6 +71,19 @@ def load_attention_rows(indicator_id: str) -> list[dict]:
     return rows
 
 
+def load_demo_people() -> set[str]:
+    """The `person_id` values of data/demo_data.csv; empty while the file is missing."""
+    path = config_dir() / "data" / "demo_data.csv"
+    if not path.exists():
+        return set()
+    with path.open(newline="", encoding="utf-8-sig") as handle:
+        return {
+            row["person_id"].strip()
+            for row in csv.DictReader(handle)
+            if (row.get("person_id") or "").strip()
+        }
+
+
 def load_condition_rows() -> list[dict[str, str]]:
     """rules/conditions.csv in file order; [] while the file is missing.
 

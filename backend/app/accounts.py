@@ -37,6 +37,7 @@ import httpx
 from fastapi import HTTPException, Request
 
 from . import storage
+from .indicators import load_demo_people
 
 SCRYPT_N = 2**14
 SCRYPT_R = 8
@@ -52,6 +53,10 @@ MISSING_TOKEN = "missing or invalid token"
 OTHER_PERSON = "this token belongs to another person"
 STORAGE_ERROR = "upstream storage error"
 LOCKED = "too many wrong PINs, try again later"
+TAKEN_NAME = "this username is taken"
+# The smoke test's person keeps its open history, like every person in
+# config/data/demo_data.csv (REQ-32).
+RESERVED_PEOPLE = frozenset({"smoke_test_1"})
 # A fixed salt, used to spend the same work on an unknown person as on a wrong
 # PIN, so the answer does not say whether the account exists.
 DUMMY_SALT = "00" * SALT_BYTES
@@ -211,6 +216,21 @@ class WrongPins:
 
 
 wrong_pins = WrongPins()
+
+
+def name_taken(person_id: str, store: storage.Storage) -> bool:
+    """True when a new account would lock a demo history behind a PIN (REQ-32).
+
+    `smoke_test_1`, every `person_id` of config/data/demo_data.csv and anyone
+    who already has stored entries keep the open, unauthenticated access the
+    judges' demo relies on.
+    """
+    if person_id in RESERVED_PEOPLE or person_id in load_demo_people():
+        return True
+    try:
+        return store.has_person(person_id)
+    except httpx.HTTPError as error:
+        raise HTTPException(status_code=502, detail=STORAGE_ERROR) from error
 
 
 def authorize(request: Request, person_id: str, store: storage.Storage) -> None:

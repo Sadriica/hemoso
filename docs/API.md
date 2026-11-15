@@ -47,26 +47,29 @@ What the backend stores, and nothing more: `person_id`, a random 16-byte salt
 returned. Two accounts with the same PIN get different hashes, because each has
 its own salt.
 
-Responses: `201` with `{"person_id": "..."}`; `409` when that person already
-has an account (`detail` `this person already has an account`); `422` when the
-body breaks a rule; `502` when the upstream store (Supabase) is unreachable or
-returns an error.
+Responses: `201` with `{"person_id": "..."}`; `409` when the name is taken
+(`detail` `this username is taken` for `smoke_test_1`, for any `person_id` of
+`config/data/demo_data.csv` and for anyone who already has stored entries,
+because their demo history must stay open without a PIN, REQ-32) or when that
+person already has an account (`detail` `this person already has an account`);
+`422` when the body breaks a rule; `502` when the upstream store (Supabase) is
+unreachable or returns an error.
 
 ```bash
 curl -X POST "$VITE_API_BASE_URL/accounts" \
   -H "Content-Type: application/json" \
-  -d '{"person_id":"demo_astronaut_1","pin":"2468"}'
-# 201 {"person_id":"demo_astronaut_1"}
+  -d '{"person_id":"demo_crew_2","pin":"2468"}'
+# 201 {"person_id":"demo_crew_2"}
 ```
 
 ```js
 const response = await fetch(`${VITE_API_BASE_URL}/accounts`, {
   method: "POST",
   headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ person_id: "demo_astronaut_1", pin: "2468" }),
+  body: JSON.stringify({ person_id: "demo_crew_2", pin: "2468" }),
 });
 if (response.status === 409) {
-  // this person already has an account: sign in instead
+  // the name is taken, or this person already has an account: sign in instead
 }
 ```
 
@@ -539,8 +542,10 @@ body breaks a rule:
 | `pin` is not 4 to 8 digits | `Value error, pin must be 4 to 8 digits` |
 | `person_id` or `pin` is missing | `Field required` |
 
-`POST /accounts` returns `409` with `detail` `this person already has an
-account`. `POST /sessions` returns `401` with `detail` `wrong username or PIN`
+`POST /accounts` returns `409` with `detail` `this username is taken` when the
+name belongs to the demo data, the smoke test or a person with stored entries,
+and with `detail` `this person already has an account` when the account exists.
+`POST /sessions` returns `401` with `detail` `wrong username or PIN`
 and `429` with `detail` `too many wrong PINs, try again later`.
 
 The five routes that name a person return `401` with `detail` `missing or

@@ -428,7 +428,7 @@
             "description": "Successful Response"
           },
           "409": {
-            "description": "This person already has an account."
+            "description": "This username is taken, or this person already has an account."
           },
           "422": {
             "content": {

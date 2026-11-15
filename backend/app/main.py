@@ -166,10 +166,17 @@ def health() -> dict[str, str]:
 @app.post(
     "/accounts",
     status_code=201,
-    responses={409: {"description": "This person already has an account."}},
+    responses={
+        409: {
+            "description": "This username is taken, or this person already has "
+            "an account."
+        }
+    },
 )
 def create_account(body: Credentials, store: Store) -> AccountOut:
     """Create one account (REQ-37): the PIN is kept only as a salted hash."""
+    if accounts.name_taken(body.person_id, store):
+        raise HTTPException(status_code=409, detail=accounts.TAKEN_NAME)
     salt = accounts.new_salt()
     account = Account(
         person_id=body.person_id,
