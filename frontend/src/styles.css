@@ -163,9 +163,9 @@
   --motion-fast: 150ms;
   --motion-base: 250ms;
   --motion-slow: 400ms;
-  /* The intro is the one long moment: about three and a half seconds, and any
+  /* The intro is the one long moment: about five seconds, and any
      key or tap ends it (DESIGN.md 7). */
-  --motion-intro: 3400ms;
+  --motion-intro: 5200ms;
   --motion-cinematic: 1200ms;
   /* Choreography (DESIGN.md 7.2): every piece is short; the whole sequence of
      a phase entrance stays under --motion-cinematic and ends on any key. */

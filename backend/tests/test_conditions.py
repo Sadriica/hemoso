@@ -398,16 +398,32 @@ def test_no_entries_has_no_latest_value():
     assert latest_value([], 4.0, HR_ROWS) is None
 
 
-def test_latest_value_uses_the_last_fourteen_before_the_reading():
+def test_latest_value_uses_the_last_fourteen_days_before_the_reading():
     entries = [entry(day, float(day)) for day in range(1, 21)]
 
     latest = latest_value(entries, 4.0, HR_ROWS)
 
     assert latest is not None
     assert latest.value == 20.0
-    # The reading is not part of its own window: days 6 to 19 are 14 entries.
+    # The reading is not part of its own window: days 6 to 19 are 14 days.
     assert latest.median == pytest.approx(12.5)
     assert latest.spread == pytest.approx(1.4826 * 3.5)
+
+
+def test_latest_value_averages_each_day():
+    entries = (
+        [entry(1, 60.0)]
+        + [entry(1, 120.0)] * 9
+        + [entry(2, 61.0), entry(3, 62.0), entry(4, 70.0)]
+    )
+
+    latest = latest_value(entries, 4.0, HR_ROWS)
+
+    assert latest is not None
+    # Day 1 is 114, day 2 is 61 and day 3 is 62: the median of the days is 62,
+    # while the median of the twelve readings would be 120.
+    assert latest.median == 62.0
+    assert latest.spread == 4.0
 
 
 def test_latest_value_is_not_part_of_its_own_window():

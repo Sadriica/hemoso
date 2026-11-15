@@ -1,0 +1,10 @@
+/* Phone: a source link in the Details panel is a 44 px tap target, so two
+   neighbouring links are never hit by mistake. Desktop keeps the compact list
+   of styles.css. */
+@media (max-width: 599px) {
+  .sources__list .sources__link {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--tap-min);
+  }
+}

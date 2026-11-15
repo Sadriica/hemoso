@@ -309,7 +309,7 @@
         "type": "object"
       },
       "IndicatorState": {
-        "description": "One value against the person's own baseline (FORMATS.md section 3).\n\n`median` and `spread` are null and `n` counts fewer than 3 entries while\nthe state is `no_data`; `attention` is the row that made the state\n`needs_review`, and null otherwise.",
+        "description": "One value against the person's own baseline (FORMATS.md section 3).\n\nThe baseline is taken over the person's last 14 mission days that hold a\nreading, one value per day (point 1 of that section). `n` counts the days\nand `readings` counts the stored readings behind them. While the state\nis `no_data` with fewer than 3 days, `median` and `spread` are null;\n`attention` is the row that made the state `needs_review`, and null\notherwise.",
         "properties": {
           "attention": {
             "anyOf": [
@@ -334,6 +334,10 @@
           },
           "n": {
             "title": "N",
+            "type": "integer"
+          },
+          "readings": {
+            "title": "Readings",
             "type": "integer"
           },
           "spread": {
@@ -363,6 +367,7 @@
           "median",
           "spread",
           "n",
+          "readings",
           "attention"
         ],
         "title": "IndicatorState",

@@ -51,6 +51,7 @@ from .state import (
     attention_for,
     baseline,
     cited_rows,
+    daily_values,
     state_for,
     window,
     worse_state,
@@ -154,16 +155,18 @@ def state_of(
     min_spread: float,
     before: tuple[int, str] | None,
 ) -> IndicatorState:
-    """One value against the stored entries before it (FORMATS.md section 3)."""
+    """One value against the stored history before it (FORMATS.md section 3)."""
     recent = window(entries, context, before)
-    median, spread = baseline([entry.value for entry in recent], min_spread)
+    daily = daily_values(recent)
+    median, spread = baseline(daily, min_spread)
     # Cited limits first, with or without a baseline (phys-02 safety order).
     attention = attention_for(cited_rows(load_attention_rows(indicator_id)), value)
     return IndicatorState(
         state=state_for(value, median, spread, attention),
         median=median,
         spread=spread,
-        n=len(recent),
+        n=len(daily),
+        readings=len(recent),
         attention=(
             None
             if attention is None

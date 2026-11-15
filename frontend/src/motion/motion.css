@@ -2,7 +2,7 @@
    offsets: no layout property is animated, and everything stops under reduced
    motion or the top bar switch. */
 
-/* The intro: about three and a half seconds, skippable at any moment. Its own
+/* The intro: about five seconds, skippable at any moment. Its own
    starfield drifts, the mark draws itself and the name types in. */
 .intro__layer {
   position: fixed;
@@ -17,8 +17,8 @@
   color: var(--color-accent);
   animation: intro-out var(--motion-intro) linear both;
 
-  /* Every length of the intro is a share of --motion-intro, so the 3 to 4 s
-     total is one token. The shares keep the original timing at 3400 ms. */
+  /* Every length of the intro is a share of --motion-intro, so the whole
+     length is one token. The shares were set at 3400 ms and stretch with it. */
   --intro-drift: calc(var(--motion-intro) * 26 / 34);
   --intro-draw: calc(var(--motion-intro) * 6 / 34);
   --intro-draw-1: calc(var(--motion-intro) * 2 / 34);
@@ -60,10 +60,79 @@
   animation-delay: var(--intro-draw-2);
 }
 
+/* The richer sky: a glow that opens behind the mark, two orbits that draw
+   themselves and turn slowly, a moon on one of them, and one scan line that
+   crosses the screen once. Opacity, transform and stroke offsets only. */
+.intro__glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle at 50% 50%,
+    color-mix(in srgb, var(--accent-cyan) 22%, transparent),
+    transparent 46%
+  );
+  opacity: 0;
+  animation: intro-glow var(--intro-drift) var(--ease-out) var(--intro-draw-1) both;
+}
+
+.intro__scan {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--accent-cyan),
+    transparent
+  );
+  opacity: 0;
+  animation: intro-scan calc(var(--motion-intro) * 9 / 34) var(--ease-standard)
+    calc(var(--motion-intro) * 14 / 34) both;
+}
+
+.intro__orbits {
+  /* Centred on the mark, which sits a little above the middle of the screen
+     because the name is under it. */
+  --orbit-size: min(80vmin, 560px);
+  position: absolute;
+  top: calc(50% - var(--space-5));
+  left: 50%;
+  width: var(--orbit-size);
+  height: var(--orbit-size);
+  margin: calc(var(--orbit-size) / -2) 0 0 calc(var(--orbit-size) / -2);
+  fill: none;
+  stroke-width: 1.25;
+  transform-origin: 50% 50%;
+  animation: intro-turn var(--intro-drift) linear both;
+}
+
+.intro__orbit {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: intro-draw calc(var(--motion-intro) * 12 / 34) var(--ease-standard)
+    var(--intro-draw-1) forwards;
+}
+
+.intro__orbit--cyan {
+  stroke: var(--accent-cyan);
+}
+
+.intro__orbit--violet {
+  stroke: var(--accent-violet);
+  animation-delay: var(--intro-draw-2);
+}
+
+.intro__moon {
+  fill: var(--color-text);
+  stroke: none;
+  opacity: 0;
+  animation: intro-fade var(--motion-base) var(--ease-out) calc(var(--motion-intro) * 12 / 34) forwards;
+}
+
 /* The name types in: the box widens in six steps, the caret sits at the edge. */
 .intro__name {
   overflow: hidden;
-  width: 6ch;
+  width: 6.8ch;
   margin: 0;
   border-right: 2px solid currentColor;
   color: var(--color-text);
@@ -119,6 +188,39 @@
 @keyframes intro-draw {
   to {
     stroke-dashoffset: 0;
+  }
+}
+
+@keyframes intro-glow {
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes intro-scan {
+  0% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+
+  15%,
+  85% {
+    opacity: 0.8;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(100vh);
+  }
+}
+
+@keyframes intro-turn {
+  from {
+    transform: rotate(-12deg);
+  }
+
+  to {
+    transform: rotate(12deg);
   }
 }
 
