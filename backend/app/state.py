@@ -22,8 +22,10 @@ Where the decision leaves room, this module resolves it as follows:
   days (rolling window)"; the entry count is the one the stored history can
   answer.
 - The value under test is not part of the window: `phys-02` defines the window
-  as "the readings before this one", and the route receives the value without
-  storing it.
+  as "the readings before this one". The route receives the value and, when it
+  also receives the mission day and time of that value, keeps only the stored
+  entries strictly earlier (`window`'s `before`); without them it keeps every
+  stored entry, as it did before T-68.
 - `no_data` comes first, before `attention.csv` is looked at, as `phys-02`
   orders the checks: with fewer than 3 entries there is no baseline, so the
   response carries no attention row either.
@@ -55,14 +57,25 @@ NOTIFY_ORDER = ("crew", "cmo", "flight_surgeon")
 STATE_ORDER = ("no_data", "in_range", "outside_range", "needs_review")
 
 
-def window(entries: Iterable[Entry], context: str) -> list[Entry]:
+def window(
+    entries: Iterable[Entry], context: str, before: tuple[int, str] | None = None
+) -> list[Entry]:
     """The entries a value is compared with: the last 14 in the same context.
 
     `entries` arrives oldest first, as the store returns it. Entries in another
     context are dropped: heart rate after exercise is a different population
     from the same value at rest (FORMATS.md, `config/data/demo_data.csv`).
+
+    `before` is the mission day and time of the value under test. With it, only
+    the entries strictly earlier are kept, so a reading the app already stored
+    is not compared with itself; without it nothing is dropped.
     """
-    same = [entry for entry in entries if entry.context == context]
+    same = [
+        entry
+        for entry in entries
+        if entry.context == context
+        and (before is None or (entry.mission_day, entry.time) < before)
+    ]
     return same[-WINDOW:]
 
 

@@ -467,6 +467,11 @@ def test_blood_pressure_unknown_indicator_is_404(client, tmp_path):
         "?systolic=120",
         "?systolic=NaN&diastolic=75",
         "?systolic=120&diastolic=75&context=running",
+        "?systolic=120&diastolic=75&mission_day=2",
+        "?systolic=120&diastolic=75&time=09:00",
+        "?systolic=120&diastolic=75&mission_day=0&time=09:00",
+        "?systolic=120&diastolic=75&mission_day=abc&time=09:00",
+        "?systolic=120&diastolic=75&mission_day=2&time=9:5",
     ],
 )
 def test_blood_pressure_bad_query_is_422(client, tmp_path, query):
@@ -485,3 +490,118 @@ def test_blood_pressure_invalid_person_id_is_422(client, tmp_path):
     )
 
     assert response.status_code == 422
+
+
+# The tested reading is not in its own window (T-68).
+
+
+def test_window_drops_the_entry_at_the_given_day_and_time():
+    entries = [entry(day, 70.0) for day in (1, 2, 3)] + [entry(4, 90.0)]
+
+    kept = window(entries, "rest", (4, "08:00"))
+
+    assert [row.value for row in kept] == [70.0, 70.0, 70.0]
+
+
+def test_window_drops_entries_from_the_same_day_after_the_time():
+    entries = [
+        Entry(**{**ENTRY, "value": 70.0, "time": "08:00"}),
+        Entry(**{**ENTRY, "value": 80.0, "time": "09:00"}),
+        Entry(**{**ENTRY, "value": 90.0, "time": "10:00"}),
+    ]
+
+    kept = window(entries, "rest", (1, "10:00"))
+
+    assert [row.value for row in kept] == [70.0, 80.0]
+
+
+def test_state_route_leaves_out_the_stored_reading_being_tested(client, tmp_path):
+    write_config(tmp_path)
+    post_entries(client, [70.0, 71.0], first_day=1)
+    stored = client.post("/entries", json={**ENTRY, "value": 90.0, "mission_day": 3})
+    assert stored.status_code == 201
+
+    tested = client.get(
+        "/people/demo_astronaut_1/indicators/example_indicator/state"
+        "?value=90&mission_day=3&time=08:00"
+    )
+    plain = client.get(
+        "/people/demo_astronaut_1/indicators/example_indicator/state?value=90"
+    )
+
+    assert tested.json()["state"] == "no_data"
+    assert tested.json()["n"] == 2
+    assert plain.json()["state"] == "needs_review"
+    assert plain.json()["n"] == 3
+
+
+def test_state_route_keeps_earlier_entries_and_drops_later_ones(client, tmp_path):
+    write_config(tmp_path)
+    post_entries(client, [70.0, 70.0, 70.0], first_day=1)
+    later = client.post("/entries", json={**ENTRY, "value": 200.0, "mission_day": 5})
+    assert later.status_code == 201
+
+    response = client.get(
+        "/people/demo_astronaut_1/indicators/example_indicator/state"
+        "?value=72&mission_day=4&time=08:00"
+    )
+
+    assert response.json() == {
+        "state": "in_range",
+        "median": 70.0,
+        "spread": 4.0,
+        "n": 3,
+        "attention": None,
+    }
+
+
+def test_blood_pressure_leaves_out_the_stored_reading_being_tested(client, tmp_path):
+    write_blood_pressure_config(tmp_path)
+    post_blood_pressure_history(client)
+    for indicator_id, value in (("bp_sys_mmhg", 185.0), ("bp_dia_mmhg", 125.0)):
+        response = client.post("/entries", json=bp_entry(indicator_id, 4, value))
+        assert response.status_code == 201
+
+    tested = client.get(
+        "/people/demo_astronaut_1/blood_pressure/state"
+        "?systolic=185&diastolic=125&mission_day=4&time=08:00"
+    )
+    plain = client.get(
+        "/people/demo_astronaut_1/blood_pressure/state?systolic=185&diastolic=125"
+    )
+
+    assert tested.json()["systolic"]["n"] == 3
+    assert tested.json()["diastolic"]["n"] == 3
+    assert plain.json()["systolic"]["n"] == 4
+    assert plain.json()["diastolic"]["n"] == 4
+    assert tested.json()["systolic"]["median"] == 115.0
+
+
+@pytest.mark.parametrize("query", ["&mission_day=2", "&time=09:00"])
+def test_state_route_one_cutoff_parameter_is_422(client, tmp_path, query):
+    write_config(tmp_path)
+
+    response = client.get(
+        "/people/demo_astronaut_1/indicators/example_indicator/state?value=72" + query
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == "mission_day and time must be given together"
+
+
+@pytest.mark.parametrize(
+    "query, detail",
+    [
+        ("&mission_day=0&time=09:00", "mission_day must be a positive integer"),
+        ("&mission_day=2&time=9:5", "time must be HH:MM (24-hour)"),
+    ],
+)
+def test_state_route_bad_cutoff_is_422(client, tmp_path, query, detail):
+    write_config(tmp_path)
+
+    response = client.get(
+        "/people/demo_astronaut_1/indicators/example_indicator/state?value=72" + query
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == detail

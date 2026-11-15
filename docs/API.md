@@ -129,12 +129,17 @@ Query parameters:
 | --- | --- | --- |
 | `value` | number | required; a finite number (the value the astronaut enters) |
 | `context` | string | `rest` (default), `after_exercise`, `on_waking` or `before_sleep`; a reading is only compared with readings in the same context |
+| `mission_day` | integer | optional; the mission day of the value being tested, greater than 0; given with `time` or not at all |
+| `time` | string | optional; the `HH:MM` clock time of the value being tested; given with `mission_day` or not at all |
 
 The rule is FORMATS.md section 3, "How each value is compared", and
 `docs/findings/phys-02-baseline-state-rule.md`:
 
 - The window is the last 14 stored entries for the person and indicator in the
-  same context, oldest first; the `value` being tested is not one of them.
+  same context, oldest first. With `mission_day` and `time`, only the entries
+  strictly earlier than that day and time are kept, so a reading the app has
+  already stored is not compared with its own copy; without them every stored
+  entry counts, as before.
 - `median` is the median of the window; `spread` is
   `max(1.4826 × median absolute deviation, min_spread)`, with `min_spread` from
   that indicator's row in `config/data/indicators.csv`.
@@ -162,9 +167,10 @@ questions in `team/eng1/`:
 Responses: `200` (an `IndicatorState`); `404` when `indicator_id` has no row in
 `config/data/indicators.csv` (also while that file does not exist, because then
 no indicator is known and the noise floor cannot be read); `422` when a path id
-breaks the `snake_case` rule, `value` is missing or not a finite number, or
-`context` is not one of the four; `502` when the upstream store (Supabase) is
-unreachable or returns an error.
+breaks the `snake_case` rule, `value` is missing or not a finite number,
+`context` is not one of the four, only one of `mission_day` and `time` is
+given, or `mission_day` is not a positive integer or `time` is not `HH:MM`;
+`502` when the upstream store (Supabase) is unreachable or returns an error.
 
 | Field | Type | Meaning |
 | --- | --- | --- |
@@ -211,6 +217,8 @@ Query parameters:
 | `systolic` | number | required; a finite number, in the unit of `bp_sys_mmhg` (mmHg) |
 | `diastolic` | number | required; a finite number, in the unit of `bp_dia_mmhg` (mmHg) |
 | `context` | string | `rest` (default), `after_exercise`, `on_waking` or `before_sleep` |
+| `mission_day` | integer | optional; the mission day of the reading, greater than 0; given with `time` or not at all |
+| `time` | string | optional; the `HH:MM` clock time of the reading; given with `mission_day` or not at all |
 
 The worse state is the one furthest along `no_data` < `in_range` <
 `outside_range` < `needs_review`. A reading of 120/95 is therefore
@@ -218,6 +226,10 @@ The worse state is the one furthest along `no_data` < `in_range` <
 `config/rules/attention.csv` while the systolic side stayed in range; 118/75 with
 a usual baseline is `in_range`. When both sides need review, each side's
 `attention` object carries its own level and who is notified.
+
+`mission_day` and `time` work as they do on the state route: with both, each
+window holds only the entries strictly earlier than that day and time, so the
+reading being tested is not compared with a stored copy of itself.
 
 Responses: `200` (a `BloodPressureState`); `404` when `bp_sys_mmhg` or
 `bp_dia_mmhg` has no row in `config/data/indicators.csv` (also while that file

@@ -25,6 +25,11 @@ def is_valid_id(value: str) -> bool:
     return _ID.fullmatch(value) is not None
 
 
+def is_valid_time(value: str) -> bool:
+    """True when `value` is a 24-hour clock time `HH:MM` (FORMATS.md section 3)."""
+    return _TIME.fullmatch(value) is not None
+
+
 class Entry(BaseModel):
     """One row of config/data/demo_data.csv: person, indicator, value, unit, day, time, context."""
 
@@ -46,7 +51,7 @@ class Entry(BaseModel):
     @field_validator("time")
     @classmethod
     def _check_time(cls, value: str) -> str:
-        if not _TIME.fullmatch(value):
+        if not is_valid_time(value):
             raise ValueError("time must be HH:MM (24-hour)")
         return value
 

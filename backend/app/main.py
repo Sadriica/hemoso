@@ -24,6 +24,7 @@ from .models import (
     Entry,
     IndicatorState,
     is_valid_id,
+    is_valid_time,
 )
 from .ratelimit import RateLimitMiddleware, limiter
 from .state import attention_for, baseline, state_for, window, worse_state
@@ -85,6 +86,27 @@ def check_context(context: str) -> None:
         )
 
 
+def check_before(mission_day: int | None, time: str | None) -> tuple[int, str] | None:
+    """The (mission_day, time) of the value under test, or None when neither is given.
+
+    Both or neither: a day without a time does not say which entries come
+    first, so one alone is a 422 (T-68).
+    """
+    if mission_day is None and time is None:
+        return None
+    if mission_day is None or time is None:
+        raise HTTPException(
+            status_code=422, detail="mission_day and time must be given together"
+        )
+    if mission_day <= 0:
+        raise HTTPException(
+            status_code=422, detail="mission_day must be a positive integer"
+        )
+    if not is_valid_time(time):
+        raise HTTPException(status_code=422, detail="time must be HH:MM (24-hour)")
+    return mission_day, time
+
+
 def history_of(
     store: storage.Storage, person_id: str, indicator_id: str
 ) -> list[Entry]:
@@ -103,9 +125,10 @@ def state_of(
     value: float,
     context: str,
     min_spread: float,
+    before: tuple[int, str] | None,
 ) -> IndicatorState:
     """One value against the stored entries before it (FORMATS.md section 3)."""
-    recent = window(entries, context)
+    recent = window(entries, context, before)
     median, spread = baseline([entry.value for entry in recent], min_spread)
     attention = None
     if median is not None:
@@ -185,18 +208,21 @@ def get_state(
     value: float,
     store: Store,
     context: str = "rest",
+    mission_day: int | None = None,
+    time: str | None = None,
 ) -> IndicatorState:
     """One value against the person's own baseline (FORMATS.md section 3)."""
     for name, path_id in (("person_id", person_id), ("indicator_id", indicator_id)):
         check_id(name, path_id)
     check_context(context)
     check_value("value", value)
+    before = check_before(mission_day, time)
     indicator = load_indicator_rows().get(indicator_id)
     if indicator is None:
         raise HTTPException(status_code=404, detail="unknown indicator")
     entries = history_of(store, person_id, indicator_id)
     return state_of(
-        entries, indicator_id, value, context, float(indicator["min_spread"])
+        entries, indicator_id, value, context, float(indicator["min_spread"]), before
     )
 
 
@@ -215,12 +241,15 @@ def get_blood_pressure_state(
     diastolic: float,
     store: Store,
     context: str = "rest",
+    mission_day: int | None = None,
+    time: str | None = None,
 ) -> BloodPressureState:
     """One blood pressure reading: the worse of its two states (bio2-01)."""
     check_id("person_id", person_id)
     check_context(context)
     for name, number in (("systolic", systolic), ("diastolic", diastolic)):
         check_value(name, number)
+    before = check_before(mission_day, time)
     rows = load_indicator_rows()
     indicators = {}
     for indicator_id in BLOOD_PRESSURE:
@@ -234,6 +263,7 @@ def get_blood_pressure_state(
         systolic,
         context,
         float(indicators["bp_sys_mmhg"]["min_spread"]),
+        before,
     )
     diastolic_state = state_of(
         history_of(store, person_id, "bp_dia_mmhg"),
@@ -241,6 +271,7 @@ def get_blood_pressure_state(
         diastolic,
         context,
         float(indicators["bp_dia_mmhg"]["min_spread"]),
+        before,
     )
     return BloodPressureState(
         state=worse_state(systolic_state.state, diastolic_state.state),

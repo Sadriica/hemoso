@@ -341,6 +341,38 @@
               "title": "Context",
               "type": "string"
             }
+          },
+          {
+            "in": "query",
+            "name": "mission_day",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Mission Day"
+            }
+          },
+          {
+            "in": "query",
+            "name": "time",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Time"
+            }
           }
         ],
         "responses": {
@@ -463,6 +495,38 @@
               "default": "rest",
               "title": "Context",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "mission_day",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Mission Day"
+            }
+          },
+          {
+            "in": "query",
+            "name": "time",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Time"
             }
           }
         ],
