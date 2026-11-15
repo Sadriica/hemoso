@@ -94,7 +94,7 @@ test('guided check by keyboard with axe on every phase', async ({ page }) => {
     scaleDay = readingDay
 
     await page.keyboard.press('Tab')
-    await expect(page.getByLabel(strings.entry.time)).toBeFocused()
+    await expect(page.getByLabel(strings.entry.time, { exact: true })).toBeFocused()
 
     // The measured row, typed with the keyboard only.
     await focusByTab(page, page.getByLabel(names[0]))
