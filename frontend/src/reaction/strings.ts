@@ -62,6 +62,9 @@ export const reactionStrings = {
   errorsLabel: 'Errors',
   medianValue: (medianMs: number | null): string =>
     medianMs === null ? 'none' : `${medianMs} ms`,
+  // The same two figures on one line, for the closed line of the report.
+  result: (medianMs: number | null, lapses: number): string =>
+    `Median ${medianMs === null ? 'none' : `${medianMs} ms`} · Lapses ${lapses}`,
   falseStarts: (count: number): string =>
     count === 0 ? 'No early answers.' : `Too early: ${count}.`,
   saved: (count: number, serverConfigured: boolean): string => {

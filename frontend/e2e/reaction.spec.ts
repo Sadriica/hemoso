@@ -42,6 +42,13 @@ test('reaction check by keyboard, at the demo length', async ({ page }) => {
     await expect(page.getByRole('heading', { level: 1 })).toContainText(
       copy.report.headline[0],
     )
+    // The check is optional and waits behind one closed line of the report.
+    const optional = page.getByRole('button', {
+      name: copy.report.reactionOptional,
+    })
+    await optional.focus()
+    await page.keyboard.press('Enter')
+    await expect(optional).toHaveAttribute('aria-expanded', 'true')
     await expect(
       page.getByRole('heading', { name: reactionStrings.heading }),
     ).toBeVisible()
