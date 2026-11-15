@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from 'react'
+import { lazy, Suspense, useEffect, useRef, useState } from 'react'
 import { attentionFor } from '../domain/attention'
 import { latestEntry } from '../domain/entries'
 import type {
@@ -140,10 +140,25 @@ export default function Home({
                 onSelect={setChosenId}
                 reducedMotion={motionReduced}
               />
+              <OrbitFirst />
             </Suspense>
           </div>
-          <div className="board__body">
-            <Suspense fallback={<div className="board__body-slot" aria-hidden="true" />}>
+        </div>
+      )}
+      {selected && (
+        <div className="detail">
+          <ul className="indicator-list">
+            <IndicatorRow
+              key={selected.indicator.id}
+              indicator={selected.indicator}
+              latest={selected.latest}
+              attention={selected.attention}
+              content={selected.content}
+              motionReduced={motionReduced}
+            />
+          </ul>
+          <div className="detail__body">
+            <Suspense fallback={<div className="detail__body-slot" aria-hidden="true" />}>
               <BodySilhouette
                 system={selectedSystem}
                 label={
@@ -156,21 +171,23 @@ export default function Home({
           </div>
         </div>
       )}
-      <ul className="indicator-list">
-        {rows.map(({ indicator, latest, attention, content }) => (
-          <IndicatorRow
-            key={indicator.id}
-            indicator={indicator}
-            latest={latest}
-            attention={attention}
-            content={content}
-            selected={indicator.id === selectedId}
-            motionReduced={motionReduced}
-          />
-        ))}
-      </ul>
     </section>
   )
+}
+
+// On a wide screen the overview opens in its orbit view. The planetarium keeps
+// its view in its own state, so this presses its toggle once, after it mounts.
+// Under 900 px, and with the list already chosen, it does nothing.
+function OrbitFirst() {
+  const done = useRef(false)
+  useEffect(() => {
+    if (done.current) return
+    done.current = true
+    if (!window.matchMedia?.('(min-width: 900px)').matches) return
+    const toggle = document.querySelector<HTMLButtonElement>('.planetarium__toggle')
+    if (toggle && toggle.getAttribute('aria-pressed') === 'false') toggle.click()
+  }, [])
+  return null
 }
 
 // A box where the planetarium will be, in words, so the area is never blank.
@@ -209,14 +226,12 @@ function IndicatorRow({
   latest,
   attention,
   content,
-  selected,
   motionReduced,
 }: {
   indicator: Indicator
   latest: Entry | null
   attention: Attention
   content: IndicatorContent | undefined
-  selected: boolean
   motionReduced: boolean
 }) {
   const sources = sourcesFor(indicator, attention, content)
@@ -224,9 +239,7 @@ function IndicatorRow({
 
   return (
     <li
-      className={`indicator-card indicator-card--${stateKind(attention)}${
-        selected ? ' indicator-card--selected' : ''
-      }`}
+      className={`indicator-card indicator-card--${stateKind(attention)}`}
     >
       <div className="indicator-card__top">
         <span
@@ -260,6 +273,7 @@ function IndicatorRow({
                 value={latest.value}
                 reducedMotion={motionReduced}
               />
+              <OrbitFirst />
             </Suspense>
           )}
         </div>

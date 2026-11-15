@@ -398,19 +398,43 @@ describe('Home board', () => {
 
   it('offers a review notice that selects the first reading to review', async () => {
     const user = userEvent.setup()
+    const second: Indicator = { ...indicator, id: 'second_indicator', name: 'Second indicator' }
+    const secondEntry: Entry = {
+      ...entry(10, 101),
+      id: 'second-entry',
+      indicatorId: 'second_indicator',
+    }
+    const two: LoadedContent = {
+      ...data,
+      indicators: [{ ...indicator, id: 'first_indicator', name: 'First indicator' }, second],
+      rules: [{ ...rule, indicatorId: 'second_indicator' }],
+      contents: {},
+      demoEntries: [secondEntry],
+    }
     render(
-      <Home
-        personId="demo_astronaut_1"
-        data={{ ...data, demoEntries: [entry(10, 101)] }}
-        entries={[entry(10, 101)]}
-        motionReduced
-      />,
+      <Home personId="demo_astronaut_1" data={two} entries={[secondEntry]} motionReduced />,
     )
     expect(screen.getByText(strings.board.needsReview(1))).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'First indicator' })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: strings.board.showFirst }))
-    expect(
-      screen.getByRole('heading', { name: 'Example indicator' }).closest('li'),
-    ).toHaveClass('indicator-card--selected')
+    expect(screen.getByRole('heading', { name: 'Second indicator' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'First indicator' })).toBeNull()
+  })
+
+  it('shows only the card of the selected indicator, chosen from the overview', async () => {
+    const user = userEvent.setup()
+    const two: LoadedContent = {
+      ...data,
+      indicators: [indicator, { ...indicator, id: 'other', name: 'Other indicator' }],
+      rules: [],
+      contents: {},
+    }
+    render(<Home personId="demo_astronaut_1" data={two} entries={two.demoEntries} motionReduced />)
+    expect(screen.getAllByRole('heading', { level: 3 })).toHaveLength(1)
+    expect(screen.getByRole('heading', { level: 3, name: 'Example indicator' })).toBeInTheDocument()
+    const rows = await screen.findByRole('list', { name: strings.board.planetarium.orbitsHeading })
+    await user.click(within(rows).getByRole('button', { name: /Other indicator/ }))
+    expect(screen.getByRole('heading', { level: 3, name: 'Other indicator' })).toBeInTheDocument()
   })
 
   it('loads the overview and the body zone, with words next to the figures', async () => {
