@@ -364,6 +364,13 @@ function seriesInput(
         : indicator.id === 'bp_sys_mmhg'
           ? strings.entry.systolic
           : indicator.name,
+    shortLabel: !named
+      ? undefined
+      : indicator.id === 'bp_dia_mmhg'
+        ? strings.history.trend.diastolicShort
+        : indicator.id === 'bp_sys_mmhg'
+          ? strings.history.trend.systolicShort
+          : undefined,
     unit: indicator.unit,
     rules,
     points: trendSeries(rows, context, window).map((entry) => ({

@@ -257,7 +257,7 @@ Rules:
   change of state; it never decorates.
 - Cinematic moments (first load, phase change, planetarium settling) never
   block input, last at most 1.2 s, and skip with any key or tap. The intro is
-  the one exception: it runs about 3.4 s (`--motion-intro`), and any key or tap
+  the one exception: it runs about 5.2 s (`--motion-intro`), and any key or tap
   ends it at once.
 - Ambient motion is allowed only in the stage (scene layers drifting, orbits
   turning slowly, the object answering the pointer), never in the panel, and
@@ -377,7 +377,7 @@ Do not:
 Used by the screens subagent; every one starts with "Follow DESIGN.md tokens;
 no new behaviour".
 
-- **Intro.** First load only, about 3.4 s, skippable with any key or tap: the
+- **Intro.** First load only, about 5.2 s, skippable with any key or tap: the
   sky drifts, the mark draws itself, the name types in, then the first phase:
   the HeMoSo mark and the real mission day and clock, then the first phase. No
   invented status text.

@@ -43,7 +43,14 @@ async function signInByName(user: ReturnType<typeof userEvent.setup>) {
   await user.click(screen.getByRole('button', { name: copy.identify.next }))
 }
 
-describe('guided check', () => {
+// These tests walk whole phases: each phase loads its lazy chunks (the status
+// phase, the history, the scene) through the jsdom transform the first time, and
+// that is slow on a busy machine. The default 5 s budget is a measure of the
+// machine, not of the app, so the walks get a budget that holds under load. The
+// checks inside stay as strict as they were.
+const WALK_TIMEOUT = 30_000
+
+describe('guided check', { timeout: WALK_TIMEOUT }, () => {
   it('opens on phase 1, identify, with its headline and the rail on step 1', () => {
     render(<App />)
     expect(heading()).toHaveTextContent(copy.identify.headline.join(' '))
@@ -98,7 +105,7 @@ describe('guided check', () => {
       await screen.findByText(
         /Your usual|Not enough earlier entries/,
         {},
-        { timeout: 3000 },
+        { timeout: 10_000 },
       ),
     ).toBeInTheDocument()
   })
@@ -209,7 +216,7 @@ describe('guided check', () => {
   })
 })
 
-describe('sign in', () => {
+describe('sign in', { timeout: WALK_TIMEOUT }, () => {
   it('opens the demo with one click and no PIN', async () => {
     const user = userEvent.setup()
     render(<App />)

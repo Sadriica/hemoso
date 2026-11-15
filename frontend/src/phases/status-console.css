@@ -327,3 +327,70 @@
     margin-bottom: var(--space-3);
   }
 }
+
+/* Round of Sun 07:25. In "When it needs attention" the source of a limit sat
+   as a bullet under it. It reads on the same line as the limit it backs, and
+   wraps under it only when the line is full. */
+.phase--status .indicator-details__rules > li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-2);
+}
+
+.phase--status .indicator-details__rules .sources__list {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.phase--status .indicator-details__rules .sources__list li {
+  margin: 0;
+}
+
+/* Round of Sun 07:30. The history and "Where does it hurt?" stood as loose
+   buttons on the sky under the board. Each is now a framed block of the
+   console, like the card and the evidence board, with a quiet rule on top. */
+.phase--status .status__history,
+.phase--status .pain {
+  position: relative;
+  padding: var(--space-4);
+  border: var(--border-subtle);
+  border-top: 2px solid var(--color-border-control);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+
+.phase--status .pain {
+  margin-top: var(--space-4);
+}
+
+/* The button that opens the body is one control of the block, not a bar
+   across the page. */
+.phase--status .pain > .button {
+  align-self: flex-start;
+  width: auto;
+}
+
+@media (max-width: 599px) {
+  .phase--status .status__history,
+  .phase--status .pain {
+    padding: var(--space-3);
+  }
+
+  .phase--status .pain > .button {
+    align-self: stretch;
+  }
+}
+
+/* Round of Sun 07:35. The pain picker had a frame of its own inside the new
+   block: one frame is enough. */
+.phase--status .pain .pain-picker {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+}
