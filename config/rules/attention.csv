@@ -13,3 +13,6 @@ glucose_mgdl,above,126,consult,cmo,https://diabetes.org/about-diabetes/diagnosis
 glucose_mgdl,below,70,consult,cmo,https://diabetes.org/living-with-diabetes/hypoglycemia-low-blood-glucose
 reaction_median_ms,above,500,watch,crew,Assumption
 reaction_lapses,above,3,watch,crew,Assumption
+appetite_1_5,below,2,watch,crew,Assumption
+fluid_intake_ml,below,2000,watch,crew,https://nasa.gov/wp-content/uploads/2023/03/human-adaptation-2020-final.pdf
+body_mass_kg,below,45,watch,crew,Assumption
