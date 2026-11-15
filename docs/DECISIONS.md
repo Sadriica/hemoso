@@ -69,6 +69,7 @@ explained (tier C), never an input. Ids in `FORMATS.md` section 2.
 | Name | Licence | What for |
 | --- | --- | --- |
 | React 19.3.1, React DOM | MIT | The app's screens |
+| MUI 9.5.0, Emotion 11.14 | MIT | Theme, header and tabs |
 | @vladmandic/face-api 1.7.15 and its models | MIT | Face sign-in on the device (REQ-36) |
 | Vite 8.3.8, TypeScript 6.0.3 | MIT, Apache-2.0 | Build and types (development only) |
 | Vitest, Testing Library, jsdom | MIT | Frontend tests (development only) |
@@ -105,6 +106,7 @@ planning, wording, and code. Not the base idea. Kept in `team/eng1/notes/si-use-
 | Use | No Supabase client library: the backend calls the Supabase REST API with httpx | One dependency less; its licence row is httpx's | REQ-27 |
 | Use | Face sign-in on the device (REQ-36), off unless the URL has `?face=1`: consent first, the descriptor stays in the person's own browser, never sent to the backend; exception to REQ-14 limited to that | Juli's proposal (team/eng2/notes/face-login-proposal.md), accepted by Wambi Sat 18:25; first step toward the team's face and eye analysis | REQ-36, REQ-14 |
 | Use | @vladmandic/face-api 1.7.15, MIT, with its tiny detector, tiny 68-point landmark and recognition models copied to `frontend/public/models/` with the licence | Runs in the browser with no external service and no CDN; loaded only when the face panel opens | REQ-36 |
+| Use | @mui/material 9.5.0 with @emotion/react 11.14.0 and @emotion/styled 11.14.1, MIT | The app's theme, header and tabs (Juli, Sat 19:00); split into its own `vendor-mui` file so the browser keeps it cached when only the app changes | REQ-01, REQ-15, REQ-30 |
 | Use | Colour coding: one colour per status, always paired with an icon and the status in words, so colour is never the only signal (REQ-15) | Team decision (Wambi), Sat 18:45; the badge already pairs colour, icon and words | REQ-09, REQ-15 |
 | Use | Dynamic charts over time: the History tab draws each indicator against the person's earlier values (`frontend/src/components/IndicatorChart.tsx`, merged in #67) | Team decision (Wambi), Sat 18:45; the chart is what REQ-12 compares against | REQ-09, REQ-12 |
 | Use | Routine prompts: the app asks for the measurement that fits the moment of the mission routine (on waking, after exercise, before sleep), using the `context` values | Team decision (Wambi), Sat 18:45; it turns `context` into the crew's daily routine | REQ-09, REQ-02 |
