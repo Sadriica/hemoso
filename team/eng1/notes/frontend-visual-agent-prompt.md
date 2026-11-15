@@ -144,6 +144,41 @@ Starfield drifts slowly. Everything stops under prefers-reduced-motion and with
 the top bar switch, and the app is complete without motion. Keep the 30-second
 demo in mind: the demo path must not wait on an animation.
 
+MAIN REFERENCE: ECLIPSE, THE LAST FRONTIER (https://eclipse-last-frontier.aura.build/)
+Wambi chose it as the mood reference. It is someone else's original work
+(Aksonvady Phomhome, made in Aura): take its patterns, never its text, images,
+names or assets. What it does, read from its source on Sat 20:10:
+- A scroll story in numbered chapters ("01 / The awakening" ... "07 / Beyond
+  the veil") with a fixed chapter index: the same idea as our phase rail. Use
+  the numbering style for the three phases (01 Identify, 02 Report, 03 Status).
+- Very large uppercase display headlines broken over two or three lines with
+  tight leading, one short sentence under each, and one call to action with an
+  arrow. Translate it: one big plain-English line per phase ("How are you
+  today?"), one sentence, one action.
+- Telemetry-style microcopy in a mono face: "RA 08h 41m · DEC −21°", "CORE
+  STATUS / QUIESCENT", "11.04 Hz RESONANCE". Use it for real data only: mission
+  day, time, reading context, "last 14 readings", sync state. Never fake
+  numbers.
+- An intro ("Establishing uplink", "Skip intro →") before the first chapter;
+  a good model for our first load, under 1.2 s and skippable.
+- Visible SOUND and REDUCE MOTION switches in the frame: we already have the
+  motion switch; no sound.
+- A draggable 3D planet and a shuttle you can click; an interactive object as
+  the centre of each scene. Our equivalent is the planetarium status view.
+- Palette: near-black blue backgrounds (#05090e, #070b10) with a warm bone
+  white text (#f2f1e9) instead of pure white; that is softer to read for long
+  and fits "comfortable to look at". Adapt it to our tokens with the contrast
+  grid.
+- It is built with Three.js, GSAP and ScrollTrigger loaded from a CDN and the
+  Tailwind CDN. We do NOT copy that stack: no runtime CDN (offline rule), no
+  new dependency without Wambi's yes and a licence row, and the bundle budget
+  holds. Do the planetarium, orbits and transitions with SVG, CSS and the
+  Web Animations API first. If a true 3D object would clearly add to the demo,
+  propose it to Wambi with its size and licence (Three.js is MIT) before
+  writing any code.
+- Its long scroll story is NOT our model for structure: HeMoSo stays a guided
+  tool, one step at a time, with no long scrolling.
+
 METHOD (plan with care, build in small verified steps)
 Step 0 · Audit. From the screenshots and the code, list what breaks the
   feeling of one designed product: inconsistent spacing, more than one type

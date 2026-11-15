@@ -70,4 +70,5 @@ with `python scripts/si_use.py`. The table grows with each finished card.
 | Sat 19:50 | REQ-01 (#11) | docs/DECISIONS.md | Assistant marked MUI and Emotion as rejected after Juli's three-phase frontend | Wambi |
 | Sat 19:55–20:10 | REQ-15 (#26), T-60 to T-64 | team/eng1/notes/frontend-visual-agent-prompt.md | Assistant read four saved posts and the design resources they link, and wrote the prompt for the frontend visual agent | Wambi |
 | Sat 20:05 | REQ-01 (#11), REQ-15 (#26) | team/eng1/notes/frontend-visual-agent-prompt.md, docs/DECISIONS.md | Assistant wrote Wambi's visual direction (palette, icons, figures, motion, guided flow) into the agent prompt and the decisions | Wambi |
+| Sat 20:10 | REQ-01 (#11) | team/eng1/notes/frontend-visual-agent-prompt.md | Assistant read the ECLIPSE reference site Wambi chose and wrote which patterns to take and which to leave | Wambi |
 <!-- SI-USE-TABLE:END -->
