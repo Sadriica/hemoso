@@ -35,11 +35,12 @@ opinion, which is the same limit.
 
 ```
 score(condition, record):
-    signals = condition.based_on  with a usable value and a baseline
+    signals = condition.based_on  with a usable value (a baseline is not required)
     if len(signals) < 2:            return no_data
     points = 0
     for each signal with value v:
         if v crossed a row in attention.csv:   points += 1
+        elif no baseline for v:                skip the signal (no evidence either way)
         elif v is outside the baseline:        points += 0.5
         else:                                  points += 0
     return points / len(signals)
@@ -49,13 +50,25 @@ Labels, and what the astronaut reads:
 
 | Score | Label | Text |
 | --- | --- | --- |
-| 0 to 0.3 | Low | "Not likely with what you have recorded" |
-| 0.3 to 0.6 | Possible | "Possible. These signals point to it: ..." |
-| 0.6 to 1 | Review | "Ask your CMO or flight surgeon to check this" |
+| 0 ≤ score < 0.3 | Low | "Not likely with what you have recorded" |
+| 0.3 ≤ score < 0.6 | Possible | "Possible. These signals point to it: ..." |
+| 0.6 ≤ score ≤ 1 | Review | "Ask your CMO or flight surgeon to check this" |
 
-The app always adds that the CMO or the flight surgeon confirms. A signal with
-no baseline yet is left out of the denominator, and with fewer than two signals
-the condition shows "not enough data", never a low score.
+Each band includes its lower bound and excludes its upper one, except the last,
+which ends at 1. The convention is the same as `min`/`max` in `attention.csv`,
+so 0.6 is Review and 0.3 is Possible. It matters as soon as a condition rests on
+five signals, where a score lands on exactly 0.6.
+
+The app always adds that the CMO or the flight surgeon confirms. A clinical
+boundary does not need a baseline: a value beyond a published limit counts as
+evidence on its own. A signal with no baseline and no crossed boundary adds
+nothing and is left out of the denominator, and with fewer than two signals the
+condition shows "not enough data", never a low score.
+
+The order is the same one Wambi proposed for the state function on Sat 20:10:
+the boundary is checked first, and the baseline only answers the second
+question ("is this unusual for this person?"). A temperature of 39.5 °C is a
+review on the first day of a mission, before any baseline exists.
 
 ## Every signal needs a side
 
@@ -90,9 +103,15 @@ Orthostatic intolerance (`based_on`: `hr_bpm bp_sys_mmhg bp_dia_mmhg`):
 | --- | --- | --- | --- | --- | --- |
 | 68, in baseline | 118, in baseline | 75, in baseline | 0 + 0 + 0 | 0 | Low |
 | 88, outside baseline | 110, in baseline | 75, in baseline | 0.5 + 0 + 0 | 0.167 | Low |
-| 112, over 100 | 95, outside baseline | 62, in baseline | 1 + 0.5 + 0 | 0.5 | Possible |
-| 130, over 100 | 88, over no row | 120, over no row | 1 + 0.5 + 0.5 | 0.667 | Review |
-| one signal only, no baseline for the others | | | | - | no data |
+| 112, above 100 | 95, outside baseline | 62, in baseline | 1 + 0.5 + 0 | 0.5 | Possible |
+| 130, above 100 | 88, below and outside baseline | 55, below and outside baseline | 1 + 0.5 + 0.5 | 0.667 | Review |
+| 130, above 100 | 88, below and outside baseline | 120, above: wrong side | 1 + 0.5 + 0 | 0.5 | Possible |
+| one signal with a baseline, the others without | | | | - | no data |
+
+The fifth row is the one the fourth version missed: orthostatic intolerance
+needs a **low** diastolic, so a diastolic of 120 adds 0 even though it is far
+from the baseline. Without the side, that row would have scored 0.667 and said
+"Review" for a sign that points the other way.
 
 ## Confidence
 
