@@ -49,13 +49,19 @@ function accounts(): AccountClient {
 
 // The phase with the real session hook behind it: what a face match does to the
 // person on duty is the point, so the hook is never faked.
-function Harness({ onDone }: { onDone: () => void }) {
+function Harness({
+  onDone,
+  personIds = [PERSON],
+}: {
+  onDone: () => void
+  personIds?: string[]
+}) {
   const session = useSession(accounts())
   const headingRef = useRef<HTMLHeadingElement>(null)
   return (
     <IdentifyPhase
       headingRef={headingRef}
-      personIds={[PERSON]}
+      personIds={personIds}
       session={session}
       faceEnabled
       onDone={onDone}
@@ -142,6 +148,20 @@ describe('Identify', () => {
     expect(screen.getByLabelText(strings.signIn.username)).toHaveValue(
       'cadet_okoro',
     )
+    expect(onDone).not.toHaveBeenCalled()
+  })
+
+  it('asks for the PIN when a name is picked, even with a stored session', async () => {
+    saveSession({ personId: 'cadet_okoro', token: 'kept', expiresAt: FAR })
+    const onDone = vi.fn()
+    const user = userEvent.setup()
+    render(<Harness onDone={onDone} personIds={[PERSON, 'cadet_okoro']} />)
+
+    await user.click(screen.getByRole('radio', { name: 'cadet_okoro' }))
+
+    expect(
+      await screen.findByText(strings.signIn.askPin('cadet_okoro')),
+    ).toBeVisible()
     expect(onDone).not.toHaveBeenCalled()
   })
 

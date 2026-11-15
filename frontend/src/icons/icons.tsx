@@ -111,3 +111,18 @@ export function StatusIcon({ kind, size = ICON_SIZES.card }: { kind: StatusKind;
 export function UtilityIcon({ kind, size = ICON_SIZES.inline }: { kind: UtilityKind; size?: number }) {
   return <Svg size={size} kind={kind}>{UTILITY[kind]()}</Svg>;
 }
+
+/** Trend of a reading over its last entries: up, down, steady (two bars), or none when there is no trend yet. */
+export type TrendKind = 'up' | 'down' | 'steady' | 'none';
+
+const TREND: Record<TrendKind, string[]> = {
+  up: ['M12 19V5M6 11l6-6 6 6'],
+  down: ['M12 5v14M6 13l6 6 6-6'],
+  steady: ['M5 9h14M5 15h14'],
+  none: ['M8 12h8'],
+};
+
+/** Trend glyph for the card trend row: shape only, no colour of its own. `size` in px (default 16). */
+export function TrendIcon({ kind, size = ICON_SIZES.inline }: { kind: TrendKind; size?: number }) {
+  return <Svg size={size} kind={`trend-${kind}`}>{paths(...TREND[kind])}</Svg>;
+}

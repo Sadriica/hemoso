@@ -10,6 +10,7 @@ import type {
 import {
   NO_DATA_STATUS,
   localState,
+  type LocalState,
   statusFromApi,
   statusFromLocal,
   type IndicatorState,
@@ -20,6 +21,7 @@ import { statusBadgeKind, statusText } from '../components/attentionText'
 import Disclosure from '../components/Disclosure'
 import IndicatorDetails from '../components/IndicatorDetails'
 import Notice from '../components/Notice'
+import TrendRow, { type Baseline } from '../components/TrendRow'
 import type { LoadedContent } from '../content/load'
 import { createStateClient, type StateQuery } from '../data/stateClient'
 import { useIndicatorStates } from '../hooks/useIndicatorState'
@@ -48,6 +50,8 @@ interface Row {
   latest: Entry | null
   content: IndicatorContent | undefined
   status: Status
+  // What the trend row compares the latest value with; null without a reading.
+  baseline: Baseline | null
 }
 
 // One screen: the status of each indicator and a clear next step (REQ-01).
@@ -111,13 +115,24 @@ export default function Home({
     )
     const rules = data.rules.filter((rule) => rule.indicatorId === indicator.id)
     const latest = latestEntry(own)
+    const answer = answers[indicator.id]
+    const local =
+      latest === null
+        ? null
+        : localState(latest, own, rules, indicator.minSpread)
     return {
       indicator,
       entries: own,
       rules,
       latest,
       content: data.contents[indicator.id],
-      status: statusFor(indicator, own, rules, latest, answers[indicator.id]),
+      status: statusFor(latest, local, answer),
+      baseline:
+        answer !== undefined
+          ? { median: answer.median, spread: answer.spread, n: answer.n }
+          : local === null
+            ? null
+            : { median: local.median, spread: local.spread, n: local.n },
     }
   })
   const reviewRows = rows.filter((row) => row.status.state === 'needs_review')
@@ -203,6 +218,7 @@ export default function Home({
               key={selected.indicator.id}
               indicator={selected.indicator}
               latest={selected.latest}
+              baseline={selected.baseline}
               status={selected.status}
               content={selected.content}
               motionReduced={motionReduced}
@@ -253,17 +269,13 @@ function useWideScreen(): boolean {
 // and the same rule run on the entries of this device before that, without a
 // server or after an error (REQ-12).
 function statusFor(
-  indicator: Indicator,
-  entries: Entry[],
-  rules: AttentionRule[],
   latest: Entry | null,
+  local: LocalState | null,
   answer: IndicatorState | undefined,
 ): Status {
   if (answer !== undefined) return statusFromApi(answer)
-  if (latest === null) return NO_DATA_STATUS
-  return statusFromLocal(
-    localState(latest, entries, rules, indicator.minSpread),
-  )
+  if (latest === null || local === null) return NO_DATA_STATUS
+  return statusFromLocal(local)
 }
 
 // A box where the planetarium will be, in words, so the area is never blank.
@@ -300,12 +312,14 @@ function ReadingValue({
 function IndicatorRow({
   indicator,
   latest,
+  baseline,
   status,
   content,
   motionReduced,
 }: {
   indicator: Indicator
   latest: Entry | null
+  baseline: Baseline | null
   status: Status
   content: IndicatorContent | undefined
   motionReduced: boolean
@@ -355,6 +369,13 @@ function IndicatorRow({
             </Suspense>
           )}
         </div>
+      )}
+      {latest && baseline && (
+        <TrendRow
+          value={latest.value}
+          unit={indicator.unit}
+          baseline={baseline}
+        />
       )}
       <p className="indicator-card__next-step">
         {nextStepFor(status, content)}

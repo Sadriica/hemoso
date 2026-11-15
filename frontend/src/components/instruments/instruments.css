@@ -4,6 +4,15 @@
   width: calc(var(--space-6) * 2);
   height: calc(var(--space-6) * 2);
   line-height: 0;
+  transition: color var(--motion-base) var(--ease-out);
+}
+.instrument--state .ins-track,
+.instrument--state .ins-outline {
+  stroke: var(--ins-system);
+}
+.instrument--state path.ins-outline:not([fill='none']) {
+  stroke-width: 2;
+  stroke-linejoin: round;
 }
 .instrument svg {
   display: block;
@@ -55,11 +64,13 @@
 }
 .app--still .instrument *,
 .app--still .instrument,
+.instrument--still,
 .instrument--still * {
   animation: none !important;
   transition: none !important;
 }
 @media (prefers-reduced-motion: reduce) {
+  .instrument,
   .instrument * {
     animation: none !important;
     transition: none !important;

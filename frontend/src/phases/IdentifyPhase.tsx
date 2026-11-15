@@ -10,6 +10,8 @@ import {
 } from 'react'
 import PhaseHeading from '../components/PhaseHeading'
 import Notice from '../components/Notice'
+import { isIsoDate, setMissionStart, todayIso } from '../data/missionStart'
+import { StatusIcon } from '../icons'
 import { loadFaces } from '../face/descriptors'
 import type { AttemptFailure, SessionState } from '../hooks/useSession'
 import { personInitials, personName, strings } from '../strings'
@@ -61,6 +63,7 @@ export default function IdentifyPhase({
   const [creating, setCreating] = useState(false)
   const [pin, setPin] = useState('')
   const [confirmPin, setConfirmPin] = useState('')
+  const [startDate, setStartDate] = useState(() => todayIso())
   const [problem, setProblem] = useState<Problem | null>(null)
   const [busy, setBusy] = useState(false)
   // A face matched, or a session ended: the PIN of this person is asked for,
@@ -78,6 +81,7 @@ export default function IdentifyPhase({
 
   const usernameId = useId()
   const pinId = useId()
+  const startDateId = useId()
   const confirmPinId = useId()
   const faceTitleId = useId()
   const accountTitleId = useId()
@@ -109,7 +113,7 @@ export default function IdentifyPhase({
   // the PIN is asked for (T-70).
   const faceMatched = (personId: string) => {
     setFaceOpen(false)
-    if (session.openPerson(personId) === 'opened') {
+    if (session.openByFace(personId) === 'opened') {
       onDone()
       return
     }
@@ -118,7 +122,7 @@ export default function IdentifyPhase({
 
   const pickName = (personId: string) => {
     setMissing(false)
-    if (session.openPerson(personId) === 'opened') {
+    if (session.openByName(personId) === 'opened') {
       setProblem(null)
       return
     }
@@ -198,6 +202,7 @@ export default function IdentifyPhase({
       setProblem(failure)
       return
     }
+    setMissionStart(person, isIsoDate(startDate) ? startDate : todayIso())
     setPin('')
     setConfirmPin('')
     onDone()
@@ -344,6 +349,22 @@ export default function IdentifyPhase({
                   />
                 </div>
               )}
+              {creating && (
+                <div className="signin__field">
+                  <label className="signin__label" htmlFor={startDateId}>
+                    {strings.mission.startLabel}
+                  </label>
+                  <input
+                    id={startDateId}
+                    className="signin__input"
+                    type="date"
+                    max={todayIso()}
+                    value={startDate}
+                    disabled={busy}
+                    onChange={(event) => setStartDate(event.target.value)}
+                  />
+                </div>
+              )}
               <div className="signin__actions">
                 <button
                   type="submit"
@@ -372,9 +393,7 @@ export default function IdentifyPhase({
               </div>
             </form>
             {problemText !== null && (
-              <p className="signin__error" role="alert">
-                {problemText}
-              </p>
+              <SigninError>{problemText}</SigninError>
             )}
           </section>
         )}
@@ -423,14 +442,16 @@ export default function IdentifyPhase({
                       {signInCopy.crewRole}
                     </span>
                   </span>
-                  <span className="crew-option__mark" aria-hidden="true" />
+                  <span className="crew-option__mark" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" focusable="false">
+                      <path d="M7 12.5l3.2 3.2L17 8.8" />
+                    </svg>
+                  </span>
                 </label>
               ))}
             </div>
             {missing && (
-              <p id="crew-missing" className="signin__error" role="alert">
-                {copy.missing}
-              </p>
+              <SigninError id="crew-missing">{copy.missing}</SigninError>
             )}
           </fieldset>
 
@@ -449,6 +470,17 @@ export default function IdentifyPhase({
         {faceEnabled && !hasFace && facePanel}
       </div>
     </section>
+  )
+}
+
+// An error of the sign-in: the attention icon, then the words (never colour
+// alone), read out as soon as it appears.
+function SigninError({ id, children }: { id?: string; children: string }) {
+  return (
+    <p id={id} className="signin__error" role="alert">
+      <StatusIcon kind="warning" size={16} />
+      <span>{children}</span>
+    </p>
   )
 }
 

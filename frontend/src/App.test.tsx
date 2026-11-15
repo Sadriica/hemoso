@@ -310,9 +310,11 @@ describe('top bar', () => {
   it('puts the day and the clock on one muted line, with who is on duty', async () => {
     const user = userEvent.setup()
     render(<App />)
-    const clock = screen.getByText(/^Day \d+ · \d\d:\d\d$/)
-    expect(clock).toBeInTheDocument()
+    const stamp = /^Day \d+ · \d\d:\d\d$/
+    // Nothing before sign-in: the day belongs to the person.
+    expect(screen.queryByText(stamp)).toBeNull()
     await signInByName(user)
+    expect(screen.getByText(stamp)).toBeInTheDocument()
     expect(
       screen.getByText(strings.topbar.onDuty(PERSON), { exact: false }),
     ).toBeInTheDocument()
