@@ -19,6 +19,10 @@ const SCALE_VALUE = 3
 const copy = strings.phases
 
 test('guided check by keyboard with axe on every phase', async ({ page }) => {
+  // One test walks the whole check: three phases, an axe scan on each, a first
+  // load that includes the intro and a full report. On a loaded machine that is
+  // three times the default budget, not a slower app.
+  test.slow()
   const problems = collectProblems(page)
   let person = ''
   let readingDay = ''

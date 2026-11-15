@@ -14,7 +14,10 @@ import { strings } from '../src/strings'
 // this file starts a dev server of its own with VITE_API_BASE_URL set. The
 // request itself never leaves the browser: page.route answers it.
 
-const PORT = 4401
+// One port per worker: the desktop and the phone project run this file at the
+// same time, and two vite servers cannot share a port. Playwright numbers its
+// workers, so the second one takes the next port.
+const PORT = 4401 + Number(process.env.TEST_PARALLEL_INDEX ?? 0)
 const BASE_URL = `http://localhost:${PORT}`
 const API = 'http://api.test'
 const PERSON = 'cadet_okoro'
