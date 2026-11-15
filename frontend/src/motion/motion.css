@@ -294,3 +294,15 @@
   animation: none;
   transition: none;
 }
+
+/* Review of Sun 09:40, point 6. The skip button sat on the phase rail: it now
+   stands above it, and nearer the edge on a phone. */
+.intro__skip {
+  bottom: calc(var(--rail-height) + var(--space-2));
+}
+
+@media (max-width: 599px) {
+  .intro__skip {
+    right: var(--space-3);
+  }
+}

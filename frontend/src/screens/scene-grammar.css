@@ -246,3 +246,19 @@
 .phase--status .status-panel > .status-path {
   z-index: 0;
 }
+
+/* A phone: the Report scene is a short band, not a second hero, so the first
+   readout is on the first screen (UX review, point 3). */
+@media (max-width: 599px) {
+  .scene-band--report {
+    height: var(--space-6);
+  }
+
+  .scene-band--report .orbital {
+    width: 200px;
+  }
+
+  .scene-band--report + .report {
+    margin-top: calc(var(--space-3) * -1);
+  }
+}

@@ -226,8 +226,27 @@
   .rep.rep--console .rep-rows .rep-row,
   .rep.rep--console .rep-rows .rep-row:not(.rep-row--pair):not(.rep-row--scale) {
     grid-template-columns: auto minmax(0, 1fr);
-    padding: var(--space-3) var(--space-2);
+    padding: var(--space-2);
     column-gap: var(--space-2);
+  }
+
+  /* One spacing step tighter on a phone (UX review, point 5): the cards, the
+     figure window and the gaps inside a card. The readout and the state keep
+     their size. */
+  .rep.rep--console .rep-rows {
+    gap: var(--space-2);
+  }
+
+  .rep.rep--console .rep-rows .rep-row .rep-row__body {
+    row-gap: var(--space-1);
+  }
+
+  .rep.rep--console .rep-row__scope {
+    padding: var(--space-1);
+  }
+
+  .rep.rep--console .tele svg {
+    height: var(--space-7);
   }
 
   .rep.rep--console .rep-rows .rep-row .rep-row__body,
