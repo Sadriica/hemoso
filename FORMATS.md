@@ -137,7 +137,8 @@ values.
    (`docs/findings/bio2-02-evidence-score.md`). An indicator signal adds 1 when
    its value crossed a row of `rules/attention.csv` on the signal's side, 0.5
    when it is outside the person's baseline on that side, 0 otherwise. A symptom
-   adds 0.5 when it is present in `data/symptom_log.csv` on the day and listed
+   adds 0.5 when it is present in `data/symptom_log.csv` on the newest mission day
+   that holds a symptom report (team decision, Sun 15 Nov 14:00) and listed
    for the condition in the optional `symptoms` column; a symptom listed by more
    than one condition adds 0.25. A red flag makes the condition urgent outside
    the score. The score is the weighted mean over the usable signals, and fewer
@@ -270,8 +271,10 @@ keeps four columns; the header gains `symptoms` in the same change.
   indicator apart (hyperglycaemia `glucose_mgdl:above`, hypoglycaemia
   `glucose_mgdl:below`).
 - `symptoms`: symptom ids from `data/symptoms.csv`, separated by spaces. A
-  symptom counts only when it is present in `data/symptom_log.csv` on the same
-  mission day; no entry is "no data", not a zero. A symptom listed for more than
+  symptom counts only when it is present in `data/symptom_log.csv` on the newest
+  mission day that holds a symptom report of that person (team decision, Sun 15
+  Nov 14:00; `newest_day_reports` in `backend/app/conditions.py`); an older day
+  is history, and no entry is "no data", not a zero. A symptom listed for more than
   one condition is `shared` in `data/symptoms.csv` and weighs less (section
   "How each value is compared").
 - `source`: a link or `Assumption`.

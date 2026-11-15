@@ -37,6 +37,7 @@ slides at most). How the solution is published is recorded in
   | `SUPABASE_URL` | The Supabase project URL |
   | `SUPABASE_KEY` | The Supabase service role key |
   | `ALLOWED_ORIGINS` | Comma-separated origins the API accepts; it must list the Vercel URL |
+| `RATE_LIMIT_PER_MINUTE` | Requests per minute per address (default 120). Production uses `600`: one Status load makes about 25 requests and a venue network shares one address. `0` turns the limit off |
 
   Values live only in host settings and local `.env` files, never in the
   repository (`docs/PRIVACY.md`). Run the backend locally from `backend/` with
