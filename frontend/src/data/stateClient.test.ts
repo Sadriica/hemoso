@@ -52,6 +52,18 @@ describe('createStateClient', () => {
     ])
   })
 
+  it('sends the mission day and the time of the reading when the caller knows them', async () => {
+    const { urls, fetchFn } = fakeFetch(Promise.resolve(answer(200, valid)))
+    const client = createStateClient('https://api.example.test', fetchFn)
+
+    await client.fetchState({ ...query, missionDay: 41, time: '07:30' })
+
+    expect(urls).toEqual([
+      'https://api.example.test/people/demo_astronaut_1/indicators/hr_bpm/state' +
+        '?value=72&context=rest&mission_day=41&time=07%3A30',
+    ])
+  })
+
   it('drops a trailing slash from the base URL', async () => {
     const { urls, fetchFn } = fakeFetch(Promise.resolve(answer(200, valid)))
     await createStateClient('https://api.example.test/', fetchFn).fetchState(
