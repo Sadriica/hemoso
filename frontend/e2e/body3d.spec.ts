@@ -1,0 +1,84 @@
+import { expect, test, type Page } from '@playwright/test'
+import { injuryWords } from '../src/components/body3d/words'
+import { strings } from '../src/strings'
+import { expectNoBlockingA11yIssues } from './axe'
+
+// The 3D body (REQ-15): the astronaut opens "Where does it hurt?", chooses a
+// place through the accessible list of body parts, sets how strong it is and
+// what kind of mark it is, saves, and reads the report back. Everything stays on
+// this device, so the assertion is the list beside the picker.
+const copy = strings.phases
+
+test('the body: choose a place, a strength and a kind, and save the report', async ({
+  page,
+}) => {
+  await page.goto('/')
+  await pickFirstPerson(page)
+  await page
+    .getByRole('button', { name: copy.identify.next })
+    .press('Enter')
+  await page.getByRole('button', { name: copy.report.next }).press('Enter')
+  await expect(page.getByRole('heading', { level: 1 })).toContainText(
+    copy.status.headline[0],
+  )
+
+  await test.step('the picker opens under the status board', async () => {
+    const toggle = page.locator('button[aria-controls="pain-panel"]')
+    await expect(toggle).toHaveText(injuryWords.open)
+    await toggle.press('Enter')
+    await expect(toggle).toHaveAttribute('aria-expanded', 'true')
+    await expect(
+      page.getByRole('heading', { name: injuryWords.heading }),
+    ).toBeVisible()
+  })
+
+  const knee = page.getByRole('button', { name: 'Left knee', exact: true })
+
+  await test.step('a place is chosen from the accessible list, by keyboard', async () => {
+    // The 3D chunk arrives after the panel: the list is part of the same figure.
+    await expect(knee).toBeAttached({ timeout: 20_000 })
+    await knee.focus()
+    await page.keyboard.press('Enter')
+    await expect(knee).toHaveAttribute('aria-pressed', 'true')
+    await expect(
+      page.locator('.pain-picker .body3d__live'),
+    ).toContainText('Selected: Left knee')
+  })
+
+  await test.step('strength 8 of 10 and the kind of mark', async () => {
+    const slider = page.getByRole('slider', {
+      name: injuryWords.intensityFor('Left knee'),
+    })
+    await slider.focus()
+    await page.keyboard.press('Home')
+    for (let step = 0; step < 8; step += 1) {
+      await page.keyboard.press('ArrowRight')
+    }
+    await expect(slider).toHaveValue('8')
+    await page
+      .getByLabel(injuryWords.kindFor('Left knee'))
+      .selectOption('sprain_or_strain')
+  })
+
+  await test.step('save and read it in the list', async () => {
+    await page.getByRole('button', { name: injuryWords.save }).click()
+    await expect(page.getByText(injuryWords.savedOnDevice)).toBeVisible()
+    await expect(
+      page.getByText('Left knee: sprain or strain, 8 of 10'),
+    ).toBeVisible()
+    await expect(page.getByText(injuryWords.surgeon)).toBeVisible()
+  })
+
+  await expectNoBlockingA11yIssues(page, 'Status with the pain picker')
+})
+
+// Phase 1 by keyboard: the first crew member, checked with Space.
+async function pickFirstPerson(page: Page): Promise<void> {
+  const first = page
+    .getByRole('group', { name: copy.identify.crewLabel })
+    .getByRole('radio')
+    .first()
+  await first.focus()
+  await page.keyboard.press('Space')
+  await expect(first).toBeChecked()
+}
