@@ -20,8 +20,10 @@ also in `docs/CHALLENGE.md`.
 2. **Day 46 is out.** The demo data ends on Flight Day 30, and a return to the
    usual range cannot be shown without inventing days. The evidence board takes
    that time, and the future beat carries the outlook instead.
-3. **"Symptoms" is out.** The report screen has no symptom field yet (T-80), so
-   the voice does not promise it.
+3. **"Symptoms" stays out of the voice, but not out of the app.** The report now
+   has a `SYMPTOMS, OPTIONAL` section and the evidence board already shows
+   "Sweating: you reported it", so T-80 landed. The ten-second beat cannot carry
+   a third field, and the board shows the symptoms without the voice naming them.
 4. **One staged reading replaces three days.** Eng 2 logs Flight Day 31 with
    38.5 °C and 96 bpm on a local build. That single reading produces every state
    the video needs: needs review, outside the usual range, and an evidence board.
@@ -82,24 +84,37 @@ shot for the slides.
 | --- | --- | --- | --- |
 | S0 | 0–2 | Five faces, one frame | Five people; the team name in the lower third with the five first names |
 | S1 | 2–5 | Status, list view (`s6-status-list.png`) | The "needs review" banner and the day |
-| S2 | 5–7 | Title card | HeMoSo and the tagline, nothing else |
+| S2 | 5–7 | Title card (`submission/slides/cards/s2-title.png`) | HeMoSo and the tagline, nothing else |
 | S3 | 7–10 | Identify (`s3-identify.png`) | "Who is on duty today?" with the demo astronaut |
 | S4 | 10–13 | Report (`s4-entry.png`) | The values typed, 38.5 °C last |
-| S5 | 13–16 | Status, orbit view (`s5-status-orbit.png`) | Each reading against its usual range: "Needs review · consult" and "Outside your usual range" |
+| S5 | 13–16 | Status, list view | The 12 channels with their state: one `Needs review · consult`, one `watch`, the rest `In your usual range` |
 | S6 | 16–18.5 | Evidence board (`s7-fever-evidence.png`) | Fever, evidence 0.75 of 1, the two signals, the ntrs.nasa.gov source |
 | S7 | 18.5–20 | Same board | "Ask your CMO or flight surgeon to check this" |
-| S8 | 20–23 | Status, list view again | The other readings in the usual range: the whole picture, not one number |
-| S9 | 23–26 | Vision card | Moon, Mars, base: three words, no illustration |
-| S10 | 26–30 | Five faces, one frame | The team, with the end card over the lower third |
+| S8 | 20–23 | Status, list view again | The 12 channels together: the whole picture, not one number |
+| S9 | 23–26 | Vision card (`submission/slides/cards/s9-vision.png`) | Moon, Mars, base: three words, no illustration |
+| S10 | 26–30 | Five faces, one frame, with `s10-end-overlay.png` on top | The team, the name, the URL and the rule |
+
+Checked on production, Sun 09:10, in this order: identify ("Who is on duty
+today?", demo astronaut), report (12 fields, plus `SYMPTOMS, OPTIONAL` and
+`REACTION CHECK, OPTIONAL`), status ("1 reading needs review", 12 channels, 1
+needs review, 1 outside the usual range, 10 in the usual range) and the evidence
+board (evidence from 0 to 1, signals, one source per condition).
+
+Two consequences for the recording:
+
+- On production the reading that needs review today is **blood glucose, 150
+  mg/dL**, and the board shows **hyperglycaemia**. The fever board only appears
+  after the staged reading, so S6 and S7 need the local build.
+- Someone already saved a reading on the public demo: it shows Flight Day 30 with
+  a review. The local build is the only place where the state is known.
 
 The picture follows the voice clause by clause: logging, comparing, the evidence,
 who acts. When the voice names an action, the screen shows it, not the screen
 before it.
 
 S10 carries three things in four seconds: the faces, the name and the URL, and
-the rule. Two lines of text at most: `HeMoSo · {{DEMO_URL}}` and
-`HeMoSo suggests. Your CMO decides.` If the URL is long, move it to the vision
-card and leave the faces alone for the last four seconds.
+the rule. The overlay already has them in two lines at the top, so the bottom
+stays free for subtitle cue 10.
 
 From 5 to 26 s the prototype carries a small corner label, `Prototype ·
 synthetic data`. It is true, it costs no words, and it answers the judge who
@@ -113,20 +128,21 @@ sitting: they are the same shot, 26 seconds apart.
 The guide asks how NASA's free and open data and partner data made the solution
 possible. The video answers three times: the voice ("built from NASA's open
 data"), the source line inside the evidence board (`ntrs.nasa.gov`), and a
-caption from 13 to 20 s with two lines, the exact resource and what we took:
+caption from 13 to 20 s with the label Phys wrote for this purpose
+(`docs/nasa_data.md`, REQ-19). Two lines, mono, on a dark strip:
 
 ```
-{{NASA_RESOURCE}}
-{{WHAT_WE_TOOK}}
+NASA Human Research Program
+Risks · five hazards · nutrition and cardiovascular reports
 ```
 
-The name comes from Phys (`docs/nasa_data.md`, REQ-19). If Phys also uses a
-partner agency resource, the second line adds it; if not, the video does not
-mention partner data.
+It names only resources in Phys's table. If a resource leaves that table, the
+caption leaves with it. No logo, no mission patch.
 
 ## Subtitles
 
-Paste as `subs.srt`. English, burned in, readable muted.
+The file exists: `submission/subs.srt`, UTF-8 without BOM, LF line endings, the
+same ten blocks as below, ready to burn. English, burned in, readable muted.
 
 ```
 1
@@ -190,9 +206,23 @@ judge, not a transcript. Cue 10 is the only one written exactly as spoken.
   `team/eng2/notes/t16_record.py`. It saves one WebM and one PNG per shot.
 - Voice: the five team members, English, one microphone, three takes of the
   unison line. Normalise to about −16 LUFS.
-- `ffmpeg` is not installed on this machine; the cut, the subtitles and the
-  `ffprobe` check happen on Juli's. The export keeps the audio track: `-c:a aac
-  -b:a 128k`, not `-an`.
+- One audio file per beat, WAV or M4A, named after its start second, so the cut
+  syncs without guessing:
+
+  | File | Beat | Who |
+  | --- | --- | --- |
+  | `00.wav` | 0–2 | All five |
+  | `02.wav` | 2–5 | V1 |
+  | `05.wav` | 5–10 | V2 |
+  | `10.wav` | 10–20 | V1 |
+  | `20.wav` | 20–26 | V2 |
+  | `26.wav` | 26–30 | V2 |
+
+  Every file keeps half a second of room tone at the start and the end; the
+  pauses between beats are cut, not recorded.
+- `ffmpeg` is being installed on Juli's machine now (Sun 08:50); the plan does
+  not change. The cut, the subtitles and the `ffprobe` check happen there, and
+  the export keeps the audio track: `-c:a aac -b:a 128k`, not `-an`.
 - Target 29.5 s. `ffprobe` rounds and the guide sets a maximum.
 - H.264, `yuv420p`, 1280 × 800, no black frame at the start.
 - Check it on a phone, muted, once.
@@ -202,7 +232,6 @@ judge, not a transcript. Cue 10 is the only one written exactly as spoken.
 - The full official challenge title: it takes six seconds to say.
 - The 3D body, the camera and the forecast models: each needs more than 4 s and
   the product has ten. They belong in the slides.
-- Symptoms: the report screen does not have them yet (T-80).
 - Accuracy figures, "detects", "diagnoses". The board shows evidence and the CMO
   decides.
 - Real faces, names or medical data of anyone outside the team, and any person
@@ -224,12 +253,12 @@ judge, not a transcript. Cue 10 is the only one written exactly as spoken.
 
 ## Still open
 
-- The NASA resource and what we took: Phys (REQ-19).
-- Symptoms in the report: T-80, Eng 2. Until then the video does not mention them.
-- `ffmpeg`, the cut and the final `ffprobe`: Juli's machine.
-- Voices and faces for S0 and S10: the team, before the 9:00 block.
+- The cut, the voices and the faces: Eng 2 and the team.
 - "Baseline" (the team's word since Sat 17:45) or "usual range" (the interface's
   word): the video uses the interface's, because the judge reads it on screen. If
   Bio 2 prefers one word everywhere, the subtitles change with it.
 - The demo astronaut's name: the video says "she", no name, so it holds even if
   the persona changes.
+- The fever score of 0.75 comes from Eng 2's local take. Recheck it on the take
+  before the cut, because `config/rules/conditions.csv` changed on Sunday
+  morning.

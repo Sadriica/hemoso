@@ -1,0 +1,51 @@
+1
+00:00:00,000 --> 00:00:02,000
+We're team ReTardis.
+
+2
+00:00:02,000 --> 00:00:05,000
+Astronaut health monitoring,
+because Earth is far away.
+
+3
+00:00:05,000 --> 00:00:07,500
+Meet HeMoSo: twelve daily readings,
+
+4
+00:00:07,500 --> 00:00:10,000
+each checked against
+your own usual range.
+
+5
+00:00:10,000 --> 00:00:12,500
+She logs a fever of 38.5 °C
+and a fast pulse.
+
+6
+00:00:12,500 --> 00:00:15,000
+HeMoSo compares them
+with her usual range,
+
+7
+00:00:15,000 --> 00:00:17,000
+scores the evidence,
+
+8
+00:00:17,000 --> 00:00:20,000
+and says: tell the CMO.
+Built from NASA's open data.
+
+9
+00:00:20,000 --> 00:00:23,000
+From lunar missions to Mars:
+the same daily check,
+
+10
+00:00:23,000 --> 00:00:26,000
+with every limit
+and its source on screen.
+
+11
+00:00:26,000 --> 00:00:30,000
+Because exploring further means
+taking better care of those who explore.

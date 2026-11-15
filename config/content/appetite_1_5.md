@@ -46,10 +46,9 @@ Your CMO or flight surgeon confirms.
 
 ### watch
 
-You rated your appetite below 3 today. Assumption: 3 is the middle of our
-scale, not a NASA limit.
+Your appetite today was below 3 of 5, the line your CMO uses.
 
-Eat something small at the next meal time and answer again tomorrow.
+Eat something at the next meal and answer again tomorrow.
 
 The crew checks your record on board.
 
