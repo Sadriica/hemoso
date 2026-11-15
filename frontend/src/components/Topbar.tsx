@@ -15,9 +15,9 @@ interface TopbarProps {
   onToggleMotion: () => void
 }
 
-// The bar on top of every phase: the mark and name, the mission metadata line,
-// the synthetic data sentence (REQ-14), who is on duty, the sync facts
-// (REQ-28) and the motion switch. It holds no navigation: the check moves
+// The bar on top of every phase: the mark and name and the motion switch, one
+// mono telemetry line from real data (mission day, clock, who is on duty), then
+// the synthetic data sentence (REQ-14) and the sync facts (REQ-28). It holds no navigation: the check moves
 // forward only through each phase's own button.
 export default function Topbar({
   clock,
@@ -36,22 +36,8 @@ export default function Topbar({
             <path d="M6 30 C 14 20, 28 14, 37 10" />
             <circle cx="21" cy="21" r="5" />
           </svg>
-          <span className="identity__name">
-            {strings.appName}
-            <small>{strings.topbar.tagline}</small>
-          </span>
+          <span className="identity__name">{strings.appName}</span>
         </p>
-        <div className="topbar__meta">
-          <span className="topbar__stamp">
-            {strings.header.metadata(clock.missionDay, clock.time)}
-          </span>
-          {personId && (
-            <span className="topbar__duty">
-              <i aria-hidden="true" />
-              {strings.topbar.onDuty(personId)}
-            </span>
-          )}
-        </div>
         <button
           type="button"
           className="topbar__motion"
@@ -60,6 +46,15 @@ export default function Topbar({
         >
           {strings.topbar.reduceMotion}
         </button>
+      </div>
+      <div className="topbar__row topbar__row--meta">
+        <p className="topbar__stamp">{strings.header.metadata(clock.missionDay, clock.time)}</p>
+        {personId && (
+          <p className="topbar__duty">
+            <i aria-hidden="true" />
+            {strings.topbar.onDuty(personId)}
+          </p>
+        )}
       </div>
       <div className="topbar__row topbar__row--facts">
         <SyntheticNotice />

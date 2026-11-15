@@ -56,43 +56,6 @@ export default function IdentifyPhase({
       <PhaseHeading ref={headingRef} eyebrow={copy.eyebrow} lines={copy.headline} intro={copy.intro} />
 
       <div className="identify">
-        {faceEnabled && (
-          <div className="identify__face">
-            <button
-              ref={faceButtonRef}
-              type="button"
-              className="journey-button"
-              aria-expanded={faceOpen}
-              onClick={() => setFaceOpen((open) => !open)}
-            >
-              <span>{strings.face.buttonLabel}</span>
-              <span className="journey-button__arrow" aria-hidden="true">◎</span>
-            </button>
-            {faceOpen && (
-              <Suspense fallback={<p role="status">{strings.face.opening}</p>}>
-                <FaceSignIn
-                  personId={personId ?? ''}
-                  personIds={personIds}
-                  onPersonSelected={(id) => {
-                    onPersonChange(id)
-                    setFaceOpen(false)
-                    onDone()
-                  }}
-                  onFocusPicker={focusPicker}
-                  onClose={() => {
-                    setFaceOpen(false)
-                    // Back to the control that opened the panel, as a dialog does.
-                    faceButtonRef.current?.focus()
-                  }}
-                />
-              </Suspense>
-            )}
-            <p className="identify__or" aria-hidden="true">
-              <span className="hairline" /> {copy.or} <span className="hairline" />
-            </p>
-          </div>
-        )}
-
         <fieldset
           id={CREW_PICKER_ID}
           className="crew-picker"
@@ -126,8 +89,45 @@ export default function IdentifyPhase({
 
         <button type="button" className="journey-button journey-button--solid" onClick={goOn}>
           <span>{copy.next}</span>
-          <span className="journey-button__arrow" aria-hidden="true">↘</span>
+          <span className="journey-button__arrow" aria-hidden="true">→</span>
         </button>
+
+        {faceEnabled && (
+          <div className="identify__face">
+            <p className="identify__or" aria-hidden="true">
+              <span className="hairline" /> {copy.or} <span className="hairline" />
+            </p>
+            <button
+              ref={faceButtonRef}
+              type="button"
+              className="journey-button"
+              aria-expanded={faceOpen}
+              onClick={() => setFaceOpen((open) => !open)}
+            >
+              <span>{strings.face.buttonLabel}</span>
+              <span className="journey-button__arrow" aria-hidden="true">◎</span>
+            </button>
+            {faceOpen && (
+              <Suspense fallback={<p role="status">{strings.face.opening}</p>}>
+                <FaceSignIn
+                  personId={personId ?? ''}
+                  personIds={personIds}
+                  onPersonSelected={(id) => {
+                    onPersonChange(id)
+                    setFaceOpen(false)
+                    onDone()
+                  }}
+                  onFocusPicker={focusPicker}
+                  onClose={() => {
+                    setFaceOpen(false)
+                    // Back to the control that opened the panel, as a dialog does.
+                    faceButtonRef.current?.focus()
+                  }}
+                />
+              </Suspense>
+            )}
+          </div>
+        )}
       </div>
     </section>
   )
