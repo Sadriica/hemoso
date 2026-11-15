@@ -147,7 +147,7 @@ export interface InstrumentProps {
 /**
  * Animated figure of one indicator, driven only by `value`. Decorative
  * (`aria-hidden`): the card already states the value in words. The heart
- * beats at a fixed calm pace that does not follow the value.
+ * beats three times at a fixed calm pace, then rests, that does not follow the value.
  */
 export default function Instrument({ indicatorId, value, reducedMotion = false }: InstrumentProps): ReactElement | null {
   let figure: ReactElement
