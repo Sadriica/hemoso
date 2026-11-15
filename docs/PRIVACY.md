@@ -84,6 +84,19 @@ token. The synthetic demo astronaut has no account, so the demo opens with no
 login (REQ-32). The face data of face sign-in never leaves the device (REQ-36):
 the face only unlocks a session already stored on that device.
 
+## Eye check (optional, off by default)
+
+The eye check is an add-on behind the `EYE_CHECK_ENABLED` flag and is off until
+the team turns it on. It runs only when the person starts it. The camera opens,
+and each frame is read on the device to measure how far the eyes are closed and
+how often they blink. No frame, image or video is stored or sent. The camera is
+released when the check ends or on Escape.
+
+Only two numbers are saved, `eye_closure_pct` and `blink_rate_pm`, as readings
+like any other: they go to the device store and through the same outbox. The
+check never reads mood, stress or emotion from the face, and it never labels the
+person ([phys-07](findings/phys-07-eye-closure-check.md)).
+
 ## If a key is committed
 
 A key that reaches the repository is exposed, and removing the commit does not
