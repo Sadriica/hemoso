@@ -182,3 +182,11 @@ button.condition__signal:hover {
   font-family: var(--font-mono);
   color: var(--step);
 }
+
+/* The source link is a tap target of its own: 44 px tall on a phone, with the
+   text kept on one line of the tile. */
+.condition__source a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap-min);
+}
