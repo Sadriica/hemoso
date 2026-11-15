@@ -754,6 +754,14 @@
   background: var(--color-bg-raised);
 }
 
+/* On a phone the footer with the saved message and two buttons is a third of
+   the screen: it stays in the flow there, so the rows are never covered. */
+@media (max-width: 599px) {
+  .rep .rep-footer {
+    position: static;
+  }
+}
+
 /* Once saved, the footer is the confirmation and the way on: it holds the
    message and drops the reason line to stay short. */
 .rep .rep-footer--saved .rep-actions__reason {
