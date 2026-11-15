@@ -36,12 +36,12 @@ conversation volume, and let the pauses at 0:05 and 0:26 do the work.
 | --- | --- | --- | --- |
 | 0.0–2.0 | Team | We're team ReTardis. | One voice, five faces, no gesture |
 | 2.0–5.0 | V1 | Astronaut health monitoring, because Earth is far away. | One sentence, a small pause at the comma |
-| 5.0–10.0 | V2 | Meet HeMoSo: your health, monitored against your own baseline. | A short stop after the name |
-| 10.0–20.0 | V1 | She logs pulse, temperature, symptoms. HeMoSo compares them with her baseline, suggests possible causes, and alerts the CMO on board. Built from NASA's open data. | Even pace; the CMO clause one step louder |
+| 5.0-10.0 | V2 | Meet HeMoSo: your health, monitored against your own usual range. | A short stop after the name |
+| 10.0-20.0 | V1 | She logs pulse, temperature, symptoms. HeMoSo compares them with her usual range, suggests possible causes, and alerts the CMO on board. Built from NASA's open data. | Even pace; the CMO clause one step louder |
 | 20.0–26.0 | V2 | From lunar missions to Mars: the same daily check, so a change is seen in time. | Same volume, no dreamy tone |
 | 26.0–30.0 | V2 | Because exploring further means taking better care of those who explore. | Slower than the rest, one idea per breath |
 
-72 words, 2.4 per second. If a take runs past 29.5 s, cut "symptoms" from beat 4
+76 words, 2.5 per second. If a take runs past 29.5 s, cut "symptoms" from beat 4
 and keep "pulse, temperature"; never shorten the closing.
 
 Line notes:
@@ -76,10 +76,10 @@ shot, plus one screenshot per shot.
 | S2 | 5–7 | Title card | HeMoSo and the tagline, nothing else |
 | S3 | 7–10 | Day 41, full view | The screen the astronaut uses every day |
 | S4 | 10–13 | Entry: pulse, temperature, symptoms | Her hand or cursor entering a value; the fields filled |
-| S5 | 13–16 | Trend, seven days | The baseline line and three days above it |
+| S5 | 13-16 | Trend, seven days | The usual-range band and three days above it |
 | S6 | 16–18.5 | Status card | The suggestion, its probability and its basis |
 | S7 | 18.5–20 | Day 42, orange | Fever 38.5 °C, sore throat, flight surgeon |
-| S8 | 20–23 | Day 46, green | Both indicators back in the baseline |
+| S8 | 20-23 | Day 46, green | Both indicators back in her usual range |
 | S9 | 23–26 | Vision card | Moon, Mars, base: three words, no illustration |
 | S10 | 26–30 | Five faces, one frame | The team, with the end card over the lower third |
 
@@ -105,12 +105,12 @@ people, in one sitting: they are the same shot, 26 seconds apart.
 
 ## Name and tagline
 
-1. **HeMoSo: your baseline, watched every day.** The spoken line is "your
-   health, monitored against your own baseline", which says the same and fits the
-   five seconds.
+1. **HeMoSo: your usual range, watched every day.** The spoken line is "your
+   health, monitored against your own usual range", which says the same and fits
+   the five seconds.
 2. HeMoSo: see the change before the emergency. Stronger, and a claim that only
    the day 41 screen supports.
-3. HeMoSo: health, followed from your own baseline. Longer, weaker verb.
+3. HeMoSo: health, followed from your own usual range. Longer, weaker verb.
 
 ## NASA data
 
@@ -151,7 +151,7 @@ Meet HeMoSo.
 4
 00:00:07,500 --> 00:00:10,000
 Your health, monitored
-against your own baseline.
+against your own usual range.
 
 5
 00:00:10,000 --> 00:00:13,500
@@ -159,7 +159,7 @@ She logs pulse, temperature, symptoms.
 
 6
 00:00:13,500 --> 00:00:16,500
-We compare them with her baseline
+We compare them with her usual range
 and suggest possible causes.
 
 7
