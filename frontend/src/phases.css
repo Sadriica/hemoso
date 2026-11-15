@@ -65,7 +65,7 @@ body {
 .cinema__vignette {
   position: absolute;
   inset: 0;
-  background: radial-gradient(130% 100% at 50% 40%, transparent 55%, rgb(0 0 0 / 55%));
+  background: radial-gradient(130% 100% at 50% 40%, transparent 55%, color-mix(in srgb, var(--color-bg) 55%, black));
 }
 
 /* The sticky route rail must never hide the control that has focus
@@ -181,7 +181,7 @@ html {
   font-family: var(--font-mono);
   font-size: var(--text-label);
   line-height: var(--leading-label);
-  letter-spacing: 0.04em;
+  letter-spacing: var(--tracking-label);
   white-space: nowrap;
 }
 
@@ -333,7 +333,7 @@ html {
   color: var(--color-accent);
   font-family: var(--font-mono);
   font-size: var(--text-label);
-  letter-spacing: 0.24em;
+  letter-spacing: var(--tracking-eyebrow);
   text-transform: uppercase;
 }
 
@@ -431,7 +431,7 @@ html {
   font-family: var(--font-mono);
   font-size: var(--text-small);
   font-weight: 600;
-  letter-spacing: 0.16em;
+  letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
   cursor: pointer;
   transition:
@@ -467,7 +467,7 @@ html {
   color: var(--color-text-muted);
   font-family: var(--font-mono);
   font-size: var(--text-label);
-  letter-spacing: 0.18em;
+  letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
   cursor: pointer;
 }
@@ -505,7 +505,7 @@ html {
   color: var(--color-text-muted);
   font-family: var(--font-mono);
   font-size: var(--text-label);
-  letter-spacing: 0.24em;
+  letter-spacing: var(--tracking-eyebrow);
   text-transform: uppercase;
 }
 
@@ -560,7 +560,7 @@ html {
 .crew-option__name {
   font-family: var(--font-mono);
   font-size: var(--text-small);
-  letter-spacing: 0.04em;
+  letter-spacing: var(--tracking-label);
   text-transform: none;
 }
 
@@ -945,7 +945,7 @@ input.reading__input::-webkit-inner-spin-button {
   font-family: var(--font-mono);
   font-size: var(--text-label);
   line-height: var(--leading-label);
-  letter-spacing: 0.16em;
+  letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
 }
 
@@ -961,7 +961,7 @@ input.reading__input::-webkit-inner-spin-button {
   border-radius: var(--radius-round);
   background: var(--color-bg-raised);
   font-weight: 500;
-  letter-spacing: 0.04em;
+  letter-spacing: var(--tracking-label);
 }
 
 .phase-rail__step--current {
@@ -1079,7 +1079,7 @@ input.reading__input::-webkit-inner-spin-button {
   }
 
   .phase-rail__step {
-    letter-spacing: 0.08em;
+    letter-spacing: var(--tracking-label);
   }
 
   .report__panel {

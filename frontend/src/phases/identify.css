@@ -236,6 +236,7 @@
 
 .identify__more-toggle {
   min-width: 0;
+  white-space: nowrap;
 }
 
 .identify__more-chevron {
@@ -297,7 +298,6 @@
 
 /* The PIN is a code, never a word: mono, spaced, masked by the input type. */
 .signin__input--pin {
-  max-width: 12ch;
   font-family: var(--font-mono);
   letter-spacing: var(--tracking-label);
 }

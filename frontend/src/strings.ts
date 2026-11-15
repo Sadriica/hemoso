@@ -199,6 +199,7 @@ export const strings = {
     context: 'Context',
     // The header control sets every row's own context at once.
     applyToAll: 'Apply to all rows',
+    applyToAllHint: 'Tap one to set every row at once.',
     rowContext: (name: string): string => `Context for ${name}`,
     contextLabels: {
       rest: 'At rest',
@@ -373,7 +374,7 @@ export const strings = {
   signIn: {
     faceHeading: 'Sign in with your face',
     // The closed row that holds the username and PIN form and the new account.
-    moreToggle: 'Username and PIN, or a new account',
+    moreToggle: 'Username and PIN',
     faceNote: 'A face saved on this device opens your session.',
     // No face on this device yet: how to add one, in one line.
     faceNone: 'Sign in with your PIN once, then add your face on this device',

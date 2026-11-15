@@ -61,7 +61,13 @@ export default function IdentifyPhase({
 }: IdentifyPhaseProps) {
   // Starting the report first closes the ring and carries the avatar (src/motion/carry.ts).
   const carry = useCarry(still)
-  const onDone = () => carry.run(switchPhase)
+  // The "signed in" strip must not appear above the panel while the ring
+  // closes: its visibility is fixed at the moment the carry starts.
+  const [stripFrozen, setStripFrozen] = useState<boolean | null>(null)
+  const onDone = () => {
+    setStripFrozen((session.expiredFor ?? session.personId) !== null)
+    carry.run(switchPhase)
+  }
   const copy = strings.phases.identify
   const signInCopy = strings.signIn
   const [faceOpen, setFaceOpen] = useState(false)
@@ -303,7 +309,7 @@ export default function IdentifyPhase({
       </div>
 
       <div className="identify__main">
-        {(session.expiredFor !== null || session.personId !== null) && (
+        {(stripFrozen ?? (session.expiredFor !== null || session.personId !== null)) && (
           <div className="identify__status" data-enter="rest">
             {session.expiredFor !== null && (
               <Notice tone="warning">{signInCopy.expired}</Notice>
@@ -472,7 +478,7 @@ export default function IdentifyPhase({
             </button>
             {moreOpen && (
               <div id={moreId} className="identify__more-body">
-                  <h2 id={accountTitleId} className="signin__title">
+                  <h2 id={accountTitleId} className="report-form__heading">
                     {creating ? signInCopy.createHeading : signInCopy.pinHeading}
                   </h2>
                   {askedFor !== null && !creating && (

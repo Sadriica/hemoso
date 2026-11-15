@@ -76,15 +76,21 @@ export function OrbitalScene({ variant, progress, still = false, className }: Or
       <svg viewBox={v.box} focusable="false">
         <defs>
           <radialGradient id={`${id}g`}>
-            <stop offset="0" style={{ stopColor: 'var(--glow-accent)' }} />
-            <stop offset="1" style={{ stopColor: 'var(--glow-accent)', stopOpacity: 0 }} />
+            <stop offset="0" style={{ stopColor: 'var(--orbital-glow)' }} />
+            <stop offset="1" style={{ stopColor: 'var(--orbital-glow)', stopOpacity: 0 }} />
+          </radialGradient>
+          <radialGradient id={`${id}t`}>
+            <stop offset="0" style={{ stopColor: 'var(--color-accent)' }} />
+            <stop offset="0.65" style={{ stopColor: 'var(--color-accent)' }} />
+            <stop offset="1" style={{ stopColor: 'var(--color-accent)', stopOpacity: 0 }} />
           </radialGradient>
           <linearGradient id={`${id}b`} x1="0" y1="0" x2="1" y2="1">
             <stop offset="0" style={{ stopColor: 'var(--color-surface)' }} />
             <stop offset="1" style={{ stopColor: 'var(--color-bg)' }} />
           </linearGradient>
         </defs>
-        <circle cx="200" cy="200" r="120" fill={`url(#${id}g)`} />
+        <circle cx="200" cy="200" r="130" fill={`url(#${id}g)`} />
+        <circle className="orbital__tint" cx="200" cy="200" r="84" fill={`url(#${id}t)`} />
         <g className="orbital__layer orbital__layer--far">
           {ORBITS.slice(0, v.orbits).map((o, i) => (
             <g key={i} transform={`rotate(${o.tilt} 200 200)`}>
