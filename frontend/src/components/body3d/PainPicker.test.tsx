@@ -47,6 +47,15 @@ describe('pain picker', () => {
     expect(
       screen.getByRole('slider', { name: injuryWords.intensityFor('Left knee') }),
     ).toHaveValue('5')
+    // The "/ 10" after the number is drawn by CSS on a hidden span: the slider
+    // carries the value and its name, so nothing is read twice.
+    const slider = screen.getByRole('slider', {
+      name: injuryWords.intensityFor('Left knee'),
+    })
+    expect(slider).toHaveAttribute('max', '10')
+    expect(
+      slider.parentElement?.querySelector('.pain-picker__value'),
+    ).toHaveAttribute('aria-hidden', 'true')
   })
 
   it('saves the place, the kind and the strength on this device', async () => {
