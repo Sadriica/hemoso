@@ -26,12 +26,14 @@ describe('parseConditions', () => {
           { indicatorId: 'hr_bpm', side: 'above' },
           { indicatorId: 'glucose_mgdl', side: 'below' },
         ],
+        symptoms: [],
         source: 'https://example.org/a',
       },
       {
         id: 'low_mood',
         name: 'Low mood',
         signals: [{ indicatorId: 'hr_bpm', side: 'below' }],
+        symptoms: [],
         source: 'Assumption',
       },
     ])
@@ -54,6 +56,37 @@ describe('parseConditions', () => {
     ])
     expect(result.map((item) => item.id)).toEqual(['b'])
     expect(problems).toHaveLength(2)
+  })
+})
+
+describe('parseConditions, the symptoms column', () => {
+  const FIVE = 'condition_id,name,based_on,symptoms,source'
+
+  it('reads the symptoms of a five-cell row and leaves a four-cell row empty', () => {
+    const problems: string[] = []
+    const result = parseConditions(
+      'conditions.csv',
+      [
+        FIVE,
+        'a,A,hr_bpm:above,thirst fatigue,Assumption',
+        'b,B,hr_bpm:below,Assumption',
+      ].join('\n'),
+      ids,
+      problems,
+    )
+    expect(problems).toEqual([])
+    expect(result.map((item) => item.symptoms)).toEqual([['thirst', 'fatigue'], []])
+  })
+
+  it('reads a symptom written twice as one', () => {
+    const problems: string[] = []
+    const result = parseConditions(
+      'conditions.csv',
+      [FIVE, 'a,A,hr_bpm:above,shaky shaky,Assumption'].join('\n'),
+      ids,
+      problems,
+    )
+    expect(result[0].symptoms).toEqual(['shaky'])
   })
 })
 

@@ -711,6 +711,9 @@ function ReadingRowField({
     >
       <span className="rep-row__channel" aria-hidden="true">
         {String(index + 1).padStart(2, '0')}
+        {/* Done is a check beside the channel number and a stronger edge,
+            never colour alone. */}
+        {done && <span className="rep-row__check">✓</span>}
       </span>
       <span className="rep-row__icon">
         <IndicatorIcon
@@ -718,12 +721,6 @@ function ReadingRowField({
           colored={row.system !== null}
           size={24}
         />
-        {/* Done is a check and a stronger edge, never colour alone. */}
-        {done && (
-          <span className="rep-row__check" aria-hidden="true">
-            ✓
-          </span>
-        )}
       </span>
 
       {row.scale ? (
@@ -796,12 +793,18 @@ function ReadingRowField({
                     /
                   </span>
                 )}
-                <label
-                  className="sr-only"
-                  htmlFor={`${baseId}-${field.indicatorId}`}
-                >
-                  {field.label}
-                </label>
+                {/* A single field is named by the visible title above it; a
+                    second label would make a screen reader say the name
+                    twice. The two blood pressure fields have no title of
+                    their own, so each keeps a hidden one. */}
+                {pair && (
+                  <label
+                    className="sr-only"
+                    htmlFor={`${baseId}-${field.indicatorId}`}
+                  >
+                    {field.label}
+                  </label>
+                )}
                 <input
                   ref={(element) => {
                     valueRefs.current[field.indicatorId] = element

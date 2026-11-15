@@ -53,7 +53,7 @@ new ones without updating this table and the owner named in it.
 | `reaction_lapses` | Reaction lapses | count | `higher` | Tier A · system `neuro_behavioural`; the count of late answers in one reaction check (REQ-38, T-71). Proposed by Eng 1 on Sat 23:10; Phys confirmed it in T-72: a trial of 355 ms or more is a lapse (phys-06, Dev et al. 2024) |
 | `appetite_1_5` | Appetite | 1 to 5 | `lower` | Tier B · system `metabolic`; self-rated once a day at the check-in, 1 = very low to 5 = very good (our scale, Assumption). Phys, Sun 06:50 (T-77) |
 | `fluid_intake_ml` | Fluid intake | mL | `lower` | Tier B · system `metabolic`; water drunk plus water used to rehydrate food, logged from the metered galley dispenser. Phys, Sun 06:50 (T-77) |
-| `body_mass_kg` | Body mass | kg | `lower` | Tier A · system `musculoskeletal`; measured with SLAMMD (mass from F = ma). Phys, Sun 06:50 (T-77) |
+| `body_mass_kg` | Body mass | kg | `both` | Tier A · system `musculoskeletal`; measured with SLAMMD (mass from F = ma). Phys, Sun 06:50 (T-77); compares both sides of the baseline, Phys Sun 10:00 (losing or gaining mass both matter) |
 | `<condition_id>` | to be filled by Bio 2 (REQ-06) | — (a condition has an evidence score from 0 to 1, not a unit) | — | One row per possible condition; example id `example_condition`. |
 | `<body_region_id>` | to be filled by the owner (open question) | — | — | One row per selectable body region; example id `example_body_region`. |
 
@@ -218,7 +218,10 @@ Columns in order: `indicator_id`, `side`, `threshold`, `attention_level`,
 `notify`, `source`.
 
 - `indicator_id`: an id from `data/indicators.csv`.
-- `side`: `below` or `above`: which side of `threshold` triggers this row.
+- `side`: `below` or `above`: which side of `threshold` triggers this row. A
+  value exactly on the threshold counts: `above` triggers at
+  `value >= threshold` and `below` at `value <= threshold` (Bio 2, Sun 15 Nov,
+  Q4).
 - `threshold`: a number; its unit is the indicator's unit.
 - `attention_level`: the name of this state, filled by Bio 2; the same names
   are the sub-headings in `content/<indicator_id>.md`.

@@ -11,6 +11,8 @@ import { parseIndicators } from './indicators'
 import { parseRules } from './rules'
 import { parseConditions } from './conditions'
 import { parseEntries } from './entries'
+import { parseSymptoms, parseSymptomLog } from './symptoms'
+import type { SymptomDef, SymptomReport } from '../domain/symptoms'
 
 import indicatorsPlaceholder from './placeholder/indicators.csv?raw'
 import attentionPlaceholder from './placeholder/attention.csv?raw'
@@ -25,6 +27,10 @@ export interface LoadedContent {
   conditions: ConditionRule[]
   contents: Record<string, IndicatorContent>
   demoEntries: Entry[]
+  // config/data/symptoms.csv and the demo astronaut's symptom_log.csv (T-78);
+  // empty while the files are not there, and the symptom layer is then off.
+  symptoms: SymptomDef[]
+  demoSymptoms: SymptomReport[]
   usingPlaceholders: boolean
   problems: string[]
 }
@@ -44,6 +50,8 @@ const INDICATORS_FILE = 'config/data/indicators.csv'
 const ATTENTION_FILE = 'config/rules/attention.csv'
 const DEMO_DATA_FILE = 'config/data/demo_data.csv'
 const CONDITIONS_FILE = 'config/rules/conditions.csv'
+const SYMPTOMS_FILE = 'config/data/symptoms.csv'
+const SYMPTOM_LOG_FILE = 'config/data/symptom_log.csv'
 
 export function loadContent(
   files: Record<string, string> = defaultFiles,
@@ -78,6 +86,18 @@ export function loadContent(
     conditionsText === undefined
       ? []
       : parseConditions(CONDITIONS_FILE, conditionsText, indicatorIds, problems)
+
+  // The symptom files have no placeholder either: without them the layer is off.
+  const symptomsText = configText(files, SYMPTOMS_FILE)
+  const symptoms =
+    symptomsText === undefined
+      ? []
+      : parseSymptoms(SYMPTOMS_FILE, symptomsText, problems)
+  const logText = configText(files, SYMPTOM_LOG_FILE)
+  const demoSymptoms =
+    logText === undefined
+      ? []
+      : parseSymptomLog(SYMPTOM_LOG_FILE, logText, symptoms, problems)
 
   const demoFile = readConfigFile(files, DEMO_DATA_FILE, demoDataPlaceholder)
   const demoEntries = parseEntries(
@@ -125,6 +145,8 @@ export function loadContent(
     conditions,
     contents,
     demoEntries,
+    symptoms,
+    demoSymptoms,
     usingPlaceholders,
     problems,
   }

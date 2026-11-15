@@ -254,3 +254,63 @@ describe('PossibleConditions', () => {
     expect(within(rowOf('Fever')).getByText(copy.label.review)).toBeInTheDocument()
   })
 })
+
+describe('PossibleConditions, symptoms', () => {
+  const fatigue = data.symptoms.find((item) => item.id === 'fatigue')
+  const vomiting = data.symptoms.find((item) => item.id === 'vomiting')
+  const report = (symptomId: string) => ({
+    personId: PERSON,
+    symptomId,
+    severity: 2 as const,
+    missionDay: lastDay + 1,
+    time: '10:00',
+  })
+
+  it('reads the symptom files of config/', () => {
+    expect(fatigue?.shared).toBe(true)
+    expect(vomiting?.redFlag).toBe(true)
+  })
+
+  it('shows "Call your CMO now" for a reported red flag, before any bar', () => {
+    renderPanel([reading('glucose_mgdl', 200)], {
+      symptoms: data.symptoms,
+      symptomReports: [report('vomiting')],
+    })
+    const row = rowOf('Hyperglycaemia')
+    expect(within(row).getByText(copy.sentence.urgent)).toBeInTheDocument()
+    expect(within(row).queryByRole('meter')).toBeNull()
+    // The signal is still listed, in plain words.
+    expect(within(row).getByText(copy.symptom.reported('Vomiting'))).toBeInTheDocument()
+  })
+
+  it('puts an urgent row before every other row', () => {
+    renderPanel(feverish, {
+      symptoms: data.symptoms,
+      symptomReports: [report('vomiting')],
+    })
+    const names = screen
+      .getAllByRole('heading', { level: 3 })
+      .map((heading) => heading.textContent)
+    expect(names[0]).toBe('Hyperglycaemia')
+  })
+
+  it('caps a symptom-only condition at Possible', () => {
+    renderPanel([], {
+      symptoms: data.symptoms,
+      symptomReports: [report('thirst'), report('frequent_urination')],
+    })
+    const row = rowOf('Hyperglycaemia')
+    expect(within(row).getByText(copy.label.possible)).toBeInTheDocument()
+    expect(within(row).getByText(copy.evidence('0.5'))).toBeInTheDocument()
+  })
+
+  it('shows no percentage and keeps "your CMO or flight surgeon confirms"', () => {
+    const { container } = renderPanel([], {
+      symptoms: data.symptoms,
+      symptomReports: [report('vomiting')],
+    })
+    expect(container.textContent).not.toMatch(/%/)
+    expect(screen.getByText(copy.confirms)).toBeInTheDocument()
+  })
+})
+

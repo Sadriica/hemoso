@@ -130,6 +130,13 @@ calibrated against outcomes.
 
 ## Limits and open questions
 
+- **A condition with one signal stays `no_data`, even if that signal crossed a
+  limit.** `low_mood` rests on `mood_1_5` alone, and a single self-report is not
+  enough evidence for a review. The exception "a crossed boundary counts on its
+  own" therefore applies only when the condition has at least two signals or a
+  symptom. The cleaner long-term rule would be to cap a single-signal score at
+  Possible instead of hiding it; that needs a code change and is not done today.
+
 - **Equal weights.** A fever of 39 °C and a mood of 2 out of 5 count the same if
   both crossed a limit. If the team wants weights, they need a column and a
   justification per weight.
