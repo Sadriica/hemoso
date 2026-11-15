@@ -367,3 +367,23 @@ demo_astronaut_1,appetite_1_5,4,1 to 5,27,21:10,before_sleep
 demo_astronaut_1,appetite_1_5,4,1 to 5,28,21:10,before_sleep
 demo_astronaut_1,appetite_1_5,3,1 to 5,29,21:10,before_sleep
 demo_astronaut_1,appetite_1_5,3,1 to 5,30,21:10,before_sleep
+demo_astronaut_1,eye_closure_pct,2.8,%,3,21:20,before_sleep
+demo_astronaut_1,eye_closure_pct,3.4,%,6,21:20,before_sleep
+demo_astronaut_1,eye_closure_pct,2.5,%,9,21:20,before_sleep
+demo_astronaut_1,eye_closure_pct,3.1,%,12,21:20,before_sleep
+demo_astronaut_1,eye_closure_pct,3.6,%,15,21:20,before_sleep
+demo_astronaut_1,eye_closure_pct,2.9,%,18,21:20,before_sleep
+demo_astronaut_1,eye_closure_pct,4.8,%,22,21:20,before_sleep
+demo_astronaut_1,eye_closure_pct,6.5,%,25,21:20,before_sleep
+demo_astronaut_1,eye_closure_pct,8.9,%,28,21:20,before_sleep
+demo_astronaut_1,eye_closure_pct,10.4,%,30,21:20,before_sleep
+demo_astronaut_1,blink_rate_pm,16,per min,3,21:20,before_sleep
+demo_astronaut_1,blink_rate_pm,17,per min,6,21:20,before_sleep
+demo_astronaut_1,blink_rate_pm,15,per min,9,21:20,before_sleep
+demo_astronaut_1,blink_rate_pm,18,per min,12,21:20,before_sleep
+demo_astronaut_1,blink_rate_pm,16,per min,15,21:20,before_sleep
+demo_astronaut_1,blink_rate_pm,17,per min,18,21:20,before_sleep
+demo_astronaut_1,blink_rate_pm,19,per min,22,21:20,before_sleep
+demo_astronaut_1,blink_rate_pm,21,per min,25,21:20,before_sleep
+demo_astronaut_1,blink_rate_pm,23,per min,28,21:20,before_sleep
+demo_astronaut_1,blink_rate_pm,24,per min,30,21:20,before_sleep

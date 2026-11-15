@@ -11,3 +11,5 @@ reaction_lapses,0,8,Assumption,Synthetic count of trials of 355 ms or more in a 
 appetite_1_5,2,5,Assumption,Synthetic answer on a 1 to 5 scale; dips toward 2 in the last week; seed 20261116; integer
 fluid_intake_ml,1800,2650,https://www.nasa.gov/wp-content/uploads/2023/12/ochmo-tb-027-water.pdf,Synthetic daily total of water drunk and water used for food; lower in the last week; seed 20261116; rounded to 50 mL
 body_mass_kg,70,73,https://pubmed.ncbi.nlm.nih.gov/25197887/,Synthetic SLAMMD mass; loss of about 0.05 kg per day; seed 20261116; rounded to 0.1 kg
+eye_closure_pct,0,20,Assumption,Synthetic share of a 60-second eye check with the eyes closed; low and flat for three weeks then rising in the last week; seed 20261117; rounded to 0.1 %
+blink_rate_pm,6,30,Assumption,Synthetic blinks per minute in a 60-second eye check; steady for three weeks then higher in the last week; seed 20261117; integer
