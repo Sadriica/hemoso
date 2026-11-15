@@ -92,6 +92,9 @@ export const strings = {
           : `${count} ${count === 1 ? 'reading' : 'readings'} logged in this check.`,
       back: 'Back',
       next: 'See my status',
+      // The reaction check is optional and sits behind one closed line.
+      reactionOptional: 'Reaction check, optional',
+      reactionDone: (result: string): string => `Reaction check, done: ${result}`,
     },
     status: {
       number: '03',
@@ -199,9 +202,11 @@ export const strings = {
     // section 3, `context`). The choice that fits the local clock is picked
     // first, and the person can change it.
     context: 'Context',
-    // The header control sets every row's own context at once.
-    applyToAll: 'Apply to all rows',
-    applyToAllHint: 'Tap one to set every row at once.',
+    // The header says the context once; a row names its own only when it
+    // differs, and that tag opens the four choices for the row.
+    change: 'change',
+    keepOwn: (count: number): string =>
+      count === 1 ? '1 row keeps its own context' : `${count} rows keep their own context`,
     rowContext: (name: string): string => `Context for ${name}`,
     contextLabels: {
       rest: 'At rest',
@@ -219,6 +224,9 @@ export const strings = {
     progress: (filled: number, total: number): string => `${filled} of ${total} filled`,
     saveNeeds: 'Fill in at least one reading to save.',
     saveWhat: 'Saves every filled row for this day and time.',
+    // The way on, offered next to the saved message.
+    next: 'See my status',
+    nextLabel: 'See my status, your readings are saved',
     // What was saved, one item per reading: "Heart rate 72 bpm, Mood 3 / 5".
     savedList: (items: string): string => `Saved: ${items}.`,
     reading: (name: string, value: string): string => `${name} ${value}`,

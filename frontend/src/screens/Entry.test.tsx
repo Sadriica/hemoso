@@ -75,7 +75,7 @@ const seedEntries = [entry('hr_bpm', 1, 56), entry('hr_bpm', 10, 58)]
 
 function renderEntry(
   indicators: Indicator[] = [heartRate],
-  options: { serverConfigured?: boolean } = {},
+  options: { serverConfigured?: boolean; onNext?: () => void } = {},
 ): LocalEntryStore {
   const store = new LocalEntryStore({ seedEntries })
   render(
@@ -85,6 +85,7 @@ function renderEntry(
       indicators={indicators}
       entries={seedEntries}
       serverConfigured={options.serverConfigured}
+      onNext={options.onNext}
     />,
   )
   return store
@@ -155,39 +156,80 @@ describe('Entry', () => {
     expect(isClockTime((time as HTMLInputElement).value)).toBe(true)
   })
 
-  it('opens each row on its usual context, and the clock when there is none', () => {
+  // The header's choices open with the "change" button; a row's with its tag.
+  const rowButton = (name: string) =>
+    screen.getByRole('button', { name: new RegExp(`^${strings.entry.rowContext(name)}`) })
+  // The header chip, not a row's "Context for ..." tag.
+  const headerName = new RegExp(`^${strings.entry.context}(?! for)`)
+  const openHeader = async (user: ReturnType<typeof userEvent.setup>) => {
+    await user.click(screen.getByRole('button', { name: headerName }))
+    return screen.getByRole('group', { name: strings.entry.context })
+  }
+
+  it('says the context once in the header and tags only the rows that differ', () => {
     vi.spyOn(Date.prototype, 'getHours').mockReturnValue(7)
     vi.spyOn(Date.prototype, 'getMinutes').mockReturnValue(30)
     renderEntry([heartRate, mood])
-    // Heart rate was taken at rest in the seeded history; mood has no entries.
-    expect(screen.getByLabelText(strings.entry.rowContext('Heart rate'))).toHaveValue('rest')
-    expect(screen.getByLabelText(strings.entry.rowContext('Mood'))).toHaveValue('on_waking')
-    // The rows differ, so the header control has no choice marked.
-    const all = screen.getByRole('group', { name: strings.entry.applyToAll })
-    expect(within(all).queryByRole('radio', { checked: true })).toBeNull()
+    // The header carries the context of the clock.
+    const header = screen.getByRole('button', { name: headerName })
+    expect(header).toHaveTextContent(strings.entry.contextLabels.on_waking)
+    // Heart rate was taken at rest in the seeded history, so it is tagged.
+    expect(rowButton('Heart rate')).toHaveTextContent(strings.entry.contextLabels.rest)
+    expect(rowButton('Heart rate')).toHaveAccessibleName(
+      `${strings.entry.rowContext('Heart rate')}: ${strings.entry.contextLabels.rest} ${strings.entry.change}`,
+    )
+    // Mood has no entries, so it follows the header: no words on the row.
+    expect(rowButton('Mood')).not.toHaveTextContent(/\w/)
+    expect(screen.getByText(strings.entry.keepOwn(1))).toBeInTheDocument()
     vi.restoreAllMocks()
   })
 
-  it('sets every row with the header control', async () => {
+  it('has no tag and no line when every row matches the header', () => {
+    vi.spyOn(Date.prototype, 'getHours').mockReturnValue(13)
+    vi.spyOn(Date.prototype, 'getMinutes').mockReturnValue(0)
+    renderEntry([heartRate, mood])
+    expect(rowButton('Heart rate')).not.toHaveTextContent(/\w/)
+    expect(rowButton('Mood')).not.toHaveTextContent(/\w/)
+    expect(screen.queryByText(/keeps? (their|its) own context/)).toBeNull()
+    vi.restoreAllMocks()
+  })
+
+  it('changing the header moves the rows that were not changed by hand', async () => {
+    vi.spyOn(Date.prototype, 'getHours').mockReturnValue(13)
+    vi.spyOn(Date.prototype, 'getMinutes').mockReturnValue(0)
     const user = userEvent.setup()
     renderEntry([heartRate, mood])
-    const all = screen.getByRole('group', { name: strings.entry.applyToAll })
-    await user.click(within(all).getByRole('radio', { name: 'Before sleep' }))
-    expect(screen.getByLabelText(strings.entry.rowContext('Heart rate'))).toHaveValue('before_sleep')
-    expect(screen.getByLabelText(strings.entry.rowContext('Mood'))).toHaveValue('before_sleep')
-    expect(within(all).getByRole('radio', { name: 'Before sleep' })).toBeChecked()
+    // Mood is changed by hand to after exercise.
+    await user.click(rowButton('Mood'))
+    const own = screen.getByRole('group', { name: strings.entry.rowContext('Mood') })
+    await user.click(within(own).getByRole('radio', { name: 'After exercise' }))
+    expect(rowButton('Mood')).toHaveTextContent(strings.entry.contextLabels.after_exercise)
+
+    const group = await openHeader(user)
+    await user.click(within(group).getByRole('radio', { name: 'Before sleep' }))
+    // Heart rate followed the header, so it still shows no tag; mood kept its
+    // own context and is tagged.
+    expect(rowButton('Heart rate')).not.toHaveTextContent(/\w/)
+    expect(rowButton('Mood')).toHaveTextContent(strings.entry.contextLabels.after_exercise)
+    expect(screen.getByText(strings.entry.keepOwn(1))).toBeInTheDocument()
+    vi.restoreAllMocks()
   })
 
   it('saves each row with its own context, the blood pressure pair sharing one', async () => {
     const user = userEvent.setup()
     const store = renderEntry([heartRate, systolic, diastolic, mood])
-    await user.selectOptions(
-      screen.getByLabelText(strings.entry.rowContext('Blood pressure')),
-      'after_exercise',
+    await user.click(rowButton('Blood pressure'))
+    await user.click(
+      within(screen.getByRole('group', { name: strings.entry.rowContext('Blood pressure') })).getByRole(
+        'radio',
+        { name: 'After exercise' },
+      ),
     )
-    await user.selectOptions(
-      screen.getByLabelText(strings.entry.rowContext('Mood')),
-      'before_sleep',
+    await user.click(rowButton('Mood'))
+    await user.click(
+      within(screen.getByRole('group', { name: strings.entry.rowContext('Mood') })).getByRole('radio', {
+        name: 'Before sleep',
+      }),
     )
     typeInto('Heart rate', '60')
     typeInto('Systolic', '118')
@@ -202,9 +244,9 @@ describe('Entry', () => {
     expect(contextOf('mood_1_5')).toBe('before_sleep')
   })
 
-  it('offers the four contexts as one segmented control', () => {
+  it('offers the four contexts as one segmented control', async () => {
     renderEntry()
-    const context = screen.getByRole('group', { name: strings.entry.applyToAll })
+    const context = await openHeader(userEvent.setup())
     expect(
       within(context)
         .getAllByRole('radio')
@@ -213,6 +255,40 @@ describe('Entry', () => {
     expect(
       within(context).getByRole('radio', { name: 'Before sleep' }),
     ).toBeInTheDocument()
+  })
+
+  it('offers the way on next to the saved message, and Save steps back', async () => {
+    const onNext = vi.fn()
+    const user = userEvent.setup()
+    renderEntry([heartRate], { onNext })
+    const save = screen.getByRole('button', { name: strings.entry.save })
+    expect(screen.queryByRole('button', { name: strings.entry.nextLabel })).toBeNull()
+    expect(save).toHaveClass('button--primary')
+
+    typeInto('Heart rate', '57')
+    await submit()
+    const next = screen.getByRole('button', { name: strings.entry.nextLabel })
+    expect(next).toHaveTextContent(strings.entry.next)
+    // One primary at a time: the way on now, Save is the quiet one.
+    expect(next).toHaveClass('button--primary')
+    expect(save).not.toHaveClass('button--primary')
+    await user.click(next)
+    expect(onNext).toHaveBeenCalledTimes(1)
+
+    // New text brings Save back as the primary and takes the way on away.
+    await user.type(screen.getByLabelText('Heart rate'), '60')
+    expect(screen.queryByRole('button', { name: strings.entry.nextLabel })).toBeNull()
+    expect(save).toHaveClass('button--primary')
+  })
+
+  it('marks a filled row as done with a check', async () => {
+    const user = userEvent.setup()
+    renderEntry([heartRate, mood])
+    const row = screen.getByLabelText('Heart rate').closest('li') as HTMLElement
+    expect(row).not.toHaveClass('rep-row--done')
+    await user.type(screen.getByLabelText('Heart rate'), '70')
+    expect(row).toHaveClass('rep-row--done')
+    expect(row.querySelector('.rep-row__check')).not.toBeNull()
   })
 
   it('saves every filled row as its own entry with the shared day and time', async () => {
@@ -224,9 +300,9 @@ describe('Entry', () => {
     fireEvent.change(screen.getByLabelText(strings.entry.time), {
       target: { value: '15:44' },
     })
-    await userEvent
-      .setup()
-      .click(screen.getByRole('radio', { name: 'After exercise' }))
+    const user = userEvent.setup()
+    const group = await openHeader(user)
+    await user.click(within(group).getByRole('radio', { name: 'After exercise' }))
     await submit()
 
     const saved = store.list().slice(seedEntries.length)
