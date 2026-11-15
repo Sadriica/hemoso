@@ -5,6 +5,7 @@ import type {
 } from '../domain/state'
 import { BASELINE_STATES } from '../domain/state'
 import type { MeasurementContext } from '../domain/types'
+import { bearerToken, expireSession } from './session'
 import { defaultFetch, type FetchLike } from './sync'
 
 // GET /people/{person_id}/indicators/{indicator_id}/state of docs/API.md: one
@@ -66,14 +67,27 @@ class HttpState implements StateClient {
       params.set('mission_day', String(query.missionDay))
     }
     if (query.time !== undefined) params.set('time', query.time)
+    // The header of a person route: the token of that person when this device
+    // has one. A person without an account keeps their routes open and sends
+    // nothing.
+    const token = bearerToken(query.personId)
+    const headers: Record<string, string> = {}
+    if (token !== null) headers.Authorization = `Bearer ${token}`
     const url =
       `${this.baseUrl}/people/${encodeURIComponent(query.personId)}` +
       `/indicators/${encodeURIComponent(query.indicatorId)}/state?${params.toString()}`
 
     let response: Response
     try {
-      response = await this.fetchFn(url, { method: 'GET' })
+      response = await this.fetchFn(url, { method: 'GET', headers })
     } catch {
+      return null
+    }
+    if (response.status === 401) {
+      // The session of that person is gone: it leaves this device and the
+      // screen asks for the PIN again. A person who sent no token has none to
+      // drop. No state is invented meanwhile.
+      if (token !== null) expireSession(query.personId)
       return null
     }
     if (response.status !== 200) return null
