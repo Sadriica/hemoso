@@ -348,6 +348,7 @@ export const strings = {
         series === null ? level : `${series}: ${level}`,
       markLegend: 'Marks',
       pickReading: 'Select a reading to see it here.',
+      newest: 'Newest reading',
       readout: (parts: {
         series: string | null
         value: string
