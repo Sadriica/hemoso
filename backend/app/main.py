@@ -18,6 +18,7 @@ from .indicators import (
     validate_against_indicators,
 )
 from .models import CONTEXTS, AttentionRow, Entry, IndicatorState, is_valid_id
+from .ratelimit import RateLimitMiddleware, limiter
 from .state import attention_for, baseline, state_for, window
 
 
@@ -35,6 +36,9 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+
+# Added before CORS so CORS stays the outer layer and a 429 carries its headers.
+app.add_middleware(RateLimitMiddleware, limiter=limiter)
 
 app.add_middleware(
     CORSMiddleware,
