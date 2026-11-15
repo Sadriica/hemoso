@@ -18,7 +18,7 @@ exists; the person's own baseline is the first comparison.
 | indicator_id | side | threshold | level | notify | source |
 | --- | --- | --- | --- | --- | --- |
 | temp_core_c | below | 35 | urgent | flight_surgeon | NASA-STD-3001 Vol. 1 Rev. C |
-| temp_core_c | above | 38.5 | consult | cmo | Assumption |
+| temp_core_c | above | 38.0 | consult | cmo | WHO SARI case definition |
 | hr_bpm | below | 50 | consult | cmo | Assumption |
 | hr_bpm | above | 100 | consult | cmo | MedlinePlus, NIH |
 | bp_sys_mmhg | above | 180 | urgent | flight_surgeon | WHO |
@@ -30,7 +30,7 @@ exists; the person's own baseline is the first comparison.
 | sleep_h | below | 6 | watch | crew | Assumption |
 | mood_1_5 | below | 2 | watch | crew | Assumption |
 | appetite_1_5 | below | 3 | watch | crew | Assumption |
-| fluid_intake_ml | below | 1500 | watch | crew | Assumption |
+| fluid_intake_ml | below | 2500 | watch | crew | OCHMO-TB-027 |
 | body_mass_kg | below | 45 | watch | crew | Assumption |
 
 The three nutrition rows are safety floors, not clinical thresholds. The
@@ -47,6 +47,10 @@ rule from the format.
   86: normal body temperature is around 37 °C, and hypothermia is below 35 °C.
   The definition is in Appendix C, not Appendix A.
   https://www.nasa.gov/wp-content/uploads/2023/11/nasa-std-3001-vol-1-rev-c-with-signature.pdf
+- WHO, case definitions for ILI and SARI (2014): the SARI case definition uses
+  "measured fever of ≥ 38 °C". This is the clinical definition behind the
+  high-temperature row.
+  https://cdn.who.int/media/docs/default-source/influenza/who_ili_sari_case_definitions_2014.pdf
 - JSC 22538 Revision F, section 7.1.B: if temperature is measured, fever is
   100.4 °F (38.0 °C) or greater. It is the pre-launch Health Stabilization
   Program (quarantine screening), not an in-flight clinical rule, so this number
@@ -93,11 +97,11 @@ rule from the format.
 - **Mood below 2 is an Assumption.** The team defined the scale as 1 = very
   low to 5 = very good (`FORMATS.md`, Sat 16:10). The row only fires on the
   lowest answer.
-- **High temperature is an Assumption.** JSC 22538 defines fever for pre-launch
-  quarantine screening, not for flight, so its 38.0 °C cannot be the row. The
-  row is 38.5 °C marked `Assumption`, and the content must say that it is a
-  project review line, not a NASA in-flight limit. The person's own baseline
-  remains the first comparison.
+- **High temperature uses the WHO clinical definition.** WHO's SARI case
+  definition uses measured fever at ≥38 °C, so the row stays at 38.0 °C with
+  that source. JSC 22538 is pre-launch quarantine screening and is no longer
+  cited. The person's own baseline remains the first comparison; the row adds
+  the clinical fever line on top.
 - **Hypothermia is a definition, not an in-flight rule.** NASA states the
   boundary, not an operational alert. The app uses it because it is published,
   and sends the case to the flight surgeon.
@@ -106,13 +110,13 @@ rule from the format.
   band. The row fires on the two lowest answers and is marked `Assumption`. The
   baseline catches a change from the person's own answers; the row is only a
   safety floor.
-- **Fluid intake below 1500 mL is a safety floor, not the recommendation.**
-  The 2020 NASA nutrition report gives more than 2000 mL per day as the general
-  fluid recommendation, with higher values for women (2100 mL) and men
-  (2500 mL) (p. 11). The same report and OCHMO-TB-027 record 2.0 to 2.3 L/day
-  as the average intake on ISS Expeditions, so a 2000 mL alarm would fire on a
-  normal day. 1500 mL is clearly below that range, marked `Assumption`. It
-  catches a low day, not a normal one.
+- **Fluid intake stays at 2500 mL from OCHMO-TB-027.** The brief gives 2.5
+  L/day as the water-system requirement for direct consumption and food
+  rehydration. The 2020 NASA nutrition report gives more than 2000 mL/day as
+  the general recommendation, and average ISS intake is 2.0 to 2.3 L/day, so a
+  2000 mL alarm would fire on a normal day; 1500 mL has no source. The 2500 mL
+  row stays with its link until a source supports a lower individual
+  threshold.
 - **Body mass below 45 kg is a safety floor.** No source gives a fixed kg
   boundary. Zwart et al. report a mean in-flight loss of 2.8 % measured with
   SLAMMD and 4.4 % with the BMMD, and body mass that stays constant after the
@@ -133,7 +137,7 @@ rule from the format.
    must be added. Decision for Eng 1 and Bio 1, then a row in
    `docs/DECISIONS.md`.
 2. **The frontend comparison is strict.** It uses `value > threshold` and
-   `value < threshold`, so exactly 140 mmHg or 38.5 °C does not trigger. The
+   `value < threshold`, so exactly 140 mmHg or 38.0 °C does not trigger. The
    team must decide whether to use `>=` / `<=` or a threshold one decimal below
    the chosen value.
 3. **The first matching rule wins in the frontend.** `FORMATS.md` says the most

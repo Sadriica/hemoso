@@ -9,7 +9,7 @@ Sun 15 Nov, Bio 2. Files reviewed: `appetite_1_5.md`, `body_mass_kg.md`,
 | indicator_id | side | threshold | attention_level | notify | source |
 | --- | --- | --- | --- | --- | --- |
 | `appetite_1_5` | below | 3 | watch | crew | Assumption |
-| `fluid_intake_ml` | below | 1500 | watch | crew | Assumption |
+| `fluid_intake_ml` | below | 2500 | watch | crew | OCHMO-TB-027 |
 | `body_mass_kg` | below | 45 | watch | crew | Assumption |
 
 The three rows are safety floors, not clinical thresholds. The baseline is the
@@ -23,45 +23,50 @@ to Bio 1.
 - `appetite_1_5`: no published threshold. Below 3 is the two lowest answers, a
   low-appetite floor marked `Assumption`. The baseline catches a change from
   the person's own answers.
-- `fluid_intake_ml`: 1500 mL is a safety floor, marked `Assumption`. The 2020
-  NASA nutrition report gives more than 2000 mL/day as the general
-  recommendation; the same report and OCHMO-TB-027 record 2.0 to 2.3 L/day as
-  the average intake on ISS Expeditions, so a 2000 mL alarm would fire on a
-  normal day. 1500 mL is clearly below that range.
+- `fluid_intake_ml`: 2500 mL comes from OCHMO-TB-027, which gives 2.5 L/day as
+  the water-system requirement for direct consumption and food rehydration. The
+  2020 NASA nutrition report gives more than 2000 mL/day as the general
+  recommendation, and average ISS intake is 2.0 to 2.3 L/day, so a 2000 mL
+  alarm would fire on a normal day; 1500 mL has no source. The 2500 mL row
+  stays with its link until a source supports a lower individual threshold.
 - `body_mass_kg`: 45 kg is a safety floor for a low adult mass, marked
   `Assumption`. The old 70 kg row marked a healthy 62 kg crew member every day.
   The baseline compares the person with their own usual weight.
 
-If the team wants zero rows for appetite and body mass, the checker must be
-changed to accept baseline-only indicators; today `--strict` fails when an
-indicator has no attention row. The safer choice for this checkpoint is to keep
-the floors and say so in the content.
+Decision: keep the three floors. Removing the rows would need a checker change
+and would leave two indicators without any attention rule (REQ-05), and the
+checker already passes with the floors and the `### watch` headings. No code
+change is needed. Checked in a clean worktree at `origin/bio2` (`4725e5b`):
+`python scripts/check_content.py --strict` gives 0 errors. The only remaining
+work is to align the body mass and fluid texts with the current row values: the
+body mass text still says 70 kg and the fluid text still says 2.5 L.
 
 ## Body mass direction (open point for Phys)
 
 `config/data/indicators.csv` has `body_mass_kg` as `lower`. That sees loss but
-ignores a 2 kg gain from fluid retention. Change it to `both`: in flight, loss
-is the common risk, but a gain can also matter, and `both` lets the baseline
-flag either side. The attention row stays the below-45 kg floor; the high side
-is baseline-only. I did not change the file: it is Phys's path.
+ignores a 2 kg gain from fluid retention. If Phys wants a gain to count as
+outside the baseline, the direction becomes `both`; the attention row stays the
+below-45 kg floor, and the high side is baseline-only. I did not change the
+file: it is Phys's path.
 
-## Text to add to each file
+## Text to replace in each file
 
-Add the section after `### outside_range` and before
-`## How to prevent problems`. The row is `watch` / `crew`, so the closing line
-is "The crew checks your record on board", the same as in `mood_1_5.md` and
-`sleep_h.md`. The `outside_range` sections keep "Your CMO or flight surgeon
+The three `### watch` headings already exist in `origin/bio2`; `--strict` gives
+0 errors there. Appetite already matches its row. Replace only the body mass and
+fluid sections with the text below. The row is `watch` / `crew`, so the closing
+line is "The crew checks your record on board", the same as in `mood_1_5.md`
+and `sleep_h.md`. The `outside_range` sections keep "Your CMO or flight surgeon
 confirms."
 
-### `config/content/appetite_1_5.md`
+### `config/content/appetite_1_5.md` (no change; it already matches below 3)
 
 ```markdown
 ### watch
 
-Your appetite is low today: 2 or less out of 5.
+You rated your appetite below 3 today. Assumption: 3 is the middle of our
+scale, not a NASA limit.
 
-Eat something small at the next meal time. Answer again tomorrow at the same
-time.
+Eat something small at the next meal time and answer again tomorrow.
 
 The crew checks your record on board.
 ```
@@ -71,10 +76,11 @@ The crew checks your record on board.
 ```markdown
 ### watch
 
-Your fluid intake is below 1500 mL today, well under the daily amount NASA
-recommends.
+You drank less than 2.5 L today, counting the water in your food. NASA asks for
+at least 2.5 L a day for each crew member.
 
-Drink some fluid now and log your total again tomorrow.
+Drink a glass of water now and keep a bottle near you. Log your total again
+tomorrow.
 
 The crew checks your record on board.
 ```
@@ -84,10 +90,10 @@ The crew checks your record on board.
 ```markdown
 ### watch
 
-Your body mass is below 45 kg.
+Your body mass is below 45 kg. Assumption: this is a low value for an adult,
+not a NASA limit.
 
-This is a low value for an adult. Assumption. Eat your full meals this week and
-measure again next week.
+Eat your full meals this week and measure again next week.
 
 The crew checks your record on board.
 ```
