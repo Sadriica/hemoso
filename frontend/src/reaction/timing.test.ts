@@ -24,7 +24,6 @@ import {
   median,
   NON_TARGET_KINDS,
   pickLightKind,
-  PLAIN_KINDS,
   randomSize,
   randomTone,
   randomWait,
@@ -148,7 +147,8 @@ describe('reactionReducer', () => {
   it('counts an answer of the cut-off or more as a lapse', () => {
     const atCut = trial(start(), 2000, REACTION_LAPSE_CUTOFF_MS)
     expect(atCut.lapses).toBe(1)
-    expect(atCut.reactions).toEqual([])
+    // A late answer is a valid response: it is a lapse and it keeps its time.
+    expect(atCut.reactions).toEqual([REACTION_LAPSE_CUTOFF_MS])
     expect(atCut.done).toBe(1)
 
     const under = trial(start(), 2000, REACTION_LAPSE_CUTOFF_MS - 1)
@@ -215,7 +215,7 @@ describe('reactionReducer', () => {
     const state = reactionReducer(stillOn, { type: 'answer', at: LENGTH + 100 })
     expect(state.phase).toBe('finished')
     expect(state.done).toBe(1)
-    expect(state.reactions).toEqual([])
+    expect(state.reactions).toEqual([600])
     expect(state.lapses).toBe(1)
   })
 
@@ -254,14 +254,15 @@ describe('reactionReducer', () => {
 })
 
 describe('summarize', () => {
-  it('reports the median of the valid trials, the lapses and the early answers', () => {
+  it('reports the median of every valid answer, late ones included, with the lapses and the early answers', () => {
     let state = start()
     state = trial(state, 2000, 250)
     state = trial(state, 6000, 300)
     state = trial(state, 10000, REACTION_LAPSE_CUTOFF_MS)
     state = reactionReducer(state, { type: 'answer', at: 12000 })
+    // 250, 300 and 355 ms: the median is the middle answer, the late one counts.
     expect(summarize(state)).toEqual({
-      medianMs: 275,
+      medianMs: 300,
       lapses: 1,
       falseStarts: 1,
       errors: 0,
@@ -314,9 +315,41 @@ describe('remainingMs and elapsedMs', () => {
   })
 })
 
-describe('the 90-second run', () => {
-  it('is 90 seconds, a shortened PVT-B', () => {
-    expect(REACTION_DURATION_MS).toBe(90_000)
+describe('the 50-second run', () => {
+  it('is 50 seconds, a shortened PVT-B', () => {
+    expect(REACTION_DURATION_MS).toBe(50_000)
+  })
+})
+
+describe('a run where every answer is slower than the cut-off', () => {
+  // The case that showed "Median none · Lapses 17": the answers came, all of
+  // them at 355 ms or more. The median reads every valid answer, so it exists.
+  it('has a median and as many lapses as trials', () => {
+    let state = start()
+    for (const latency of [360, 420, 510, 390]) {
+      state = trial(state, 2000 + state.done * 5000, latency)
+    }
+    expect(summarize(state)).toMatchObject({ medianMs: 405, lapses: 4, trials: 4 })
+  })
+
+  it('moves the start of a trial to the frame that drew it', () => {
+    let state = start()
+    state = reactionReducer(state, { type: 'stimulus', at: 2000 })
+    // The lamp reached the screen 40 ms later: 380 ms after the timer is only
+    // 340 ms after the lamp, which is not a lapse.
+    state = reactionReducer(state, { type: 'painted', at: 2040 })
+    expect(state.stimulusAt).toBe(2040)
+    state = reactionReducer(state, { type: 'answer', at: 2380 })
+    expect(state.lapses).toBe(0)
+    expect(state.reactions).toEqual([340])
+  })
+
+  it('ignores a frame that is not for the stimulus showing', () => {
+    const waiting = start()
+    expect(reactionReducer(waiting, { type: 'painted', at: 10 })).toBe(waiting)
+    const shown = reactionReducer(waiting, { type: 'stimulus', at: 2000 })
+    // A frame can only move the start later, never before the timer fired.
+    expect(reactionReducer(shown, { type: 'painted', at: 1990 })).toBe(shown)
   })
 })
 
@@ -335,23 +368,24 @@ describe('the minimum gap between two stimuli', () => {
   })
 })
 
-describe('colour targets off', () => {
-  it('is the default until Phys confirms the method', () => {
-    expect(REACTION_COLOUR_TARGETS).toBe(false)
+describe('colour targets off (the plain mode)', () => {
+  it('is on since the team lead decision of Sun 11:45', () => {
+    expect(REACTION_COLOUR_TARGETS).toBe(true)
   })
 
-  it('makes every light a target, with a shape that changes', () => {
-    for (const kind of PLAIN_KINDS) expect(isTarget(kind, false)).toBe(true)
-    const kinds = new Set([0, 0.3, 0.6, 0.99].map((draw) => pickLightKind(0, () => draw, false)))
-    expect(kinds.size).toBeGreaterThan(1)
-    for (const kind of kinds) expect(PLAIN_KINDS).toContain(kind)
-    // Never a white-first rule, never a non-target, whatever the draw.
-    expect(pickLightKind(3, () => 0.95, false)).not.toBe('green')
+  it('makes every light a target, always the same white lamp', () => {
+    for (const kind of ['white', 'green', ...NON_TARGET_KINDS] as const) {
+      expect(isTarget(kind, false)).toBe(true)
+    }
+    for (const draw of [0, 0.3, 0.6, 0.99]) {
+      expect(pickLightKind(0, () => draw, false)).toBe('white')
+      expect(pickLightKind(3, () => draw, false)).toBe('white')
+    }
   })
 
   it('counts an answer to any light as a reaction, never an error', () => {
     let state = start('light', 0, false)
-    state = reactionReducer(state, { type: 'stimulus', at: 2000, kind: 'square', size: 0.65 })
+    state = reactionReducer(state, { type: 'stimulus', at: 2000, kind: 'white', size: 0.65 })
     expect(state.size).toBe(0.65)
     state = reactionReducer(state, { type: 'answer', at: 2250 })
     expect(state.reactions).toEqual([250])
@@ -388,7 +422,7 @@ describe('light stimuli with colour targets', () => {
 
   it('counts an answer to a non-target as an error, not as a reaction or a lapse', () => {
     let state = start()
-    state = reactionReducer(state, { type: 'stimulus', at: 2000, kind: 'square' })
+    state = reactionReducer(state, { type: 'stimulus', at: 2000, kind: 'orange' })
     state = reactionReducer(state, { type: 'answer', at: 2300 })
     expect(state.errors).toBe(1)
     expect(state.reactions).toEqual([])
@@ -400,7 +434,7 @@ describe('light stimuli with colour targets', () => {
 
   it('clears an unanswered non-target with no lapse, only after its time', () => {
     let state = start()
-    state = reactionReducer(state, { type: 'stimulus', at: 2000, kind: 'triangle' })
+    state = reactionReducer(state, { type: 'stimulus', at: 2000, kind: 'yellow' })
     const early = reactionReducer(state, { type: 'timeout', at: 2000 + REACTION_NONTARGET_MS - 1 })
     expect(early.phase).toBe('stimulus')
     const cleared = reactionReducer(state, { type: 'timeout', at: 2000 + REACTION_NONTARGET_MS })
