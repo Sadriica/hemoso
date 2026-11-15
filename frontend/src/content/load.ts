@@ -4,6 +4,7 @@ import type {
   Indicator,
   IndicatorContent,
 } from '../domain/types'
+import { BASELINE_STATES } from '../domain/state'
 import { parseIndicatorMarkdown } from './markdown'
 import { parseIndicators } from './indicators'
 import { parseRules } from './rules'
@@ -147,14 +148,17 @@ function contentFileIds(files: Record<string, string>): string[] {
   return ids
 }
 
-// Cross-file checks: every ### level in a content file must match an
-// attention rule, and every rule level must have ### text.
+// Cross-file checks: the two required baseline states have ### text, every
+// other ### level is an attention level with a matching rule, and every rule
+// level has ### text. in_range, outside_range and no_data are the baseline
+// states of FORMATS.md section 3, so they are not attention levels.
 function checkLevelsAgainstRules(
   indicators: Indicator[],
   rules: AttentionRule[],
   contents: Record<string, IndicatorContent>,
   problems: string[],
 ): void {
+  const baselineStates: readonly string[] = BASELINE_STATES
   for (const indicator of indicators) {
     const content = contents[indicator.id]
     if (content === undefined) continue
@@ -164,14 +168,24 @@ function checkLevelsAgainstRules(
     const ruleLevels = new Set(
       indicatorRules.map((rule) => rule.attentionLevel),
     )
-    for (const level of Object.keys(content.statusAndNextSteps)) {
+    const contentLevels = new Set(Object.keys(content.statusAndNextSteps))
+    for (const state of baselineStates) {
+      // no_data is the one baseline state a content file may leave out.
+      if (state === 'no_data') continue
+      if (!contentLevels.has(state)) {
+        problems.push(
+          `Indicator '${indicator.id}' has no status text for state '${state}'.`,
+        )
+      }
+    }
+    for (const level of contentLevels) {
+      if (baselineStates.includes(level)) continue
       if (!ruleLevels.has(level)) {
         problems.push(
           `Indicator '${indicator.id}' has status text for level '${level}' with no matching attention rule.`,
         )
       }
     }
-    const contentLevels = new Set(Object.keys(content.statusAndNextSteps))
     for (const rule of indicatorRules) {
       if (!contentLevels.has(rule.attentionLevel)) {
         problems.push(
