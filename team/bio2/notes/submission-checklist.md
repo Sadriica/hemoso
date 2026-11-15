@@ -8,14 +8,14 @@ Sun 15 Nov 06:35. Run this before pressing Submit for Judging.
 | --- | --- | --- |
 | Live app | https://www.hemoso.space/ | Yes, 06:30: loads, no console errors, "open the demo" works |
 | Repository | https://github.com/Sadriica/hemoso | Yes, public |
-| Demo (30 s video or 7 slides) | **missing** | Bio 1 and Eng 2 |
+| Demo (30 s video) | **missing** | Bio 1 and Eng 2 |
 | Team page | https://www.spaceappschallenge.org/2026/find-a-team/tardis2/ | Yes |
 
 ## 2. Claims in the page that must match `main`
 
 Ask Eng 2 to confirm each one; if it is not in `main`, move it to "planned".
 
-- [ ] Nine indicators recorded, with unit and how each is measured in flight.
+- [ ] Twelve indicators recorded, with unit and how each is measured in flight.
 - [ ] The app compares against the person's own last 14 readings (median and spread).
 - [ ] Four states, and the state names who acts: crew, CMO, flight surgeon.
 - [ ] A next step in plain words for each state.
@@ -23,9 +23,17 @@ Ask Eng 2 to confirm each one; if it is not in `main`, move it to "planned".
 - [ ] Works offline, with an outbox for what could not be sent.
 - [ ] Synthetic data, labelled in the interface.
 
+## 2b. The demo card has no probability number
+
+The app shows an evidence score from 0 to 1 with the signals behind it, never a
+percentage. The script and the video say "a probability and its basis"; that is
+the line to keep. Do not add a number, and do not ask Bio 2 for one. If the
+script's TODO still says "the real probability from Bio 2", replace it with
+"the evidence score and its basis".
+
 ## 3. English (REQ-16)
 
-- [ ] Page, app, slides and video in English, or the video subtitled in English.
+- [ ] Page, app and video in English, or the video subtitled in English.
 - Checked at 06:30: no Spanish characters in `frontend/src/strings.ts` or in
   `config/`.
 
