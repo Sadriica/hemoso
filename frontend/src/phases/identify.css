@@ -233,8 +233,9 @@
 }
 
 .identify__tabs {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: 100%;
   gap: var(--space-2);
 }
 
@@ -264,6 +265,11 @@
 
 .identify__tab[aria-selected='true'] {
   border-width: 2px;
+  background: color-mix(in srgb, var(--color-accent) 14%, transparent);
+}
+
+.identify__more {
+  gap: var(--space-2);
 }
 
 .identify__more-body {
