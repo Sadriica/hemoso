@@ -241,6 +241,14 @@ export default function App() {
         </ErrorBoundary>
         </PhaseTransition>
       </main>
+      <footer className="page-footer">
+        <p>
+          {strings.footer.line}
+          <a href={strings.topbar.sourceUrl} target="_blank" rel="noopener noreferrer">
+            {strings.footer.link}
+          </a>
+        </p>
+      </footer>
       <PhaseRail current={phase} />
     </div>
   )
