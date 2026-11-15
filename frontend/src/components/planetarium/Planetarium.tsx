@@ -47,6 +47,8 @@ export interface PlanetariumProps {
   onSelect: (id: string) => void
   /** Force the final layout with no animation. */
   reducedMotion?: boolean
+  /** View on first paint. Default 'list'. The orbit view still needs a wide screen. */
+  initialView?: 'list' | 'orbits'
 }
 
 const STATE_CLASS: Record<PlanetState, string> = {
@@ -75,8 +77,8 @@ function place(i: number, n: number) {
 }
 
 /** Status view: a plain list by default, concentric orbits on wide screens. */
-export function Planetarium({ items, labels, selectedId, onSelect, reducedMotion }: PlanetariumProps) {
-  const [view, setView] = useState<'list' | 'orbits'>('list')
+export function Planetarium({ items, labels, selectedId, onSelect, reducedMotion, initialView = 'list' }: PlanetariumProps) {
+  const [view, setView] = useState<'list' | 'orbits'>(initialView)
   const [wide, setWide] = useState(() => mq(WIDE)?.matches ?? false)
   const [stillAncestor, setStillAncestor] = useState(false)
   const [focusId, setFocusId] = useState<string | null>(null)
@@ -107,8 +109,13 @@ export function Planetarium({ items, labels, selectedId, onSelect, reducedMotion
   // Glide each body from the centre to its orbit; any key or pointer jumps to the end.
   useLayoutEffect(() => {
     const box = stage.current
-    if (!orbits || still || !box || typeof box.animate !== 'function') return
+    if (!orbits || still || root.current?.closest('.app--still') || !box || typeof box.animate !== 'function') return
     const size = box.getBoundingClientRect().width
+    const css = getComputedStyle(box)
+    const raw = css.getPropertyValue('--motion-cinematic').trim()
+    const num = parseFloat(raw)
+    const ms = Math.min(raw.endsWith('ms') && num > 0 ? num : raw.endsWith('s') && num > 0 ? num * 1000 : 1200, 1200)
+    const ease = css.getPropertyValue('--ease-standard').trim() || 'cubic-bezier(0.2, 0.7, 0.1, 1)'
     const anims = Array.from(box.querySelectorAll<HTMLElement>('.planetarium__body')).map((el, i) => {
       const p = place(i, items.length)
       const dx = ((50 - p.x) / 100) * size
@@ -118,7 +125,7 @@ export function Planetarium({ items, labels, selectedId, onSelect, reducedMotion
           { transform: `translate(${dx}px, ${dy}px) translate(-50%, -50%)`, opacity: 0 },
           { transform: 'translate(-50%, -50%)', opacity: 1 },
         ],
-        { duration: 1200, easing: 'cubic-bezier(0.2, 0.7, 0.1, 1)' },
+        { duration: ms, easing: ease },
       )
     })
     const skip = () => anims.forEach((a) => a.finish())
