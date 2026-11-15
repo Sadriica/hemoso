@@ -45,11 +45,10 @@ Your CMO or flight surgeon confirms.
 
 ### watch
 
-You drank less than 2.5 L today, counting the water in your food. NASA asks
-for at least 2.5 L a day for each crew member.
+Your fluid intake is below 1500 mL today, well under the daily amount NASA
+recommends.
 
-Drink a glass of water now and keep a bottle near you. Log your total again
-tomorrow.
+Drink some fluid now and log your total again tomorrow.
 
 The crew checks your record on board.
 

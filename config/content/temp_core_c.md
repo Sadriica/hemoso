@@ -3,7 +3,7 @@
 ## Why it matters
 
 Your core temperature is the temperature inside your chest. In space it rises
-about 1 °C and stays higher after 2 to 3 months. This mild fever costs about 20%
+about 1 °C and stays higher after 2 to 3 months. This higher temperature costs about 20%
 more energy, so it matters for how you eat, sleep and perform.
 
 ## How spaceflight affects it
@@ -48,10 +48,10 @@ No one is notified for now.
 
 ### consult
 
-Your temperature is outside your usual range, or a reading crossed the 38.0 °C
-fever line your CMO uses. HeMoSo asks for review when either happens.
+Your temperature is far outside your usual range, or above the 38.5 °C review
+line. Tell your CMO today. Rest, drink fluids and measure again in 2 hours.
 
-Tell your CMO today. Rest, drink fluids and measure again in 2 hours.
+The 38.5 °C line is a project review line, not a NASA in-flight limit.
 Assumption.
 
 Your CMO checks you in person.
