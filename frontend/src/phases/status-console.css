@@ -272,8 +272,9 @@
 
 /* Round of Sun 07:00. The top of the orbit stage is empty down to its first
    row of indicators: pulled up under the strip, the orbits and the card start
-   higher. The stage keeps its size and every tag stays inside it. */
-@media (min-width: 900px) {
+   higher. The stage keeps its size and every tag stays inside it. Only from
+   1100 px: under that the strip wraps to a second row and needs the room. */
+@media (min-width: 1100px) {
   .phase--status .status-panel .planetarium__stage {
     margin-top: calc(var(--space-6) * -1);
   }
