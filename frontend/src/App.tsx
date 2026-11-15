@@ -1,9 +1,11 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { loadContent } from './content/load'
 import { LocalEntryStore } from './data/entryStore'
+import { createHistoryClient } from './data/historyClient'
 import { createSyncClient } from './data/sync'
 import { missionNow } from './domain/clock'
 import { useEntries } from './hooks/useEntries'
+import { useHistorySync } from './hooks/useHistorySync'
 import Notice from './components/Notice'
 import PhaseRail from './components/PhaseRail'
 import type { PhaseId } from './phases/phaseIds'
@@ -49,6 +51,9 @@ export default function App() {
   // Built once from VITE_API_BASE_URL. Empty is the public demo: nothing is
   // sent and the top bar says so.
   const [client] = useState(() => createSyncClient())
+  // The same base URL for reading back what the server kept: a second device
+  // then shows the readings the first one made (REQ-27).
+  const [historyClient] = useState(() => createHistoryClient())
   // Face sign-in is off unless the page is opened with ?face=1: REQ-14 forbids
   // real personal data in the app until Eng 1 records the exception.
   const [faceEnabled] = useState(
@@ -62,6 +67,14 @@ export default function App() {
   const [introOpen, setIntroOpen] = useState(() => !motionReduced && !introSeen())
   const [phase, setPhase] = useState<PhaseId>('identify')
   const [personId, setPersonId] = useState<string | null>(null)
+  const indicatorIds = useMemo(
+    () => data.indicators.map((indicator) => indicator.id),
+    [data],
+  )
+  // The person chosen here, or already chosen when the page loads: the history
+  // of every indicator comes from the server once, and the screens then show
+  // the same readings on any device (REQ-27).
+  useHistorySync(historyClient, store, personId, indicatorIds)
 
   const personIds = useMemo(() => {
     const ids = new Set(data.demoEntries.map((entry) => entry.personId))
